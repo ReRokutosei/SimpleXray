@@ -112,11 +112,17 @@ class Preferences(context: Context) {
             setValueInProvider(SOCKS_PORT, port.toString())
         }
 
-    val socksUsername: String
+    var socksUsername: String
         get() = getPrefData(SOCKS_USER).first ?: ""
+        set(user) {
+            setValueInProvider(SOCKS_USER, user)
+        }
 
-    val socksPassword: String
+    var socksPassword: String
         get() = getPrefData(SOCKS_PASS).first ?: ""
+        set(pass) {
+            setValueInProvider(SOCKS_PASS, pass)
+        }
 
     var dnsIpv4: String
         get() = getPrefData(DNS_IPV4).first ?: "8.8.8.8"

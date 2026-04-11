@@ -384,6 +384,32 @@ fun SettingsScreen(
         )
 
         EditableListItemWithBottomSheet(
+            headline = stringResource(R.string.socks_user),
+            currentValue = settingsState.socksUser.value,
+            onValueConfirmed = { newValue -> mainViewModel.updateSocksUser(newValue) },
+            label = stringResource(R.string.socks_user),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+            isError = !settingsState.socksUser.isValid,
+            errorMessage = settingsState.socksUser.error,
+            enabled = !vpnDisabled,
+            sheetState = sheetState,
+            scope = scope
+        )
+
+        EditableListItemWithBottomSheet(
+            headline = stringResource(R.string.socks_pass),
+            currentValue = settingsState.socksPass.value,
+            onValueConfirmed = { newValue -> mainViewModel.updateSocksPass(newValue) },
+            label = stringResource(R.string.socks_pass),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            isError = !settingsState.socksPass.isValid,
+            errorMessage = settingsState.socksPass.error,
+            enabled = !vpnDisabled,
+            sheetState = sheetState,
+            scope = scope
+        )
+
+        EditableListItemWithBottomSheet(
             headline = stringResource(R.string.dns_ipv4),
             currentValue = settingsState.dnsIpv4.value,
             onValueConfirmed = { newValue -> mainViewModel.updateDnsIpv4(newValue) },

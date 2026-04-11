@@ -172,6 +172,8 @@ class FileManager(private val application: Application, private val prefs: Prefe
                 val preferencesMap: MutableMap<String, Any> = mutableMapOf()
                 preferencesMap[Preferences.SOCKS_ADDR] = prefs.socksAddress
                 preferencesMap[Preferences.SOCKS_PORT] = prefs.socksPort
+                preferencesMap[Preferences.SOCKS_USER] = prefs.socksUsername
+                preferencesMap[Preferences.SOCKS_PASS] = prefs.socksPassword
                 preferencesMap[Preferences.DNS_IPV4] = prefs.dnsIpv4
                 preferencesMap[Preferences.DNS_IPV6] = prefs.dnsIpv6
                 preferencesMap[Preferences.IPV6] = prefs.ipv6
@@ -307,6 +309,16 @@ class FileManager(private val application: Application, private val prefs: Prefe
                         } catch (ignore: NumberFormatException) {
                             Log.w(TAG, "Failed to parse SOCKS_PORT as integer: $value")
                         }
+                    }
+
+                    value = preferencesMap[Preferences.SOCKS_USER]
+                    if (value is String) {
+                        prefs.socksUsername = (value as String?)!!
+                    }
+
+                    value = preferencesMap[Preferences.SOCKS_PASS]
+                    if (value is String) {
+                        prefs.socksPassword = (value as String?)!!
                     }
 
                     value = preferencesMap[Preferences.DNS_IPV4]

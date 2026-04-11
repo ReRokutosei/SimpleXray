@@ -6,6 +6,8 @@
     <string name="geosite_url" translatable="false">https://github.com/lhear/v2ray-rules-dat/releases/latest/download/geosite.dat</string>
     <string name="connectivity_test_url" translatable="false">http://www.gstatic.com/generate_204</string>
     <string name="socks_port">Target SOCKS Port</string>
+    <string name="socks_user">SOCKS User</string>
+    <string name="socks_pass">SOCKS Pass</string>
     <string name="dns_ipv4">DNS IPv4</string>
     <string name="dns_ipv6">DNS IPv6</string>
     <string name="ipv6">IPv6</string>
