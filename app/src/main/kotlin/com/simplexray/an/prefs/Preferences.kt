@@ -284,6 +284,12 @@ class Preferences(context: Context) {
             setValueInProvider(GEOSITE_URL, value)
         }
 
+    var apiAddress: String
+        get() = getPrefData(API_ADDRESS).first ?: "127.0.0.1"
+        set(address) {
+            setValueInProvider(API_ADDRESS, address)
+        }
+
     var apiPort: Int
         get() {
             val value = getPrefData(API_PORT).first
@@ -331,6 +337,7 @@ class Preferences(context: Context) {
         const val CONNECTIVITY_TEST_TIMEOUT: String = "ConnectivityTestTimeout"
         const val GEOIP_URL: String = "GeoipUrl"
         const val GEOSITE_URL: String = "GeositeUrl"
+        const val API_ADDRESS: String = "ApiAddress"
         const val API_PORT: String = "ApiPort"
         const val BYPASS_SELECTED_APPS: String = "BypassSelectedApps"
         const val THEME: String = "Theme"

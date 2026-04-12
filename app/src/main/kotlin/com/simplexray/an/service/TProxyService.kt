@@ -183,6 +183,12 @@ class TProxyService : VpnService() {
             prefs.apiPort = apiPort
             Log.d(TAG, "Found and set API port: $apiPort")
 
+            val octet2 = (0..255).random()
+            val octet3 = (0..255).random()
+            val octet4 = (1..254).random()
+            prefs.apiAddress = "127.$octet2.$octet3.$octet4"
+            Log.d(TAG, "Randomized API address: ${prefs.apiAddress}")
+
             val processBuilder = getProcessBuilder(xrayPath)
             currentProcess = processBuilder.start()
             this.xrayProcess = currentProcess
