@@ -50,6 +50,7 @@ jobs:
           cache: false
 
       - name: Setup Keystore and Properties
+        if: github.event_name != 'pull_request'
         run: |
           echo "${{ secrets.SIGNING_KEYSTORE }}" | base64 -d > ./store.jks
           echo "storeFile=store.jks" > ./store.properties

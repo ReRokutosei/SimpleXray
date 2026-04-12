@@ -58,36 +58,42 @@ android {
         }
     }
 
-    buildTypes {
-        release {
-            minifyEnabled true
-            shrinkResources true
-            signingConfig signingConfigs.release
-            proguardFiles(
-                    getDefaultProguardFile('proguard-android-optimize.txt'),
-                    'proguard-rules.pro'
-            )
-        }
-        debug {
-            minifyEnabled false
-            signingConfig signingConfigs.release
-            debuggable true
-        }
-    }
-
+    def isSigningEnabled = false
     def propsFile = rootProject.file('store.properties')
-    def configName = 'release'
 
-    if (propsFile.exists() && signingConfigs.hasProperty(configName)) {
+    if (propsFile.exists()) {
         def props = new Properties()
         props.load(new FileInputStream(propsFile))
-        if (props != null && props.containsKey('storeFile')) {
-            signingConfigs.named(configName).configure {
+        if (props.containsKey('storeFile')) {
+            signingConfigs.release {
                 storeFile = rootProject.file(props['storeFile'])
                 storePassword = props['storePassword']
                 keyAlias = props['keyAlias']
                 keyPassword = props['keyPassword']
+
+                enableV1Signing false
+                enableV2Signing false
+                enableV3Signing true
             }
+            isSigningEnabled = true
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            signingConfig isSigningEnabled ? signingConfigs.release : null
+            
+            proguardFiles(
+                getDefaultProguardFile('proguard-android-optimize.txt'),
+                'proguard-rules.pro'
+            )
+        }
+       debug {
+            minifyEnabled false
+            signingConfig isSigningEnabled ? signingConfigs.release : null
+            debuggable true
         }
     }
 
