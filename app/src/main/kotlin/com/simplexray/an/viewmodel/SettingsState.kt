@@ -32,6 +32,7 @@ data class FileStates(
 )
 
 data class SettingsState(
+    val socksAddress: InputFieldState,
     val socksPort: InputFieldState,
     val socksUser: InputFieldState,
     val socksPass: InputFieldState,

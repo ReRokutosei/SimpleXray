@@ -96,8 +96,11 @@ class Preferences(context: Context) {
         }
     }
 
-    val socksAddress: String
+    var socksAddress: String
         get() = getPrefData(SOCKS_ADDR).first ?: "127.0.0.1"
+        set(address) {
+            setValueInProvider(SOCKS_ADDR, address)
+        }
 
     var socksPort: Int
         get() {

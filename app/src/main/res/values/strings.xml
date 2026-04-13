@@ -5,6 +5,7 @@
     <string name="geoip_url" translatable="false">https://github.com/lhear/v2ray-rules-dat/releases/latest/download/geoip.dat</string>
     <string name="geosite_url" translatable="false">https://github.com/lhear/v2ray-rules-dat/releases/latest/download/geosite.dat</string>
     <string name="connectivity_test_url" translatable="false">http://www.gstatic.com/generate_204</string>
+    <string name="socks_address">Target SOCKS Address</string>
     <string name="socks_port">Target SOCKS Port</string>
     <string name="socks_user">SOCKS User</string>
     <string name="socks_pass">SOCKS Pass</string>
@@ -44,6 +45,7 @@
     <string name="http_proxy_summary">When enabled, proxy directly via HTTP without TUN. Some apps may ignore this setting.</string>
     <string name="invalid_ipv6">Please enter a valid IPv6 address</string>
     <string name="invalid_ipv4">Please enter a valid IPv4 address</string>
+    <string name="invalid_ipv4_or_ipv6">Please enter a valid IPv4/IPv6 address</string>
     <string name="invalid_port">Please enter a valid port number</string>
     <string name="invalid_port_range">Port number must be between 1024 and 65535</string>
     <string name="import_from_clipboard">Import Clipboard</string>

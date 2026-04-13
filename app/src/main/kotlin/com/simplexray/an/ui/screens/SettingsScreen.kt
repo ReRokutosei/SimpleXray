@@ -371,6 +371,19 @@ fun SettingsScreen(
         )
 
         EditableListItemWithBottomSheet(
+            headline = stringResource(R.string.socks_address),
+            currentValue = settingsState.socksAddress.value,
+            onValueConfirmed = { newValue -> mainViewModel.updateSocksAddress(newValue) },
+            label = stringResource(R.string.socks_address),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            isError = !settingsState.socksAddress.isValid,
+            errorMessage = settingsState.socksAddress.error,
+            enabled = !vpnDisabled,
+            sheetState = sheetState,
+            scope = scope
+        )
+
+        EditableListItemWithBottomSheet(
             headline = stringResource(R.string.socks_port),
             currentValue = settingsState.socksPort.value,
             onValueConfirmed = { newValue -> mainViewModel.updateSocksPort(newValue) },

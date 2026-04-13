@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="socks_address">Alamat SOCKS Target</string>
     <string name="socks_port">Port SOCKS Target</string>
     <string name="socks_pass">Kata Sandi SOCKS</string>
     <string name="dns_ipv4">DNS IPv4</string>
@@ -38,6 +39,7 @@
     <string name="http_proxy_summary">Saat diaktifkan, proksi langsung melalui HTTP tanpa TUN. Beberapa aplikasi mungkin mengabaikan pengaturan ini.</string>
     <string name="invalid_ipv6">Masukkan alamat IPv6 yang valid</string>
     <string name="invalid_ipv4">Masukkan alamat IPv4 yang valid</string>
+    <string name="invalid_ipv4_or_ipv6">Masukkan alamat IPv4/IPv6 yang valid</string>
     <string name="invalid_port">Masukkan nomor port yang valid</string>
     <string name="invalid_port_range">Nomor port harus antara 1024 dan 65535</string>
     <string name="import_from_clipboard">Impor dari Papan Klip</string>

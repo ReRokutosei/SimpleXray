@@ -311,6 +311,11 @@ class FileManager(private val application: Application, private val prefs: Prefe
                         }
                     }
 
+                    value = preferencesMap[Preferences.SOCKS_ADDR]
+                    if (value is String) {
+                        prefs.socksAddress = (value as String?)!!
+                    }
+
                     value = preferencesMap[Preferences.SOCKS_USER]
                     if (value is String) {
                         prefs.socksUsername = (value as String?)!!

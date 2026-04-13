@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="socks_address">目标Socks地址</string>
     <string name="socks_port">目标Socks端口</string>
     <string name="socks_pass">"SOCKS 密码 "</string>
     <string name="dns_ipv4">DNS IPv4</string>
@@ -38,6 +39,7 @@
     <string name="http_proxy_summary">启用时,直接通过HTTP代理,无需经过TUN.某些应用可能会忽略此设置</string>
     <string name="invalid_ipv6">请输入有效的IPv6地址</string>
     <string name="invalid_ipv4">请输入有效的IPv4地址</string>
+    <string name="invalid_ipv4_or_ipv6">请输入有效的IPv4/IPv6地址</string>
     <string name="invalid_port">请输入有效的端口号</string>
     <string name="invalid_port_range">端口号必须在1024到65535之间</string>
     <string name="import_from_clipboard">从剪贴板导入</string>

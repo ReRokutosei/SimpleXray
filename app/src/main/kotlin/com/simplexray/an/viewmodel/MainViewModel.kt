@@ -83,6 +83,7 @@ class MainViewModel(application: Application) :
 
     private val _settingsState = MutableStateFlow(
         SettingsState(
+            socksAddress = InputFieldState(prefs.socksAddress),
             socksPort = InputFieldState(prefs.socksPort.toString()),
             socksUser = InputFieldState(prefs.socksUsername),
             socksPass = InputFieldState(prefs.socksPassword),
@@ -181,6 +182,7 @@ class MainViewModel(application: Application) :
 
     private fun updateSettingsState() {
         _settingsState.value = _settingsState.value.copy(
+            socksAddress = InputFieldState(prefs.socksAddress),
             socksPort = InputFieldState(prefs.socksPort.toString()),
             socksUser = InputFieldState(prefs.socksUsername),
             socksPass = InputFieldState(prefs.socksPassword),
@@ -398,6 +400,33 @@ class MainViewModel(application: Application) :
 
     fun extractAssetsIfNeeded() {
         fileManager.extractAssetsIfNeeded()
+    }
+
+    fun updateSocksAddress(addressString: String): Boolean {
+        val matcherIpv4 = IPV4_PATTERN.matcher(addressString)
+        val matcherIpv6 = IPV6_PATTERN.matcher(addressString)
+        return if (matcherIpv4.matches()) {
+            prefs.socksAddress = addressString
+            _settingsState.value = _settingsState.value.copy(
+                socksAddress = InputFieldState(addressString)
+            )
+            true
+        } else if (matcherIpv6.matches()) {
+            prefs.socksAddress = addressString
+            _settingsState.value = _settingsState.value.copy(
+                socksAddress = InputFieldState(addressString)
+            )
+            true
+        } else {
+            _settingsState.value = _settingsState.value.copy(
+                socksAddress = InputFieldState(
+                    value = addressString,
+                    error = application.getString(R.string.invalid_ipv4_or_ipv6),
+                    isValid = false
+                )
+            )
+            false
+        }
     }
 
     fun updateSocksPort(portString: String): Boolean {
