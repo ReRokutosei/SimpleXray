@@ -31,7 +31,7 @@ file("$rootDir/version.properties").withInputStream { versionProps.load(it) }
 
 android {
     namespace "com.simplexray.an"
-    compileSdk 35
+    compileSdk 37
 
     defaultConfig {
         applicationId "com.simplexray.an"
@@ -43,7 +43,7 @@ android {
                 arguments "APP_LDFLAGS+=-Wl,--build-id=none"
             }
         }
-        targetSdk 35
+        targetSdk 36
         minSdk 29
     }
 
