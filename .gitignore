@@ -9,3 +9,6 @@ app/src/main/jni/hev-socks5-tunnel
 local.properties
 app/src/main/assets/geoip.dat
 app/src/main/assets/geosite.dat
+store.properties
+*.jks
+*.keystore
