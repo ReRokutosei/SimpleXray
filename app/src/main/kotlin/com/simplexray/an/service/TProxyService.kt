@@ -334,9 +334,26 @@ class TProxyService : VpnService() {
         }
 
         if (prefs.bypassLan) {
+            addRoute("0.0.0.0", 8)
             addRoute("10.0.0.0", 8)
+            addRoute("100.64.0.0", 10)
+            addRoute("127.0.0.0", 8)
+            addRoute("169.254.0.0", 16)
             addRoute("172.16.0.0", 12)
+            addRoute("192.0.0.0", 24)
+            addRoute("192.0.2.0", 24)
+            addRoute("192.88.99.0", 24)
             addRoute("192.168.0.0", 16)
+            addRoute("198.18.0.0", 15)
+            addRoute("198.51.100.0", 24)
+            addRoute("203.0.113.0", 24)
+            addRoute("224.0.0.0", 3)
+            if (prefs.ipv6) {
+                addRoute("::", 127)
+                addRoute("fc00::", 7)
+                addRoute("fe80::", 10)
+                addRoute("ff00::", 8)
+            }
         }
         if (prefs.httpProxyEnabled) {
             setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", prefs.socksPort))

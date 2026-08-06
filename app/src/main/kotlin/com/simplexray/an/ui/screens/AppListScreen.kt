@@ -5,7 +5,9 @@ import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -72,6 +74,10 @@ import com.simplexray.an.viewmodel.AppListViewModel
 import com.simplexray.an.viewmodel.AppListViewUiEvent
 import com.simplexray.an.viewmodel.Package
 import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.ImageBitmap
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import my.nanihadesuka.compose.LazyColumnScrollbar
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -320,8 +326,14 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
 
 @Composable
 fun AppItem(pkg: Package, onCheckedChange: (Boolean) -> Unit) {
-    val iconBitmap = remember(pkg.icon) {
-        drawableToBitmap(pkg.icon)?.asImageBitmap()
+    val context = LocalContext.current
+    val iconBitmap by produceState<ImageBitmap?>(initialValue = null, key1 = pkg.packageName) {
+        value = withContext(Dispatchers.IO) {
+            runCatching {
+                val drawable = context.packageManager.getApplicationIcon(pkg.packageName)
+                drawableToBitmap(drawable)?.asImageBitmap()
+            }.getOrNull()
+        }
     }
     Card(
         modifier = Modifier
@@ -342,14 +354,21 @@ fun AppItem(pkg: Package, onCheckedChange: (Boolean) -> Unit) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            iconBitmap?.let {
+            if (iconBitmap != null) {
                 Image(
-                    bitmap = it,
+                    bitmap = iconBitmap!!,
                     contentDescription = stringResource(R.string.app_icon),
                     modifier = Modifier
                         .size(40.dp)
                         .fillMaxHeight(),
                     contentScale = ContentScale.Crop
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(MaterialTheme.shapes.small)
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))

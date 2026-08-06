@@ -269,12 +269,7 @@ private fun TopAppBarActions(
             mainViewModel = mainViewModel
         )
 
-        "stats" -> StatsActions(
-            onSwitchVpnService = onSwitchVpnService,
-            controlMenuClickable = controlMenuClickable,
-            isServiceEnabled = isServiceEnabled,
-            mainViewModel = mainViewModel
-        )
+        "stats" -> { /* Actions moved to StatsScreen content card */ }
 
         "log" -> LogActions(
             onPerformExport = onPerformExport,

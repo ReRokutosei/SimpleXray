@@ -34,7 +34,8 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun DashboardScreen(
-    mainViewModel: MainViewModel
+    mainViewModel: MainViewModel,
+    onSwitchVpnService: () -> Unit = {}
 ) {
     val coreStats by mainViewModel.coreStatsState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -114,6 +115,56 @@ fun DashboardScreen(
                         label = stringResource(id = R.string.stats_uptime),
                         value = formatUptime(coreStats.uptime)
                     )
+                }
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        item {
+            val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsState()
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.extraLarge),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = stringResource(id = R.string.core_control),
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Start
+                    )
+                    androidx.compose.material3.Button(
+                        onClick = onSwitchVpnService,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        shape = MaterialTheme.shapes.large,
+                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                            containerColor = if (isServiceEnabled) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = if (isServiceEnabled) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    ) {
+                        androidx.compose.material3.Icon(
+                            painter = androidx.compose.ui.res.painterResource(
+                                id = if (isServiceEnabled) R.drawable.pause else R.drawable.play
+                            ),
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text(
+                            text = if (isServiceEnabled) stringResource(R.string.cancel) else stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
                 }
             }
         }
