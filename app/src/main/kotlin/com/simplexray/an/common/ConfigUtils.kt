@@ -8,6 +8,10 @@ import org.json.JSONObject
 object ConfigUtils {
     private const val TAG = "ConfigUtils"
 
+    private val EFFECTIVE_MATCH_KEYS = setOf(
+        "domain", "ip", "port", "network", "process", "geosite", "geoip", "inboundtag", "protocol", "user", "attrs"
+    )
+
     fun sanitizeConfig(content: String): String {
         try {
             val jsonObject = JSONObject(content)
@@ -17,37 +21,184 @@ object ConfigUtils {
             if (jsonObject.has("log")) {
                 jsonObject.remove("log")
             }
+
+            // Sanitize JSON routing rules
+            val routing = jsonObject.optJSONObject("routing")
+            val rules = routing?.optJSONArray("rules")
+            if (rules != null) {
+                for (i in rules.length() - 1 downTo 0) {
+                    val rule = rules.optJSONObject(i) ?: continue
+                    val processArr = rule.optJSONArray("process")
+                    if (processArr != null) {
+                        val cleanedProcess = org.json.JSONArray()
+                        for (j in 0 until processArr.length()) {
+                            val proc = processArr.optString(j)
+                            if (proc.isNotEmpty() && !proc.endsWith(".exe", ignoreCase = true)) {
+                                cleanedProcess.put(proc)
+                            }
+                        }
+                        if (cleanedProcess.length() > 0) {
+                            rule.put("process", cleanedProcess)
+                        } else {
+                            rule.remove("process")
+                        }
+                    }
+
+                    // Check for remaining effective match fields
+                    var hasEffectiveField = false
+                    val keys = rule.keys()
+                    while (keys.hasNext()) {
+                        val k = keys.next().lowercase()
+                        if (EFFECTIVE_MATCH_KEYS.contains(k)) {
+                            val v = rule.get(k)
+                            if (v is org.json.JSONArray && v.length() > 0) {
+                                hasEffectiveField = true
+                                break
+                            } else if (v is String && v.isNotEmpty()) {
+                                hasEffectiveField = true
+                                break
+                            } else if (v !is org.json.JSONArray && v !is String) {
+                                hasEffectiveField = true
+                                break
+                            }
+                        }
+                    }
+                    if (!hasEffectiveField) {
+                        rules.remove(i)
+                    }
+                }
+            }
             return jsonObject.toString(2)
         } catch (ignored: Exception) {
         }
 
         val lines = content.lines()
         val result = StringBuilder()
-        var skipBlock = false
+        var currentSection = ""
+        var skipSection = false
+        var inRulesSubSection = false
+        var seenFirstRule = false
+        var currentRuleLines = mutableListOf<String>()
+
+        fun flushRuleBlock() {
+            if (currentRuleLines.isEmpty()) return
+            var hasTag = false
+            var hasMatchField = false
+            val cleanedLines = mutableListOf<String>()
+
+            for (l in currentRuleLines) {
+                val trimmed = l.trim()
+                if (trimmed.contains(".exe", ignoreCase = true)) {
+                    if (trimmed.startsWith("-") && trimmed.endsWith(".exe", ignoreCase = true)) {
+                        continue
+                    }
+                    var c = l.replace(Regex("(?i)\\b[\\w\\.-]+\\.exe\\b,?\\s*"), "")
+                    if (c.contains("process:") && c.endsWith(", ]")) {
+                        c = c.replace(", ]", "]")
+                    }
+                    val procStripped = c.trim().removePrefix("-").trim()
+                    if (procStripped == "process: []" || procStripped == "process:") {
+                        continue
+                    }
+                    cleanedLines.add(c)
+                } else {
+                    cleanedLines.add(l)
+                }
+            }
+
+            for (l in cleanedLines) {
+                val trimmed = l.trim()
+                if (trimmed.isEmpty() || trimmed.startsWith("#")) continue
+
+                if (trimmed.contains(":")) {
+                    val key = trimmed.substringBefore(":").trim().removePrefix("-").trim().lowercase()
+                    val value = trimmed.substringAfter(":", "").trim()
+
+                    if (key == "outboundtag" || key == "balancertag") {
+                        if (value.isNotEmpty()) {
+                            hasTag = true
+                        }
+                    } else if (EFFECTIVE_MATCH_KEYS.contains(key)) {
+                        if (key != "process") {
+                            hasMatchField = true
+                        } else {
+                            if (value.isNotEmpty() && value != "[]") {
+                                hasMatchField = true
+                            }
+                        }
+                    }
+                }
+
+                if (trimmed.startsWith("- ")) {
+                    val item = trimmed.substringAfter("- ").trim()
+                    if (item.isNotEmpty() && !item.endsWith(":") && !item.endsWith("[]") && !item.endsWith(".exe", ignoreCase = true)) {
+                        hasMatchField = true
+                    }
+                }
+            }
+
+            if (hasTag && hasMatchField) {
+                for (l in cleanedLines) {
+                    result.append(l).append("\n")
+                }
+            } else {
+                Log.d(TAG, "Dropped invalid/empty routing rule block (hasTag=$hasTag, hasMatchField=$hasMatchField).")
+            }
+            currentRuleLines.clear()
+        }
 
         for (line in lines) {
             val trimmed = line.trim()
-            if (trimmed.isEmpty() || trimmed.startsWith("#")) {
-                if (!skipBlock) {
-                    result.append(line).append("\n")
-                }
-                continue
-            }
-
             val isTopLevelMappingKey = line.isNotEmpty()
                 && !line[0].isWhitespace()
                 && (line[0].isLetterOrDigit() || line[0] == '_')
                 && line.contains(":")
 
             if (isTopLevelMappingKey) {
+                flushRuleBlock()
                 val key = trimmed.substringBefore(":").trim().lowercase()
-                skipBlock = (key == "inbounds" || key == "log")
+                currentSection = key
+                skipSection = (key == "inbounds" || key == "log")
+                inRulesSubSection = false
+                seenFirstRule = false
             }
 
-            if (!skipBlock) {
+            if (skipSection) continue
+
+            val isRulesHeader = (trimmed == "rules:" || trimmed.startsWith("rules:"))
+            if (isRulesHeader) {
+                flushRuleBlock()
+                inRulesSubSection = true
+                seenFirstRule = false
+                result.append(line).append("\n")
+                continue
+            }
+
+            if (inRulesSubSection) {
+                if (isTopLevelMappingKey || (line.isNotEmpty() && !line[0].isWhitespace() && line.contains(":"))) {
+                    flushRuleBlock()
+                    inRulesSubSection = false
+                    seenFirstRule = false
+                    result.append(line).append("\n")
+                    continue
+                }
+
+                val isNewBlockStart = line.startsWith("  - ") || (line.startsWith("- ") && !line.startsWith("    "))
+                if (isNewBlockStart) {
+                    flushRuleBlock()
+                    seenFirstRule = true
+                }
+
+                if (!seenFirstRule) {
+                    result.append(line).append("\n")
+                } else {
+                    currentRuleLines.add(line)
+                }
+            } else {
                 result.append(line).append("\n")
             }
         }
+        flushRuleBlock()
 
         return result.toString()
     }
@@ -86,6 +237,8 @@ object ConfigUtils {
         sb.append("    settings:\n")
         sb.append("      name: tun4\n")
         sb.append("      mtu: ${prefs.tunnelMtu}\n")
+        sb.append("      gateway:\n")
+        sb.append("        - 198.18.0.1/16\n")
         sb.append("  - tag: socks-inbound\n")
         sb.append("    port: ${prefs.socksPort}\n")
         sb.append("    listen: 127.0.0.1\n")
@@ -132,6 +285,9 @@ object ConfigUtils {
         val tunSettings = JSONObject()
         tunSettings.put("name", "tun4")
         tunSettings.put("mtu", prefs.tunnelMtu)
+        val gatewayArr = org.json.JSONArray()
+        gatewayArr.put("198.18.0.1/16")
+        tunSettings.put("gateway", gatewayArr)
 
         val tunInbound = JSONObject()
         tunInbound.put("tag", "tun-inbound")
