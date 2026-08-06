@@ -173,6 +173,10 @@ class MainViewModel(application: Application) :
         setupGlobalSocksAuthenticator()
 
         viewModelScope.launch(Dispatchers.IO) {
+            val legacyExtraApi = File(application.filesDir, "extra_api.json")
+            if (legacyExtraApi.exists()) {
+                runCatching { legacyExtraApi.delete() }
+            }
             _isServiceEnabled.value = isServiceRunning(application, TProxyService::class.java)
 
             updateSettingsState()
@@ -327,13 +331,17 @@ class MainViewModel(application: Application) :
 
     suspend fun updateCoreStats() {
         if (!_isServiceEnabled.value) return
-        if (coreStatsClient == null)
+        if (coreStatsClient == null) {
+            Log.d(TAG, "=== [DEBUG gRPC] Connecting CoreStatsClient to ${prefs.apiAddress}:${prefs.apiPort} ===")
             coreStatsClient = CoreStatsClient.create(prefs.apiAddress, prefs.apiPort)
+        }
 
         val stats = coreStatsClient?.getSystemStats()
         val traffic = coreStatsClient?.getTraffic()
+        Log.d(TAG, "=== [DEBUG gRPC RESULT] uplink=${traffic?.uplink}, downlink=${traffic?.downlink}, sys=${stats?.sys} ===")
 
         if (stats == null && traffic == null) {
+            Log.w(TAG, "=== [DEBUG gRPC FAILED] Both stats & traffic returned null, resetting client ===")
             coreStatsClient?.close()
             coreStatsClient = null
             return
@@ -720,7 +728,7 @@ class MainViewModel(application: Application) :
         viewModelScope.launch(Dispatchers.IO) {
             val filesDir = application.filesDir
             val actualFiles =
-                filesDir.listFiles { file -> file.isFile && file.isConfigFile() }?.toList()
+                filesDir.listFiles { file -> file.isFile && file.isConfigFile() && file.name != "extra_api.json" }?.toList()
                     ?: emptyList()
             val actualFilesByName = actualFiles.associateBy { it.name }
             val savedOrder = prefs.configFilesOrder

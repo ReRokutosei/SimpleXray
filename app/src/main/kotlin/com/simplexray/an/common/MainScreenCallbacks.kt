@@ -109,6 +109,7 @@ fun rememberMainScreenCallbacks(
     val onSwitchVpnService: () -> Unit = {
         logViewModel.clearLogs()
         if (mainViewModel.isServiceEnabled.value) {
+            mainViewModel.setServiceEnabled(false)
             mainViewModel.stopTProxyService()
         } else {
             mainViewModel.setControlMenuClickable(false)
