@@ -158,12 +158,18 @@ object ConfigUtils {
                 flushRuleBlock()
                 val key = trimmed.substringBefore(":").trim().lowercase()
                 currentSection = key
-                skipSection = (key == "inbounds" || key == "log")
+                skipSection = (key == "inbounds" || key == "log" || key == "observatory" || key == "burstobservatory")
                 inRulesSubSection = false
                 seenFirstRule = false
             }
 
             if (skipSection) continue
+
+            // Strip fallbackTag to break Observatory dependency deadlock
+            if (trimmed.startsWith("fallbackTag:")) continue
+
+            // Strip invalid echConfigList with http URL to break TLS ECH fetch 20s timeout hang
+            if (trimmed.startsWith("echConfigList:") && trimmed.contains("http", ignoreCase = true)) continue
 
             val isRulesHeader = (trimmed == "rules:" || trimmed.startsWith("rules:"))
             if (isRulesHeader) {
@@ -199,8 +205,11 @@ object ConfigUtils {
             }
         }
         flushRuleBlock()
+        var sanitizedYaml = result.toString()
+        sanitizedYaml = sanitizedYaml.replace("domainMatcher: mph", "domainMatcher: hybrid")
+        sanitizedYaml = sanitizedYaml.replace("type: leastPing", "type: random").replace("type: leastLoad", "type: random")
 
-        return result.toString()
+        return sanitizedYaml
     }
 
     fun buildInjectedConfig(configContent: String, isYaml: Boolean, prefs: Preferences): String {

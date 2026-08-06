@@ -228,6 +228,14 @@ class TProxyService : VpnService() {
             Log.d(TAG, "Native Xray spawned successfully! pid=$pid, stdoutFd=$stdoutReadFd, stdinFd=$stdinWriteFd")
 
             Log.d(TAG, "=== [DEBUG 3: FINAL STDIN CONFIG (Format: ${if (isYaml) "yaml" else "json"})] ===\n$finalConfigContent")
+            if (finalConfigContent.contains("probeTimeout")) {
+                Log.d(TAG, "=== [SANITY CHECK SUCCESS] probeTimeout: 2s is SUCCESSFULLY INJECTED into final config! ===")
+            } else {
+                Log.w(TAG, "=== [SANITY CHECK FAILED] probeTimeout IS MISSING in final config! ===")
+            }
+            if (finalConfigContent.contains("778631-gsc07dzq84jtlnyo.alidns.com")) {
+                Log.d(TAG, "=== [SANITY CHECK SUCCESS] Dedicated DoH Subdomain Static Host IS SUCCESSFULLY INJECTED! ===")
+            }
             val pfdWrite = ParcelFileDescriptor.adoptFd(stdinWriteFd)
             FileOutputStream(pfdWrite.fileDescriptor).use { os ->
                 os.write(finalConfigContent.toByteArray(Charsets.UTF_8))
