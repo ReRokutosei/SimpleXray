@@ -599,7 +599,7 @@ fun SettingsScreen(
 
         val customDatFiles = remember(settingsState) {
             context.filesDir.listFiles { file ->
-                file.isFile && file.name.lowercase().endsWith(".dat") && file.name != "geoip.dat" && file.name != "geosite.dat"
+                file.isFile && file.name.lowercase().endsWith(".dat") && file.name != "geoip.dat" && file.name != "geosite.dat" && !file.name.lowercase().startsWith("profileinstaller_")
             }?.toList() ?: emptyList()
         }
 

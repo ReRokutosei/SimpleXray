@@ -234,6 +234,7 @@ class TProxyService : VpnService() {
             var line: String
             Log.d(TAG, "Reading xray process output.")
             while ((reader.readLine().also { line = it }) != null) {
+                Log.d(TAG, "XrayLog: $line")
                 logFileManager.appendLog(line)
                 synchronized(logBroadcastBuffer) {
                     logBroadcastBuffer.add(line)
@@ -334,10 +335,8 @@ class TProxyService : VpnService() {
         }
 
         if (prefs.bypassLan) {
-            addRoute("0.0.0.0", 8)
             addRoute("10.0.0.0", 8)
             addRoute("100.64.0.0", 10)
-            addRoute("127.0.0.0", 8)
             addRoute("169.254.0.0", 16)
             addRoute("172.16.0.0", 12)
             addRoute("192.0.0.0", 24)
@@ -347,12 +346,9 @@ class TProxyService : VpnService() {
             addRoute("198.18.0.0", 15)
             addRoute("198.51.100.0", 24)
             addRoute("203.0.113.0", 24)
-            addRoute("224.0.0.0", 3)
             if (prefs.ipv6) {
-                addRoute("::", 127)
                 addRoute("fc00::", 7)
                 addRoute("fe80::", 10)
-                addRoute("ff00::", 8)
             }
         }
         if (prefs.httpProxyEnabled) {
