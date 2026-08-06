@@ -89,3 +89,13 @@ object ConfigUtils {
     }
 }
 
+fun java.io.File.isConfigFile(): Boolean {
+    val name = this.name.lowercase()
+    return name.endsWith(".json") || name.endsWith(".yaml") || name.endsWith(".yml") || name.endsWith(".toml")
+}
+
+fun String.isConfigFile(): Boolean {
+    val name = this.lowercase()
+    return name.endsWith(".json") || name.endsWith(".yaml") || name.endsWith(".yml") || name.endsWith(".toml")
+}
+

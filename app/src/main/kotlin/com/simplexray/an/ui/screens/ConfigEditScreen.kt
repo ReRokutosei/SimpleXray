@@ -15,6 +15,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -103,41 +105,141 @@ fun ConfigEditScreen(
         }
     }
 
+    var isSearching by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var matchIndices by remember { mutableStateOf(listOf<Int>()) }
+    var currentMatchIndex by remember { mutableStateOf(0) }
+
+    val updateMatches = { query: String, text: String ->
+        if (query.isBlank()) {
+            matchIndices = emptyList()
+            currentMatchIndex = 0
+        } else {
+            val list = mutableListOf<Int>()
+            var idx = text.indexOf(query, ignoreCase = true)
+            while (idx >= 0) {
+                list.add(idx)
+                idx = text.indexOf(query, idx + 1, ignoreCase = true)
+            }
+            matchIndices = list
+            if (currentMatchIndex >= list.size) {
+                currentMatchIndex = (list.size - 1).coerceAtLeast(0)
+            }
+        }
+    }
+
+    val jumpToMatch = { index: Int ->
+        if (matchIndices.isNotEmpty() && index in matchIndices.indices) {
+            val start = matchIndices[index]
+            val end = start + searchQuery.length
+            viewModel.onConfigContentChange(
+                configTextFieldValue.copy(selection = TextRange(start, end))
+            )
+        }
+    }
+
     Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        TopAppBar(title = { Text(stringResource(id = R.string.config)) }, navigationIcon = {
-            IconButton(onClick = onBackClick) {
-                Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = stringResource(
-                        R.string.back
+        TopAppBar(
+            title = {
+                if (isSearching) {
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = { q ->
+                            searchQuery = q
+                            updateMatches(q, configTextFieldValue.text)
+                            if (matchIndices.isNotEmpty()) {
+                                jumpToMatch(0)
+                            }
+                        },
+                        placeholder = { Text(stringResource(R.string.search)) },
+                        singleLine = true,
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            disabledContainerColor = Color.Transparent,
+                            errorContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        )
                     )
-                )
-            }
-        }, actions = {
-            IconButton(onClick = {
-                viewModel.saveConfigFile()
-                focusManager.clearFocus()
-            }, enabled = hasConfigChanged) {
-                Icon(
-                    painter = painterResource(id = R.drawable.save),
-                    contentDescription = stringResource(id = R.string.save)
-                )
-            }
-            IconButton(onClick = { showMenu = !showMenu }) {
-                Icon(
-                    Icons.Default.MoreVert,
-                    contentDescription = stringResource(R.string.more)
-                )
-            }
-            DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(id = R.string.share)) },
-                    onClick = {
-                        viewModel.shareConfigFile()
-                        showMenu = false
-                    })
-            }
-        }, scrollBehavior = scrollBehavior
+                } else {
+                    Text(stringResource(id = R.string.config))
+                }
+            },
+            navigationIcon = {
+                IconButton(onClick = {
+                    if (isSearching) {
+                        isSearching = false
+                        searchQuery = ""
+                        matchIndices = emptyList()
+                    } else {
+                        onBackClick()
+                    }
+                }) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = stringResource(R.string.back)
+                    )
+                }
+            },
+            actions = {
+                if (isSearching) {
+                    if (matchIndices.isNotEmpty()) {
+                        Text(
+                            text = "${currentMatchIndex + 1}/${matchIndices.size}",
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                        IconButton(onClick = {
+                            if (matchIndices.isNotEmpty()) {
+                                currentMatchIndex = if (currentMatchIndex > 0) currentMatchIndex - 1 else matchIndices.size - 1
+                                jumpToMatch(currentMatchIndex)
+                            }
+                        }) {
+                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Prev")
+                        }
+                        IconButton(onClick = {
+                            if (matchIndices.isNotEmpty()) {
+                                currentMatchIndex = (currentMatchIndex + 1) % matchIndices.size
+                                jumpToMatch(currentMatchIndex)
+                            }
+                        }) {
+                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Next")
+                        }
+                    }
+                } else {
+                    IconButton(onClick = { isSearching = true }) {
+                        Icon(
+                            painterResource(id = R.drawable.search),
+                            contentDescription = stringResource(R.string.search)
+                        )
+                    }
+                    IconButton(onClick = {
+                        viewModel.saveConfigFile()
+                        focusManager.clearFocus()
+                    }, enabled = hasConfigChanged) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.save),
+                            contentDescription = stringResource(id = R.string.save)
+                        )
+                    }
+                    IconButton(onClick = { showMenu = !showMenu }) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = stringResource(R.string.more)
+                        )
+                    }
+                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(id = R.string.share)) },
+                            onClick = {
+                                viewModel.shareConfigFile()
+                                showMenu = false
+                            })
+                    }
+                }
+            },
+            scrollBehavior = scrollBehavior
         )
     }, snackbarHost = { SnackbarHost(snackbarHostState) }, content = { paddingValues ->
         Column(

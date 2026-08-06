@@ -178,8 +178,15 @@ class TProxyService : VpnService() {
             val prefs = Preferences(applicationContext)
             val selectedConfigPath = prefs.selectedConfigPath ?: return
             val xrayPath = "$libraryDir/libxray.so"
-            val configContent = File(selectedConfigPath).readText()
-            val apiPort = findAvailablePort(extractPortsFromJson(configContent)) ?: return
+            val configFile = File(selectedConfigPath)
+            if (!configFile.exists()) {
+                Log.e(TAG, "Selected config file does not exist: $selectedConfigPath")
+                return
+            }
+
+            val configContent = runCatching { configFile.readText() }.getOrDefault("")
+            val ports = runCatching { extractPortsFromJson(configContent) }.getOrDefault(emptySet())
+            val apiPort = findAvailablePort(ports) ?: return
             prefs.apiPort = apiPort
             Log.d(TAG, "Found and set API port: $apiPort")
 
@@ -189,17 +196,38 @@ class TProxyService : VpnService() {
             prefs.apiAddress = "127.$octet2.$octet3.$octet4"
             Log.d(TAG, "Randomized API address: ${prefs.apiAddress}")
 
-            val processBuilder = getProcessBuilder(xrayPath)
+            val extraApiFile = File(applicationContext.filesDir, "extra_api.json")
+            val logFilePath = logFileManager.logFile.absolutePath.replace("\\", "/")
+            val extraApiJson = """
+            {
+              "log": {
+                "access": "$logFilePath",
+                "error": "$logFilePath",
+                "loglevel": "warning"
+              },
+              "api": {
+                "tag": "api",
+                "services": [
+                  "HandlerService",
+                  "LoggerService",
+                  "StatsService"
+                ]
+              },
+              "stats": {},
+              "policy": {
+                "system": {
+                  "statsInboundUplink": true,
+                  "statsInboundDownlink": true
+                }
+              }
+            }
+            """.trimIndent()
+            extraApiFile.writeText(extraApiJson)
+
+            val processBuilder = getProcessBuilder(xrayPath, selectedConfigPath, extraApiFile.absolutePath)
             currentProcess = processBuilder.start()
             this.xrayProcess = currentProcess
-
-            Log.d(TAG, "Writing config to xray stdin from: $selectedConfigPath")
-            val injectedConfigContent =
-                ConfigUtils.injectStatsService(prefs, configContent)
-            currentProcess.outputStream.use { os ->
-                os.write(injectedConfigContent.toByteArray())
-                os.flush()
-            }
+            currentProcess.outputStream.close()
 
             val inputStream = currentProcess.inputStream
             val reader = BufferedReader(InputStreamReader(inputStream))
@@ -236,9 +264,9 @@ class TProxyService : VpnService() {
         }
     }
 
-    private fun getProcessBuilder(xrayPath: String): ProcessBuilder {
+    private fun getProcessBuilder(xrayPath: String, userConfigPath: String, extraApiPath: String): ProcessBuilder {
         val filesDir = applicationContext.filesDir
-        val command: MutableList<String> = mutableListOf(xrayPath)
+        val command = mutableListOf(xrayPath, "run", "-config", userConfigPath, "-config", extraApiPath)
         val processBuilder = ProcessBuilder(command)
         val environment = processBuilder.environment()
         environment["XRAY_LOCATION_ASSET"] = filesDir.path

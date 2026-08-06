@@ -49,6 +49,7 @@
     <string name="invalid_port">Please enter a valid port number</string>
     <string name="invalid_port_range">Port number must be between 1024 and 65535</string>
     <string name="import_from_clipboard">Import Clipboard</string>
+    <string name="import_from_file">Import File</string>
     <string name="import_failed">Import failed: No config found on clipboard</string>
     <string name="source">Source Code</string>
     <string name="version">Version</string>

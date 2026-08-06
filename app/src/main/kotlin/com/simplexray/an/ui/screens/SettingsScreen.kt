@@ -134,7 +134,8 @@ fun SettingsScreen(
                 TextButton(onClick = {
                     ruleFileUrl =
                         if (editingRuleFile == "geoip.dat") context.getString(R.string.geoip_url)
-                        else context.getString(R.string.geosite_url)
+                        else if (editingRuleFile == "geosite.dat") context.getString(R.string.geosite_url)
+                        else ""
                 }) {
                     Text(stringResource(id = R.string.restore_default_url))
                 }
@@ -158,7 +159,13 @@ fun SettingsScreen(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Button(onClick = {
-                        mainViewModel.downloadRuleFile(ruleFileUrl, editingRuleFile!!)
+                        val fileName = editingRuleFile
+                        if (fileName != null) {
+                            if (fileName != "geoip.dat" && fileName != "geosite.dat") {
+                                mainViewModel.updateCustomDatUrl(fileName, ruleFileUrl)
+                            }
+                            mainViewModel.downloadRuleFile(ruleFileUrl, fileName)
+                        }
                         scope.launch { sheetState.hide() }.invokeOnCompletion {
                             if (!sheetState.isVisible) {
                                 editingRuleFile = null
@@ -578,6 +585,82 @@ fun SettingsScreen(
                 }
             },
             modifier = Modifier
+        )
+
+        val prefs = remember { com.simplexray.an.prefs.Preferences(context) }
+
+        val customDatPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+            contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+        ) { uri ->
+            if (uri != null) {
+                mainViewModel.importCustomDatFile(uri)
+            }
+        }
+
+        val customDatFiles = remember(settingsState) {
+            context.filesDir.listFiles { file ->
+                file.isFile && file.name.lowercase().endsWith(".dat") && file.name != "geoip.dat" && file.name != "geosite.dat"
+            }?.toList() ?: emptyList()
+        }
+
+        customDatFiles.forEach { customFile ->
+            val datName = customFile.name
+            val customUrl = prefs.customDatUrls[datName] ?: ""
+            ListItem(
+                headlineContent = { Text(datName) },
+                supportingContent = {
+                    Text(
+                        if (customUrl.isNotEmpty()) customUrl
+                        else "${customFile.length() / 1024} KB"
+                    )
+                },
+                trailingContent = {
+                    Row {
+                        IconButton(onClick = {
+                            ruleFileUrl = customUrl
+                            editingRuleFile = datName
+                            scope.launch { sheetState.show() }
+                        }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.cloud_download),
+                                contentDescription = stringResource(R.string.rule_file_update_url)
+                            )
+                        }
+                        IconButton(onClick = {
+                            if (customUrl.isNotEmpty()) {
+                                mainViewModel.downloadRuleFile(customUrl, datName)
+                            } else {
+                                customDatPickerLauncher.launch(arrayOf("*/*"))
+                            }
+                        }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.place_item),
+                                contentDescription = stringResource(R.string.import_file)
+                            )
+                        }
+                        IconButton(onClick = {
+                            mainViewModel.deleteCustomDatFile(datName)
+                        }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.delete),
+                                contentDescription = stringResource(R.string.delete_config)
+                            )
+                        }
+                    }
+                }
+            )
+        }
+
+        ListItem(
+            headlineContent = {
+                Text(
+                    text = "+ " + stringResource(R.string.import_from_file) + " (.dat)",
+                    color = MaterialTheme.colorScheme.primary
+                )
+            },
+            modifier = Modifier.clickable {
+                customDatPickerLauncher.launch(arrayOf("*/*"))
+            }
         )
 
         PreferenceCategoryTitle(stringResource(R.string.connectivity_test))

@@ -11,6 +11,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.simplexray.an.R
 import com.simplexray.an.common.ConfigUtils
+import com.simplexray.an.common.isConfigFile
 import com.simplexray.an.common.FilenameValidator
 import com.simplexray.an.common.configFormat.ConfigFormatConverter
 import com.simplexray.an.prefs.Preferences
@@ -196,7 +197,7 @@ class FileManager(private val application: Application, private val prefs: Prefe
                 val files = filesDir.listFiles()
                 if (files != null) {
                     for (file in files) {
-                        if (file.isFile && file.name.endsWith(".json")) {
+                        if (file.isFile && file.isConfigFile()) {
                             try {
                                 val content = readFileContent(file)
                                 configFilesMap[file.name] = content
@@ -463,7 +464,7 @@ class FileManager(private val application: Application, private val prefs: Prefe
 
                 val existingFileNames = prefs.configFilesOrder.toMutableList()
                 val actualFileNamesAfterRestore =
-                    filesDir.listFiles { file -> file.isFile && file.name.endsWith(".json") }
+                    filesDir.listFiles { file -> file.isFile && file.isConfigFile() }
                         ?.map { it.name }?.toMutableSet() ?: mutableSetOf()
 
                 val finalConfigOrder = mutableListOf<String>()
@@ -764,6 +765,79 @@ class FileManager(private val application: Application, private val prefs: Prefe
             }
             true
         }
+    }
+
+    suspend fun importDatFileFromUri(context: Context, uri: Uri): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                var fileName = getFileNameFromUri(context, uri) ?: "custom.dat"
+                if (!fileName.lowercase().endsWith(".dat")) {
+                    fileName += ".dat"
+                }
+                val targetFile = File(application.filesDir, fileName)
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    FileOutputStream(targetFile).use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                fileName
+            } catch (e: Exception) {
+                Log.e(TAG, "Error importing dat file from URI", e)
+                null
+            }
+        }
+    }
+
+    suspend fun importConfigFileFromUri(context: Context, uri: Uri): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                var fileName = getFileNameFromUri(context, uri) ?: "imported_config.json"
+                val extIndex = fileName.lastIndexOf('.')
+                val nameWithoutExt = if (extIndex > 0) fileName.substring(0, extIndex) else fileName
+                val ext = if (extIndex > 0) fileName.substring(extIndex) else ".json"
+
+                var targetFile = File(application.filesDir, fileName)
+                var count = 1
+                while (targetFile.exists()) {
+                    fileName = "$nameWithoutExt ($count)$ext"
+                    targetFile = File(application.filesDir, fileName)
+                    count++
+                }
+
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    FileOutputStream(targetFile).use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                targetFile.absolutePath
+            } catch (e: Exception) {
+                Log.e(TAG, "Error importing config from URI", e)
+                null
+            }
+        }
+    }
+
+    private fun getFileNameFromUri(context: Context, uri: Uri): String? {
+        var result: String? = null
+        if (uri.scheme == "content") {
+            val cursor = context.contentResolver.query(uri, null, null, null, null)
+            cursor?.use {
+                if (it.moveToFirst()) {
+                    val index = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (index >= 0) {
+                        result = it.getString(index)
+                    }
+                }
+            }
+        }
+        if (result == null) {
+            result = uri.path
+            val cut = result?.lastIndexOf('/') ?: -1
+            if (cut != -1) {
+                result = result?.substring(cut + 1)
+            }
+        }
+        return result
     }
 
     companion object {
