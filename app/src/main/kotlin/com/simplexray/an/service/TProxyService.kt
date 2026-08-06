@@ -108,17 +108,17 @@ class TProxyService : VpnService() {
                     reloadingRequested = true
                     xrayProcess?.destroy()
                     serviceScope.launch { runXrayProcess() }
-                    return START_STICKY
+                    return START_NOT_STICKY
                 }
                 if (tunFd == null) {
                     Log.w(TAG, "Cannot reload config, VPN service is not running.")
-                    return START_STICKY
+                    return START_NOT_STICKY
                 }
                 Log.d(TAG, "Received RELOAD_CONFIG action.")
                 reloadingRequested = true
                 xrayProcess?.destroy()
                 serviceScope.launch { runXrayProcess() }
-                return START_STICKY
+                return START_NOT_STICKY
             }
 
             ACTION_START -> {
@@ -137,13 +137,13 @@ class TProxyService : VpnService() {
                 } else {
                     startXray()
                 }
-                return START_STICKY
+                return START_NOT_STICKY
             }
 
             else -> {
                 logFileManager.clearLogs()
                 startXray()
-                return START_STICKY
+                return START_NOT_STICKY
             }
         }
     }
@@ -236,8 +236,16 @@ class TProxyService : VpnService() {
 
             Log.d(TAG, "Reading native Xray process log stream.")
             var line = reader.readLine()
+            var hasBroadcastedStarted = false
             while (line != null) {
                 Log.d(TAG, "XrayLog: $line")
+                if (!hasBroadcastedStarted && line.contains("Xray") && line.contains("started")) {
+                    hasBroadcastedStarted = true
+                    Log.d(TAG, "Xray core started detected! Broadcasting ACTION_START to UI.")
+                    val successIntent = Intent(ACTION_START)
+                    successIntent.setPackage(application.packageName)
+                    sendBroadcast(successIntent)
+                }
                 logFileManager.appendLog(line)
                 synchronized(logBroadcastBuffer) {
                     logBroadcastBuffer.add(line)
@@ -290,9 +298,6 @@ class TProxyService : VpnService() {
             return
         }
 
-        val successIntent = Intent(ACTION_START)
-        successIntent.setPackage(application.packageName)
-        sendBroadcast(successIntent)
         @Suppress("SameParameterValue") val channelName = "socks5"
         initNotificationChannel(channelName)
         createNotification(channelName)
