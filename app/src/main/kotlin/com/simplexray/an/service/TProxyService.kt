@@ -87,6 +87,8 @@ class TProxyService : VpnService() {
     @Volatile
     private var reloadingRequested = false
 
+    private val isStartingLock = java.util.concurrent.atomic.AtomicBoolean(false)
+
     override fun onCreate() {
         super.onCreate()
         logFileManager = LogFileManager(this)
@@ -154,6 +156,7 @@ class TProxyService : VpnService() {
 
     override fun onDestroy() {
         super.onDestroy()
+        isStartingLock.set(false)
         handler.removeCallbacks(broadcastLogsRunnable)
         broadcastLogsRunnable.run()
         serviceScope.cancel()
@@ -224,6 +227,7 @@ class TProxyService : VpnService() {
             val stdinWriteFd = spawnResult[2]
             Log.d(TAG, "Native Xray spawned successfully! pid=$pid, stdoutFd=$stdoutReadFd, stdinFd=$stdinWriteFd")
 
+            Log.d(TAG, "=== [DEBUG 3: FINAL STDIN CONFIG (Format: ${if (isYaml) "yaml" else "json"})] ===\n$finalConfigContent")
             val pfdWrite = ParcelFileDescriptor.adoptFd(stdinWriteFd)
             FileOutputStream(pfdWrite.fileDescriptor).use { os ->
                 os.write(finalConfigContent.toByteArray(Charsets.UTF_8))
@@ -298,6 +302,9 @@ class TProxyService : VpnService() {
             return
         }
 
+        // Give Android kernel routing agent 150ms to settle before spawning Xray
+        runCatching { Thread.sleep(150L) }
+
         @Suppress("SameParameterValue") val channelName = "socks5"
         initNotificationChannel(channelName)
         createNotification(channelName)
@@ -358,6 +365,7 @@ class TProxyService : VpnService() {
     }
 
     private fun stopService() {
+        isStartingLock.set(false)
         tunFd?.let {
             try {
                 it.close()
