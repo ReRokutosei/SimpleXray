@@ -13,3 +13,6 @@ store.properties
 *.jks
 *.keystore
 *.salive
+obj/*
+*.so
+build/*

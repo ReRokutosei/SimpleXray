@@ -1,8 +1,8 @@
 plugins {
     id 'com.android.application'
-    id 'org.jetbrains.kotlin.android'
     id 'org.jetbrains.kotlin.plugin.compose' version "${kotlin_version}"
-    id 'com.google.protobuf' version '0.9.4'
+    id 'org.jetbrains.kotlin.plugin.serialization' version "${kotlin_version}"
+    id 'com.google.protobuf' version '0.10.0'
 }
 
 protobuf {
@@ -125,9 +125,7 @@ android {
         targetCompatibility JavaVersion.VERSION_21
     }
 
-    kotlinOptions {
-        jvmTarget = '21'
-    }
+
 
     splits {
         abi {
@@ -138,16 +136,18 @@ android {
         }
     }
 
-    applicationVariants.configureEach { variant ->
-        variant.outputs.each { output ->
-            def abiFilter = output.getFilter("ABI")
+androidComponents {
+    onVariants(selector().all(), { variant ->
+        variant.outputs.forEach { output ->
+            def abiFilter = output.filters.find { it.filterType == 'ABI' }?.identifier
             if (abiFilter != null) {
-                output.outputFileName = "simplexray-${abiFilter}.apk"
+                output.outputFileName.set("simplexray-${abiFilter}.apk")
             } else {
-                output.outputFileName = "simplexray-universal.apk"
+                output.outputFileName.set("simplexray-universal.apk")
             }
         }
-    }
+    })
+}
 
     buildFeatures {
         compose true
@@ -189,4 +189,10 @@ dependencies {
     implementation 'com.github.nanihadesuka:LazyColumnScrollbar:2.2.0'
     implementation 'sh.calvin.reorderable:reorderable:2.5.1'
     implementation "com.squareup.okhttp3:okhttp:4.12.0"
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21
+    }
 }

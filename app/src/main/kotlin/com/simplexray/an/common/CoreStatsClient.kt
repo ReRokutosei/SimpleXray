@@ -57,5 +57,12 @@ class CoreStatsClient(private val channel: ManagedChannel) : Closeable {
                 .build()
             return CoreStatsClient(channel)
         }
+
+        fun createUds(socketPath: String): CoreStatsClient {
+            val channel = ManagedChannelBuilder.forTarget("unix:$socketPath")
+                .usePlaintext()
+                .build()
+            return CoreStatsClient(channel)
+        }
     }
 }
