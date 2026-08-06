@@ -8,6 +8,7 @@ import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.simplexray.an.R
 import com.simplexray.an.common.ConfigUtils
+import com.simplexray.an.common.isConfigFile
 import com.simplexray.an.common.FilenameValidator
 import com.simplexray.an.data.source.FileManager
 import com.simplexray.an.prefs.Preferences
@@ -76,11 +77,9 @@ class ConfigEditViewModel(
 
     private val File.nameWithoutExtension: String
         get() {
-            var name = this.name
-            if (name.endsWith(".json")) {
-                name = name.substring(0, name.length - ".json".length)
-            }
-            return name
+            val name = this.name
+            val dot = name.lastIndexOf('.')
+            return if (dot > 0) name.substring(0, dot) else name
         }
 
     private suspend fun readConfigFileContent(): String = withContext(Dispatchers.IO) {
@@ -111,6 +110,13 @@ class ConfigEditViewModel(
         return FilenameValidator.validateFilename(application, name)
     }
 
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    fun onSearchQueryChange(query: String) {
+        _searchQuery.value = query
+    }
+
     fun saveConfigFile() {
         viewModelScope.launch(Dispatchers.IO) {
             val oldFilePath = _configFile.absolutePath
@@ -123,8 +129,9 @@ class ConfigEditViewModel(
                 return@launch
             }
 
-            if (!newFilename.endsWith(".json")) {
-                newFilename += ".json"
+            val originalExt = _configFile.extension.let { if (it.isNotEmpty()) ".$it" else ".json" }
+            if (!newFilename.isConfigFile()) {
+                newFilename += originalExt
             }
 
             val parentDir = _configFile.parentFile
@@ -143,18 +150,19 @@ class ConfigEditViewModel(
                 return@launch
             }
 
-            val formattedContent: String
-            try {
-                formattedContent =
-                    ConfigUtils.formatConfigContent(_configTextFieldValue.value.text)
-            } catch (e: JSONException) {
-                Log.e(TAG, "Invalid JSON format", e)
-                _uiEvent.trySend(
-                    ConfigEditUiEvent.ShowSnackbar(
-                        application.getString(R.string.invalid_config_format)
+            var formattedContent: String = _configTextFieldValue.value.text
+            if (newFile.name.lowercase().endsWith(".json")) {
+                try {
+                    formattedContent = ConfigUtils.formatConfigContent(formattedContent)
+                } catch (e: JSONException) {
+                    Log.e(TAG, "Invalid JSON format", e)
+                    _uiEvent.trySend(
+                        ConfigEditUiEvent.ShowSnackbar(
+                            application.getString(R.string.invalid_config_format)
+                        )
                     )
-                )
-                return@launch
+                    return@launch
+                }
             }
 
             val success = fileManager.renameConfigFile(_configFile, newFile, formattedContent)

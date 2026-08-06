@@ -22,6 +22,7 @@ import com.simplexray.an.R
 import com.simplexray.an.common.CoreStatsClient
 import com.simplexray.an.common.ROUTE_APP_LIST
 import com.simplexray.an.common.ROUTE_CONFIG_EDIT
+import com.simplexray.an.common.isConfigFile
 import com.simplexray.an.common.ThemeMode
 import com.simplexray.an.data.source.FileManager
 import com.simplexray.an.prefs.Preferences
@@ -703,11 +704,21 @@ class MainViewModel(application: Application) :
         prefs.configFilesOrder = currentList.map { it.name }
     }
 
+    fun importConfigFromFile(uri: android.net.Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val path = fileManager.importConfigFileFromUri(application, uri)
+            if (path != null) {
+                refreshConfigFileList()
+                updateSelectedConfigFile(File(path))
+            }
+        }
+    }
+
     fun refreshConfigFileList() {
         viewModelScope.launch(Dispatchers.IO) {
             val filesDir = application.filesDir
             val actualFiles =
-                filesDir.listFiles { file -> file.isFile && file.name.endsWith(".json") }?.toList()
+                filesDir.listFiles { file -> file.isFile && file.isConfigFile() }?.toList()
                     ?: emptyList()
             val actualFilesByName = actualFiles.associateBy { it.name }
             val savedOrder = prefs.configFilesOrder
@@ -1029,31 +1040,55 @@ class MainViewModel(application: Application) :
                         _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.download_failed)))
                     }
                 }
-            } catch (e: CancellationException) {
-                Log.d(TAG, "Download cancelled for $fileName")
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.download_cancelled)))
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to download rule file", e)
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.download_failed) + ": " + e.message))
+                Log.e(TAG, "Download failed for $fileName", e)
+                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.download_failed)))
             } finally {
                 progressFlow.value = null
-                updateSettingsState()
             }
         }
 
         if (fileName == "geoip.dat") {
             geoipDownloadJob = job
-        } else {
+        } else if (fileName == "geosite.dat") {
             geositeDownloadJob = job
         }
 
         job.invokeOnCompletion {
             if (fileName == "geoip.dat") {
                 geoipDownloadJob = null
-            } else {
+            } else if (fileName == "geosite.dat") {
                 geositeDownloadJob = null
             }
         }
+    }
+
+    fun importCustomDatFile(uri: android.net.Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val fileName = fileManager.importDatFileFromUri(application, uri)
+            if (fileName != null) {
+                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar("已导入 $fileName"))
+            }
+        }
+    }
+
+    fun deleteCustomDatFile(fileName: String) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val file = File(application.filesDir, fileName)
+            if (file.exists()) {
+                file.delete()
+            }
+            val urls = prefs.customDatUrls.toMutableMap()
+            urls.remove(fileName)
+            prefs.customDatUrls = urls
+            _uiEvent.trySend(MainViewUiEvent.ShowSnackbar("已删除 $fileName"))
+        }
+    }
+
+    fun updateCustomDatUrl(fileName: String, url: String) {
+        val urls = prefs.customDatUrls.toMutableMap()
+        urls[fileName] = url
+        prefs.customDatUrls = urls
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)

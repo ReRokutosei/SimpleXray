@@ -29,6 +29,7 @@ import java.io.File
 import java.util.Collections
 
 private const val TAG = "LogViewModel"
+private const val MAX_LOG_ENTRIES = 500
 
 @OptIn(FlowPreview::class)
 class LogViewModel(application: Application) :
@@ -51,8 +52,9 @@ class LogViewModel(application: Application) :
     private val _hasLogsToExport = MutableStateFlow(false)
     val hasLogsToExport: StateFlow<Boolean> = _hasLogsToExport.asStateFlow()
 
-    private val logEntrySet: MutableSet<String> = Collections.synchronizedSet(HashSet())
+    private val logBuffer = ArrayDeque<String>(MAX_LOG_ENTRIES)
     private val logMutex = Mutex()
+    private var pendingBatchJob: kotlinx.coroutines.Job? = null
 
     private var logUpdateReceiver: BroadcastReceiver
 
@@ -63,15 +65,9 @@ class LogViewModel(application: Application) :
                 if (TProxyService.ACTION_LOG_UPDATE == intent.action) {
                     val newLogs = intent.getStringArrayListExtra(TProxyService.EXTRA_LOG_DATA)
                     if (!newLogs.isNullOrEmpty()) {
-                        Log.d(TAG, "Received log update broadcast with ${newLogs.size} entries.")
                         viewModelScope.launch {
                             processNewLogs(newLogs)
                         }
-                    } else {
-                        Log.w(
-                            TAG,
-                            "Received log update broadcast, but log data list is null or empty."
-                        )
                     }
                 }
             }
@@ -84,7 +80,7 @@ class LogViewModel(application: Application) :
         viewModelScope.launch {
             combine(
                 logEntries,
-                searchQuery.debounce(200)
+                searchQuery.debounce(300)
             ) { logs, query ->
                 if (query.isBlank()) logs
                 else logs.filter { it.contains(query, ignoreCase = true) }
@@ -106,7 +102,11 @@ class LogViewModel(application: Application) :
     }
 
     fun unregisterLogReceiver(context: Context) {
-        context.unregisterReceiver(logUpdateReceiver)
+        try {
+            context.unregisterReceiver(logUpdateReceiver)
+        } catch (e: Exception) {
+            Log.w(TAG, "Receiver not registered: ${e.message}")
+        }
         Log.d(TAG, "Log receiver unregistered.")
     }
 
@@ -125,31 +125,43 @@ class LogViewModel(application: Application) :
 
     private suspend fun processInitialLogs(initialLogs: List<String>) {
         logMutex.withLock {
-            logEntrySet.clear()
-            _logEntries.value = initialLogs.filter { logEntrySet.add(it) }.reversed()
+            logBuffer.clear()
+            // Keep at most MAX_LOG_ENTRIES in reverse order (newest first)
+            for (line in initialLogs.takeLast(MAX_LOG_ENTRIES).reversed()) {
+                logBuffer.addLast(line)
+            }
+            _logEntries.value = logBuffer.toList()
         }
-        Log.d(TAG, "Processed initial logs: ${_logEntries.value.size} unique entries.")
+        Log.d(TAG, "Processed initial logs: ${_logEntries.value.size} entries.")
     }
 
     private suspend fun processNewLogs(newLogs: ArrayList<String>) {
-        val uniqueNewLogs = logMutex.withLock {
-            newLogs.filter { it.trim().isNotEmpty() && logEntrySet.add(it) }
-        }
-        if (uniqueNewLogs.isNotEmpty()) {
-            withContext(Dispatchers.Main) {
-                _logEntries.value = uniqueNewLogs + _logEntries.value
+        logMutex.withLock {
+            for (line in newLogs) {
+                if (line.trim().isNotEmpty()) {
+                    if (logBuffer.size >= MAX_LOG_ENTRIES) {
+                        logBuffer.removeLast()
+                    }
+                    logBuffer.addFirst(line)
+                }
             }
-            Log.d(TAG, "Added ${uniqueNewLogs.size} new unique log entries.")
-        } else {
-            Log.d(TAG, "No unique log entries from broadcast to add.")
+        }
+        // Throttled UI update every 300ms
+        if (pendingBatchJob?.isActive != true) {
+            pendingBatchJob = viewModelScope.launch {
+                kotlinx.coroutines.delay(300)
+                logMutex.withLock {
+                    _logEntries.value = logBuffer.toList()
+                }
+            }
         }
     }
 
     fun clearLogs() {
         viewModelScope.launch {
             logMutex.withLock {
+                logBuffer.clear()
                 _logEntries.value = emptyList()
-                logEntrySet.clear()
             }
             Log.d(TAG, "Logs cleared.")
         }

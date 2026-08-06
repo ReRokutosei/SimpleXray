@@ -320,6 +320,14 @@ private fun ConfigActions(
         )
     }
 
+    val filePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+        contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            mainViewModel.importConfigFromFile(uri)
+        }
+    }
+
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = { expanded = false }
@@ -339,6 +347,13 @@ private fun ConfigActions(
                     delay(100)
                     onImportConfigFromClipboard()
                 }
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.import_from_file)) },
+            onClick = {
+                expanded = false
+                filePickerLauncher.launch(arrayOf("*/*"))
             }
         )
         DropdownMenuItem(

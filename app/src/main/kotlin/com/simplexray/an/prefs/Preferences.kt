@@ -315,6 +315,19 @@ class Preferences(context: Context) {
             setValueInProvider(THEME, value.value)
         }
 
+    var customDatUrls: Map<String, String>
+        get() {
+            val json = getPrefData(CUSTOM_DAT_URLS).first
+            return if (!json.isNullOrEmpty()) {
+                val type = object : TypeToken<Map<String, String>>() {}.type
+                runCatching { gson.fromJson<Map<String, String>>(json, type) }.getOrDefault(emptyMap())
+            } else emptyMap()
+        }
+        set(value) {
+            val json = gson.toJson(value)
+            setValueInProvider(CUSTOM_DAT_URLS, json)
+        }
+
     companion object {
         const val SOCKS_ADDR: String = "SocksAddr"
         const val SOCKS_PORT: String = "SocksPort"
@@ -344,6 +357,7 @@ class Preferences(context: Context) {
         const val API_PORT: String = "ApiPort"
         const val BYPASS_SELECTED_APPS: String = "BypassSelectedApps"
         const val THEME: String = "Theme"
+        const val CUSTOM_DAT_URLS: String = "CustomDatUrls"
         private const val TAG = "Preferences"
     }
 }

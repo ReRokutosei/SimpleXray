@@ -150,11 +150,26 @@ fun ConfigScreen(
                                         .padding(16.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    val extIndex = file.name.lastIndexOf('.')
+                                    val displayName = if (extIndex > 0) file.name.substring(0, extIndex) else file.name
+                                    val extTag = if (extIndex > 0) file.name.substring(extIndex + 1).uppercase() else "JSON"
                                     Text(
-                                        file.name.removeSuffix(".json"),
+                                        displayName,
                                         modifier = Modifier.weight(1f),
                                         style = MaterialTheme.typography.titleMedium
                                     )
+                                    androidx.compose.material3.Surface(
+                                        shape = MaterialTheme.shapes.extraSmall,
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        modifier = Modifier.padding(end = 8.dp)
+                                    ) {
+                                        Text(
+                                            text = extTag,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                                        )
+                                    }
                                     IconButton(onClick = { onEditConfigClick(file) }) {
                                         Icon(
                                             painterResource(R.drawable.edit),
