@@ -296,18 +296,6 @@ private fun ConfigActions(
     var expanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
 
-    IconButton(
-        onClick = onSwitchVpnService,
-        enabled = controlMenuClickable
-    ) {
-        Icon(
-            painter = painterResource(
-                id = if (isServiceEnabled) R.drawable.pause else R.drawable.play
-            ),
-            contentDescription = null
-        )
-    }
-
     IconButton(onClick = { expanded = true }) {
         Icon(
             Icons.Default.MoreVert,
