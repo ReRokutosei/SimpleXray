@@ -33,7 +33,6 @@ sealed class AppListViewUiEvent {
 data class Package(
     var selected: Boolean,
     val label: String,
-    val icon: Drawable,
     val packageName: String,
     val isSystemApp: Boolean
 )
@@ -85,11 +84,9 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                     if (!hasInternetPermission) return@mapNotNull null
                     val isSystemApp = appInfo.flags and ApplicationInfo.FLAG_SYSTEM != 0
                     val label = appInfo.loadLabel(pm).toString()
-                    val icon = appInfo.loadIcon(pm) ?: pm.defaultActivityIcon
                     Package(
                         selected = apps.contains(it.packageName),
                         label = label,
-                        icon = icon,
                         packageName = it.packageName,
                         isSystemApp = isSystemApp
                     )

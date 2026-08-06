@@ -8,6 +8,7 @@
     <string name="socks_address">Target SOCKS Address</string>
     <string name="socks_port">Target SOCKS Port</string>
     <string name="socks_user">SOCKS User</string>
+    <string name="core_control">Core Control</string>
     <string name="socks_pass">SOCKS Pass</string>
     <string name="dns_ipv4">DNS IPv4</string>
     <string name="dns_ipv6">DNS IPv6</string>
