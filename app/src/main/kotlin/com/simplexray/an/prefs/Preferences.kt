@@ -4,19 +4,17 @@ import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import com.simplexray.an.R
 import com.simplexray.an.common.ThemeMode
 
 class Preferences(context: Context) {
     private val contentResolver: ContentResolver
-    private val gson: Gson
     private val context1: Context = context.applicationContext
 
     init {
         this.contentResolver = context1.contentResolver
-        this.gson = Gson()
     }
 
     private fun getPrefData(key: String): Pair<String?, String?> {
@@ -165,8 +163,7 @@ class Preferences(context: Context) {
             val jsonSet = getPrefData(APPS).first
             return jsonSet?.let {
                 try {
-                    val type = object : TypeToken<Set<String?>?>() {}.type
-                    gson.fromJson<Set<String?>>(it, type)
+                    Json.decodeFromString<Set<String>>(it)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error deserializing APPS StringSet", e)
                     null
@@ -174,7 +171,8 @@ class Preferences(context: Context) {
             }
         }
         set(apps) {
-            val jsonSet = gson.toJson(apps)
+            val validSet = apps?.filterNotNull()?.toSet() ?: emptySet()
+            val jsonSet = Json.encodeToString(validSet)
             setValueInProvider(APPS, jsonSet)
         }
 
@@ -249,8 +247,7 @@ class Preferences(context: Context) {
             val jsonList = getPrefData(CONFIG_FILES_ORDER).first
             return jsonList?.let {
                 try {
-                    val type = object : TypeToken<List<String>>() {}.type
-                    gson.fromJson(it, type)
+                    Json.decodeFromString<List<String>>(it)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error deserializing CONFIG_FILES_ORDER List<String>", e)
                     emptyList()
@@ -258,7 +255,7 @@ class Preferences(context: Context) {
             } ?: emptyList()
         }
         set(order) {
-            val jsonList = gson.toJson(order)
+            val jsonList = Json.encodeToString(order)
             setValueInProvider(CONFIG_FILES_ORDER, jsonList)
         }
 
@@ -319,12 +316,11 @@ class Preferences(context: Context) {
         get() {
             val json = getPrefData(CUSTOM_DAT_URLS).first
             return if (!json.isNullOrEmpty()) {
-                val type = object : TypeToken<Map<String, String>>() {}.type
-                runCatching { gson.fromJson<Map<String, String>>(json, type) }.getOrDefault(emptyMap())
+                runCatching { Json.decodeFromString<Map<String, String>>(json) }.getOrDefault(emptyMap())
             } else emptyMap()
         }
         set(value) {
-            val json = gson.toJson(value)
+            val json = Json.encodeToString(value)
             setValueInProvider(CUSTOM_DAT_URLS, json)
         }
 

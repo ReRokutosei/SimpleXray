@@ -1,6 +1,7 @@
 [versions]
 agp = "9.3.1"
 kotlin = "2.4.10"
+kotlinxSerializationJson = "1.7.3"
 protobufPlugin = "0.10.0"
 gradleVersionsPlugin = "0.52.0"
 protoc = "3.25.1"
@@ -8,19 +9,19 @@ grpc = "1.74.0"
 grpcGenJava = "1.65.0"
 grpcKotlin = "1.4.3"
 material = "1.12.0"
-gson = "2.13.1"
-preferenceKtx = "1.2.1"
+datastorePreferences = "1.1.2"
 coreKtx = "1.16.0"
 composeBom = "2025.08.00"
 navigationCompose = "2.9.3"
 lazyColumnScrollbar = "2.2.0"
-reorderable = "2.5.1"
+reorderable = "3.1.0"
 okhttp = "4.12.0"
 
 [libraries]
 # Plugins for buildscript
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJson" }
 
 # Protobuf & gRPC
 protobuf-protoc = { module = "com.google.protobuf:protoc", version.ref = "protoc" }
@@ -32,8 +33,7 @@ grpc-kotlin-stub = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpcKot
 
 # AndroidX & Material
 material = { module = "com.google.android.material:material", version.ref = "material" }
-gson = { module = "com.google.code.gson:gson", version.ref = "gson" }
-androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceKtx" }
+androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
 
 # Compose
@@ -43,7 +43,6 @@ androidx-compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
 androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview-android" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose" }
-androidx-compose-runtime-livedata = { module = "androidx.compose.runtime:runtime-livedata" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose-android", version.ref = "navigationCompose" }
 
 # UI Components & Networking
