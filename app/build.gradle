@@ -1,17 +1,17 @@
 plugins {
-    id 'com.android.application'
-    id 'org.jetbrains.kotlin.plugin.compose' version "${kotlin_version}"
-    id 'org.jetbrains.kotlin.plugin.serialization' version "${kotlin_version}"
-    id 'com.google.protobuf' version '0.10.0'
+    alias(libs.plugins.android.application)
+    alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.protobuf)
 }
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.25.1'
+        artifact = libs.protobuf.protoc.get().toString()
     }
     plugins {
         grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java:1.65.0'
+            artifact = libs.grpc.gen.java.get().toString()
         }
     }
     generateProtoTasks {
@@ -30,28 +30,28 @@ def versionProps = new Properties()
 file("$rootDir/version.properties").withInputStream { versionProps.load(it) }
 
 android {
-    namespace "com.simplexray.an"
-    compileSdk 36
+    namespace = "com.simplexray.an"
+    compileSdk = 36
 
     defaultConfig {
-        applicationId "com.simplexray.an"
-        versionCode versionProps.APP_VERSION_CODE.toInteger()
-        versionName versionProps.APP_VERSION_NAME
+        applicationId = "com.simplexray.an"
+        versionCode = versionProps.APP_VERSION_CODE.toInteger()
+        versionName = versionProps.APP_VERSION_NAME
         externalNativeBuild {
             ndkBuild {
                 arguments "APP_CFLAGS+=-DPKGNAME=com/simplexray/an/service -ffile-prefix-map=${rootDir}=."
                 arguments "APP_LDFLAGS+=-Wl,--build-id=none"
             }
         }
-        targetSdk 36
-        minSdk 29
+        targetSdk = 36
+        minSdk = 29
     }
 
     signingConfigs {
         release {
-            enableV1Signing false
-            enableV2Signing false
-            enableV3Signing true
+            enableV1Signing = false
+            enableV2Signing = false
+            enableV3Signing = true
         }
     }
 
@@ -68,9 +68,9 @@ android {
                 keyAlias = props['keyAlias']
                 keyPassword = props['keyPassword']
 
-                enableV1Signing false
-                enableV2Signing false
-                enableV3Signing true
+                enableV1Signing = false
+                enableV2Signing = false
+                enableV3Signing = true
             }
             isSigningEnabled = true
         }
@@ -78,19 +78,19 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled true
-            shrinkResources true
-            signingConfig isSigningEnabled ? signingConfigs.release : null
+            minifyEnabled = true
+            shrinkResources = true
+            signingConfig = isSigningEnabled ? signingConfigs.release : null
             
             proguardFiles(
                 getDefaultProguardFile('proguard-android-optimize.txt'),
                 'proguard-rules.pro'
             )
         }
-       debug {
-            minifyEnabled false
-            signingConfig isSigningEnabled ? signingConfigs.release : null
-            debuggable true
+        debug {
+            minifyEnabled = false
+            signingConfig = isSigningEnabled ? signingConfigs.release : null
+            debuggable = true
         }
     }
 
@@ -101,15 +101,13 @@ android {
     }
 
     lintOptions {
-        checkReleaseBuilds false
-        // Or, if you prefer, you can continue to check for errors in release builds,
-        // but continue the build even when errors are found:
-        abortOnError false
+        checkReleaseBuilds = false
+        abortOnError = false
     }
 
     packagingOptions {
         jniLibs {
-            useLegacyPackaging true
+            useLegacyPackaging = true
         }
     }
 
@@ -119,39 +117,37 @@ android {
         // Disables dependency metadata when building Android App Bundles.
         includeInBundle = false
     }
-    ndkVersion versionProps.NDK_VERSION
+    ndkVersion = versionProps.NDK_VERSION
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
     }
 
-
-
     splits {
         abi {
-            enable true
+            enable = true
             reset()
             include "arm64-v8a"
-            universalApk false
+            universalApk = false
         }
     }
 
-androidComponents {
-    onVariants(selector().all(), { variant ->
-        variant.outputs.forEach { output ->
-            def abiFilter = output.filters.find { it.filterType == 'ABI' }?.identifier
-            if (abiFilter != null) {
-                output.outputFileName.set("simplexray-${abiFilter}.apk")
-            } else {
-                output.outputFileName.set("simplexray-universal.apk")
+    androidComponents {
+        onVariants(selector().all(), { variant ->
+            variant.outputs.forEach { output ->
+                def abiFilter = output.filters.find { it.filterType == 'ABI' }?.identifier
+                if (abiFilter != null) {
+                    output.outputFileName.set("simplexray-${abiFilter}.apk")
+                } else {
+                    output.outputFileName.set("simplexray-universal.apk")
+                }
             }
-        }
-    })
-}
+        })
+    }
 
     buildFeatures {
-        compose true
-        buildConfig true
+        compose = true
+        buildConfig = true
     }
 
     sourceSets {
@@ -167,28 +163,28 @@ androidComponents {
 }
 
 dependencies {
-    implementation "io.grpc:grpc-okhttp:1.74.0"
-    implementation "io.grpc:grpc-protobuf:1.74.0"
-    implementation "io.grpc:grpc-stub:1.74.0"
-    implementation "io.grpc:grpc-kotlin-stub:1.4.3"
+    implementation libs.grpc.okhttp
+    implementation libs.grpc.protobuf
+    implementation libs.grpc.stub
+    implementation libs.grpc.kotlin.stub
 
-    implementation 'com.google.android.material:material:1.12.0'
-    implementation 'com.google.code.gson:gson:2.13.1'
-    implementation 'androidx.preference:preference-ktx:1.2.1'
-    implementation 'androidx.core:core-ktx:1.16.0'
+    implementation libs.material
+    implementation libs.gson
+    implementation libs.androidx.preference.ktx
+    implementation libs.androidx.core.ktx
 
-    implementation platform('androidx.compose:compose-bom:2025.08.00')
-    implementation 'androidx.compose.ui:ui'
-    implementation 'androidx.compose.ui:ui-graphics'
-    implementation 'androidx.compose.material3:material3'
-    implementation 'androidx.compose.ui:ui-tooling-preview-android'
-    implementation 'androidx.activity:activity-compose'
-    implementation 'androidx.compose.runtime:runtime-livedata'
-    implementation 'androidx.navigation:navigation-compose-android:2.9.3'
+    implementation platform(libs.androidx.compose.bom)
+    implementation libs.androidx.compose.ui
+    implementation libs.androidx.compose.ui.graphics
+    implementation libs.androidx.compose.material3
+    implementation libs.androidx.compose.ui.tooling.preview
+    implementation libs.androidx.activity.compose
+    implementation libs.androidx.compose.runtime.livedata
+    implementation libs.androidx.navigation.compose
 
-    implementation 'com.github.nanihadesuka:LazyColumnScrollbar:2.2.0'
-    implementation 'sh.calvin.reorderable:reorderable:2.5.1'
-    implementation "com.squareup.okhttp3:okhttp:4.12.0"
+    implementation libs.lazycolumnscrollbar
+    implementation libs.reorderable
+    implementation libs.okhttp
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
