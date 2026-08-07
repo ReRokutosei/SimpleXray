@@ -8,6 +8,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.core.net.toUri
 import android.net.VpnService
 import android.os.Build
 import android.util.Log
@@ -1165,7 +1166,7 @@ class MainViewModel(application: Application) :
 
     fun downloadNewVersion(versionTag: String) {
         val url = application.getString(R.string.source_url) + "/releases/tag/v$versionTag"
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         application.startActivity(intent)
         _newVersionAvailable.value = null

@@ -1,11 +1,12 @@
 package com.simplexray.an.prefs
 
 import android.net.Uri
+import androidx.core.net.toUri
 import android.provider.BaseColumns
 
 object PrefsContract {
     const val AUTHORITY: String = "com.simplexray.an.prefsprovider"
-    val BASE_CONTENT_URI: Uri = Uri.parse("content://$AUTHORITY")
+    val BASE_CONTENT_URI: Uri = "content://$AUTHORITY".toUri()
     const val PATH_PREFS: String = "prefs"
 
     object PrefsEntry : BaseColumns {
