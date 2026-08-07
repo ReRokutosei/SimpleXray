@@ -121,7 +121,7 @@ class ConfigEditViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             val oldFilePath = _configFile.absolutePath
 
-            var newFilename = _filename.value.trim { it <= ' ' }
+            var newFilename = _filename.value.trim()
 
             val validationError = validateFilename(newFilename)
             if (validationError != null) {

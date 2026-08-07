@@ -37,6 +37,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -108,7 +109,7 @@ fun ConfigEditScreen(
     var isSearching by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var matchIndices by remember { mutableStateOf(listOf<Int>()) }
-    var currentMatchIndex by remember { mutableStateOf(0) }
+    var currentMatchIndex by remember { mutableIntStateOf(0) }
 
     val updateMatches = { query: String, text: String ->
         if (query.isBlank()) {
