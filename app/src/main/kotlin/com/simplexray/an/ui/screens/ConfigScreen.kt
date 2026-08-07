@@ -114,7 +114,7 @@ fun ConfigScreen(
                 state = listState
             ) {
                 items(files, key = { it }) { file ->
-                    ReorderableItem(reorderableLazyListState, key = file) {
+                    ReorderableItem(state = reorderableLazyListState, key = file) {
                         val isSelected = file == selectedFile
                         Card(
                             modifier = Modifier

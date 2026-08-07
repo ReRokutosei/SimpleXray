@@ -8,13 +8,13 @@ import android.database.Cursor
 import android.database.MatrixCursor
 import android.net.Uri
 import android.util.Log
-import androidx.preference.PreferenceManager
+import android.content.Context
 
 class PrefsProvider : ContentProvider() {
     private lateinit var prefs: SharedPreferences
 
     override fun onCreate(): Boolean {
-        prefs = PreferenceManager.getDefaultSharedPreferences(context!!)
+        prefs = context!!.getSharedPreferences("${context!!.packageName}_preferences", Context.MODE_PRIVATE)
         return true
     }
 

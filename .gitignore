@@ -16,3 +16,4 @@ store.properties
 obj/*
 *.so
 build/*
+app/.cxx/*

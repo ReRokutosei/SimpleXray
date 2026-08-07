@@ -7,8 +7,8 @@ import android.content.Context
 import android.content.res.AssetManager
 import android.net.Uri
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.*
 import com.simplexray.an.R
 import com.simplexray.an.common.ConfigUtils
 import com.simplexray.an.common.isConfigFile
@@ -169,48 +169,47 @@ class FileManager(private val application: Application, private val prefs: Prefe
     suspend fun compressBackupData(): ByteArray? {
         return withContext(Dispatchers.IO) {
             try {
-                val gson = Gson()
-                val preferencesMap: MutableMap<String, Any> = mutableMapOf()
-                preferencesMap[Preferences.SOCKS_ADDR] = prefs.socksAddress
-                preferencesMap[Preferences.SOCKS_PORT] = prefs.socksPort
-                preferencesMap[Preferences.SOCKS_USER] = prefs.socksUsername
-                preferencesMap[Preferences.SOCKS_PASS] = prefs.socksPassword
-                preferencesMap[Preferences.DNS_IPV4] = prefs.dnsIpv4
-                preferencesMap[Preferences.DNS_IPV6] = prefs.dnsIpv6
-                preferencesMap[Preferences.IPV6] = prefs.ipv6
-                preferencesMap[Preferences.APPS] = ArrayList(
-                    prefs.apps ?: emptySet()
-                )
-                preferencesMap[Preferences.BYPASS_LAN] = prefs.bypassLan
-                preferencesMap[Preferences.USE_TEMPLATE] = prefs.useTemplate
-                preferencesMap[Preferences.HTTP_PROXY_ENABLED] = prefs.httpProxyEnabled
-                preferencesMap[Preferences.CONFIG_FILES_ORDER] = prefs.configFilesOrder
-                preferencesMap[Preferences.DISABLE_VPN] = prefs.disableVpn
-                preferencesMap[Preferences.CONNECTIVITY_TEST_TARGET] = prefs.connectivityTestTarget
-                preferencesMap[Preferences.CONNECTIVITY_TEST_TIMEOUT] =
-                    prefs.connectivityTestTimeout
-                preferencesMap[Preferences.GEOIP_URL] = prefs.geoipUrl
-                preferencesMap[Preferences.GEOSITE_URL] = prefs.geositeUrl
-                preferencesMap[Preferences.BYPASS_SELECTED_APPS] = prefs.bypassSelectedApps
-                val configFilesMap: MutableMap<String, String> = mutableMapOf()
-                val filesDir = application.filesDir
-                val files = filesDir.listFiles()
-                if (files != null) {
-                    for (file in files) {
-                        if (file.isFile && file.isConfigFile()) {
-                            try {
-                                val content = readFileContent(file)
-                                configFilesMap[file.name] = content
-                            } catch (e: IOException) {
-                                Log.e(TAG, "Error reading config file: ${file.name}", e)
+                val preferencesJson = buildJsonObject {
+                    put(Preferences.SOCKS_ADDR, prefs.socksAddress)
+                    put(Preferences.SOCKS_PORT, prefs.socksPort)
+                    put(Preferences.SOCKS_USER, prefs.socksUsername)
+                    put(Preferences.SOCKS_PASS, prefs.socksPassword)
+                    put(Preferences.DNS_IPV4, prefs.dnsIpv4)
+                    put(Preferences.DNS_IPV6, prefs.dnsIpv6)
+                    put(Preferences.IPV6, prefs.ipv6)
+                    put(Preferences.APPS, buildJsonArray { (prefs.apps ?: emptySet()).filterNotNull().forEach { add(it) } })
+                    put(Preferences.BYPASS_LAN, prefs.bypassLan)
+                    put(Preferences.USE_TEMPLATE, prefs.useTemplate)
+                    put(Preferences.HTTP_PROXY_ENABLED, prefs.httpProxyEnabled)
+                    put(Preferences.CONFIG_FILES_ORDER, buildJsonArray { prefs.configFilesOrder.forEach { add(it) } })
+                    put(Preferences.DISABLE_VPN, prefs.disableVpn)
+                    put(Preferences.CONNECTIVITY_TEST_TARGET, prefs.connectivityTestTarget)
+                    put(Preferences.CONNECTIVITY_TEST_TIMEOUT, prefs.connectivityTestTimeout)
+                    put(Preferences.GEOIP_URL, prefs.geoipUrl)
+                    put(Preferences.GEOSITE_URL, prefs.geositeUrl)
+                    put(Preferences.BYPASS_SELECTED_APPS, prefs.bypassSelectedApps)
+                }
+                val configFilesJson = buildJsonObject {
+                    val filesDir = application.filesDir
+                    val files = filesDir.listFiles()
+                    if (files != null) {
+                        for (file in files) {
+                            if (file.isFile && file.isConfigFile()) {
+                                try {
+                                    val content = readFileContent(file)
+                                    put(file.name, content)
+                                } catch (e: IOException) {
+                                    Log.e(TAG, "Error reading config file: ${file.name}", e)
+                                }
                             }
                         }
                     }
                 }
-                val backupData: MutableMap<String, Any> = mutableMapOf()
-                backupData["preferences"] = preferencesMap
-                backupData["configFiles"] = configFilesMap
-                val jsonString = gson.toJson(backupData)
+                val backupJson = buildJsonObject {
+                    put("preferences", preferencesJson)
+                    put("configFiles", configFilesJson)
+                }
+                val jsonString = Json.encodeToString(backupJson)
                 val input = jsonString.toByteArray(StandardCharsets.UTF_8)
                 val deflater = Deflater()
                 deflater.setInput(input)
@@ -274,177 +273,102 @@ class FileManager(private val application: Application, private val prefs: Prefe
                 inflater.end()
 
                 val jsonString = String(decompressedData, StandardCharsets.UTF_8)
-                val gson = Gson()
-                val backupDataType = object : TypeToken<Map<String?, Any?>?>() {}.type
-                val backupData = gson.fromJson<Map<String, Any>>(jsonString, backupDataType)
+                val jsonObject = Json.parseToJsonElement(jsonString).jsonObject
 
-                require(
-                    !(backupData == null || !backupData.containsKey("preferences") || !backupData.containsKey(
-                        "configFiles"
-                    ))
-                ) { "Invalid backup file format." }
-
-                var preferencesMap: Map<String?, Any?>? = null
-                val preferencesObj = backupData["preferences"]
-                if (preferencesObj is Map<*, *>) {
-                    @Suppress("UNCHECKED_CAST")
-                    preferencesMap = preferencesObj as Map<String?, Any?>?
+                require(jsonObject.containsKey("preferences") && jsonObject.containsKey("configFiles")) {
+                    "Invalid backup file format."
                 }
 
-                var configFilesMap: Map<String?, String>? = null
-                val configFilesObj = backupData["configFiles"]
-                if (configFilesObj is Map<*, *>) {
-                    @Suppress("UNCHECKED_CAST")
-                    configFilesMap = configFilesObj as Map<String?, String>?
-                }
+                val preferencesMap = jsonObject["preferences"]?.jsonObject
+                val configFilesMap = jsonObject["configFiles"]?.jsonObject
 
                 val savedOrderFromBackup = mutableListOf<String>()
 
                 if (preferencesMap != null) {
-                    var value = preferencesMap[Preferences.SOCKS_PORT]
-                    if (value is Number) {
-                        prefs.socksPort = value.toInt()
-                    } else if (value is String) {
-                        try {
-                            prefs.socksPort = value.toInt()
-                        } catch (ignore: NumberFormatException) {
-                            Log.w(TAG, "Failed to parse SOCKS_PORT as integer: $value")
-                        }
+                    val portVal = preferencesMap[Preferences.SOCKS_PORT]?.jsonPrimitive
+                    portVal?.intOrNull?.let { prefs.socksPort = it }
+                        ?: portVal?.contentOrNull?.toIntOrNull()?.let { prefs.socksPort = it }
+
+                    preferencesMap[Preferences.SOCKS_ADDR]?.jsonPrimitive?.contentOrNull?.let {
+                        prefs.socksAddress = it
                     }
 
-                    value = preferencesMap[Preferences.SOCKS_ADDR]
-                    if (value is String) {
-                        prefs.socksAddress = (value as String?)!!
+                    preferencesMap[Preferences.SOCKS_USER]?.jsonPrimitive?.contentOrNull?.let {
+                        prefs.socksUsername = it
                     }
 
-                    value = preferencesMap[Preferences.SOCKS_USER]
-                    if (value is String) {
-                        prefs.socksUsername = (value as String?)!!
+                    preferencesMap[Preferences.SOCKS_PASS]?.jsonPrimitive?.contentOrNull?.let {
+                        prefs.socksPassword = it
                     }
 
-                    value = preferencesMap[Preferences.SOCKS_PASS]
-                    if (value is String) {
-                        prefs.socksPassword = (value as String?)!!
+                    preferencesMap[Preferences.DNS_IPV4]?.jsonPrimitive?.contentOrNull?.let {
+                        prefs.dnsIpv4 = it
                     }
 
-                    value = preferencesMap[Preferences.DNS_IPV4]
-                    if (value is String) {
-                        prefs.dnsIpv4 = (value as String?)!!
+                    preferencesMap[Preferences.DNS_IPV6]?.jsonPrimitive?.contentOrNull?.let {
+                        prefs.dnsIpv6 = it
                     }
 
-                    value = preferencesMap[Preferences.DNS_IPV6]
-                    if (value is String) {
-                        prefs.dnsIpv6 = (value as String?)!!
+                    preferencesMap[Preferences.IPV6]?.jsonPrimitive?.booleanOrNull?.let {
+                        prefs.ipv6 = it
                     }
 
-                    value = preferencesMap[Preferences.IPV6]
-                    if (value is Boolean) {
-                        prefs.ipv6 = (value as Boolean?)!!
+                    preferencesMap[Preferences.BYPASS_LAN]?.jsonPrimitive?.booleanOrNull?.let {
+                        prefs.bypassLan = it
                     }
 
-                    value = preferencesMap[Preferences.BYPASS_LAN]
-                    if (value is Boolean) {
-                        prefs.bypassLan = (value as Boolean?)!!
+                    preferencesMap[Preferences.USE_TEMPLATE]?.jsonPrimitive?.booleanOrNull?.let {
+                        prefs.useTemplate = it
                     }
 
-                    value = preferencesMap[Preferences.USE_TEMPLATE]
-                    if (value is Boolean) {
-                        prefs.useTemplate = (value as Boolean?)!!
+                    preferencesMap[Preferences.HTTP_PROXY_ENABLED]?.jsonPrimitive?.booleanOrNull?.let {
+                        prefs.httpProxyEnabled = it
                     }
 
-                    value = preferencesMap[Preferences.HTTP_PROXY_ENABLED]
-                    if (value is Boolean) {
-                        prefs.httpProxyEnabled = (value as Boolean?)!!
-                    }
-
-                    value = preferencesMap[Preferences.APPS]
-                    if (value is List<*>) {
-                        val appsSet: MutableSet<String?> = HashSet()
-                        for (item in value) {
-                            if (item is String) {
-                                appsSet.add(item as String?)
-                            } else if (item != null) {
-                                Log.w(
-                                    TAG,
-                                    "Skipping non-String item in APPS list: " + item.javaClass.name
-                                )
-                            }
-                        }
+                    preferencesMap[Preferences.APPS]?.jsonArray?.let { array ->
+                        val appsSet = array.mapNotNull { it.jsonPrimitive.contentOrNull }.toSet()
                         prefs.apps = appsSet
-                    } else if (value != null) {
-                        Log.w(TAG, "APPS preference is not a List: " + value.javaClass.name)
                     }
 
-                    value = preferencesMap[Preferences.DISABLE_VPN]
-                    if (value is Boolean) {
-                        prefs.disableVpn = value
+                    preferencesMap[Preferences.DISABLE_VPN]?.jsonPrimitive?.booleanOrNull?.let {
+                        prefs.disableVpn = it
                     }
 
-                    value = preferencesMap[Preferences.CONNECTIVITY_TEST_TARGET]
-                    if (value is String) {
-                        prefs.connectivityTestTarget = value
+                    preferencesMap[Preferences.CONNECTIVITY_TEST_TARGET]?.jsonPrimitive?.contentOrNull?.let {
+                        prefs.connectivityTestTarget = it
                     }
-                    value = preferencesMap[Preferences.CONNECTIVITY_TEST_TIMEOUT]
-                    if (value is Number) {
-                        prefs.connectivityTestTimeout = value.toInt()
-                    } else if (value is String) {
-                        try {
-                            prefs.connectivityTestTimeout = value.toInt()
-                        } catch (ignore: NumberFormatException) {
-                            Log.w(
-                                TAG,
-                                "Failed to parse CONNECTIVITY_TEST_TIMEOUT as integer: $value"
-                            )
+
+                    val timeoutVal = preferencesMap[Preferences.CONNECTIVITY_TEST_TIMEOUT]?.jsonPrimitive
+                    timeoutVal?.intOrNull?.let { prefs.connectivityTestTimeout = it }
+                        ?: timeoutVal?.contentOrNull?.toIntOrNull()?.let { prefs.connectivityTestTimeout = it }
+
+                    preferencesMap[Preferences.GEOIP_URL]?.jsonPrimitive?.contentOrNull?.let {
+                        prefs.geoipUrl = it
+                    }
+
+                    preferencesMap[Preferences.GEOSITE_URL]?.jsonPrimitive?.contentOrNull?.let {
+                        prefs.geositeUrl = it
+                    }
+
+                    preferencesMap[Preferences.BYPASS_SELECTED_APPS]?.jsonPrimitive?.booleanOrNull?.let {
+                        prefs.bypassSelectedApps = it
+                    }
+
+                    preferencesMap[Preferences.CONFIG_FILES_ORDER]?.jsonArray?.let { array ->
+                        array.mapNotNull { it.jsonPrimitive.contentOrNull }.forEach {
+                            savedOrderFromBackup.add(it)
                         }
                     }
-
-                    value = preferencesMap[Preferences.GEOIP_URL]
-                    if (value is String) {
-                        prefs.geoipUrl = value
-                    }
-
-                    value = preferencesMap[Preferences.GEOSITE_URL]
-                    if (value is String) {
-                        prefs.geositeUrl = value
-                    }
-
-                    value = preferencesMap[Preferences.BYPASS_SELECTED_APPS]
-                    if (value is Boolean) {
-                        prefs.bypassSelectedApps = value
-                    }
-
-                    val configOrderObj = preferencesMap[Preferences.CONFIG_FILES_ORDER]
-                    if (configOrderObj is List<*>) {
-                        for (item in configOrderObj) {
-                            if (item is String) {
-                                savedOrderFromBackup.add(item)
-                            } else if (item != null) {
-                                Log.w(
-                                    TAG,
-                                    "Skipping non-String item in CONFIG_FILES_ORDER list: " + item.javaClass.name
-                                )
-                            }
-                        }
-                    } else if (configOrderObj != null) {
-                        Log.w(
-                            TAG,
-                            "CONFIG_FILES_ORDER preference is not a List: " + configOrderObj.javaClass.name
-                        )
-                    }
-
                 } else {
-                    Log.w(TAG, "Preferences map is null or not a Map.")
+                    Log.w(TAG, "Preferences map is null.")
                 }
 
                 val filesDir = application.filesDir
 
                 if (configFilesMap != null) {
-                    for ((filename, content) in configFilesMap) {
-                        if (filename == null || FilenameValidator.validateFilename(
-                                application,
-                                filename
-                            ) != null
-                        ) {
+                    for ((filename, jsonElement) in configFilesMap) {
+                        val content = jsonElement.jsonPrimitive.contentOrNull ?: continue
+                        if (FilenameValidator.validateFilename(application, filename) != null) {
                             Log.e(TAG, "Skipping restore of invalid filename: $filename")
                             continue
                         }
@@ -459,7 +383,7 @@ class FileManager(private val application: Application, private val prefs: Prefe
                         }
                     }
                 } else {
-                    Log.w(TAG, "Config files map is null or not a Map.")
+                    Log.w(TAG, "Config files map is null.")
                 }
 
                 val existingFileNames = prefs.configFilesOrder.toMutableList()
