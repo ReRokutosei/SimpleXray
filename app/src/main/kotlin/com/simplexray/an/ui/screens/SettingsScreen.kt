@@ -33,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -496,6 +497,56 @@ fun SettingsScreen(
                 )
             }
         )
+
+        var logLevelDialogShowing by remember { mutableStateOf(false) }
+
+        ListItem(
+            headlineContent = { Text(stringResource(R.string.loglevel_title)) },
+            supportingContent = { Text(stringResource(R.string.loglevel_summary)) },
+            trailingContent = {
+                TextButton(onClick = { logLevelDialogShowing = true }) {
+                    Text(settingsState.switches.logLevel.name)
+                }
+            }
+        )
+
+        if (logLevelDialogShowing) {
+            AlertDialog(
+                onDismissRequest = { logLevelDialogShowing = false },
+                title = { Text(stringResource(R.string.loglevel_title)) },
+                text = {
+                    Column {
+                        com.simplexray.an.prefs.LogLevel.entries.forEach { level ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        mainViewModel.setLogLevel(level)
+                                        logLevelDialogShowing = false
+                                    }
+                                    .padding(vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = settingsState.switches.logLevel == level,
+                                    onClick = {
+                                        mainViewModel.setLogLevel(level)
+                                        logLevelDialogShowing = false
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(level.name)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { logLevelDialogShowing = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            )
+        }
 
         PreferenceCategoryTitle(stringResource(R.string.rule_files_category_title))
 

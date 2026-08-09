@@ -130,4 +130,6 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="auto">Auto</string>
+    <string name="loglevel_title">Log Level</string>
+    <string name="loglevel_summary">Auto follows profile. Select to override logging verbosity.</string>
 </resources>

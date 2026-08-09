@@ -125,4 +125,6 @@
     <string name="auto">自动</string>
     <string name="socks_user">SOCKS 用户</string>
     <string name="core_control">Core Control</string>
+    <string name="loglevel_title">日志等级</string>
+    <string name="loglevel_summary">Auto跟随配置，指定时强制覆盖日志记录级别</string>
 </resources>
