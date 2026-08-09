@@ -41,6 +41,10 @@ android {
         minSdk = 29
     }
 
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
     signingConfigs {
         release {
             enableV1Signing = false
@@ -179,6 +183,8 @@ dependencies {
     implementation libs.reorderable
     implementation libs.okhttp
     implementation libs.yaml
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20231013'
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
