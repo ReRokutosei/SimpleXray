@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22.1)
 project(simplexray_native C CXX ASM)
 
 # Global flags
-add_compile_options(-O3 -DPKGNAME=com/simplexray/an)
+add_compile_options(-O3 -DPKGNAME=com/simplexray/an/service)
 
 # -----------------------------------------------------------------------------
 # 1. xray-exec shared library

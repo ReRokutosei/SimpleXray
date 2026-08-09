@@ -286,8 +286,26 @@ class TProxyService : VpnService() {
             return
         }
 
-        // Give Android kernel routing agent 150ms to settle before spawning Xray
-        runCatching { Thread.sleep(150L) }
+        val tproxyFile = File(cacheDir, "tproxy.conf")
+        try {
+            tproxyFile.createNewFile()
+            FileOutputStream(tproxyFile, false).use { fos ->
+                val tproxyConf = getTproxyConf(prefs)
+                fos.write(tproxyConf.toByteArray())
+            }
+        } catch (e: IOException) {
+            Log.e(TAG, e.toString())
+            stopXray()
+            return
+        }
+
+        tunFd?.fd?.let { fd ->
+            TProxyStartService(tproxyFile.absolutePath, fd)
+        } ?: run {
+            Log.e(TAG, "tunFd is null after establish()")
+            stopXray()
+            return
+        }
 
         @Suppress("SameParameterValue") val channelName = "socks5"
         initNotificationChannel(channelName)
@@ -356,6 +374,7 @@ class TProxyService : VpnService() {
                 tunFd = null
             }
             stopForeground(Service.STOP_FOREGROUND_REMOVE)
+            runCatching { TProxyStopService() }
         }
         stopSelf()
         exit()
@@ -392,6 +411,10 @@ class TProxyService : VpnService() {
         notificationManager.createNotificationChannel(channel)
     }
 
+    private external fun TProxyStartService(configPath: String, fd: Int): Boolean
+    private external fun TProxyStopService(): Boolean
+    private external fun TProxyGetStats(): LongArray?
+
     companion object {
         const val ACTION_CONNECT: String = "com.simplexray.an.CONNECT"
         const val ACTION_DISCONNECT: String = "com.simplexray.an.DISCONNECT"
@@ -404,21 +427,17 @@ class TProxyService : VpnService() {
         private const val BROADCAST_DELAY_MS: Long = 3000
 
         init {
-            runCatching { System.loadLibrary("hev-socks5-tunnel") }
-            runCatching { System.loadLibrary("xray-exec") }
+            try {
+                System.loadLibrary("hev-socks5-tunnel")
+            } catch (e: Throwable) {
+                Log.e(TAG, "Failed to load hev-socks5-tunnel library", e)
+            }
+            try {
+                System.loadLibrary("xray-exec")
+            } catch (e: Throwable) {
+                Log.e(TAG, "Failed to load xray-exec library", e)
+            }
         }
-
-        @JvmStatic
-        @Suppress("FunctionName")
-        private external fun TProxyStartService(configPath: String, fd: Int)
-
-        @JvmStatic
-        @Suppress("FunctionName")
-        private external fun TProxyStopService()
-
-        @JvmStatic
-        @Suppress("FunctionName")
-        private external fun TProxyGetStats(): LongArray?
 
         @JvmStatic
         private external fun nativeSpawnXray(
