@@ -1,5 +1,10 @@
 -keep class com.simplexray.an.service.TProxyService {
-    @kotlin.jvm.JvmStatic *;
+    native <methods>;
+    *;
+}
+
+-keepclasseswithmembernames class * {
+    native <methods>;
 }
 
 # Keep Protobuf Generated Message Classes & Reflective Methods
