@@ -201,14 +201,14 @@ class TProxyService : VpnService() {
             Log.d(TAG, "=== [DEBUG 2: SANITIZED CONFIG] ===\n$sanitizedConfigContent")
 
             val isYaml = configFile.extension.lowercase() in listOf("yaml", "yml")
-            val format = if (isYaml) "yaml" else "json"
+            val format = "json"
 
             val ports = runCatching { extractPortsFromJson(sanitizedConfigContent) }.getOrDefault(emptySet())
             val apiPort = findAvailablePort(ports) ?: return
             prefs.apiPort = apiPort
             prefs.apiAddress = "127.0.0.1"
 
-            val finalConfigContent = ConfigUtils.buildInjectedConfig(sanitizedConfigContent, isYaml, prefs)
+            val finalConfigContent = ConfigUtils.injectStatsService(prefs, sanitizedConfigContent)
             Log.d(TAG, "=== [DEBUG 3: FINAL STDIN CONFIG (Format: $format)] ===\n$finalConfigContent")
 
             val vpnFd = tunFd?.fd ?: run {

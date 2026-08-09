@@ -10,3 +10,8 @@
     <fields>;
     <methods>;
 }
+
+# SnakeYAML Rules
+-dontwarn java.beans.**
+-dontwarn java.nio.file.**
+-keep class org.yaml.snakeyaml.** { *; }

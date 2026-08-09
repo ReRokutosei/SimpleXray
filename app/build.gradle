@@ -178,6 +178,7 @@ dependencies {
     implementation libs.lazycolumnscrollbar
     implementation libs.reorderable
     implementation libs.okhttp
+    implementation libs.yaml
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
