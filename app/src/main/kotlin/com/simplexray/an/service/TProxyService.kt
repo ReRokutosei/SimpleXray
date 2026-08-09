@@ -211,41 +211,17 @@ class TProxyService : VpnService() {
             val finalConfigContent = ConfigUtils.injectStatsService(prefs, sanitizedConfigContent)
             Log.d(TAG, "=== [DEBUG 3: FINAL STDIN CONFIG (Format: $format)] ===\n$finalConfigContent")
 
-            val vpnFd = tunFd?.fd ?: run {
-                Log.e(TAG, "tunFd is null for nativeSpawnXray")
-                return
-            }
+            val processBuilder = getProcessBuilder(xrayPath)
+            val currentProcess = processBuilder.start()
+            this.xrayProcess = currentProcess
+            Log.d(TAG, "Xray child process started successfully via ProcessBuilder.")
 
-            val spawnResult = nativeSpawnXray(xrayPath, filesDir.path, vpnFd, format)
-                ?: run {
-                    Log.e(TAG, "nativeSpawnXray returned null - spawn failed")
-                    return
-                }
-
-            val pid = spawnResult[0]
-            val stdoutReadFd = spawnResult[1]
-            val stdinWriteFd = spawnResult[2]
-            Log.d(TAG, "Native Xray spawned successfully! pid=$pid, stdoutFd=$stdoutReadFd, stdinFd=$stdinWriteFd")
-
-            Log.d(TAG, "=== [DEBUG 3: FINAL STDIN CONFIG (Format: ${if (isYaml) "yaml" else "json"})] ===\n$finalConfigContent")
-            if (finalConfigContent.contains("probeTimeout")) {
-                Log.d(TAG, "=== [SANITY CHECK SUCCESS] probeTimeout: 2s is SUCCESSFULLY INJECTED into final config! ===")
-            } else {
-                Log.w(TAG, "=== [SANITY CHECK FAILED] probeTimeout IS MISSING in final config! ===")
-            }
-            if (finalConfigContent.contains("778631-gsc07dzq84jtlnyo.alidns.com")) {
-                Log.d(TAG, "=== [SANITY CHECK SUCCESS] Dedicated DoH Subdomain Static Host IS SUCCESSFULLY INJECTED! ===")
-            }
-            val pfdWrite = ParcelFileDescriptor.adoptFd(stdinWriteFd)
-            FileOutputStream(pfdWrite.fileDescriptor).use { os ->
+            currentProcess.outputStream.use { os ->
                 os.write(finalConfigContent.toByteArray(Charsets.UTF_8))
                 os.flush()
             }
 
-            val pfdRead = ParcelFileDescriptor.adoptFd(stdoutReadFd)
-            stdoutPfd = pfdRead
-            val reader = BufferedReader(InputStreamReader(FileInputStream(pfdRead.fileDescriptor)))
-
+            val reader = BufferedReader(InputStreamReader(currentProcess.inputStream))
             Log.d(TAG, "Reading native Xray process log stream.")
             var line = reader.readLine()
             var hasBroadcastedStarted = false
@@ -276,9 +252,9 @@ class TProxyService : VpnService() {
         }
     }
 
-    private fun getProcessBuilder(xrayPath: String, userConfigPath: String, extraApiPath: String): ProcessBuilder {
+    private fun getProcessBuilder(xrayPath: String): ProcessBuilder {
         val filesDir = applicationContext.filesDir
-        val command = mutableListOf(xrayPath, "run", "-config", userConfigPath, "-config", extraApiPath)
+        val command = mutableListOf(xrayPath)
         val processBuilder = ProcessBuilder(command)
         val environment = processBuilder.environment()
         environment["XRAY_LOCATION_ASSET"] = filesDir.path
