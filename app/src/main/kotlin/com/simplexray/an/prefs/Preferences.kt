@@ -225,9 +225,22 @@ class Preferences(context: Context) {
         }
 
     var httpProxyEnabled: Boolean
-        get() = getBooleanPref(HTTP_PROXY_ENABLED, true)
+        get() = getBooleanPref(HTTP_PROXY_ENABLED, false)
         set(enable) {
             setValueInProvider(HTTP_PROXY_ENABLED, enable)
+        }
+
+    var httpPort: Int
+        get() {
+            val value = getPrefData(HTTP_PORT).first
+            val port = value?.toIntOrNull()
+            if (value != null && port == null) {
+                Log.e(TAG, "Failed to parse HttpPort as Integer: $value")
+            }
+            return port ?: 10809
+        }
+        set(port) {
+            setValueInProvider(HTTP_PORT, port.toString())
         }
 
     var customGeoipImported: Boolean
@@ -327,6 +340,7 @@ class Preferences(context: Context) {
     companion object {
         const val SOCKS_ADDR: String = "SocksAddr"
         const val SOCKS_PORT: String = "SocksPort"
+        const val HTTP_PORT: String = "HttpPort"
         const val SOCKS_USER: String = "SocksUser"
         const val SOCKS_PASS: String = "SocksPass"
         const val DNS_IPV4: String = "DnsIpv4"

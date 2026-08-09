@@ -229,6 +229,26 @@ object ConfigUtils {
 
         jsonObject.put("policy", policyObject)
 
+        if (prefs.httpProxyEnabled) {
+            val inbounds = jsonObject.optJSONArray("inbounds") ?: JSONArray().also { jsonObject.put("inbounds", it) }
+            var hasHttpInbound = false
+            for (i in 0 until inbounds.length()) {
+                val inb = inbounds.optJSONObject(i)
+                if (inb?.optString("protocol")?.lowercase() == "http") {
+                    hasHttpInbound = true
+                    break
+                }
+            }
+            if (!hasHttpInbound) {
+                val httpInbound = JSONObject()
+                httpInbound.put("tag", "http-inbound")
+                httpInbound.put("listen", "127.0.0.1")
+                httpInbound.put("port", prefs.httpPort)
+                httpInbound.put("protocol", "http")
+                inbounds.put(httpInbound)
+            }
+        }
+
         return jsonObject.toString(2)
     }
 
