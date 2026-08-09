@@ -28,9 +28,25 @@ object ConfigUtils {
     fun sanitizeConfig(content: String): String {
         val rootJson = parseToJsonObject(content) ?: return content
 
-        // 1. Remove redundant top-level inbounds and log
-        rootJson.remove("inbounds")
+        // 1. Process and sanitize inbounds (remove desktop tun & convert global listen)
         rootJson.remove("log")
+        val inbounds = rootJson.optJSONArray("inbounds")
+        if (inbounds != null) {
+            for (i in inbounds.length() - 1 downTo 0) {
+                val inbound = inbounds.optJSONObject(i) ?: continue
+                val protocol = inbound.optString("protocol").lowercase()
+                if (protocol == "tun") {
+                    inbounds.remove(i)
+                    Log.d(TAG, "Removed desktop-only tun inbound at index $i to prevent Android permission denied.")
+                    continue
+                }
+                val listen = inbound.optString("listen")
+                if (listen == "::" || listen == "0.0.0.0") {
+                    inbound.put("listen", "127.0.0.1")
+                    Log.d(TAG, "Converted bind address from $listen to 127.0.0.1 for inbound at index $i.")
+                }
+            }
+        }
 
         // 2. Process routing & domainMatcher
         val routing = rootJson.optJSONObject("routing")
