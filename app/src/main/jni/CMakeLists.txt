@@ -5,15 +5,7 @@ project(simplexray_native C CXX ASM)
 add_compile_options(-O3 -DPKGNAME=com/simplexray/an/service)
 
 # -----------------------------------------------------------------------------
-# 1. xray-exec shared library
-# -----------------------------------------------------------------------------
-add_library(xray-exec SHARED
-    xray-exec/xray_exec.c
-)
-target_link_libraries(xray-exec log)
-
-# -----------------------------------------------------------------------------
-# 2. hev-socks5-tunnel third-party static libraries
+# 1. hev-socks5-tunnel third-party static libraries
 # -----------------------------------------------------------------------------
 
 # YAML static lib
@@ -75,7 +67,7 @@ target_compile_definitions(hev-task-system PRIVATE
 target_compile_options(hev-task-system PRIVATE -fvisibility=hidden)
 
 # -----------------------------------------------------------------------------
-# 3. hev-socks5-tunnel shared library
+# 2. hev-socks5-tunnel shared library
 # -----------------------------------------------------------------------------
 file(GLOB_RECURSE TUNNEL_SOURCES
     hev-socks5-tunnel/src/*.c

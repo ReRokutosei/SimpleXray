@@ -433,20 +433,7 @@ class TProxyService : VpnService() {
             } catch (e: Throwable) {
                 Log.e(TAG, "Failed to load hev-socks5-tunnel library", e)
             }
-            try {
-                System.loadLibrary("xray-exec")
-            } catch (e: Throwable) {
-                Log.e(TAG, "Failed to load xray-exec library", e)
-            }
         }
-
-        @JvmStatic
-        private external fun nativeSpawnXray(
-            xrayPath: String,
-            assetDir: String,
-            vpnFd: Int,
-            format: String
-        ): IntArray?
 
         fun getNativeLibraryDir(context: Context?): String? {
             if (context == null) {
