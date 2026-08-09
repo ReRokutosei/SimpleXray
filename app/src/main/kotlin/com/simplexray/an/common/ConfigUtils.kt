@@ -1,6 +1,7 @@
 package com.simplexray.an.common
 
 import android.util.Log
+import com.simplexray.an.prefs.LogLevel
 import com.simplexray.an.prefs.Preferences
 import org.json.JSONArray
 import org.json.JSONException
@@ -25,11 +26,24 @@ object ConfigUtils {
         "domain", "ip", "port", "network", "process", "geosite", "geoip", "inboundtag", "protocol", "user", "attrs"
     )
 
-    fun sanitizeConfig(content: String): String {
+    fun sanitizeConfig(content: String, prefs: Preferences? = null): String {
         val rootJson = parseToJsonObject(content) ?: return content
 
-        // 1. Process and sanitize inbounds (remove desktop tun & convert global listen)
-        rootJson.remove("log")
+        // 1. Process and sanitize log block
+        val logObj = rootJson.optJSONObject("log") ?: JSONObject().also { rootJson.put("log", it) }
+        logObj.remove("access")
+        logObj.remove("error")
+
+        if (prefs != null && prefs.logLevel != LogLevel.Auto) {
+            logObj.put("loglevel", prefs.logLevel.value)
+            Log.d(TAG, "Override loglevel to ${prefs.logLevel.value} from Preferences.")
+        } else {
+            if (!logObj.has("loglevel") || logObj.optString("loglevel").isEmpty()) {
+                logObj.put("loglevel", "warning")
+            }
+        }
+
+        // 2. Process and sanitize inbounds (remove desktop tun & convert global listen)
         val inbounds = rootJson.optJSONArray("inbounds")
         if (inbounds != null) {
             for (i in inbounds.length() - 1 downTo 0) {
@@ -224,7 +238,7 @@ object ConfigUtils {
 
     @Throws(JSONException::class)
     fun injectStatsService(prefs: Preferences, configContent: String): String {
-        val sanitized = sanitizeConfig(configContent)
+        val sanitized = sanitizeConfig(configContent, prefs)
         val jsonObject = JSONObject(sanitized)
 
         val apiObject = JSONObject()

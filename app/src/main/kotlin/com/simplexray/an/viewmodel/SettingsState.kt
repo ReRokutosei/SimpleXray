@@ -2,6 +2,8 @@ package com.simplexray.an.viewmodel
 
 import com.simplexray.an.common.ThemeMode
 
+import com.simplexray.an.prefs.LogLevel
+
 data class InputFieldState(
     val value: String,
     val error: String? = null,
@@ -14,7 +16,8 @@ data class SwitchStates(
     val httpProxyEnabled: Boolean,
     val bypassLanEnabled: Boolean,
     val disableVpn: Boolean,
-    val themeMode: ThemeMode
+    val themeMode: ThemeMode,
+    val logLevel: LogLevel = LogLevel.Auto
 )
 
 data class InfoStates(

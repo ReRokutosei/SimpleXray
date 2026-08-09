@@ -26,6 +26,7 @@ import com.simplexray.an.common.ROUTE_CONFIG_EDIT
 import com.simplexray.an.common.isConfigFile
 import com.simplexray.an.common.ThemeMode
 import com.simplexray.an.data.source.FileManager
+import com.simplexray.an.prefs.LogLevel
 import com.simplexray.an.prefs.Preferences
 import com.simplexray.an.service.TProxyService
 import kotlinx.coroutines.CoroutineScope
@@ -97,7 +98,8 @@ class MainViewModel(application: Application) :
                 httpProxyEnabled = prefs.httpProxyEnabled,
                 bypassLanEnabled = prefs.bypassLan,
                 disableVpn = prefs.disableVpn,
-                themeMode = prefs.theme
+                themeMode = prefs.theme,
+                logLevel = prefs.logLevel
             ),
             info = InfoStates(
                 appVersion = BuildConfig.VERSION_NAME,
@@ -200,7 +202,8 @@ class MainViewModel(application: Application) :
                 httpProxyEnabled = prefs.httpProxyEnabled,
                 bypassLanEnabled = prefs.bypassLan,
                 disableVpn = prefs.disableVpn,
-                themeMode = prefs.theme
+                themeMode = prefs.theme,
+                logLevel = prefs.logLevel
             ),
             info = _settingsState.value.info.copy(
                 appVersion = BuildConfig.VERSION_NAME,
@@ -575,6 +578,13 @@ class MainViewModel(application: Application) :
         prefs.bypassLan = enabled
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(bypassLanEnabled = enabled)
+        )
+    }
+
+    fun setLogLevel(logLevel: LogLevel) {
+        prefs.logLevel = logLevel
+        _settingsState.value = _settingsState.value.copy(
+            switches = _settingsState.value.switches.copy(logLevel = logLevel)
         )
     }
 

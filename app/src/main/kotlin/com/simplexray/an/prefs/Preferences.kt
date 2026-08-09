@@ -9,6 +9,21 @@ import kotlinx.serialization.json.Json
 import com.simplexray.an.R
 import com.simplexray.an.common.ThemeMode
 
+enum class LogLevel(val value: String) {
+    Auto("auto"),
+    Debug("debug"),
+    Info("info"),
+    Warning("warning"),
+    Error("error"),
+    None("none");
+
+    companion object {
+        fun fromString(value: String): LogLevel {
+            return entries.find { it.value.equals(value, ignoreCase = true) } ?: Auto
+        }
+    }
+}
+
 class Preferences(context: Context) {
     private val contentResolver: ContentResolver
     private val context1: Context = context.applicationContext
@@ -337,7 +352,14 @@ class Preferences(context: Context) {
             setValueInProvider(CUSTOM_DAT_URLS, json)
         }
 
+    var logLevel: LogLevel
+        get() = getPrefData(LOG_LEVEL).first?.let { LogLevel.fromString(it) } ?: LogLevel.Auto
+        set(level) {
+            setValueInProvider(LOG_LEVEL, level.value)
+        }
+
     companion object {
+        const val LOG_LEVEL: String = "LogLevel"
         const val SOCKS_ADDR: String = "SocksAddr"
         const val SOCKS_PORT: String = "SocksPort"
         const val HTTP_PORT: String = "HttpPort"
