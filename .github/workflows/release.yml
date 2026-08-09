@@ -1,0 +1,109 @@
+name: Build and Publish Release APK
+
+on:
+  push:
+    tags:
+      - '*'
+
+concurrency:
+  group: ci-${{ github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'zulu'
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: false
+
+      - name: Read Versions
+        run: |
+          echo "XRAY_VERSION=$(grep 'XRAY_CORE_VERSION' version.properties | cut -d '=' -f 2 | tr -d '\r ')" >> $GITHUB_ENV
+          echo "GO_VERSION=$(grep 'GO_VERSION' version.properties | cut -d '=' -f 2 | tr -d '\r ')" >> $GITHUB_ENV
+          echo "RELEASE_VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6.3.0
+
+      - name: Download Rules Files
+        run: |
+          mkdir -p ./app/src/main/assets/
+          wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat -O ./app/src/main/assets/geoip.dat
+          wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O ./app/src/main/assets/geosite.dat
+
+      - name: Build Xray-core from Source
+        run: |
+          wget -qO android-ndk.zip https://dl.google.com/android/repository/android-ndk-r28c-linux.zip
+          unzip -q android-ndk.zip
+          rm android-ndk.zip
+          NDK_HOME=$(realpath android-ndk-*)
+
+          git clone --depth=1 https://github.com/XTLS/Xray-core.git
+          cd Xray-core
+          git checkout ${{ env.XRAY_VERSION }}
+          COMMID=$(git rev-parse HEAD | cut -c 1-7)
+
+          export GOOS=android
+          export CGO_ENABLED=1
+          export GOARCH=arm64
+          export CC=$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
+          go build -o xray -trimpath -buildvcs=false -ldflags="-X github.com/xtls/xray-core/core.build=${COMMID} -s -w -buildid=" -v ./main
+          mkdir -p ../app/src/main/jniLibs/arm64-v8a
+          mv xray ../app/src/main/jniLibs/arm64-v8a/libxray.so
+
+      - name: Build release APK
+        run: bash ./gradlew assembleRelease -x lint -PappVerName=${{ env.RELEASE_VERSION }}
+
+      - name: Sign APK
+        uses: ilharp/sign-android-release@13dd52242698526f951aa8bb8696204f6fea702a # v2.0.0
+        id: sign_app
+        with:
+          releaseDir: app/build/outputs/apk/release
+          signingKey: ${{ secrets.SIGNING_KEY }}
+          keyAlias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          buildToolsVersion: "34.0.0"
+
+      - name: Prepare release files
+        run: |
+          cp ${{ steps.sign_app.outputs.signedFile }} SimpleXray-arm64-v8a-${{ env.RELEASE_VERSION }}.apk
+
+      - name: Generate release notes
+        shell: bash
+        run: |
+          CURRENT_TAG="${RELEASE_VERSION}"
+          PREV_TAG="$(git tag --sort=-v:refname | grep -Fxv "$CURRENT_TAG" | head -n 1)"
+          if [ -z "$PREV_TAG" ]; then
+            RANGE="$CURRENT_TAG"
+          else
+            RANGE="$PREV_TAG...$CURRENT_TAG"
+          fi
+          bash .github/scripts/gen_release_notes.sh -r "$RANGE" -o release.md
+
+      - name: Create Release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          prerelease: ${{ contains(env.RELEASE_VERSION, '-') }}
+          draft: false
+          generate_release_notes: false
+          body_path: release.md
+          files: |
+            SimpleXray-arm64-v8a-${{ env.RELEASE_VERSION }}.apk

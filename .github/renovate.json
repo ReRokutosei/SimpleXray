@@ -1,0 +1,68 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+
+  "labels": ["dependency"],
+  "prConcurrentLimit": 10,
+
+  "packageRules": [
+    {
+      "description": "Gradle Version Catalog",
+      "matchFileNames": ["**/libs.versions.toml"],
+      "labels": ["gradle", "version-catalog"]
+    },
+    {
+      "description": "Gradle Wrapper",
+      "matchFileNames": ["**/gradle/wrapper/gradle-wrapper.properties"],
+      "labels": ["gradle-wrapper"]
+    },
+    {
+      "description": "GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "labels": ["github-actions"]
+    },
+
+    {
+      "description": "Automerge all patch updates",
+      "matchUpdateTypes": ["patch"],
+      "automerge": true
+    },
+
+    {
+      "description": "Automerge minor for safe runtime libraries",
+      "matchUpdateTypes": ["minor"],
+      "matchPackagePatterns": [
+        "^androidx\\.",
+        "^io\\.coil-kt",
+        "^androidx\\.datastore",
+        "^androidx\\.navigation",
+        "^androidx\\.lifecycle",
+        "^androidx\\.activity",
+        "^org\\.jetbrains\\.kotlinx"
+      ],
+      "excludePackagePatterns": [
+        "^androidx\\.compose\\.compiler",
+        "alpha", "beta", "rc"
+      ],
+      "automerge": true
+    },
+    {
+      "description": "Block Kotlin compiler minor automerge",
+      "matchPackagePatterns": [
+        "^org\\.jetbrains\\.kotlin($|:)"
+      ],
+      "matchUpdateTypes": ["minor"],
+      "automerge": false
+    },
+    {
+      "description": "Block alpha/beta autoupdates",
+      "matchPackagePatterns": [
+        "^androidx\\.compose\\.material3",
+        "^com\\.google\\.android\\.material"
+      ],
+      "matchUpdateTypes": ["minor"],
+      "prPriority": -1,
+      "automerge": false
+    }
+  ]
+}
