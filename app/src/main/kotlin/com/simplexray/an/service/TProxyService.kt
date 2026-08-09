@@ -336,7 +336,7 @@ class TProxyService : VpnService() {
             }
         }
         if (prefs.httpProxyEnabled) {
-            setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", prefs.socksPort))
+            setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", prefs.httpPort))
         }
         if (prefs.ipv4) {
             addAddress(prefs.tunnelIpv4Address, prefs.tunnelIpv4Prefix)
