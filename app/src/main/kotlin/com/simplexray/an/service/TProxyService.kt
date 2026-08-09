@@ -413,6 +413,7 @@ class TProxyService : VpnService() {
 
     private external fun TProxyStartService(configPath: String, fd: Int): Boolean
     private external fun TProxyStopService(): Boolean
+    private external fun TProxyIsRunning(): Boolean
     private external fun TProxyGetStats(): LongArray?
 
     companion object {
