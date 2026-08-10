@@ -43,23 +43,73 @@ object ConfigUtils {
             }
         }
 
-        // 2. Process and sanitize inbounds (remove desktop tun & convert global listen)
-        val inbounds = rootJson.optJSONArray("inbounds")
-        if (inbounds != null) {
-            for (i in inbounds.length() - 1 downTo 0) {
-                val inbound = inbounds.optJSONObject(i) ?: continue
-                val protocol = inbound.optString("protocol").lowercase()
-                if (protocol == "tun") {
-                    inbounds.remove(i)
-                    Log.d(TAG, "Removed desktop-only tun inbound at index $i to prevent Android permission denied.")
-                    continue
+        // 2. Process and sanitize inbounds (remove desktop tun & sync/inject SOCKS inbound)
+        var inbounds = rootJson.optJSONArray("inbounds")
+        if (inbounds == null) {
+            inbounds = JSONArray()
+            rootJson.put("inbounds", inbounds)
+        }
+
+        var hasSocksInbound = false
+        val targetPort = prefs?.socksPort ?: 10808
+        val targetListen = prefs?.socksAddress.takeIf { !it.isNullOrEmpty() } ?: "127.0.0.1"
+
+        for (i in inbounds.length() - 1 downTo 0) {
+            val inbound = inbounds.optJSONObject(i) ?: continue
+            val protocol = inbound.optString("protocol").lowercase()
+            if (protocol == "tun") {
+                inbounds.remove(i)
+                Log.d(TAG, "Removed desktop-only tun inbound at index $i to prevent Android permission denied.")
+                continue
+            }
+            if (protocol == "socks") {
+                hasSocksInbound = true
+                inbound.put("port", targetPort)
+                inbound.put("listen", targetListen)
+                if (prefs != null && prefs.socksUsername.isNotEmpty() && prefs.socksPassword.isNotEmpty()) {
+                    val settings = inbound.optJSONObject("settings") ?: JSONObject().also { inbound.put("settings", it) }
+                    val accounts = JSONArray().apply {
+                        put(JSONObject().apply {
+                            put("user", prefs.socksUsername)
+                            put("pass", prefs.socksPassword)
+                        })
+                    }
+                    settings.put("auth", "password")
+                    settings.put("accounts", accounts)
                 }
+                Log.d(TAG, "Synchronized SOCKS inbound port to $targetPort and listen to $targetListen.")
+            } else {
                 val listen = inbound.optString("listen")
                 if (listen == "::" || listen == "0.0.0.0") {
                     inbound.put("listen", "127.0.0.1")
                     Log.d(TAG, "Converted bind address from $listen to 127.0.0.1 for inbound at index $i.")
                 }
             }
+        }
+
+        if (!hasSocksInbound && prefs != null) {
+            val newSocksInbound = JSONObject().apply {
+                put("protocol", "socks")
+                put("listen", targetListen)
+                put("port", targetPort)
+                put("tag", "socks-in")
+                put("settings", JSONObject().apply {
+                    put("udp", true)
+                    if (prefs.socksUsername.isNotEmpty() && prefs.socksPassword.isNotEmpty()) {
+                        put("auth", "password")
+                        put("accounts", JSONArray().apply {
+                            put(JSONObject().apply {
+                                put("user", prefs.socksUsername)
+                                put("pass", prefs.socksPassword)
+                            })
+                        })
+                    } else {
+                        put("auth", "noauth")
+                    }
+                })
+            }
+            inbounds.put(newSocksInbound)
+            Log.d(TAG, "Injected default SOCKS inbound at port $targetPort.")
         }
 
         // 2. Process routing & domainMatcher

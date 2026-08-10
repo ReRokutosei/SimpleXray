@@ -1,112 +1,92 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="socks_address">目标Socks地址</string>
-    <string name="socks_port">目标Socks端口</string>
-    <string name="socks_pass">SOCKS 密码</string>
+    <!-- SOCKS 本地入站设置 -->
+    <string name="socks_address">SOCKS 入站地址</string>
+    <string name="socks_address_summary">TUN 流量转发与 Xray 本地 SOCKS5 代理服务的绑定监听 IP 地址</string>
+    <string name="socks_port">SOCKS 入站端口</string>
+    <string name="socks_port_summary">TUN 流量转发与 Xray 本地 SOCKS5 代理服务的监听端口（自动同步至内核配置）</string>
+    <string name="socks_user">SOCKS 认证用户</string>
+    <string name="socks_user_summary">SOCKS5 代理连接验证所需用户名 (可选)</string>
+    <string name="socks_pass">SOCKS 认证密码</string>
+    <string name="socks_pass_summary">SOCKS5 代理连接验证所需密码 (可选)</string>
+
+    <!-- TUN 网络与 DNS 设置 -->
     <string name="dns_ipv4">TUN 接口 DNS IPv4</string>
     <string name="dns_ipv4_summary">系统 VPN 接口使用的 IPv4 DNS 服务器地址</string>
     <string name="dns_ipv6">TUN 接口 DNS IPv6</string>
     <string name="dns_ipv6_summary">系统 VPN 接口使用的 IPv6 DNS 服务器地址</string>
     <string name="ipv6">IPv6 支持</string>
     <string name="ipv6_summary">为系统 VPN 接口启用 IPv6 路由与协议栈支持</string>
-    <string name="apps_title">分应用代理</string>
-    <string name="apps_summary">选择需要代理的应用,否则使用全局模式</string>
-    <string name="save">保存</string>
-    <string name="search">搜索</string>
-    <string name="log">日志</string>
-    <string name="config">编辑配置</string>
-    <string name="settings">设置</string>
-    <string name="about">关于</string>
-    <string name="new_profile">新建</string>
-    <string name="configuration">配置</string>
-    <string name="bypass_lan_title">绕过局域网</string>
-    <string name="bypass_lan_summary">启用时，局域网流量不通过代理</string>
-    <string name="use_template_title">使用模版创建新配置</string>
-    <string name="use_template_summary">启用时，创建新配置会预填充模版内容</string>
-    <string name="vpn_interface">VPN接口</string>
-    <string name="confirm">确定</string>
-    <string name="cancel">取消</string>
-    <string name="delete_config">删除配置</string>
-    <string name="filename_empty">文件名不能为空</string>
-    <string name="filename_invalid">文件名包含无效字符</string>
-    <string name="filename_already_exists">文件名已存在</string>
-    <string name="invalid_config_format">无效的配置格式</string>
-    <string name="config_save_success">保存成功</string>
-    <string name="delete_fail">删除失败</string>
-    <string name="not_select_config">未选择配置文件</string>
-    <string name="filename">文件名</string>
-    <string name="share">分享</string>
-    <string name="export">导出</string>
-    <string name="http_proxy_title">通过HTTP代理</string>
-    <string name="http_proxy_summary">向 Android 系统注册全局 HTTP 代理 (127.0.0.1:10809)。常规 TUN 模式下保持关闭即可，开启可兼容部分不支持 TUN 的特殊应用</string>
-    <string name="invalid_ipv6">请输入有效的IPv6地址</string>
-    <string name="invalid_ipv4">请输入有效的IPv4地址</string>
-    <string name="invalid_ipv4_or_ipv6">请输入有效的IPv4/IPv6地址</string>
-    <string name="invalid_port">请输入有效的端口号</string>
-    <string name="invalid_port_range">端口号必须在1024到65535之间</string>
-    <string name="import_from_clipboard">从剪贴板导入</string>
-    <string name="import_from_file">从文件导入</string>
-    <string name="import_failed">导入失败: 粘贴板上未找到配置</string>
-    <string name="source">源代码</string>
-    <string name="version">版本</string>
-    <string name="kernel">内核</string>
-    <string name="open_source">打开源代码库</string>
-    <string name="backup">备份</string>
-    <string name="restore">恢复</string>
-    <string name="backup_success">备份成功</string>
-    <string name="backup_failed">备份失败</string>
-    <string name="restore_failed">恢复失败</string>
-    <string name="restore_success">恢复成功</string>
-    <string name="no_config_files">无配置文件</string>
-    <string name="no_log_entries">无日志</string>
-    <string name="rule_file_default">默认规则文件</string>
-    <string name="import_success">导入成功</string>
-    <string name="rule_files_category_title">规则文件</string>
-    <string name="config_in_use">配置文件正在使用</string>
-    <string name="content">内容</string>
-    <string name="back">返回</string>
-    <string name="more">更多</string>
-    <string name="apps_not_found">没有找到应用</string>
-    <string name="close_search">关闭搜索</string>
-    <string name="clear_search">清除搜索</string>
-    <string name="app_icon">应用图标</string>
-    <string name="create_config_failed">配置创建失败</string>
-    <string name="no_app_for_export">没有可用于导出的应用</string>
-    <string name="export_failed">导出失败</string>
-    <string name="config_not_found">配置文件不存在</string>
-    <string name="save_fail">保存失败</string>
     <string name="disable_vpn_title">禁用VPN接口</string>
     <string name="disable_vpn_summary">启用时，仅启动核心而不启用VPN</string>
+    <string name="http_proxy_title">通过HTTP代理</string>
+    <string name="http_proxy_summary">向 Android 系统注册全局 HTTP 代理 (127.0.0.1:10809)。常规 TUN 模式下保持关闭即可，开启可兼容部分不支持 TUN 的特殊应用</string>
+    <string name="bypass_lan_title">绕过局域网</string>
+    <string name="bypass_lan_summary">启用时，局域网流量不通过代理</string>
+
+    <!-- 常规偏好设置 -->
+    <string name="general">通用</string>
+    <string name="settings">设置</string>
+    <string name="core_control">Core Control</string>
+    <string name="use_template_title">使用模版创建新配置</string>
+    <string name="use_template_summary">启用时，创建新配置会预填充模版内容</string>
+    <string name="loglevel_title">日志等级</string>
+    <string name="loglevel_summary">Auto跟随配置，指定时强制覆盖日志记录级别</string>
+    <string name="theme_title">主题</string>
+    <string name="theme_summary">调整主题为深色或浅色</string>
+    <string name="theme_light">浅色</string>
+    <string name="theme_dark">深色</string>
+    <string name="auto">自动</string>
+
+    <!-- 分应用代理 -->
+    <string name="apps_title">分应用代理</string>
+    <string name="apps_summary">选择需要代理的应用,否则使用全局模式</string>
+    <string name="apps_not_found">没有找到应用</string>
+    <string name="show_system_apps">显示系统应用</string>
+    <string name="bypass_selected_apps">绕过所选应用</string>
+    <string name="select_all">全选</string>
+    <string name="inverse_selection">反选</string>
+    <string name="app_icon">应用图标</string>
+
+    <!-- 配置文件与管理 -->
+    <string name="configuration">配置</string>
+    <string name="new_profile">新建</string>
+    <string name="config">编辑配置</string>
+    <string name="content">内容</string>
+    <string name="filename">文件名</string>
+    <string name="config_in_use">配置文件正在使用</string>
+    <string name="delete_config">删除配置</string>
+    <string name="not_select_config">未选择配置文件</string>
+    <string name="no_config_files">无配置文件</string>
+    <string name="import_from_clipboard">从剪贴板导入</string>
+    <string name="import_from_file">从文件导入</string>
+    <string name="import_file">导入</string>
+    <string name="export">导出</string>
+    <string name="export_to_clipboard">导出到剪贴板</string>
+    <string name="share">分享</string>
+    <string name="backup">备份</string>
+    <string name="restore">恢复</string>
+
+    <!-- 规则文件管理 -->
+    <string name="rule_files_category_title">规则文件</string>
+    <string name="rule_file_default">默认规则文件</string>
+    <string name="rule_file_update_url">从URL更新</string>
+    <string name="reset_file">重置</string>
+    <string name="delete_rule_file_title">删除规则文件</string>
+    <string name="delete_rule_file_message">这将恢复为默认规则文件，确定吗？</string>
+    <string name="restore_default_url">恢复默认地址</string>
+    <string name="rule_file_restore_geoip_success">geoip.dat 已恢复为默认</string>
+    <string name="rule_file_restore_geosite_success">geosite.dat 已恢复为默认</string>
+
+    <!-- 连通性测试 -->
     <string name="connectivity_test">连通性测试</string>
     <string name="connectivity_test_target">目标地址</string>
     <string name="connectivity_test_timeout">测试超时（毫秒）</string>
     <string name="connectivity_test_latency">网络延迟：%1$d 毫秒</string>
     <string name="connectivity_test_failed">无法连接目标服务器</string>
     <string name="connectivity_test_invalid_url">目标地址格式无效</string>
-    <string name="select_all">全选</string>
-    <string name="inverse_selection">反选</string>
-    <string name="show_system_apps">显示系统应用</string>
-    <string name="bypass_selected_apps">绕过所选应用</string>
-    <string name="export_to_clipboard">导出到剪贴板</string>
-    <string name="export_success">导出成功</string>
-    <string name="import_invalid_format">导入格式无效</string>
-    <string name="import_file">导入</string>
-    <string name="reset_file">重置</string>
-    <string name="rule_file_restore_geoip_success">geoip.dat 已恢复为默认</string>
-    <string name="rule_file_restore_geosite_success">geosite.dat 已恢复为默认</string>
-    <string name="invalid_timeout">请输入有效的超时时间（正整数）</string>
-    <string name="rule_file_update_url">从URL更新</string>
-    <string name="update">更新</string>
-    <string name="download_success">下载成功</string>
-    <string name="download_failed">下载失败</string>
-    <string name="connecting">连接中…</string>
-    <string name="downloading">下载中… %1$d%%</string>
-    <string name="downloading_no_size">下载中…</string>
-    <string name="download_cancelled">下载已取消</string>
-    <string name="general">通用</string>
-    <string name="delete_rule_file_title">删除规则文件</string>
-    <string name="delete_rule_file_message">这将恢复为默认规则文件，确定吗？</string>
-    <string name="restore_default_url">恢复默认地址</string>
+
+    <!-- 仪表盘与统计 -->
     <string name="core_stats_title">仪表</string>
     <string name="stats_uplink">上行流量</string>
     <string name="stats_downlink">下行流量</string>
@@ -114,19 +94,64 @@
     <string name="stats_num_gc">垃圾回收次数</string>
     <string name="stats_alloc">已分配内存</string>
     <string name="stats_uptime">运行时间</string>
+
+    <!-- 通用 UI 操作与交互 -->
+    <string name="save">保存</string>
+    <string name="search">搜索</string>
+    <string name="close_search">关闭搜索</string>
+    <string name="clear_search">清除搜索</string>
+    <string name="log">日志</string>
+    <string name="about">关于</string>
+    <string name="confirm">确定</string>
+    <string name="cancel">取消</string>
+    <string name="back">返回</string>
+    <string name="more">更多</string>
+    <string name="update">更新</string>
+    <string name="download">下载</string>
+
+    <!-- 关于与版本更新 -->
+    <string name="version">版本</string>
+    <string name="kernel">内核</string>
+    <string name="source">源代码</string>
+    <string name="open_source">打开源代码库</string>
     <string name="check_for_updates">检查更新</string>
     <string name="no_new_version_available">没有新版本可用</string>
     <string name="failed_to_check_for_updates">检查更新失败</string>
     <string name="new_version_available_title">新版本可用</string>
     <string name="new_version_available_message">新版本 (%1$s) 可用。是否下载？</string>
-    <string name="download">下载</string>
-    <string name="theme_title">主题</string>
-    <string name="theme_summary">调整主题为深色或浅色</string>
-    <string name="theme_light">浅色</string>
-    <string name="theme_dark">深色</string>
-    <string name="auto">自动</string>
-    <string name="socks_user">SOCKS 用户</string>
-    <string name="core_control">Core Control</string>
-    <string name="loglevel_title">日志等级</string>
-    <string name="loglevel_summary">Auto跟随配置，指定时强制覆盖日志记录级别</string>
+
+    <!-- 校验提示与 Toast 反馈 -->
+    <string name="invalid_config_format">无效的配置格式</string>
+    <string name="config_save_success">保存成功</string>
+    <string name="save_fail">保存失败</string>
+    <string name="delete_fail">删除失败</string>
+    <string name="filename_empty">文件名不能为空</string>
+    <string name="filename_invalid">文件名包含无效字符</string>
+    <string name="filename_already_exists">文件名已存在</string>
+    <string name="invalid_ipv4">请输入有效的IPv4地址</string>
+    <string name="invalid_ipv6">请输入有效的IPv6地址</string>
+    <string name="invalid_ipv4_or_ipv6">请输入有效的IPv4/IPv6地址</string>
+    <string name="invalid_port">请输入有效的端口号</string>
+    <string name="invalid_port_range">端口号必须在1024到65535之间</string>
+    <string name="invalid_timeout">请输入有效的超时时间（正整数）</string>
+    <string name="import_failed">导入失败: 粘贴板上未找到配置</string>
+    <string name="import_success">导入成功</string>
+    <string name="import_invalid_format">导入格式无效</string>
+    <string name="backup_success">备份成功</string>
+    <string name="backup_failed">备份失败</string>
+    <string name="restore_success">恢复成功</string>
+    <string name="restore_failed">恢复失败</string>
+    <string name="no_log_entries">无日志</string>
+    <string name="vpn_interface">VPN接口</string>
+    <string name="create_config_failed">配置创建失败</string>
+    <string name="no_app_for_export">没有可用于导出的应用</string>
+    <string name="export_failed">导出失败</string>
+    <string name="export_success">导出成功</string>
+    <string name="config_not_found">配置文件不存在</string>
+    <string name="download_success">下载成功</string>
+    <string name="download_failed">下载失败</string>
+    <string name="connecting">连接中…</string>
+    <string name="downloading">下载中… %1$d%%</string>
+    <string name="downloading_no_size">下载中…</string>
+    <string name="download_cancelled">下载已取消</string>
 </resources>
