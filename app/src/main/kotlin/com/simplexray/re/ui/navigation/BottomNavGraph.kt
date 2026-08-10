@@ -100,6 +100,8 @@ fun BottomNavHost(
     paddingValues: PaddingValues,
     mainViewModel: MainViewModel,
     onDeleteConfigClick: (File, () -> Unit) -> Unit,
+    onCreateNewConfigFileAndEdit: () -> Unit = {},
+    onImportConfigFromClipboard: () -> Unit = {},
     logViewModel: LogViewModel,
     geoipFilePickerLauncher: ActivityResultLauncher<Array<String>>,
     geositeFilePickerLauncher: ActivityResultLauncher<Array<String>>,
@@ -134,6 +136,8 @@ fun BottomNavHost(
                 onReloadConfig = createReloadConfigCallback(mainViewModel),
                 onEditConfigClick = createEditConfigCallback(mainViewModel),
                 onDeleteConfigClick = onDeleteConfigClick,
+                onCreateNewConfigFileAndEdit = onCreateNewConfigFileAndEdit,
+                onImportConfigFromClipboard = onImportConfigFromClipboard,
                 mainViewModel = mainViewModel,
                 listState = configListState
             )
