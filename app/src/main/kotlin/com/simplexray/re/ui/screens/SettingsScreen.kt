@@ -626,7 +626,7 @@ fun EditableListItemWithMiuixBottomSheet(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp)
+                    .padding(top = 8.dp)
             ) {
                 TextField(
                     value = tempValue,
