@@ -1,5 +1,6 @@
 package com.simplexray.re.ui.screens
 
+import android.content.res.Configuration
 import android.util.Log
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -71,11 +72,13 @@ fun ConfigScreen(
     listState: LazyListState
 ) {
     val configuration = LocalConfiguration.current
-    val isWideScreen = configuration.screenWidthDp >= 600
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val isMasterDetailSupported = isLandscape && configuration.screenWidthDp >= 840
 
     val files by mainViewModel.configFiles.collectAsState()
     val selectedFile by mainViewModel.selectedConfigFile.collectAsState()
     var selectedFileForDetail by remember { mutableStateOf<File?>(null) }
+    var isEditorExpanded by remember { mutableStateOf(false) }
 
     LaunchedEffect(files, selectedFile) {
         if (selectedFileForDetail == null || !files.contains(selectedFileForDetail)) {
@@ -85,38 +88,43 @@ fun ConfigScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
 
-    if (isWideScreen) {
+    if (isMasterDetailSupported) {
         Row(modifier = Modifier.fillMaxSize()) {
-            Box(
-                modifier = Modifier
-                    .width(360.dp)
-                    .fillMaxHeight()
-            ) {
-                ConfigListPane(
-                    files = files,
-                    selectedFile = selectedFile,
-                    selectedFileForDetail = selectedFileForDetail,
-                    onFileSelectedForDetail = { file ->
-                        selectedFileForDetail = file
-                    },
-                    onReloadConfig = onReloadConfig,
-                    onEditConfigClick = onEditConfigClick,
-                    onDeleteConfigClick = onDeleteConfigClick,
-                    mainViewModel = mainViewModel,
-                    listState = listState,
-                    isWideScreen = true
-                )
+            if (!isEditorExpanded) {
+                Box(
+                    modifier = Modifier
+                        .width(360.dp)
+                        .fillMaxHeight()
+                ) {
+                    ConfigListPane(
+                        files = files,
+                        selectedFile = selectedFile,
+                        selectedFileForDetail = selectedFileForDetail,
+                        onFileSelectedForDetail = { file ->
+                            selectedFileForDetail = file
+                        },
+                        onOpenFullscreenEditor = { file ->
+                            selectedFileForDetail = file
+                            isEditorExpanded = true
+                        },
+                        onReloadConfig = onReloadConfig,
+                        onEditConfigClick = onEditConfigClick,
+                        onDeleteConfigClick = onDeleteConfigClick,
+                        mainViewModel = mainViewModel,
+                        listState = listState,
+                        isWideScreen = true
+                    )
+                }
             }
 
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .padding(start = 8.dp)
+                    .padding(start = if (isEditorExpanded) 0.dp else 8.dp)
             ) {
                 if (selectedFileForDetail != null) {
                     val activeFile = selectedFileForDetail!!
-                    val context = LocalContext.current
                     key(activeFile.absolutePath) {
                         val editViewModel = remember(activeFile.absolutePath) {
                             ConfigEditViewModel(
@@ -128,7 +136,9 @@ fun ConfigScreen(
                         ConfigEditPane(
                             viewModel = editViewModel,
                             snackbarHostState = snackbarHostState,
-                            showNavigationIcon = false
+                            showNavigationIcon = false,
+                            onToggleExpand = { isEditorExpanded = !isEditorExpanded },
+                            isExpanded = isEditorExpanded
                         )
                     }
                 } else {
@@ -151,6 +161,9 @@ fun ConfigScreen(
             selectedFile = selectedFile,
             selectedFileForDetail = null,
             onFileSelectedForDetail = {},
+            onOpenFullscreenEditor = { file ->
+                onEditConfigClick(file)
+            },
             onReloadConfig = onReloadConfig,
             onEditConfigClick = onEditConfigClick,
             onDeleteConfigClick = onDeleteConfigClick,
@@ -167,6 +180,7 @@ private fun ConfigListPane(
     selectedFile: File?,
     selectedFileForDetail: File?,
     onFileSelectedForDetail: (File) -> Unit,
+    onOpenFullscreenEditor: (File) -> Unit,
     onReloadConfig: () -> Unit,
     onEditConfigClick: (File) -> Unit,
     onDeleteConfigClick: (File, () -> Unit) -> Unit,
@@ -290,11 +304,7 @@ private fun ConfigListPane(
                                         )
                                     }
                                     IconButton(onClick = {
-                                        if (isWideScreen) {
-                                            onFileSelectedForDetail(file)
-                                        } else {
-                                            onEditConfigClick(file)
-                                        }
+                                        onOpenFullscreenEditor(file)
                                     }) {
                                         Icon(
                                             painter = painterResource(R.drawable.edit),
