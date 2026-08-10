@@ -3,9 +3,12 @@
     <string name="socks_address">目标Socks地址</string>
     <string name="socks_port">目标Socks端口</string>
     <string name="socks_pass">SOCKS 密码</string>
-    <string name="dns_ipv4">DNS IPv4</string>
-    <string name="dns_ipv6">DNS IPv6</string>
-    <string name="ipv6">IPv6</string>
+    <string name="dns_ipv4">TUN 接口 DNS IPv4</string>
+    <string name="dns_ipv4_summary">系统 VPN 接口使用的 IPv4 DNS 服务器地址</string>
+    <string name="dns_ipv6">TUN 接口 DNS IPv6</string>
+    <string name="dns_ipv6_summary">系统 VPN 接口使用的 IPv6 DNS 服务器地址</string>
+    <string name="ipv6">IPv6 支持</string>
+    <string name="ipv6_summary">为系统 VPN 接口启用 IPv6 路由与协议栈支持</string>
     <string name="apps_title">分应用代理</string>
     <string name="apps_summary">选择需要代理的应用,否则使用全局模式</string>
     <string name="save">保存</string>
@@ -14,7 +17,6 @@
     <string name="config">编辑配置</string>
     <string name="settings">设置</string>
     <string name="about">关于</string>
-    <string name="ipv6_enabled">为VPN接口启用IPv6</string>
     <string name="new_profile">新建</string>
     <string name="configuration">配置</string>
     <string name="bypass_lan_title">绕过局域网</string>

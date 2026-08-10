@@ -1088,7 +1088,7 @@ class MainViewModel(application: Application) :
         viewModelScope.launch(Dispatchers.IO) {
             val fileName = fileManager.importDatFileFromUri(application, uri)
             if (fileName != null) {
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar("已导�?$fileName"))
+                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar("已导入 $fileName"))
             }
         }
     }
@@ -1102,7 +1102,7 @@ class MainViewModel(application: Application) :
             val urls = prefs.customDatUrls.toMutableMap()
             urls.remove(fileName)
             prefs.customDatUrls = urls
-            _uiEvent.trySend(MainViewUiEvent.ShowSnackbar("已删�?$fileName"))
+            _uiEvent.trySend(MainViewUiEvent.ShowSnackbar("已删除 $fileName"))
         }
     }
 
@@ -1141,19 +1141,23 @@ class MainViewModel(application: Application) :
                 }
             }.build()
 
+            val apiUrl = application.getString(R.string.source_url)
+                .replace("github.com", "api.github.com/repos") + "/releases/latest"
             val request = Request.Builder()
-                .url(application.getString(R.string.source_url) + "/releases/latest")
-                .head()
+                .url(apiUrl)
+                .header("Accept", "application/vnd.github+json")
+                .get()
                 .build()
 
             try {
                 val response = client.newCall(request).await()
-                val location = response.request.url.toString()
-                val latestTag = location.substringAfterLast("/tag/v")
-                Log.d(TAG, "Latest version tag: $latestTag")
-                val updateAvailable = compareVersions(latestTag) > 0
+                val responseBody = response.body?.string() ?: ""
+                val json = org.json.JSONObject(responseBody)
+                val tagName = json.optString("tag_name", "").removePrefix("v")
+                Log.d(TAG, "Latest version tag: $tagName")
+                val updateAvailable = tagName.isNotEmpty() && compareVersions(tagName) > 0
                 if (updateAvailable) {
-                    _newVersionAvailable.value = latestTag
+                    _newVersionAvailable.value = tagName
                 } else {
                     _uiEvent.trySend(
                         MainViewUiEvent.ShowSnackbar(

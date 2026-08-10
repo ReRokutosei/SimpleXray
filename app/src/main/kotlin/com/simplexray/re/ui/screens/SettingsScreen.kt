@@ -435,6 +435,7 @@ fun SettingsScreen(
             currentValue = settingsState.dnsIpv4.value,
             onValueConfirmed = { newValue -> mainViewModel.updateDnsIpv4(newValue) },
             label = stringResource(R.string.dns_ipv4),
+            supportingText = stringResource(R.string.dns_ipv4_summary),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             isError = !settingsState.dnsIpv4.isValid,
             errorMessage = settingsState.dnsIpv4.error,
@@ -448,6 +449,7 @@ fun SettingsScreen(
             currentValue = settingsState.dnsIpv6.value,
             onValueConfirmed = { newValue -> mainViewModel.updateDnsIpv6(newValue) },
             label = stringResource(R.string.dns_ipv6),
+            supportingText = stringResource(R.string.dns_ipv6_summary),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
             isError = !settingsState.dnsIpv6.isValid,
             errorMessage = settingsState.dnsIpv6.error,
@@ -458,7 +460,7 @@ fun SettingsScreen(
 
         ListItem(
             headlineContent = { Text(stringResource(R.string.ipv6)) },
-            supportingContent = { Text(stringResource(R.string.ipv6_enabled)) },
+            supportingContent = { Text(stringResource(R.string.ipv6_summary)) },
             trailingContent = {
                 Switch(
                     checked = settingsState.switches.ipv6Enabled,
@@ -803,6 +805,7 @@ fun EditableListItemWithBottomSheet(
     currentValue: String,
     onValueConfirmed: (String) -> Unit,
     label: String,
+    supportingText: String? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     isError: Boolean = false,
     errorMessage: String? = null,
@@ -874,7 +877,18 @@ fun EditableListItemWithBottomSheet(
 
     ListItem(
         headlineContent = { Text(headline) },
-        supportingContent = { Text(currentValue) },
+        supportingContent = {
+            Column {
+                if (!supportingText.isNullOrEmpty()) {
+                    Text(
+                        text = supportingText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Text(currentValue)
+            }
+        },
         modifier = Modifier.clickable(enabled = enabled) {
             tempValue = currentValue
             showSheet = true
