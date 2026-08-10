@@ -1018,7 +1018,7 @@ class MainViewModel(application: Application) :
                         refreshCustomDatFiles()
                         _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.download_success)))
                     } else {
-                        _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.download_failed)))
+                        _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_validation_failed)))
                     }
                 }
             } catch (e: Exception) {
@@ -1057,6 +1057,8 @@ class MainViewModel(application: Application) :
             if (fileName != null) {
                 refreshCustomDatFiles()
                 _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.file_imported, fileName)))
+            } else {
+                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_validation_failed)))
             }
         }
     }

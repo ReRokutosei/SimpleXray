@@ -228,40 +228,40 @@ class FileManager(private val application: Application, private val prefs: Prefe
     suspend fun importRuleFile(uri: Uri, filename: String): Boolean {
         return withContext(Dispatchers.IO) {
             val targetFile = File(application.filesDir, filename)
+            val tempFile = File(application.filesDir, "$filename.tmp")
             try {
                 application.contentResolver.openInputStream(uri).use { inputStream ->
-                    FileOutputStream(targetFile).use { outputStream ->
+                    FileOutputStream(tempFile).use { outputStream ->
                         if (inputStream == null) {
                             throw IOException("Failed to open input stream for URI: $uri")
                         }
-                        val buffer = ByteArray(1024)
+                        val buffer = ByteArray(4096)
                         var read: Int
                         while ((inputStream.read(buffer).also { read = it }) != -1) {
                             outputStream.write(buffer, 0, read)
                         }
+                    }
+                }
+                if (com.simplexray.re.common.GeoDataValidator.validateDatFile(application, tempFile, filename)) {
+                    if (tempFile.renameTo(targetFile)) {
                         when (filename) {
                             "geoip.dat" -> prefs.customGeoipImported = true
                             "geosite.dat" -> prefs.customGeositeImported = true
                         }
                         Log.d(TAG, "Successfully imported $filename from URI: $uri")
-                        true
+                        return@withContext true
                     }
                 }
-            } catch (e: IOException) {
+                tempFile.delete()
+                false
+            } catch (e: Exception) {
+                tempFile.delete()
                 if (filename == "geoip.dat") {
                     prefs.customGeoipImported = false
                 } else if (filename == "geosite.dat") {
                     prefs.customGeositeImported = false
                 }
                 Log.e(TAG, "Error importing rule file: $filename", e)
-                false
-            } catch (e: Exception) {
-                if (filename == "geoip.dat") {
-                    prefs.customGeoipImported = false
-                } else if (filename == "geosite.dat") {
-                    prefs.customGeositeImported = false
-                }
-                Log.e(TAG, "Unexpected error during rule file import: $filename", e)
                 false
             }
         }
@@ -285,21 +285,18 @@ class FileManager(private val application: Application, private val prefs: Prefe
                     }
                 }
 
-                if (tempFile.renameTo(targetFile)) {
-                    when (filename) {
-                        "geoip.dat" -> prefs.customGeoipImported = true
-                        "geosite.dat" -> prefs.customGeositeImported = true
+                if (com.simplexray.re.common.GeoDataValidator.validateDatFile(application, tempFile, filename)) {
+                    if (tempFile.renameTo(targetFile)) {
+                        when (filename) {
+                            "geoip.dat" -> prefs.customGeoipImported = true
+                            "geosite.dat" -> prefs.customGeositeImported = true
+                        }
+                        Log.d(TAG, "Successfully saved $filename from stream")
+                        return@withContext true
                     }
-                    Log.d(TAG, "Successfully saved $filename from stream")
-                    true
-                } else {
-                    Log.e(TAG, "Failed to rename temp file to $filename")
-                    tempFile.delete()
-                    false
                 }
-            } catch (e: IOException) {
+                Log.e(TAG, "Validation failed or rename failed for $filename")
                 tempFile.delete()
-                Log.e(TAG, "Error saving rule file: $filename", e)
                 false
             } catch (e: Exception) {
                 tempFile.delete()
@@ -440,12 +437,19 @@ class FileManager(private val application: Application, private val prefs: Prefe
                     fileName += ".dat"
                 }
                 val targetFile = File(application.filesDir, fileName)
+                val tempFile = File(application.filesDir, "$fileName.tmp")
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    FileOutputStream(targetFile).use { outputStream ->
+                    FileOutputStream(tempFile).use { outputStream ->
                         inputStream.copyTo(outputStream)
                     }
                 }
-                fileName
+                if (com.simplexray.re.common.GeoDataValidator.validateDatFile(application, tempFile, fileName)) {
+                    if (tempFile.renameTo(targetFile)) {
+                        return@withContext fileName
+                    }
+                }
+                tempFile.delete()
+                null
             } catch (e: Exception) {
                 Log.e(TAG, "Error importing dat file from URI", e)
                 null

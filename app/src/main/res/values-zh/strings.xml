@@ -164,4 +164,5 @@
     <string name="file_deleted">已删除 %s</string>
     <string name="hide_from_recents_title">从后台任务隐藏</string>
     <string name="hide_from_recents_summary">从 Android 最近任务中隐藏本应用</string>
+    <string name="rule_file_validation_failed">规则文件校验失败或已损坏</string>
 </resources>
