@@ -110,6 +110,8 @@
     <string name="download">下载</string>
 
     <!-- 关于与版本更新 -->
+    <string name="privacy_disclaimer_title">免责声明与隐私条款</string>
+    <string name="privacy_disclaimer_summary">查看开源免责声明及隐私保护政策</string>
     <string name="version">版本</string>
     <string name="kernel">内核</string>
     <string name="source">源代码</string>

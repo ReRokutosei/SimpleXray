@@ -711,6 +711,22 @@ fun SettingsScreen(
                 )
             }
         )
+
+        ListItem(
+            modifier = Modifier.clickable {
+                val browserIntent =
+                    Intent(Intent.ACTION_VIEW, Uri.parse(context.getString(R.string.privacy_disclaimer_url)))
+                context.startActivity(browserIntent)
+            },
+            headlineContent = { Text(stringResource(R.string.privacy_disclaimer_title)) },
+            supportingContent = { Text(stringResource(R.string.privacy_disclaimer_summary)) },
+            trailingContent = {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = null
+                )
+            }
+        )
     }
 }
 
