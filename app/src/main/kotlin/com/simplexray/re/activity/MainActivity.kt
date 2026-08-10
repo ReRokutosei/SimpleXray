@@ -66,9 +66,9 @@ class MainActivity : ComponentActivity() {
             }
 
             val colorSchemeMode = when (mainViewModel.prefs.theme) {
-                ThemeMode.Light -> top.yukonga.miuix.kmp.theme.ColorSchemeMode.Light
-                ThemeMode.Dark -> top.yukonga.miuix.kmp.theme.ColorSchemeMode.Dark
-                ThemeMode.Auto -> top.yukonga.miuix.kmp.theme.ColorSchemeMode.System
+                ThemeMode.Light -> if (dynamicColor) top.yukonga.miuix.kmp.theme.ColorSchemeMode.MonetLight else top.yukonga.miuix.kmp.theme.ColorSchemeMode.Light
+                ThemeMode.Dark -> if (dynamicColor) top.yukonga.miuix.kmp.theme.ColorSchemeMode.MonetDark else top.yukonga.miuix.kmp.theme.ColorSchemeMode.Dark
+                ThemeMode.Auto -> if (dynamicColor) top.yukonga.miuix.kmp.theme.ColorSchemeMode.MonetSystem else top.yukonga.miuix.kmp.theme.ColorSchemeMode.System
             }
 
             val themeController = androidx.compose.runtime.remember(colorSchemeMode, isDark) {
