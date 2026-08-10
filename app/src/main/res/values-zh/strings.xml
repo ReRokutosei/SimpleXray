@@ -92,6 +92,8 @@
 
     <!-- 仪表盘与统计 -->
     <string name="core_stats_title">状态</string>
+    <string name="traffic_info">流量信息</string>
+    <string name="core_runtime_status">核心运行状态</string>
     <string name="stats_uplink">上行流量</string>
     <string name="stats_downlink">下行流量</string>
     <string name="stats_num_goroutine">Goroutine 数量</string>
