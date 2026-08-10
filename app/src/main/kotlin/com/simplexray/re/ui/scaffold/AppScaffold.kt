@@ -253,10 +253,7 @@ private fun TopAppBarActions(
             mainViewModel = mainViewModel
         )
 
-        ROUTE_SETTINGS -> SettingsActions(
-            onPerformBackup = onPerformBackup,
-            onPerformRestore = onPerformRestore
-        )
+        ROUTE_SETTINGS -> { /* No actions */ }
     }
 }
 
@@ -289,65 +286,25 @@ private fun LogActions(
             contentDescription = stringResource(R.string.search)
         )
     }
-
-    val entry = remember(logEntries, hasLogsToExport) {
-        DropdownEntry(
-            items = listOf(
-                DropdownItem(
-                    text = context.getString(R.string.clear_logs),
-                    onClick = {
-                        logViewModel.clearLogs()
-                        mainViewModel.showSnackbar(context.getString(R.string.logs_cleared))
-                    }
-                ),
-                DropdownItem(
-                    text = context.getString(R.string.export),
-                    onClick = { onPerformExport() }
-                )
-            )
-        )
-    }
-
-    OverlayIconDropdownMenu(
-        entry = entry,
-        collapseOnSelection = true
+    IconButton(
+        onClick = { onPerformExport() },
+        enabled = hasLogsToExport
     ) {
         Icon(
-            imageVector = Icons.Default.MoreVert,
-            contentDescription = stringResource(R.string.more)
+            painter = painterResource(id = R.drawable.ic_export),
+            contentDescription = stringResource(R.string.export)
         )
     }
-}
-
-@Composable
-private fun SettingsActions(
-    onPerformBackup: () -> Unit,
-    onPerformRestore: () -> Unit
-) {
-    val context = androidx.compose.ui.platform.LocalContext.current
-
-    val entry = remember {
-        DropdownEntry(
-            items = listOf(
-                DropdownItem(
-                    text = context.getString(R.string.backup),
-                    onClick = { onPerformBackup() }
-                ),
-                DropdownItem(
-                    text = context.getString(R.string.restore),
-                    onClick = { onPerformRestore() }
-                )
-            )
-        )
-    }
-
-    OverlayIconDropdownMenu(
-        entry = entry,
-        collapseOnSelection = true
+    IconButton(
+        onClick = {
+            logViewModel.clearLogs()
+            mainViewModel.showSnackbar(context.getString(R.string.logs_cleared))
+        },
+        enabled = logEntries.isNotEmpty()
     ) {
         Icon(
-            imageVector = Icons.Default.MoreVert,
-            contentDescription = stringResource(R.string.more)
+            painter = painterResource(id = R.drawable.delete),
+            contentDescription = stringResource(R.string.clear_logs)
         )
     }
 }
