@@ -2,7 +2,7 @@
 <resources>
     <!-- Non-translatable Base Configurations -->
     <string name="app_name" translatable="false">SimpleXray</string>
-    <string name="source_url" translatable="false">https://github.com/lhear/SimpleXray</string>
+    <string name="source_url" translatable="false">https://github.com/ReRokutosei/SimpleXray</string>
     <string name="geoip_url" translatable="false">https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat</string>
     <string name="geosite_url" translatable="false">https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat</string>
     <string name="connectivity_test_url" translatable="false">http://www.gstatic.com/generate_204</string>
@@ -117,6 +117,9 @@
     <string name="download">Download</string>
 
     <!-- About & App Versioning -->
+    <string name="privacy_disclaimer_url" translatable="false">https://github.com/ReRokutosei/SimpleXray/tree/main/docs</string>
+    <string name="privacy_disclaimer_title">Privacy &amp; Disclaimer</string>
+    <string name="privacy_disclaimer_summary">View open-source privacy policy and legal disclaimer</string>
     <string name="version">Version</string>
     <string name="kernel">Kernel</string>
     <string name="source">Source Code</string>
