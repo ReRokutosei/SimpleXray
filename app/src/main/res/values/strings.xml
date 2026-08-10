@@ -173,4 +173,7 @@
     <string name="hide_from_recents_title">Hide from Recent Tasks</string>
     <string name="hide_from_recents_summary">Hide application window from Android recent apps list</string>
     <string name="rule_file_validation_failed">Rule file validation failed or corrupted</string>
+    <string name="geo_update_interval_title">Auto-Update Interval (hours)</string>
+    <string name="geo_update_interval_summary">Automatically download geo rule files every N hours. Set to zero to disable. Range: 1–168</string>
+    <string name="invalid_geo_update_interval">Please enter 0 (off) or a whole number from 1 to 168</string>
 </resources>

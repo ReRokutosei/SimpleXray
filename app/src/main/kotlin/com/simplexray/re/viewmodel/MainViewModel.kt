@@ -113,7 +113,8 @@ class MainViewModel(application: Application) :
                 isGeositeCustom = prefs.customGeositeImported
             ),
             connectivityTestTarget = InputFieldState(prefs.connectivityTestTarget),
-            connectivityTestTimeout = InputFieldState(prefs.connectivityTestTimeout.toString())
+            connectivityTestTimeout = InputFieldState(prefs.connectivityTestTimeout.toString()),
+            geoUpdateIntervalHours = InputFieldState(prefs.geoUpdateIntervalHours.toString())
         )
     )
     val settingsState: StateFlow<SettingsState> = _settingsState.asStateFlow()
@@ -221,7 +222,8 @@ class MainViewModel(application: Application) :
                 isGeositeCustom = prefs.customGeositeImported
             ),
             connectivityTestTarget = InputFieldState(prefs.connectivityTestTarget),
-            connectivityTestTimeout = InputFieldState(prefs.connectivityTestTimeout.toString())
+            connectivityTestTimeout = InputFieldState(prefs.connectivityTestTimeout.toString()),
+            geoUpdateIntervalHours = InputFieldState(prefs.geoUpdateIntervalHours.toString())
         )
     }
 
@@ -523,6 +525,48 @@ class MainViewModel(application: Application) :
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(hideFromRecents = enabled)
         )
+    }
+
+    fun updateGeoUpdateInterval(hoursString: String): Boolean {
+        val hours = hoursString.toIntOrNull()
+        return when {
+            hoursString.isBlank() || hours == null -> {
+                _settingsState.value = _settingsState.value.copy(
+                    geoUpdateIntervalHours = InputFieldState(
+                        value = hoursString,
+                        error = application.getString(R.string.invalid_geo_update_interval),
+                        isValid = false
+                    )
+                )
+                false
+            }
+            hours == 0 -> {
+                prefs.geoUpdateIntervalHours = 0
+                com.simplexray.re.service.GeoUpdateReceiver.cancel(application)
+                _settingsState.value = _settingsState.value.copy(
+                    geoUpdateIntervalHours = InputFieldState("0")
+                )
+                true
+            }
+            hours in 1..168 -> {
+                prefs.geoUpdateIntervalHours = hours
+                com.simplexray.re.service.GeoUpdateReceiver.schedule(application, hours)
+                _settingsState.value = _settingsState.value.copy(
+                    geoUpdateIntervalHours = InputFieldState(hours.toString())
+                )
+                true
+            }
+            else -> {
+                _settingsState.value = _settingsState.value.copy(
+                    geoUpdateIntervalHours = InputFieldState(
+                        value = hoursString,
+                        error = application.getString(R.string.invalid_geo_update_interval),
+                        isValid = false
+                    )
+                )
+                false
+            }
+        }
     }
 
     fun setHttpProxyEnabled(enabled: Boolean) {

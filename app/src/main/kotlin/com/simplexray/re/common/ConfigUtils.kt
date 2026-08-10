@@ -34,6 +34,13 @@ object ConfigUtils {
         logObj.remove("access")
         logObj.remove("error")
 
+        // Remove geodata block: xray's built-in geodata cron updater is not safe on Android
+        // (bypasses GUI sandbox validation). GUI manages rule file updates independently.
+        if (rootJson.has("geodata")) {
+            rootJson.remove("geodata")
+            Log.d(TAG, "Removed geodata block: GUI manages geo rule updates with sandbox validation.")
+        }
+
         if (prefs != null && prefs.logLevel != LogLevel.Auto) {
             logObj.put("loglevel", prefs.logLevel.value)
             Log.d(TAG, "Override loglevel to ${prefs.logLevel.value} from Preferences.")

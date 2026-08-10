@@ -46,5 +46,6 @@ data class SettingsState(
     val info: InfoStates,
     val files: FileStates,
     val connectivityTestTarget: InputFieldState,
-    val connectivityTestTimeout: InputFieldState
+    val connectivityTestTimeout: InputFieldState,
+    val geoUpdateIntervalHours: InputFieldState = InputFieldState("0")
 ) 

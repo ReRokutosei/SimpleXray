@@ -55,6 +55,14 @@
                 android:value="VPN service" />
         </service>
 
+        <receiver
+            android:name="com.simplexray.re.service.GeoUpdateReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.simplexray.re.action.GEO_UPDATE" />
+            </intent-filter>
+        </receiver>
+
 
         <activity
             android:name="com.simplexray.re.activity.MainActivity"

@@ -306,6 +306,39 @@ class FileManager(private val application: Application, private val prefs: Prefe
         }
     }
 
+    /**
+     * Validate a pre-downloaded temp dat file with sandbox, then atomically rename to target.
+     * Used by [com.simplexray.re.service.GeoUpdateReceiver] for background auto-updates.
+     */
+    suspend fun saveRuleFileFromTemp(tempFile: java.io.File, filename: String): Boolean {
+        return withContext(Dispatchers.IO) {
+            val targetFile = File(application.filesDir, filename)
+            try {
+                if (!com.simplexray.re.common.GeoDataValidator.validateDatFile(application, tempFile, filename)) {
+                    Log.e(TAG, "saveRuleFileFromTemp: validation failed for $filename")
+                    tempFile.delete()
+                    return@withContext false
+                }
+                if (tempFile.renameTo(targetFile)) {
+                    when (filename) {
+                        "geoip.dat" -> prefs.customGeoipImported = true
+                        "geosite.dat" -> prefs.customGeositeImported = true
+                    }
+                    Log.d(TAG, "saveRuleFileFromTemp: successfully updated $filename")
+                    true
+                } else {
+                    tempFile.delete()
+                    Log.e(TAG, "saveRuleFileFromTemp: rename failed for $filename")
+                    false
+                }
+            } catch (e: Exception) {
+                tempFile.delete()
+                Log.e(TAG, "saveRuleFileFromTemp: error for $filename", e)
+                false
+            }
+        }
+    }
+
     fun getRuleFileSummary(filename: String): String {
         Log.d(TAG, "getRuleFileSummary called with filename: $filename")
         val file = File(application.filesDir, filename)
