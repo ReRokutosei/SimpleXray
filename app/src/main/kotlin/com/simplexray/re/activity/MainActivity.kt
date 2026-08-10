@@ -78,7 +78,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
-            val dispatcherOwner = androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner()
+            val dispatcherOwner = androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner(parent = null)
             top.yukonga.miuix.kmp.theme.MiuixTheme(controller = themeController) {
                 androidx.compose.runtime.CompositionLocalProvider(
                     androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner provides dispatcherOwner,
