@@ -18,22 +18,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -42,8 +26,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
@@ -59,22 +41,33 @@ import com.simplexray.re.ui.util.bracketMatcherTransformation
 import com.simplexray.re.viewmodel.ConfigEditUiEvent
 import com.simplexray.re.viewmodel.ConfigEditViewModel
 import kotlinx.coroutines.flow.collectLatest
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InputField
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfigEditScreen(
     onBackClick: () -> Unit,
     snackbarHostState: SnackbarHostState,
     viewModel: ConfigEditViewModel
 ) {
-    var showMenu by remember { mutableStateOf(false) }
     val filename by viewModel.filename.collectAsStateWithLifecycle()
     val configTextFieldValue by viewModel.configTextFieldValue.collectAsStateWithLifecycle()
     val filenameErrorMessage by viewModel.filenameErrorMessage.collectAsStateWithLifecycle()
     val hasConfigChanged by viewModel.hasConfigChanged.collectAsStateWithLifecycle()
 
     val scrollState = rememberScrollState()
-    val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior(rememberTopAppBarState())
+    val scrollBehavior = MiuixScrollBehavior()
     val isKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     val focusManager = LocalFocusManager.current
     val shareLauncher = rememberLauncherForActivityResult(
@@ -89,10 +82,7 @@ fun ConfigEditScreen(
                 }
 
                 is ConfigEditUiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(
-                        event.message,
-                        duration = SnackbarDuration.Short
-                    )
+                    snackbarHostState.showSnackbar(event.message)
                 }
 
                 is ConfigEditUiEvent.ShareContent -> {
@@ -139,138 +129,137 @@ fun ConfigEditScreen(
         }
     }
 
-    Scaffold(modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection), topBar = {
-        TopAppBar(
-            title = {
-                if (isSearching) {
-                    TextField(
-                        value = searchQuery,
-                        onValueChange = { q ->
-                            searchQuery = q
-                            updateMatches(q, configTextFieldValue.text)
-                            if (matchIndices.isNotEmpty()) {
-                                jumpToMatch(0)
-                            }
-                        },
-                        placeholder = { Text(stringResource(R.string.search)) },
-                        singleLine = true,
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            disabledContainerColor = Color.Transparent,
-                            errorContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        )
-                    )
-                } else {
-                    Text(stringResource(id = R.string.config))
-                }
-            },
-            navigationIcon = {
-                IconButton(onClick = {
-                    if (isSearching) {
-                        isSearching = false
-                        searchQuery = ""
-                        matchIndices = emptyList()
-                    } else {
-                        onBackClick()
-                    }
-                }) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.back)
-                    )
-                }
-            },
-            actions = {
-                if (isSearching) {
-                    if (matchIndices.isNotEmpty()) {
-                        Text(
-                            text = "${currentMatchIndex + 1}/${matchIndices.size}",
-                            style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.padding(horizontal = 4.dp)
-                        )
-                        IconButton(onClick = {
-                            if (matchIndices.isNotEmpty()) {
-                                currentMatchIndex = if (currentMatchIndex > 0) currentMatchIndex - 1 else matchIndices.size - 1
-                                jumpToMatch(currentMatchIndex)
-                            }
-                        }) {
-                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Prev")
-                        }
-                        IconButton(onClick = {
-                            if (matchIndices.isNotEmpty()) {
-                                currentMatchIndex = (currentMatchIndex + 1) % matchIndices.size
-                                jumpToMatch(currentMatchIndex)
-                            }
-                        }) {
-                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Next")
-                        }
-                    }
-                } else {
-                    IconButton(onClick = { isSearching = true }) {
-                        Icon(
-                            painterResource(id = R.drawable.search),
-                            contentDescription = stringResource(R.string.search)
-                        )
-                    }
-                    IconButton(onClick = {
-                        viewModel.saveConfigFile()
-                        focusManager.clearFocus()
-                    }, enabled = hasConfigChanged) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.save),
-                            contentDescription = stringResource(id = R.string.save)
-                        )
-                    }
-                    IconButton(onClick = { showMenu = !showMenu }) {
-                        Icon(
-                            Icons.Default.MoreVert,
-                            contentDescription = stringResource(R.string.more)
-                        )
-                    }
-                    DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
-                        DropdownMenuItem(
-                            text = { Text(stringResource(id = R.string.share)) },
-                            onClick = {
-                                viewModel.shareConfigFile()
-                                showMenu = false
-                            })
-                    }
-                }
-            },
-            scrollBehavior = scrollBehavior
+    val menuEntry = remember {
+        DropdownEntry(
+            items = listOf(
+                DropdownItem(
+                    text = "分享配置文件",
+                    onClick = { viewModel.shareConfigFile() }
+                )
+            )
         )
-    }, snackbarHost = { SnackbarHost(snackbarHostState) }, content = { paddingValues ->
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = if (isSearching) "" else stringResource(id = R.string.config),
+                navigationIcon = {
+                    IconButton(onClick = {
+                        if (isSearching) {
+                            isSearching = false
+                            searchQuery = ""
+                            matchIndices = emptyList()
+                        } else {
+                            onBackClick()
+                        }
+                    }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back)
+                        )
+                    }
+                },
+                actions = {
+                    if (isSearching) {
+                        InputField(
+                            query = searchQuery,
+                            onQueryChange = { q ->
+                                searchQuery = q
+                                updateMatches(q, configTextFieldValue.text)
+                                if (matchIndices.isNotEmpty()) {
+                                    jumpToMatch(0)
+                                }
+                            },
+                            onSearch = {},
+                            expanded = isSearching,
+                            onExpandedChange = { isSearching = it },
+                            label = stringResource(R.string.search),
+                            modifier = Modifier.fillMaxWidth(0.5f)
+                        )
+                        if (matchIndices.isNotEmpty()) {
+                            Text(
+                                text = "${currentMatchIndex + 1}/${matchIndices.size}",
+                                fontSize = MiuixTheme.textStyles.body2.fontSize,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+                            IconButton(onClick = {
+                                if (matchIndices.isNotEmpty()) {
+                                    currentMatchIndex = if (currentMatchIndex > 0) currentMatchIndex - 1 else matchIndices.size - 1
+                                    jumpToMatch(currentMatchIndex)
+                                }
+                            }) {
+                                Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Prev")
+                            }
+                            IconButton(onClick = {
+                                if (matchIndices.isNotEmpty()) {
+                                    currentMatchIndex = (currentMatchIndex + 1) % matchIndices.size
+                                    jumpToMatch(currentMatchIndex)
+                                }
+                            }) {
+                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Next")
+                            }
+                        }
+                    } else {
+                        IconButton(onClick = { isSearching = true }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.search),
+                                contentDescription = stringResource(R.string.search)
+                            )
+                        }
+                        IconButton(onClick = {
+                            viewModel.saveConfigFile()
+                            focusManager.clearFocus()
+                        }, enabled = hasConfigChanged) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.save),
+                                contentDescription = stringResource(id = R.string.save)
+                            )
+                        }
+                        OverlayIconDropdownMenu(
+                            entry = menuEntry,
+                            collapseOnSelection = true
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = stringResource(R.string.more)
+                            )
+                        }
+                    }
+                },
+                scrollBehavior = scrollBehavior
+            )
+        },
+        contentWindowInsets = WindowInsets(0)
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .imePadding()
-                .padding(top = paddingValues.calculateTopPadding())
+                .padding(paddingValues)
+                .padding(horizontal = 12.dp)
                 .verticalScroll(scrollState)
         ) {
-            TextField(value = filename,
+            TextField(
+                value = filename,
                 onValueChange = { v ->
                     viewModel.onFilenameChange(v)
                 },
-                label = { Text(stringResource(id = R.string.filename)) },
+                label = stringResource(id = R.string.filename),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    disabledContainerColor = Color.Transparent,
-                    errorContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent,
-                    errorIndicatorColor = Color.Transparent,
-                ),
-                isError = filenameErrorMessage != null,
-                supportingText = {
-                    filenameErrorMessage?.let { Text(it) }
-                })
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            )
+
+            if (filenameErrorMessage != null) {
+                Text(
+                    text = filenameErrorMessage!!,
+                    color = MiuixTheme.colorScheme.error,
+                    fontSize = MiuixTheme.textStyles.body2.fontSize,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
 
             TextField(
                 value = configTextFieldValue,
@@ -295,25 +284,15 @@ fun ConfigEditScreen(
                     }
                 },
                 visualTransformation = bracketMatcherTransformation(configTextFieldValue),
-                label = { Text(stringResource(R.string.content)) },
+                label = stringResource(R.string.content),
                 modifier = Modifier
-                    .padding(bottom = if (isKeyboardOpen) 0.dp else paddingValues.calculateBottomPadding())
-                    .fillMaxWidth(),
-                textStyle = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                    .fillMaxWidth()
+                    .padding(bottom = if (isKeyboardOpen) 0.dp else 16.dp),
+                textStyle = MiuixTheme.textStyles.main.copy(fontFamily = FontFamily.Monospace),
                 keyboardOptions = KeyboardOptions.Default.copy(
                     keyboardType = KeyboardType.Text
-                ),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.Transparent,
-                    unfocusedContainerColor = Color.Transparent,
-                    disabledContainerColor = Color.Transparent,
-                    errorContainerColor = Color.Transparent,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    disabledIndicatorColor = Color.Transparent,
-                    errorIndicatorColor = Color.Transparent,
                 )
             )
         }
-    })
+    }
 }

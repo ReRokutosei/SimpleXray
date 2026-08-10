@@ -51,6 +51,15 @@ reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reo
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 yaml = { module = "org.yaml:snakeyaml", version = "2.2" }
 
+# MIUIX Components
+miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui" }
+miuix-preference = { module = "top.yukonga.miuix.kmp:miuix-preference" }
+miuix-blur = { module = "top.yukonga.miuix.kmp:miuix-blur" }
+miuix-squircle = { module = "top.yukonga.miuix.kmp:miuix-squircle" }
+miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons" }
+miuix-nav = { module = "top.yukonga.miuix.kmp:miuix-nav" }
+
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

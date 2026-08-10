@@ -65,12 +65,31 @@ class MainActivity : ComponentActivity() {
                 else -> lightColorScheme()
             }
 
-            MaterialTheme(colorScheme = colorScheme) {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+            val colorSchemeMode = when (mainViewModel.prefs.theme) {
+                ThemeMode.Light -> top.yukonga.miuix.kmp.theme.ColorSchemeMode.Light
+                ThemeMode.Dark -> top.yukonga.miuix.kmp.theme.ColorSchemeMode.Dark
+                ThemeMode.Auto -> top.yukonga.miuix.kmp.theme.ColorSchemeMode.System
+            }
+
+            val themeController = androidx.compose.runtime.remember(colorSchemeMode, isDark) {
+                top.yukonga.miuix.kmp.theme.ThemeController(
+                    colorSchemeMode = colorSchemeMode,
+                    isDark = isDark
+                )
+            }
+
+            top.yukonga.miuix.kmp.theme.MiuixTheme(controller = themeController) {
+                androidx.compose.runtime.CompositionLocalProvider(
+                    top.yukonga.miuix.kmp.squircle.LocalSquircleEnabled provides true
                 ) {
-                    AppNavHost(mainViewModel)
+                    MaterialTheme(colorScheme = colorScheme) {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.background
+                        ) {
+                            AppNavHost(mainViewModel)
+                        }
+                    }
                 }
             }
         }

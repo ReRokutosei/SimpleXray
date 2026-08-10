@@ -9,7 +9,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.navigation.NavBackStackEntry
@@ -23,6 +22,7 @@ import com.simplexray.re.ui.screens.AppListScreen
 import com.simplexray.re.ui.screens.ConfigEditScreen
 import com.simplexray.re.ui.screens.MainScreen
 import com.simplexray.re.viewmodel.MainViewModel
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 
 @Composable
 fun AppNavHost(

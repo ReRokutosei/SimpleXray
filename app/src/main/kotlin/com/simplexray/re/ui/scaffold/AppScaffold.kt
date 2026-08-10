@@ -7,26 +7,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,9 +18,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.vectorResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -50,6 +34,19 @@ import com.simplexray.re.viewmodel.LogViewModel
 import com.simplexray.re.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
+import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
+import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InputField
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
+import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun AppScaffold(
@@ -82,19 +79,18 @@ fun AppScaffold(
 
     Scaffold(
         modifier = Modifier,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             AppTopAppBar(
-                currentRoute,
-                onCreateNewConfigFileAndEdit,
-                onImportConfigFromClipboard,
-                onPerformExport,
-                onPerformBackup,
-                onPerformRestore,
-                onSwitchVpnService,
-                mainViewModel.controlMenuClickable.collectAsState().value,
-                mainViewModel.isServiceEnabled.collectAsState().value,
-                logViewModel,
+                currentRoute = currentRoute,
+                onCreateNewConfigFileAndEdit = onCreateNewConfigFileAndEdit,
+                onImportConfigFromClipboard = onImportConfigFromClipboard,
+                onPerformExport = onPerformExport,
+                onPerformBackup = onPerformBackup,
+                onPerformRestore = onPerformRestore,
+                onSwitchVpnService = onSwitchVpnService,
+                controlMenuClickable = mainViewModel.controlMenuClickable.collectAsState().value,
+                isServiceEnabled = mainViewModel.isServiceEnabled.collectAsState().value,
+                logViewModel = logViewModel,
                 logListState = logListState,
                 configListState = configListState,
                 settingsScrollState = settingsScrollState,
@@ -115,7 +111,6 @@ fun AppScaffold(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppTopAppBar(
     currentRoute: String?,
@@ -135,90 +130,55 @@ fun AppTopAppBar(
     onLogSearchingChange: (Boolean) -> Unit = {},
     logSearchQuery: String = "",
     onLogSearchQueryChange: (String) -> Unit = {},
-    focusRequester: FocusRequester = FocusRequester(),
+    focusRequester: FocusRequester? = null,
     mainViewModel: MainViewModel
 ) {
     val title = when (currentRoute) {
-        "stats" -> stringResource(R.string.core_stats_title)
-        "config" -> stringResource(R.string.configuration)
-        "log" -> stringResource(R.string.log)
-        "settings" -> stringResource(R.string.settings)
+        ROUTE_STATS -> stringResource(R.string.core_stats_title)
+        ROUTE_CONFIG -> stringResource(R.string.configuration)
+        ROUTE_LOG -> stringResource(R.string.log)
+        ROUTE_SETTINGS -> stringResource(R.string.settings)
         else -> stringResource(R.string.app_name)
     }
 
-    val defaultTopAppBarColors = TopAppBarDefaults.topAppBarColors()
-
-    val showScrolledColor by remember(
-        currentRoute,
-        logListState,
-        configListState,
-        settingsScrollState
-    ) {
-        derivedStateOf {
-            when (currentRoute) {
-                "log" -> logListState.firstVisibleItemIndex > 0 || logListState.firstVisibleItemScrollOffset > 0
-                "config" -> configListState.firstVisibleItemIndex > 0 || configListState.firstVisibleItemScrollOffset > 0
-                "settings" -> settingsScrollState.value > 0
-                else -> false
-            }
-        }
-    }
-
-    val appBarColors = TopAppBarDefaults.topAppBarColors(
-        containerColor = MaterialTheme.colorScheme.run {
-            if (showScrolledColor) surfaceContainer else surface
-        },
-        scrolledContainerColor = MaterialTheme.colorScheme.run {
-            if (showScrolledColor) surfaceContainer else surface
-        },
-        navigationIconContentColor = defaultTopAppBarColors.navigationIconContentColor,
-        titleContentColor = defaultTopAppBarColors.titleContentColor,
-        actionIconContentColor = defaultTopAppBarColors.actionIconContentColor
-    )
+    val topAppBarScrollBehavior = MiuixScrollBehavior()
 
     TopAppBar(
-        title = {
-            if (currentRoute == "log" && isLogSearching) {
-                TextField(
-                    value = logSearchQuery,
-                    onValueChange = onLogSearchQueryChange,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .focusRequester(focusRequester),
-                    placeholder = { Text(stringResource(R.string.search)) },
-                    singleLine = true,
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent
-                    )
-                )
-            } else {
-                Text(text = title)
-            }
-        },
+        title = if (currentRoute == ROUTE_LOG && isLogSearching) "" else title,
+        color = MiuixTheme.colorScheme.surface,
         navigationIcon = {
-            if (currentRoute == "log" && isLogSearching) {
+            if (currentRoute == ROUTE_LOG && isLogSearching) {
                 IconButton(onClick = {
                     onLogSearchingChange(false)
                     onLogSearchQueryChange("")
                 }) {
                     Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.close_search)
                     )
                 }
             }
         },
         actions = {
-            if (currentRoute == "log" && isLogSearching) {
+            if (currentRoute == ROUTE_LOG && isLogSearching) {
+                val inputModifier = if (focusRequester != null) {
+                    Modifier.fillMaxWidth(0.7f).focusRequester(focusRequester)
+                } else {
+                    Modifier.fillMaxWidth(0.7f)
+                }
+                InputField(
+                    query = logSearchQuery,
+                    onQueryChange = onLogSearchQueryChange,
+                    onSearch = {},
+                    expanded = isLogSearching,
+                    onExpandedChange = onLogSearchingChange,
+                    label = stringResource(R.string.search),
+                    modifier = inputModifier
+                )
                 if (logSearchQuery.isNotEmpty()) {
                     IconButton(onClick = { onLogSearchQueryChange("") }) {
                         Icon(
-                            Icons.Default.Clear,
+                            imageVector = Icons.Default.Clear,
                             contentDescription = stringResource(R.string.clear_search)
                         )
                     }
@@ -240,7 +200,7 @@ fun AppTopAppBar(
                 )
             }
         },
-        colors = appBarColors
+        scrollBehavior = topAppBarScrollBehavior
     )
 }
 
@@ -260,7 +220,7 @@ private fun TopAppBarActions(
     mainViewModel: MainViewModel
 ) {
     when (currentRoute) {
-        "config" -> ConfigActions(
+        ROUTE_CONFIG -> ConfigActions(
             onCreateNewConfigFileAndEdit = onCreateNewConfigFileAndEdit,
             onImportConfigFromClipboard = onImportConfigFromClipboard,
             onSwitchVpnService = onSwitchVpnService,
@@ -269,16 +229,16 @@ private fun TopAppBarActions(
             mainViewModel = mainViewModel
         )
 
-        "stats" -> { /* Actions moved to StatsScreen content card */ }
+        ROUTE_STATS -> { /* Actions moved to StatsScreen content card */ }
 
-        "log" -> LogActions(
+        ROUTE_LOG -> LogActions(
             onPerformExport = onPerformExport,
             logViewModel = logViewModel,
             onLogSearchingChange = onLogSearchingChange,
             mainViewModel = mainViewModel
         )
 
-        "settings" -> SettingsActions(
+        ROUTE_SETTINGS -> SettingsActions(
             onPerformBackup = onPerformBackup,
             onPerformRestore = onPerformRestore
         )
@@ -294,16 +254,7 @@ private fun ConfigActions(
     isServiceEnabled: Boolean,
     mainViewModel: MainViewModel
 ) {
-    var expanded by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-
-    IconButton(onClick = { expanded = true }) {
-        Icon(
-            Icons.Default.MoreVert,
-            contentDescription = stringResource(R.string.more)
-        )
-    }
-
     val filePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -312,41 +263,41 @@ private fun ConfigActions(
         }
     }
 
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = { expanded = false }
+    val entry = remember(isServiceEnabled) {
+        DropdownEntry(
+            items = listOf(
+                DropdownItem(
+                    text = "新建配置文件",
+                    onClick = { onCreateNewConfigFileAndEdit() }
+                ),
+                DropdownItem(
+                    text = "从剪贴板导入",
+                    onClick = {
+                        scope.launch {
+                            delay(100)
+                            onImportConfigFromClipboard()
+                        }
+                    }
+                ),
+                DropdownItem(
+                    text = "从本地文件导入",
+                    onClick = { filePickerLauncher.launch(arrayOf("*/*")) }
+                ),
+                DropdownItem(
+                    text = "真连接延迟测试",
+                    onClick = { mainViewModel.testConnectivity() }
+                )
+            )
+        )
+    }
+
+    OverlayIconDropdownMenu(
+        entry = entry,
+        collapseOnSelection = true
     ) {
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.new_profile)) },
-            onClick = {
-                onCreateNewConfigFileAndEdit()
-                expanded = false
-            }
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.import_from_clipboard)) },
-            onClick = {
-                expanded = false
-                scope.launch {
-                    delay(100)
-                    onImportConfigFromClipboard()
-                }
-            }
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.import_from_file)) },
-            onClick = {
-                expanded = false
-                filePickerLauncher.launch(arrayOf("*/*"))
-            }
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.connectivity_test)) },
-            onClick = {
-                mainViewModel.testConnectivity()
-                expanded = false
-            },
-            enabled = isServiceEnabled
+        Icon(
+            imageVector = Icons.Default.MoreVert,
+            contentDescription = stringResource(R.string.more)
         )
     }
 }
@@ -358,43 +309,42 @@ private fun LogActions(
     onLogSearchingChange: (Boolean) -> Unit = {},
     mainViewModel: MainViewModel
 ) {
-    var expanded by remember { mutableStateOf(false) }
     val hasLogsToExport by logViewModel.hasLogsToExport.collectAsStateWithLifecycle()
     val logEntries by logViewModel.logEntries.collectAsStateWithLifecycle()
     val context = androidx.compose.ui.platform.LocalContext.current
 
     IconButton(onClick = { onLogSearchingChange(true) }) {
         Icon(
-            painterResource(id = R.drawable.search),
+            painter = painterResource(id = R.drawable.search),
             contentDescription = stringResource(R.string.search)
         )
     }
-    IconButton(onClick = { expanded = true }) {
-        Icon(
-            Icons.Default.MoreVert,
-            contentDescription = stringResource(R.string.more)
+
+    val entry = remember(logEntries, hasLogsToExport) {
+        DropdownEntry(
+            items = listOf(
+                DropdownItem(
+                    text = context.getString(R.string.clear_logs),
+                    onClick = {
+                        logViewModel.clearLogs()
+                        mainViewModel.showSnackbar(context.getString(R.string.logs_cleared))
+                    }
+                ),
+                DropdownItem(
+                    text = context.getString(R.string.export),
+                    onClick = { onPerformExport() }
+                )
+            )
         )
     }
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = { expanded = false }
+
+    OverlayIconDropdownMenu(
+        entry = entry,
+        collapseOnSelection = true
     ) {
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.clear_logs)) },
-            onClick = {
-                logViewModel.clearLogs()
-                expanded = false
-                mainViewModel.showSnackbar(context.getString(R.string.logs_cleared))
-            },
-            enabled = logEntries.isNotEmpty()
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.export)) },
-            onClick = {
-                onPerformExport()
-                expanded = false
-            },
-            enabled = hasLogsToExport
+        Icon(
+            imageVector = Icons.Default.MoreVert,
+            contentDescription = stringResource(R.string.more)
         )
     }
 }
@@ -404,75 +354,30 @@ private fun SettingsActions(
     onPerformBackup: () -> Unit,
     onPerformRestore: () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
 
-    IconButton(onClick = { expanded = true }) {
+    val entry = remember {
+        DropdownEntry(
+            items = listOf(
+                DropdownItem(
+                    text = context.getString(R.string.backup),
+                    onClick = { onPerformBackup() }
+                ),
+                DropdownItem(
+                    text = context.getString(R.string.restore),
+                    onClick = { onPerformRestore() }
+                )
+            )
+        )
+    }
+
+    OverlayIconDropdownMenu(
+        entry = entry,
+        collapseOnSelection = true
+    ) {
         Icon(
-            Icons.Default.MoreVert,
+            imageVector = Icons.Default.MoreVert,
             contentDescription = stringResource(R.string.more)
-        )
-    }
-
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = { expanded = false }
-    ) {
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.backup)) },
-            onClick = {
-                onPerformBackup()
-                expanded = false
-            }
-        )
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.restore)) },
-            onClick = {
-                onPerformRestore()
-                expanded = false
-            }
-        )
-    }
-}
-
-@Composable
-private fun StatsActions(
-    onSwitchVpnService: () -> Unit,
-    controlMenuClickable: Boolean,
-    isServiceEnabled: Boolean,
-    mainViewModel: MainViewModel
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    IconButton(
-        onClick = onSwitchVpnService,
-        enabled = controlMenuClickable
-    ) {
-        Icon(
-            painter = painterResource(
-                id = if (isServiceEnabled) R.drawable.pause else R.drawable.play
-            ),
-            contentDescription = null
-        )
-    }
-
-    IconButton(onClick = { expanded = true }) {
-        Icon(
-            Icons.Default.MoreVert,
-            contentDescription = stringResource(R.string.more)
-        )
-    }
-
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = { expanded = false }
-    ) {
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.connectivity_test)) },
-            onClick = {
-                mainViewModel.testConnectivity()
-                expanded = false
-            },
-            enabled = isServiceEnabled
         )
     }
 }
@@ -482,54 +387,30 @@ fun AppBottomNavigationBar(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    NavigationBar {
-        NavigationBarItem(
-            alwaysShowLabel = false,
+    FloatingNavigationBar {
+        FloatingNavigationBarItem(
             selected = currentRoute == ROUTE_STATS,
             onClick = { navigateToRoute(navController, ROUTE_STATS) },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.dashboard),
-                    contentDescription = stringResource(R.string.core_stats_title)
-                )
-            },
-            label = { Text(stringResource(R.string.core_stats_title)) }
+            icon = ImageVector.vectorResource(id = R.drawable.dashboard),
+            label = stringResource(R.string.core_stats_title)
         )
-        NavigationBarItem(
-            alwaysShowLabel = false,
+        FloatingNavigationBarItem(
             selected = currentRoute == ROUTE_CONFIG,
             onClick = { navigateToRoute(navController, ROUTE_CONFIG) },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.code),
-                    contentDescription = stringResource(R.string.configuration)
-                )
-            },
-            label = { Text(stringResource(R.string.configuration)) }
+            icon = ImageVector.vectorResource(id = R.drawable.code),
+            label = stringResource(R.string.configuration)
         )
-        NavigationBarItem(
-            alwaysShowLabel = false,
+        FloatingNavigationBarItem(
             selected = currentRoute == ROUTE_LOG,
             onClick = { navigateToRoute(navController, ROUTE_LOG) },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.history),
-                    contentDescription = stringResource(R.string.log)
-                )
-            },
-            label = { Text(stringResource(R.string.log)) }
+            icon = ImageVector.vectorResource(id = R.drawable.history),
+            label = stringResource(R.string.log)
         )
-        NavigationBarItem(
-            alwaysShowLabel = false,
+        FloatingNavigationBarItem(
             selected = currentRoute == ROUTE_SETTINGS,
             onClick = { navigateToRoute(navController, ROUTE_SETTINGS) },
-            icon = {
-                Icon(
-                    painter = painterResource(id = R.drawable.settings),
-                    contentDescription = stringResource(R.string.settings)
-                )
-            },
-            label = { Text(stringResource(R.string.settings)) }
+            icon = ImageVector.vectorResource(id = R.drawable.settings),
+            label = stringResource(R.string.settings)
         )
     }
 }
