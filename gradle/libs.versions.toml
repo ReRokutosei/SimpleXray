@@ -13,6 +13,7 @@ datastorePreferences = "1.1.2"
 coreKtx = "1.16.0"
 composeBom = "2025.08.00"
 navigationCompose = "2.9.3"
+navigationevent = "1.1.2"
 lazyColumnScrollbar = "2.2.0"
 reorderable = "3.1.0"
 okhttp = "4.12.0"
@@ -45,6 +46,7 @@ androidx-compose-material-icons-core = { module = "androidx.compose.material:mat
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview-android" }
 androidx-activity-compose = { module = "androidx.activity:activity-compose" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose-android", version.ref = "navigationCompose" }
+androidx-navigationevent = { module = "androidx.navigationevent:navigationevent-compose", version.ref = "navigationevent" }
 
 # UI Components & Networking
 lazycolumnscrollbar = { module = "com.github.nanihadesuka:LazyColumnScrollbar", version.ref = "lazyColumnScrollbar" }

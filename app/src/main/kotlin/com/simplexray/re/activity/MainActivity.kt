@@ -78,8 +78,10 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
+            val dispatcherOwner = androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner()
             top.yukonga.miuix.kmp.theme.MiuixTheme(controller = themeController) {
                 androidx.compose.runtime.CompositionLocalProvider(
+                    androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner provides dispatcherOwner,
                     top.yukonga.miuix.kmp.squircle.LocalSquircleEnabled provides true
                 ) {
                     MaterialTheme(colorScheme = colorScheme) {
