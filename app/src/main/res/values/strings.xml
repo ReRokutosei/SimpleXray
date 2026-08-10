@@ -57,7 +57,6 @@
 
     <!-- Profile & File Management -->
     <string name="configuration">Configuration</string>
-    <string name="new_profile">New Profile</string>
     <string name="config">Edit Config</string>
     <string name="content">Content</string>
     <string name="filename">Filename</string>
@@ -77,8 +76,6 @@
     <string name="export">Export</string>
     <string name="export_to_clipboard">Export to Clipboard</string>
     <string name="share">Share</string>
-    <string name="backup">Backup</string>
-    <string name="restore">Restore</string>
 
     <!-- Rule Files Management -->
     <string name="rule_files_category_title">Rule Files</string>
@@ -155,10 +152,6 @@
     <string name="import_failed">Import failed: No config found on clipboard</string>
     <string name="import_success">import successful</string>
     <string name="import_invalid_format">Invalid import format</string>
-    <string name="backup_success">Backup successful</string>
-    <string name="backup_failed">Backup failed</string>
-    <string name="restore_success">Restore successful</string>
-    <string name="restore_failed">Restore failed</string>
     <string name="no_log_entries">No log entries</string>
     <string name="vpn_interface">VPN Interface</string>
     <string name="create_config_failed">Configuration creation failed</string>

@@ -151,16 +151,7 @@ fun ConfigEditPane(
         }
     }
 
-    val menuEntry = remember {
-        DropdownEntry(
-            items = listOf(
-                DropdownItem(
-                    text = "分享配置文件",
-                    onClick = { viewModel.shareConfigFile() }
-                )
-            )
-        )
-    }
+
 
     val editorContent: @Composable (PaddingValues) -> Unit = { paddingValues ->
         Column(
@@ -304,13 +295,10 @@ fun ConfigEditPane(
                                     contentDescription = stringResource(id = R.string.save)
                                 )
                             }
-                            OverlayIconDropdownMenu(
-                                entry = menuEntry,
-                                collapseOnSelection = true
-                            ) {
+                            IconButton(onClick = { viewModel.shareConfigFile() }) {
                                 Icon(
-                                    imageVector = Icons.Default.MoreVert,
-                                    contentDescription = stringResource(R.string.more)
+                                    painter = painterResource(id = R.drawable.ic_share),
+                                    contentDescription = stringResource(R.string.share)
                                 )
                             }
                         }
@@ -417,13 +405,10 @@ fun ConfigEditPane(
                             contentDescription = stringResource(id = R.string.save)
                         )
                     }
-                    OverlayIconDropdownMenu(
-                        entry = menuEntry,
-                        collapseOnSelection = true
-                    ) {
+                    IconButton(onClick = { viewModel.shareConfigFile() }) {
                         Icon(
-                            imageVector = Icons.Default.MoreVert,
-                            contentDescription = stringResource(R.string.more)
+                            painter = painterResource(id = R.drawable.ic_share),
+                            contentDescription = stringResource(R.string.share)
                         )
                     }
                 }

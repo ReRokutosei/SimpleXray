@@ -17,8 +17,6 @@ data class MainScreenCallbacks(
     val onCreateNewConfigFileAndEdit: () -> Unit,
     val onImportConfigFromClipboard: () -> Unit,
     val onPerformExport: () -> Unit,
-    val onPerformBackup: () -> Unit,
-    val onPerformRestore: () -> Unit,
     val onDeleteConfigClick: (File, () -> Unit) -> Unit,
     val onSwitchVpnService: () -> Unit
 )
@@ -30,8 +28,7 @@ fun rememberMainScreenCallbacks(
     launchers: MainScreenLaunchers,
     applicationContext: Context
 ): MainScreenCallbacks {
-    val scope =
-        rememberCoroutineScope()
+    val scope = rememberCoroutineScope()
     val onCreateNewConfigFileAndEdit: () -> Unit = {
         scope.launch {
             val filePath = mainViewModel.createConfigFile()
@@ -85,21 +82,6 @@ fun rememberMainScreenCallbacks(
         }
     }
 
-    val onPerformBackup: () -> Unit = {
-        scope.launch {
-            mainViewModel.performBackup(launchers.createFileLauncher)
-        }
-    }
-
-    val onPerformRestore: () -> Unit = {
-        launchers.openFileLauncher.launch(
-            arrayOf(
-                "application/octet-stream",
-                "*/*"
-            )
-        )
-    }
-
     val onDeleteConfigClick: (File, () -> Unit) -> Unit = { file, callback ->
         scope.launch {
             mainViewModel.deleteConfigFile(file, callback)
@@ -125,8 +107,6 @@ fun rememberMainScreenCallbacks(
         onCreateNewConfigFileAndEdit = onCreateNewConfigFileAndEdit,
         onImportConfigFromClipboard = onImportConfigFromClipboard,
         onPerformExport = onPerformExport,
-        onPerformBackup = onPerformBackup,
-        onPerformRestore = onPerformRestore,
         onDeleteConfigClick = onDeleteConfigClick,
         onSwitchVpnService = onSwitchVpnService
     )

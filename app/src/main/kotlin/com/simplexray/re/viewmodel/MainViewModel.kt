@@ -73,7 +73,6 @@ class MainViewModel(application: Application) :
     AndroidViewModel(application) {
     val prefs: Preferences = Preferences(application)
     private val activityScope: CoroutineScope = viewModelScope
-    private var compressedBackupData: ByteArray? = null
 
     private var coreStatsClient: CoreStatsClient? = null
 
@@ -272,60 +271,7 @@ class MainViewModel(application: Application) :
         prefs.enable = enabled
     }
 
-    fun clearCompressedBackupData() {
-        compressedBackupData = null
-    }
 
-    fun performBackup(createFileLauncher: ActivityResultLauncher<String>) {
-        activityScope.launch {
-            compressedBackupData = fileManager.compressBackupData()
-            val filename = "simplexray_backup_" + System.currentTimeMillis() + ".dat"
-            withContext(Dispatchers.Main) {
-                createFileLauncher.launch(filename)
-            }
-        }
-    }
-
-    suspend fun handleBackupFileCreationResult(uri: Uri) {
-        withContext(Dispatchers.IO) {
-            if (compressedBackupData != null) {
-                val dataToWrite: ByteArray = compressedBackupData as ByteArray
-                compressedBackupData = null
-                try {
-                    application.contentResolver.openOutputStream(uri).use { os ->
-                        if (os != null) {
-                            os.write(dataToWrite)
-                            Log.d(TAG, "Backup successful to: $uri")
-                            _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.backup_success)))
-                        } else {
-                            Log.e(TAG, "Failed to open output stream for backup URI: $uri")
-                            _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.backup_failed)))
-                        }
-                    }
-                } catch (e: IOException) {
-                    Log.e(TAG, "Error writing backup data to URI: $uri", e)
-                    _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.backup_failed)))
-                }
-            } else {
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.backup_failed)))
-                Log.e(TAG, "Compressed backup data is null in launcher callback.")
-            }
-        }
-    }
-
-    suspend fun startRestoreTask(uri: Uri) {
-        withContext(Dispatchers.IO) {
-            val success = fileManager.decompressAndRestore(uri)
-            if (success) {
-                updateSettingsState()
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.restore_success)))
-                Log.d(TAG, "Restore successful.")
-                refreshConfigFileList()
-            } else {
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.restore_failed)))
-            }
-        }
-    }
 
     suspend fun createConfigFile(): String? {
         val filePath = fileManager.createConfigFile(application.assets)
