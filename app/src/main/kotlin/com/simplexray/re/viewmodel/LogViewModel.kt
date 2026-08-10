@@ -158,7 +158,8 @@ class LogViewModel(application: Application) :
     }
 
     fun clearLogs() {
-        viewModelScope.launch {
+        viewModelScope.launch(Dispatchers.IO) {
+            logFileManager.clearLogs()
             logMutex.withLock {
                 logBuffer.clear()
                 _logEntries.value = emptyList()
