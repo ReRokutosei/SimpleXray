@@ -239,6 +239,12 @@ class Preferences(context: Context) {
             setValueInProvider(USE_TEMPLATE, enable)
         }
 
+    var hideFromRecents: Boolean
+        get() = getBooleanPref(HIDE_FROM_RECENTS, true)
+        set(value) {
+            setValueInProvider(HIDE_FROM_RECENTS, value)
+        }
+
     var httpProxyEnabled: Boolean
         get() = getBooleanPref(HTTP_PROXY_ENABLED, false)
         set(enable) {
@@ -389,6 +395,7 @@ class Preferences(context: Context) {
         const val API_PORT: String = "ApiPort"
         const val BYPASS_SELECTED_APPS: String = "BypassSelectedApps"
         const val THEME: String = "Theme"
+        const val HIDE_FROM_RECENTS: String = "HideFromRecents"
         const val CUSTOM_DAT_URLS: String = "CustomDatUrls"
         private const val TAG = "Preferences"
     }

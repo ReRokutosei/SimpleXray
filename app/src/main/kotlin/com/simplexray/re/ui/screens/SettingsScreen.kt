@@ -262,6 +262,13 @@ fun SettingsScreen(
                         mainViewModel.setTheme(themeModes[index])
                     }
                 )
+
+                SwitchPreference(
+                    title = stringResource(R.string.hide_from_recents_title),
+                    summary = stringResource(R.string.hide_from_recents_summary),
+                    checked = settingsState.switches.hideFromRecents,
+                    onCheckedChange = { mainViewModel.setHideFromRecentsEnabled(it) }
+                )
             }
         }
 

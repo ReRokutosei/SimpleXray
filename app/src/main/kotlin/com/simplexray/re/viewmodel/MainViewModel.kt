@@ -202,6 +202,7 @@ class MainViewModel(application: Application) :
             switches = SwitchStates(
                 ipv6Enabled = prefs.ipv6,
                 useTemplateEnabled = prefs.useTemplate,
+                hideFromRecents = prefs.hideFromRecents,
                 httpProxyEnabled = prefs.httpProxyEnabled,
                 bypassLanEnabled = prefs.bypassLan,
                 disableVpn = prefs.disableVpn,
@@ -514,6 +515,13 @@ class MainViewModel(application: Application) :
         prefs.useTemplate = enabled
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(useTemplateEnabled = enabled)
+        )
+    }
+
+    fun setHideFromRecentsEnabled(enabled: Boolean) {
+        prefs.hideFromRecents = enabled
+        _settingsState.value = _settingsState.value.copy(
+            switches = _settingsState.value.switches.copy(hideFromRecents = enabled)
         )
     }
 

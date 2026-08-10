@@ -13,6 +13,7 @@ data class InputFieldState(
 data class SwitchStates(
     val ipv6Enabled: Boolean,
     val useTemplateEnabled: Boolean,
+    val hideFromRecents: Boolean = true,
     val httpProxyEnabled: Boolean,
     val bypassLanEnabled: Boolean,
     val disableVpn: Boolean,
