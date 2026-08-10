@@ -1,5 +1,7 @@
 package com.simplexray.re.activity
 
+import android.app.ActivityManager
+import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
@@ -16,6 +18,8 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
@@ -57,6 +61,12 @@ class MainActivity : ComponentActivity() {
         setContent {
             val context = LocalContext.current
             val dynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+            val settingsState by mainViewModel.settingsState.collectAsState()
+
+            androidx.compose.runtime.LaunchedEffect(settingsState.switches.hideFromRecents) {
+                val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+                activityManager?.appTasks?.firstOrNull()?.setExcludeFromRecents(settingsState.switches.hideFromRecents)
+            }
 
             val colorScheme = when {
                 dynamicColor && isDark -> dynamicDarkColorScheme(context)

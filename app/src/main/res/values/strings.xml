@@ -170,4 +170,6 @@
     <string name="download_cancelled">Download cancelled</string>
     <string name="file_imported">Imported %s</string>
     <string name="file_deleted">Deleted %s</string>
+    <string name="hide_from_recents_title">Hide from Recent Tasks</string>
+    <string name="hide_from_recents_summary">Hide application window from Android recent apps list</string>
 </resources>
