@@ -160,4 +160,6 @@
     <string name="downloading">下载中… %1$d%%</string>
     <string name="downloading_no_size">下载中…</string>
     <string name="download_cancelled">下载已取消</string>
+    <string name="file_imported">已导入 %s</string>
+    <string name="file_deleted">已删除 %s</string>
 </resources>
