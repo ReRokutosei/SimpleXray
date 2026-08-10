@@ -383,7 +383,7 @@ fun SettingsScreen(
             Card(modifier = Modifier.fillMaxWidth()) {
                 BasicComponent(
                     title = "geoip.dat",
-                    summary = geoipProgress ?: settingsState.info.geoipSummary,
+                    summary = geoipProgress ?: if (!settingsState.files.isGeoipCustom) stringResource(R.string.rule_file_default) else settingsState.info.geoipSummary,
                     endActions = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (geoipProgress != null) {
@@ -425,7 +425,7 @@ fun SettingsScreen(
 
                 BasicComponent(
                     title = "geosite.dat",
-                    summary = geositeProgress ?: settingsState.info.geositeSummary,
+                    summary = geositeProgress ?: if (!settingsState.files.isGeositeCustom) stringResource(R.string.rule_file_default) else settingsState.info.geositeSummary,
                     endActions = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             if (geositeProgress != null) {

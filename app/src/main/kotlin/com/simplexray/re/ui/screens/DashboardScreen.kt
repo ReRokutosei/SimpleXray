@@ -75,7 +75,7 @@ fun DashboardScreen(
             contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = bottomPadding)
         ) {
             item {
-                SmallTitle(text = "流量信息")
+                SmallTitle(text = stringResource(id = R.string.traffic_info))
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         StatRow(
@@ -92,7 +92,7 @@ fun DashboardScreen(
             }
 
             item {
-                SmallTitle(text = "核心运行状态")
+                SmallTitle(text = stringResource(id = R.string.core_runtime_status))
                 Card(modifier = Modifier.fillMaxWidth()) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         StatRow(
