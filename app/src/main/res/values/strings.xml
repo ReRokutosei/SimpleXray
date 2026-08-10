@@ -67,6 +67,12 @@
     <string name="no_config_files">No configuration files</string>
     <string name="import_from_clipboard">Import Clipboard</string>
     <string name="import_from_file">Import File</string>
+    <string name="add_config_profile">Add Profile</string>
+    <string name="create_new_config_title">Create New Config</string>
+    <string name="create_new_config_summary">Manually create a blank configuration file</string>
+    <string name="import_from_clipboard_summary">Import share links or config text from clipboard</string>
+    <string name="import_from_local_file_title">Import Local File</string>
+    <string name="import_from_local_file_summary">Select a configuration file via system file manager</string>
     <string name="import_file">Import</string>
     <string name="export">Export</string>
     <string name="export_to_clipboard">Export to Clipboard</string>

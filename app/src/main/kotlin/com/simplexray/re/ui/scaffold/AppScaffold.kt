@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -240,11 +241,6 @@ private fun TopAppBarActions(
 ) {
     when (currentRoute) {
         ROUTE_CONFIG -> ConfigActions(
-            onCreateNewConfigFileAndEdit = onCreateNewConfigFileAndEdit,
-            onImportConfigFromClipboard = onImportConfigFromClipboard,
-            onSwitchVpnService = onSwitchVpnService,
-            controlMenuClickable = controlMenuClickable,
-            isServiceEnabled = isServiceEnabled,
             mainViewModel = mainViewModel
         )
 
@@ -266,57 +262,12 @@ private fun TopAppBarActions(
 
 @Composable
 private fun ConfigActions(
-    onCreateNewConfigFileAndEdit: () -> Unit,
-    onImportConfigFromClipboard: () -> Unit,
-    onSwitchVpnService: () -> Unit,
-    controlMenuClickable: Boolean,
-    isServiceEnabled: Boolean,
     mainViewModel: MainViewModel
 ) {
-    val scope = rememberCoroutineScope()
-    val filePickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-        contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        if (uri != null) {
-            mainViewModel.importConfigFromFile(uri)
-        }
-    }
-
-    val entry = remember(isServiceEnabled) {
-        DropdownEntry(
-            items = listOf(
-                DropdownItem(
-                    text = "新建配置文件",
-                    onClick = { onCreateNewConfigFileAndEdit() }
-                ),
-                DropdownItem(
-                    text = "从剪贴板导入",
-                    onClick = {
-                        scope.launch {
-                            delay(100)
-                            onImportConfigFromClipboard()
-                        }
-                    }
-                ),
-                DropdownItem(
-                    text = "从本地文件导入",
-                    onClick = { filePickerLauncher.launch(arrayOf("*/*")) }
-                ),
-                DropdownItem(
-                    text = "真连接延迟测试",
-                    onClick = { mainViewModel.testConnectivity() }
-                )
-            )
-        )
-    }
-
-    OverlayIconDropdownMenu(
-        entry = entry,
-        collapseOnSelection = true
-    ) {
+    IconButton(onClick = { mainViewModel.testConnectivity() }) {
         Icon(
-            imageVector = Icons.Default.MoreVert,
-            contentDescription = stringResource(R.string.more)
+            imageVector = Icons.Default.Refresh,
+            contentDescription = stringResource(R.string.connectivity_test)
         )
     }
 }
