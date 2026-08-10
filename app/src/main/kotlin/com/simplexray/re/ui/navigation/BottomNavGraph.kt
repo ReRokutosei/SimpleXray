@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
@@ -113,7 +114,9 @@ fun BottomNavHost(
     NavHost(
         navController = navController,
         startDestination = ROUTE_STATS,
-        modifier = Modifier.padding(paddingValues)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = paddingValues.calculateTopPadding())
     ) {
         composable(
             route = ROUTE_STATS,
@@ -122,7 +125,11 @@ fun BottomNavHost(
             popEnterTransition = { popEnterTransition() },
             popExitTransition = { popExitTransition() }
         ) {
-            DashboardScreen(mainViewModel = mainViewModel, onSwitchVpnService = onSwitchVpnService)
+            DashboardScreen(
+                mainViewModel = mainViewModel,
+                onSwitchVpnService = onSwitchVpnService,
+                paddingValues = paddingValues
+            )
         }
 
         composable(
@@ -139,7 +146,8 @@ fun BottomNavHost(
                 onCreateNewConfigFileAndEdit = onCreateNewConfigFileAndEdit,
                 onImportConfigFromClipboard = onImportConfigFromClipboard,
                 mainViewModel = mainViewModel,
-                listState = configListState
+                listState = configListState,
+                paddingValues = paddingValues
             )
         }
 
@@ -152,7 +160,8 @@ fun BottomNavHost(
         ) {
             LogScreen(
                 logViewModel = logViewModel,
-                listState = logListState
+                listState = logListState,
+                paddingValues = paddingValues
             )
         }
 
@@ -167,7 +176,8 @@ fun BottomNavHost(
                 mainViewModel = mainViewModel,
                 geoipFilePickerLauncher = geoipFilePickerLauncher,
                 geositeFilePickerLauncher = geositeFilePickerLauncher,
-                scrollState = settingsScrollState
+                scrollState = settingsScrollState,
+                paddingValues = paddingValues
             )
         }
     }

@@ -42,6 +42,7 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -61,7 +62,8 @@ fun SettingsScreen(
     mainViewModel: MainViewModel,
     geoipFilePickerLauncher: ActivityResultLauncher<Array<String>>,
     geositeFilePickerLauncher: ActivityResultLauncher<Array<String>>,
-    scrollState: androidx.compose.foundation.ScrollState
+    scrollState: androidx.compose.foundation.ScrollState,
+    paddingValues: PaddingValues = PaddingValues()
 ) {
     val context = LocalContext.current
     val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
@@ -126,23 +128,7 @@ fun SettingsScreen(
                     value = ruleFileUrl,
                     onValueChange = { ruleFileUrl = it },
                     label = "URL",
-                    modifier = Modifier.fillMaxWidth(),
-                    trailingIcon = {
-                        val clipboardManager = LocalClipboard.current
-                        IconButton(onClick = {
-                            scope.launch {
-                                clipboardManager.getClipEntry()?.clipData?.getItemAt(0)?.text
-                                    .let {
-                                        ruleFileUrl = it.toString()
-                                    }
-                            }
-                        }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.paste),
-                                contentDescription = "Paste"
-                            )
-                        }
-                    }
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -243,6 +229,7 @@ fun SettingsScreen(
 
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isWideScreen = configuration.screenWidthDp >= 600
+    val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
 
     androidx.compose.foundation.layout.Box(
         modifier = Modifier.fillMaxSize(),
@@ -254,7 +241,7 @@ fun SettingsScreen(
                 .then(
                     if (isWideScreen) Modifier.widthIn(max = 840.dp) else Modifier
                 ),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = bottomPadding)
         ) {
             item {
             SmallTitle(text = stringResource(R.string.general))
