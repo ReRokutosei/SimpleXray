@@ -38,7 +38,7 @@
     <string name="use_template_title">Create new config from template</string>
     <string name="use_template_summary">When enabled, new configs will be pre-filled with template content.</string>
     <string name="loglevel_title">Log Level</string>
-    <string name="loglevel_summary">Auto follows profile. Select to override logging verbosity.</string>
+    <string name="loglevel_summary">Auto follows profile. Select to override logging verbosity. (Need to restart core)</string>
     <string name="theme_title">Theme</string>
     <string name="theme_summary">Adjust the theme to dark or light</string>
     <string name="theme_light">Light</string>
@@ -50,6 +50,7 @@
     <string name="apps_summary">Select apps to be proxied, otherwise use global mode.</string>
     <string name="apps_not_found">No apps found</string>
     <string name="show_system_apps">Show System Apps</string>
+    <string name="show_no_internet_apps">Show No-Internet Apps</string>
     <string name="bypass_selected_apps">Bypass Selected Apps</string>
     <string name="select_all">Select All</string>
     <string name="inverse_selection">Inverse Selection</string>

@@ -34,7 +34,8 @@ data class Package(
     var selected: Boolean,
     val label: String,
     val packageName: String,
-    val isSystemApp: Boolean
+    val isSystemApp: Boolean,
+    val hasInternetPermission: Boolean = true
 )
 
 class AppListViewModel(application: Application) : AndroidViewModel(application) {
@@ -43,6 +44,7 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     var isLoading by mutableStateOf(false)
     var searchQuery by mutableStateOf("")
     var showSystemApps by mutableStateOf(true)
+    var showNoInternetApps by mutableStateOf(false)
     var bypassSelectedApps by mutableStateOf(prefs.bypassSelectedApps)
     private var _isChanged by mutableStateOf(false)
 
@@ -52,6 +54,7 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     val filteredList by derivedStateOf {
         packageList.filter { pkg ->
             (showSystemApps || !pkg.isSystemApp) &&
+                    (showNoInternetApps || pkg.hasInternetPermission) &&
                     pkg.label.lowercase(Locale.getDefault())
                         .contains(searchQuery.lowercase(Locale.getDefault()))
         }
@@ -81,14 +84,14 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                     val appInfo = it.applicationInfo ?: return@mapNotNull null
                     val hasInternetPermission =
                         it.requestedPermissions?.contains(Manifest.permission.INTERNET) == true
-                    if (!hasInternetPermission) return@mapNotNull null
                     val isSystemApp = appInfo.flags and ApplicationInfo.FLAG_SYSTEM != 0
                     val label = appInfo.loadLabel(pm).toString()
                     Package(
                         selected = apps.contains(it.packageName),
                         label = label,
                         packageName = it.packageName,
-                        isSystemApp = isSystemApp
+                        isSystemApp = isSystemApp,
+                        hasInternetPermission = hasInternetPermission
                     )
                 }
                 .sortedWith(
@@ -120,6 +123,10 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
 
     fun onShowSystemAppsChange(show: Boolean) {
         showSystemApps = show
+    }
+
+    fun onShowNoInternetAppsChange(show: Boolean) {
+        showNoInternetApps = show
     }
 
     fun onBypassSelectedAppsChange(bypass: Boolean) {

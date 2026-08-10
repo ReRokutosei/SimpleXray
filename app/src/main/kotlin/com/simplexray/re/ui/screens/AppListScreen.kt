@@ -88,6 +88,7 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
     var isSearching by remember { mutableStateOf(false) }
     val filteredList by remember { derivedStateOf { viewModel.filteredList } }
     val showSystemApps by remember { derivedStateOf { viewModel.showSystemApps } }
+    val showNoInternetApps by remember { derivedStateOf { viewModel.showNoInternetApps } }
     val focusManager = LocalFocusManager.current
     val lazyListState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
@@ -100,7 +101,7 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
         }
     }
 
-    LaunchedEffect(searchQuery, showSystemApps) {
+    LaunchedEffect(searchQuery, showSystemApps, showNoInternetApps) {
         lazyListState.scrollToItem(0)
     }
 
@@ -120,7 +121,7 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
         }
     }
 
-    val menuEntry = remember(showSystemApps, viewModel.bypassSelectedApps) {
+    val menuEntry = remember(showSystemApps, showNoInternetApps, viewModel.bypassSelectedApps) {
         DropdownEntry(
             items = listOf(
                 DropdownItem(
@@ -143,6 +144,11 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
                     text = context.getString(R.string.show_system_apps),
                     selected = showSystemApps,
                     onClick = { viewModel.onShowSystemAppsChange(!showSystemApps) }
+                ),
+                DropdownItem(
+                    text = context.getString(R.string.show_no_internet_apps),
+                    selected = showNoInternetApps,
+                    onClick = { viewModel.onShowNoInternetAppsChange(!showNoInternetApps) }
                 ),
                 DropdownItem(
                     text = context.getString(R.string.bypass_selected_apps),
