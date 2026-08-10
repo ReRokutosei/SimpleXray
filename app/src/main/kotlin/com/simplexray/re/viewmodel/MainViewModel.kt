@@ -1056,6 +1056,8 @@ class MainViewModel(application: Application) :
                                 )
                             }
                         }
+                        updateSettingsState()
+                        refreshCustomDatFiles()
                         _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.download_success)))
                     } else {
                         _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.download_failed)))
@@ -1084,10 +1086,18 @@ class MainViewModel(application: Application) :
         }
     }
 
+    private val _customDatVersion = MutableStateFlow(0L)
+    val customDatVersion: StateFlow<Long> = _customDatVersion.asStateFlow()
+
+    fun refreshCustomDatFiles() {
+        _customDatVersion.value = System.currentTimeMillis()
+    }
+
     fun importCustomDatFile(uri: android.net.Uri) {
         viewModelScope.launch(Dispatchers.IO) {
             val fileName = fileManager.importDatFileFromUri(application, uri)
             if (fileName != null) {
+                refreshCustomDatFiles()
                 _uiEvent.trySend(MainViewUiEvent.ShowSnackbar("已导入 $fileName"))
             }
         }
@@ -1102,6 +1112,7 @@ class MainViewModel(application: Application) :
             val urls = prefs.customDatUrls.toMutableMap()
             urls.remove(fileName)
             prefs.customDatUrls = urls
+            refreshCustomDatFiles()
             _uiEvent.trySend(MainViewUiEvent.ShowSnackbar("已删除 $fileName"))
         }
     }
@@ -1110,6 +1121,7 @@ class MainViewModel(application: Application) :
         val urls = prefs.customDatUrls.toMutableMap()
         urls[fileName] = url
         prefs.customDatUrls = urls
+        refreshCustomDatFiles()
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
