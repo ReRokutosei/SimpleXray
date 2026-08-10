@@ -26,8 +26,19 @@ protobuf {
     }
 }
 
+def computeVersionCode(String versionName) {
+    def parts = versionName.split('-')[0].split('\\.')
+    def major = parts.size() > 0 ? (parts[0].isInteger() ? parts[0].toInteger() : 1) : 1
+    def minor = parts.size() > 1 ? (parts[1].isInteger() ? parts[1].toInteger() : 0) : 0
+    def patch = parts.size() > 2 ? (parts[2].isInteger() ? parts[2].toInteger() : 0) : 0
+    return major * 10000 + minor * 100 + patch
+}
+
 def versionProps = new Properties()
 file("$rootDir/version.properties").withInputStream { versionProps.load(it) }
+
+def appVersionName = project.hasProperty("appVerName") ? project.getProperty("appVerName").toString() : "1.0.0"
+def appVersionCode = project.hasProperty("appVerCode") ? project.getProperty("appVerCode").toInteger() : computeVersionCode(appVersionName)
 
 android {
     namespace = "com.simplexray.re"
@@ -35,8 +46,8 @@ android {
 
     defaultConfig {
         applicationId = "com.simplexray.re"
-        versionCode = versionProps.APP_VERSION_CODE.toInteger()
-        versionName = versionProps.APP_VERSION_NAME
+        versionCode = appVersionCode
+        versionName = appVersionName
         targetSdk = 36
         minSdk = 29
 
