@@ -122,27 +122,22 @@ fun AppScaffold(
             }
         }
     } else {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Scaffold(
-                modifier = Modifier.fillMaxSize(),
-                topBar = topBarContent,
-                contentWindowInsets = WindowInsets(0)
-            ) { paddingValues ->
-                val overlayPaddingValues = PaddingValues(
-                    start = paddingValues.calculateStartPadding(LayoutDirection.Ltr),
-                    top = paddingValues.calculateTopPadding(),
-                    end = paddingValues.calculateEndPadding(LayoutDirection.Ltr),
-                    bottom = 100.dp
-                )
-                content(overlayPaddingValues)
-            }
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-            ) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = topBarContent,
+            floatingToolbar = {
                 AppBottomNavigationBar(navController)
-            }
+            },
+            floatingToolbarPosition = top.yukonga.miuix.kmp.basic.ToolbarPosition.BottomCenter,
+            contentWindowInsets = WindowInsets(0)
+        ) { paddingValues ->
+            val overlayPaddingValues = PaddingValues(
+                start = paddingValues.calculateStartPadding(LayoutDirection.Ltr),
+                top = paddingValues.calculateTopPadding(),
+                end = paddingValues.calculateEndPadding(LayoutDirection.Ltr),
+                bottom = 100.dp
+            )
+            content(overlayPaddingValues)
         }
     }
 }
