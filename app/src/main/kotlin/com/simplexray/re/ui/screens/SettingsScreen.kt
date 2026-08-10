@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -650,7 +651,9 @@ fun SettingsScreen(
             }
         }
 
-        val customDatFiles = remember(settingsState) {
+        val customDatVersion by mainViewModel.customDatVersion.collectAsState()
+
+        val customDatFiles = remember(settingsState, customDatVersion) {
             context.filesDir.listFiles { file ->
                 file.isFile && file.name.lowercase().endsWith(".dat") && file.name != "geoip.dat" && file.name != "geosite.dat" && !file.name.lowercase().startsWith("profileinstaller_")
             }?.toList() ?: emptyList()
