@@ -3,7 +3,10 @@ package com.simplexray.re.ui
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
@@ -86,5 +89,28 @@ class MiuixUiRenderTest {
         composeTestRule.onNodeWithText("Start Service").assertIsDisplayed()
         composeTestRule.onNodeWithText("Start Service").performClick()
         assert(clicked)
+    }
+
+    @Test
+    fun testMiuixNavigationRailRender() {
+        composeTestRule.setContent {
+            val dispatcherOwner = rememberNavigationEventDispatcherOwner(parent = null)
+            val themeController = ThemeController(isDark = false)
+            val railState = remember { top.yukonga.miuix.kmp.basic.NavigationRailState() }
+            CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides dispatcherOwner) {
+                MiuixTheme(controller = themeController) {
+                    top.yukonga.miuix.kmp.basic.NavigationRail(state = railState) {
+                        top.yukonga.miuix.kmp.basic.NavigationRailItem(
+                            selected = true,
+                            onClick = {},
+                            icon = androidx.compose.material.icons.Icons.Default.MoreVert,
+                            label = "Dashboard"
+                        )
+                    }
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Dashboard").assertIsDisplayed()
     }
 }
