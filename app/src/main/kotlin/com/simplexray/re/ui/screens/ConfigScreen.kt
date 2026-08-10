@@ -421,6 +421,7 @@ private fun ConfigListPane(
                                 )
                                 Surface(
                                     color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.secondaryContainer,
+                                    shape = RoundedCornerShape(6.dp),
                                     modifier = Modifier.padding(end = 8.dp)
                                 ) {
                                     Text(
