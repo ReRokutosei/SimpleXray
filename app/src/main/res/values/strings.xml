@@ -168,4 +168,6 @@
     <string name="downloading">Downloading… %1$d%%</string>
     <string name="downloading_no_size">Downloading…</string>
     <string name="download_cancelled">Download cancelled</string>
+    <string name="file_imported">Imported %s</string>
+    <string name="file_deleted">Deleted %s</string>
 </resources>

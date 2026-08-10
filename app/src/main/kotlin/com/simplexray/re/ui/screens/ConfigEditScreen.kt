@@ -3,6 +3,7 @@ package com.simplexray.re.ui.screens
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -28,8 +29,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
@@ -53,6 +54,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
@@ -306,115 +308,123 @@ fun ConfigEditPane(
                     scrollBehavior = scrollBehavior
                 )
             },
+            snackbarHost = { SnackbarHost(state = snackbarHostState) },
             contentWindowInsets = WindowInsets(0)
         ) { paddingValues ->
             editorContent(paddingValues)
         }
     } else {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .padding(horizontal = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (isSearching) {
-                    IconButton(onClick = {
-                        isSearching = false
-                        searchQuery = ""
-                        matchIndices = emptyList()
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.close_search)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (isSearching) {
+                        IconButton(onClick = {
+                            isSearching = false
+                            searchQuery = ""
+                            matchIndices = emptyList()
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.close_search)
+                            )
+                        }
+                        InputField(
+                            query = searchQuery,
+                            onQueryChange = { q ->
+                                searchQuery = q
+                                updateMatches(q, configTextFieldValue.text)
+                                if (matchIndices.isNotEmpty()) {
+                                    jumpToMatch(0)
+                                }
+                            },
+                            onSearch = {},
+                            expanded = isSearching,
+                            onExpandedChange = { isSearching = it },
+                            label = stringResource(R.string.search),
+                            modifier = Modifier.weight(1f)
                         )
-                    }
-                    InputField(
-                        query = searchQuery,
-                        onQueryChange = { q ->
-                            searchQuery = q
-                            updateMatches(q, configTextFieldValue.text)
-                            if (matchIndices.isNotEmpty()) {
-                                jumpToMatch(0)
+                        if (matchIndices.isNotEmpty()) {
+                            Text(
+                                text = "${currentMatchIndex + 1}/${matchIndices.size}",
+                                fontSize = MiuixTheme.textStyles.body2.fontSize,
+                                modifier = Modifier.padding(horizontal = 4.dp)
+                            )
+                            IconButton(onClick = {
+                                if (matchIndices.isNotEmpty()) {
+                                    currentMatchIndex = if (currentMatchIndex > 0) currentMatchIndex - 1 else matchIndices.size - 1
+                                    jumpToMatch(currentMatchIndex)
+                                }
+                            }) {
+                                Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Prev")
                             }
-                        },
-                        onSearch = {},
-                        expanded = isSearching,
-                        onExpandedChange = { isSearching = it },
-                        label = stringResource(R.string.search),
-                        modifier = Modifier.weight(1f)
-                    )
-                    if (matchIndices.isNotEmpty()) {
+                            IconButton(onClick = {
+                                if (matchIndices.isNotEmpty()) {
+                                    currentMatchIndex = (currentMatchIndex + 1) % matchIndices.size
+                                    jumpToMatch(currentMatchIndex)
+                                }
+                            }) {
+                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Next")
+                            }
+                        }
+                    } else {
                         Text(
-                            text = "${currentMatchIndex + 1}/${matchIndices.size}",
-                            fontSize = MiuixTheme.textStyles.body2.fontSize,
-                            modifier = Modifier.padding(horizontal = 4.dp)
+                            text = filename.ifEmpty { stringResource(id = R.string.config) },
+                            style = MiuixTheme.textStyles.title3,
+                            modifier = Modifier.weight(1f)
                         )
-                        IconButton(onClick = {
-                            if (matchIndices.isNotEmpty()) {
-                                currentMatchIndex = if (currentMatchIndex > 0) currentMatchIndex - 1 else matchIndices.size - 1
-                                jumpToMatch(currentMatchIndex)
-                            }
-                        }) {
-                            Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Prev")
-                        }
-                        IconButton(onClick = {
-                            if (matchIndices.isNotEmpty()) {
-                                currentMatchIndex = (currentMatchIndex + 1) % matchIndices.size
-                                jumpToMatch(currentMatchIndex)
-                            }
-                        }) {
-                            Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Next")
-                        }
-                    }
-                } else {
-                    Text(
-                        text = filename.ifEmpty { stringResource(id = R.string.config) },
-                        style = MiuixTheme.textStyles.title3,
-                        modifier = Modifier.weight(1f)
-                    )
 
-                    if (onToggleExpand != null) {
-                        IconButton(onClick = onToggleExpand) {
-                            if (isExpanded) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.back)
-                                )
-                            } else {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.code),
-                                    contentDescription = "Expand"
-                                )
+                        if (onToggleExpand != null) {
+                            IconButton(onClick = onToggleExpand) {
+                                if (isExpanded) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = stringResource(R.string.back)
+                                    )
+                                } else {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.code),
+                                        contentDescription = "Expand"
+                                    )
+                                }
                             }
                         }
-                    }
-                    IconButton(onClick = { isSearching = true }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.search),
-                            contentDescription = stringResource(R.string.search)
-                        )
-                    }
-                    IconButton(onClick = {
-                        viewModel.saveConfigFile()
-                        focusManager.clearFocus()
-                    }, enabled = hasConfigChanged) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.save),
-                            contentDescription = stringResource(id = R.string.save)
-                        )
-                    }
-                    IconButton(onClick = { viewModel.shareConfigFile() }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_share),
-                            contentDescription = stringResource(R.string.share)
-                        )
+                        IconButton(onClick = { isSearching = true }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.search),
+                                contentDescription = stringResource(R.string.search)
+                            )
+                        }
+                        IconButton(onClick = {
+                            viewModel.saveConfigFile()
+                            focusManager.clearFocus()
+                        }, enabled = hasConfigChanged) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.save),
+                                contentDescription = stringResource(id = R.string.save)
+                            )
+                        }
+                        IconButton(onClick = { viewModel.shareConfigFile() }) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_share),
+                                contentDescription = stringResource(R.string.share)
+                            )
+                        }
                     }
                 }
+
+                editorContent(PaddingValues(0.dp))
             }
 
-            editorContent(PaddingValues(0.dp))
+            SnackbarHost(
+                state = snackbarHostState,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            )
         }
     }
 }

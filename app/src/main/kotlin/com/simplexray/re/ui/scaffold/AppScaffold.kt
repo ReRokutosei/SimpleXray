@@ -54,6 +54,7 @@ import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SmallTopAppBar
+import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
@@ -117,6 +118,7 @@ fun AppScaffold(
             Scaffold(
                 modifier = Modifier.weight(1f),
                 topBar = topBarContent,
+                snackbarHost = { SnackbarHost(state = snackbarHostState) },
                 contentWindowInsets = WindowInsets(0)
             ) { paddingValues ->
                 content(paddingValues)
@@ -130,6 +132,7 @@ fun AppScaffold(
                 AppBottomNavigationBar(navController)
             },
             floatingToolbarPosition = top.yukonga.miuix.kmp.basic.ToolbarPosition.BottomCenter,
+            snackbarHost = { SnackbarHost(state = snackbarHostState) },
             contentWindowInsets = WindowInsets(0)
         ) { paddingValues ->
             val overlayPaddingValues = PaddingValues(

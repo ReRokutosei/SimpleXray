@@ -1048,7 +1048,7 @@ class MainViewModel(application: Application) :
             val fileName = fileManager.importDatFileFromUri(application, uri)
             if (fileName != null) {
                 refreshCustomDatFiles()
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar("已导入 $fileName"))
+                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.file_imported, fileName)))
             }
         }
     }
@@ -1063,7 +1063,7 @@ class MainViewModel(application: Application) :
             urls.remove(fileName)
             prefs.customDatUrls = urls
             refreshCustomDatFiles()
-            _uiEvent.trySend(MainViewUiEvent.ShowSnackbar("已删除 $fileName"))
+            _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.file_deleted, fileName)))
         }
     }
 
