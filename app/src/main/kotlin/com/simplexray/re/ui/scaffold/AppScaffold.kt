@@ -1,6 +1,7 @@
 package com.simplexray.re.ui.scaffold
 
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
@@ -77,37 +78,55 @@ fun AppScaffold(
         }
     }
 
-    Scaffold(
-        modifier = Modifier,
-        topBar = {
-            AppTopAppBar(
-                currentRoute = currentRoute,
-                onCreateNewConfigFileAndEdit = onCreateNewConfigFileAndEdit,
-                onImportConfigFromClipboard = onImportConfigFromClipboard,
-                onPerformExport = onPerformExport,
-                onPerformBackup = onPerformBackup,
-                onPerformRestore = onPerformRestore,
-                onSwitchVpnService = onSwitchVpnService,
-                controlMenuClickable = mainViewModel.controlMenuClickable.collectAsState().value,
-                isServiceEnabled = mainViewModel.isServiceEnabled.collectAsState().value,
-                logViewModel = logViewModel,
-                logListState = logListState,
-                configListState = configListState,
-                settingsScrollState = settingsScrollState,
-                isLogSearching = isLogSearching,
-                onLogSearchingChange = { isLogSearching = it },
-                logSearchQuery = logSearchQuery,
-                onLogSearchQueryChange = { logViewModel.onSearchQueryChange(it) },
-                focusRequester = focusRequester,
-                mainViewModel = mainViewModel
-            )
-        },
-        bottomBar = {
-            AppBottomNavigationBar(navController)
-        },
-        contentWindowInsets = WindowInsets(0)
-    ) { paddingValues ->
-        content(paddingValues)
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isWideScreen = configuration.screenWidthDp >= 600
+
+    val topBarContent: @Composable () -> Unit = {
+        AppTopAppBar(
+            currentRoute = currentRoute,
+            onCreateNewConfigFileAndEdit = onCreateNewConfigFileAndEdit,
+            onImportConfigFromClipboard = onImportConfigFromClipboard,
+            onPerformExport = onPerformExport,
+            onPerformBackup = onPerformBackup,
+            onPerformRestore = onPerformRestore,
+            onSwitchVpnService = onSwitchVpnService,
+            controlMenuClickable = mainViewModel.controlMenuClickable.collectAsState().value,
+            isServiceEnabled = mainViewModel.isServiceEnabled.collectAsState().value,
+            logViewModel = logViewModel,
+            logListState = logListState,
+            configListState = configListState,
+            settingsScrollState = settingsScrollState,
+            isLogSearching = isLogSearching,
+            onLogSearchingChange = { isLogSearching = it },
+            logSearchQuery = logSearchQuery,
+            onLogSearchQueryChange = { logViewModel.onSearchQueryChange(it) },
+            focusRequester = focusRequester,
+            mainViewModel = mainViewModel
+        )
+    }
+
+    if (isWideScreen) {
+        androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxSize()) {
+            AppNavigationRail(navController = navController)
+            Scaffold(
+                modifier = Modifier.weight(1f),
+                topBar = topBarContent,
+                contentWindowInsets = WindowInsets(0)
+            ) { paddingValues ->
+                content(paddingValues)
+            }
+        }
+    } else {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = topBarContent,
+            bottomBar = {
+                AppBottomNavigationBar(navController)
+            },
+            contentWindowInsets = WindowInsets(0)
+        ) { paddingValues ->
+            content(paddingValues)
+        }
     }
 }
 
@@ -378,6 +397,40 @@ private fun SettingsActions(
         Icon(
             imageVector = Icons.Default.MoreVert,
             contentDescription = stringResource(R.string.more)
+        )
+    }
+}
+
+@Composable
+fun AppNavigationRail(navController: NavHostController) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val railState = remember { top.yukonga.miuix.kmp.basic.NavigationRailState() }
+
+    top.yukonga.miuix.kmp.basic.NavigationRail(state = railState) {
+        top.yukonga.miuix.kmp.basic.NavigationRailItem(
+            selected = currentRoute == ROUTE_STATS,
+            onClick = { navigateToRoute(navController, ROUTE_STATS) },
+            icon = ImageVector.vectorResource(id = R.drawable.dashboard),
+            label = stringResource(R.string.core_stats_title)
+        )
+        top.yukonga.miuix.kmp.basic.NavigationRailItem(
+            selected = currentRoute == ROUTE_CONFIG,
+            onClick = { navigateToRoute(navController, ROUTE_CONFIG) },
+            icon = ImageVector.vectorResource(id = R.drawable.code),
+            label = stringResource(R.string.configuration)
+        )
+        top.yukonga.miuix.kmp.basic.NavigationRailItem(
+            selected = currentRoute == ROUTE_LOG,
+            onClick = { navigateToRoute(navController, ROUTE_LOG) },
+            icon = ImageVector.vectorResource(id = R.drawable.history),
+            label = stringResource(R.string.log)
+        )
+        top.yukonga.miuix.kmp.basic.NavigationRailItem(
+            selected = currentRoute == ROUTE_SETTINGS,
+            onClick = { navigateToRoute(navController, ROUTE_SETTINGS) },
+            icon = ImageVector.vectorResource(id = R.drawable.settings),
+            label = stringResource(R.string.settings)
         )
     }
 }
