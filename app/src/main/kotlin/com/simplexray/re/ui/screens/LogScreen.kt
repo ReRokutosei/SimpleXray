@@ -33,6 +33,8 @@ import com.simplexray.re.ui.theme.ScrollbarDefaults
 import com.simplexray.re.viewmodel.LogViewModel
 import my.nanihadesuka.compose.LazyColumnScrollbar
 
+import androidx.compose.foundation.text.selection.SelectionContainer
+
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 fun LogScreen(
@@ -74,17 +76,19 @@ fun LogScreen(
                 )
             }
         } else {
-            LazyColumnScrollbar(
-                state = listState,
-                settings = ScrollbarDefaults.defaultScrollbarSettings()
-            ) {
-                LazyColumn(
+            SelectionContainer {
+                LazyColumnScrollbar(
                     state = listState,
-                    modifier = Modifier.padding(start = 6.dp, end = 6.dp),
-                    reverseLayout = true
+                    settings = ScrollbarDefaults.defaultScrollbarSettings()
                 ) {
-                    items(filteredEntries) { logEntry ->
-                        LogEntryItem(logEntry = logEntry)
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.padding(start = 6.dp, end = 6.dp),
+                        reverseLayout = true
+                    ) {
+                        items(filteredEntries) { logEntry ->
+                            LogEntryItem(logEntry = logEntry)
+                        }
                     }
                 }
             }

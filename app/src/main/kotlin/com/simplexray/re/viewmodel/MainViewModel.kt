@@ -131,6 +131,10 @@ class MainViewModel(application: Application) :
     private val _uiEvent = Channel<MainViewUiEvent>(Channel.BUFFERED)
     val uiEvent = _uiEvent.receiveAsFlow()
 
+    fun showSnackbar(message: String) {
+        _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(message))
+    }
+
     private val _configFiles = MutableStateFlow<List<File>>(emptyList())
     val configFiles: StateFlow<List<File>> = _configFiles.asStateFlow()
 

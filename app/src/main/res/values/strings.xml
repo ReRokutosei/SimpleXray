@@ -107,6 +107,8 @@
     <string name="search">Search</string>
     <string name="close_search">Close search</string>
     <string name="clear_search">Clear search</string>
+    <string name="clear_logs">Clear Logs</string>
+    <string name="logs_cleared">Logs cleared</string>
     <string name="log">Logs</string>
     <string name="about">About</string>
     <string name="confirm">Confirm</string>

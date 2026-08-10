@@ -274,7 +274,8 @@ private fun TopAppBarActions(
         "log" -> LogActions(
             onPerformExport = onPerformExport,
             logViewModel = logViewModel,
-            onLogSearchingChange = onLogSearchingChange
+            onLogSearchingChange = onLogSearchingChange,
+            mainViewModel = mainViewModel
         )
 
         "settings" -> SettingsActions(
@@ -354,10 +355,13 @@ private fun ConfigActions(
 private fun LogActions(
     onPerformExport: () -> Unit,
     logViewModel: LogViewModel,
-    onLogSearchingChange: (Boolean) -> Unit = {}
+    onLogSearchingChange: (Boolean) -> Unit = {},
+    mainViewModel: MainViewModel
 ) {
     var expanded by remember { mutableStateOf(false) }
     val hasLogsToExport by logViewModel.hasLogsToExport.collectAsStateWithLifecycle()
+    val logEntries by logViewModel.logEntries.collectAsStateWithLifecycle()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     IconButton(onClick = { onLogSearchingChange(true) }) {
         Icon(
@@ -375,6 +379,15 @@ private fun LogActions(
         expanded = expanded,
         onDismissRequest = { expanded = false }
     ) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.clear_logs)) },
+            onClick = {
+                logViewModel.clearLogs()
+                expanded = false
+                mainViewModel.showSnackbar(context.getString(R.string.logs_cleared))
+            },
+            enabled = logEntries.isNotEmpty()
+        )
         DropdownMenuItem(
             text = { Text(stringResource(R.string.export)) },
             onClick = {
