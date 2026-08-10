@@ -53,6 +53,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
@@ -172,7 +173,7 @@ fun AppTopAppBar(
 
     val topAppBarScrollBehavior = MiuixScrollBehavior()
 
-    TopAppBar(
+    SmallTopAppBar(
         title = if (currentRoute == ROUTE_LOG && isLogSearching) "" else title,
         color = MiuixTheme.colorScheme.surface,
         navigationIcon = {
