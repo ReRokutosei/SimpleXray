@@ -2,6 +2,7 @@ package com.simplexray.re.ui.screens
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,11 +41,13 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun LogScreen(
     logViewModel: LogViewModel,
-    listState: LazyListState
+    listState: LazyListState,
+    paddingValues: PaddingValues = PaddingValues()
 ) {
     val context = LocalContext.current
     val filteredEntries by logViewModel.filteredEntries.collectAsStateWithLifecycle()
     val isInitialLoad = remember { mutableStateOf(true) }
+    val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
 
     DisposableEffect(key1 = Unit) {
         logViewModel.registerLogReceiver(context)
@@ -86,6 +89,7 @@ fun LogScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 12.dp),
+                        contentPadding = PaddingValues(top = 12.dp, bottom = bottomPadding),
                         reverseLayout = true
                     ) {
                         items(filteredEntries) { logEntry ->

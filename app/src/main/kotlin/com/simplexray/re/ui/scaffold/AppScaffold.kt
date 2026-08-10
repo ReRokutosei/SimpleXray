@@ -1,5 +1,13 @@
 package com.simplexray.re.ui.scaffold
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -114,15 +122,27 @@ fun AppScaffold(
             }
         }
     } else {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            topBar = topBarContent,
-            bottomBar = {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                topBar = topBarContent,
+                contentWindowInsets = WindowInsets(0)
+            ) { paddingValues ->
+                val overlayPaddingValues = PaddingValues(
+                    start = paddingValues.calculateStartPadding(LayoutDirection.Ltr),
+                    top = paddingValues.calculateTopPadding(),
+                    end = paddingValues.calculateEndPadding(LayoutDirection.Ltr),
+                    bottom = 100.dp
+                )
+                content(overlayPaddingValues)
+            }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+            ) {
                 AppBottomNavigationBar(navController)
-            },
-            contentWindowInsets = WindowInsets(0)
-        ) { paddingValues ->
-            content(paddingValues)
+            }
         }
     }
 }

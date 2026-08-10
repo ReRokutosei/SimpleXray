@@ -89,11 +89,13 @@ fun ConfigScreen(
     onCreateNewConfigFileAndEdit: () -> Unit = {},
     onImportConfigFromClipboard: () -> Unit = {},
     mainViewModel: MainViewModel,
-    listState: LazyListState
+    listState: LazyListState,
+    paddingValues: PaddingValues = PaddingValues()
 ) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val isMasterDetailSupported = isLandscape && configuration.screenWidthDp >= 840
+    val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
 
     val files by mainViewModel.configFiles.collectAsState()
     val selectedFile by mainViewModel.selectedConfigFile.collectAsState()
@@ -130,7 +132,7 @@ fun ConfigScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .widthIn(max = 480.dp)
-                    .padding(24.dp)
+                    .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = bottomPadding + 12.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -201,7 +203,8 @@ fun ConfigScreen(
                         onImportConfigFromClipboard = onImportConfigFromClipboard,
                         mainViewModel = mainViewModel,
                         listState = listState,
-                        isWideScreen = true
+                        isWideScreen = true,
+                        paddingValues = paddingValues
                     )
                 }
             }
@@ -260,7 +263,8 @@ fun ConfigScreen(
             onImportConfigFromClipboard = onImportConfigFromClipboard,
             mainViewModel = mainViewModel,
             listState = listState,
-            isWideScreen = false
+            isWideScreen = false,
+            paddingValues = paddingValues
         )
     }
 }
@@ -279,8 +283,10 @@ private fun ConfigListPane(
     onImportConfigFromClipboard: () -> Unit,
     mainViewModel: MainViewModel,
     listState: LazyListState,
-    isWideScreen: Boolean
+    isWideScreen: Boolean,
+    paddingValues: PaddingValues = PaddingValues()
 ) {
+    val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
     val showDeleteDialog = remember { mutableStateOf<File?>(null) }
     var showAddConfigSheet by remember { mutableStateOf(false) }
 
@@ -323,7 +329,7 @@ private fun ConfigListPane(
     Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxHeight(),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = bottomPadding),
             state = listState
         ) {
             item(key = "add_config_item") {

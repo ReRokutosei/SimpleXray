@@ -43,7 +43,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @Composable
 fun DashboardScreen(
     mainViewModel: MainViewModel,
-    onSwitchVpnService: () -> Unit = {}
+    onSwitchVpnService: () -> Unit = {},
+    paddingValues: PaddingValues = PaddingValues()
 ) {
     val coreStats by mainViewModel.coreStatsState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -59,6 +60,7 @@ fun DashboardScreen(
 
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isWideScreen = configuration.screenWidthDp >= 600
+    val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
 
     Box(
         modifier = Modifier.fillMaxSize(),
@@ -70,7 +72,7 @@ fun DashboardScreen(
                 .then(
                     if (isWideScreen) Modifier.widthIn(max = 840.dp) else Modifier
                 ),
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = bottomPadding)
         ) {
             item {
                 SmallTitle(text = "流量信息")
