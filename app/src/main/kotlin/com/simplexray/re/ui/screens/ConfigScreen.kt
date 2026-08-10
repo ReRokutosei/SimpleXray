@@ -1,6 +1,7 @@
 package com.simplexray.re.ui.screens
 
 import android.util.Log
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,16 +19,21 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -37,6 +43,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.simplexray.re.R
+import com.simplexray.re.viewmodel.ConfigEditViewModel
 import com.simplexray.re.viewmodel.MainViewModel
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
@@ -45,6 +52,7 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
@@ -62,13 +70,112 @@ fun ConfigScreen(
     mainViewModel: MainViewModel,
     listState: LazyListState
 ) {
-    val showDeleteDialog = remember { mutableStateOf<File?>(null) }
-
-    val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsState()
+    val configuration = LocalConfiguration.current
+    val isWideScreen = configuration.screenWidthDp >= 600
 
     val files by mainViewModel.configFiles.collectAsState()
     val selectedFile by mainViewModel.selectedConfigFile.collectAsState()
+    var selectedFileForDetail by remember { mutableStateOf<File?>(null) }
 
+    LaunchedEffect(files, selectedFile) {
+        if (selectedFileForDetail == null || !files.contains(selectedFileForDetail)) {
+            selectedFileForDetail = selectedFile ?: files.firstOrNull()
+        }
+    }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    if (isWideScreen) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .width(360.dp)
+                    .fillMaxHeight()
+            ) {
+                ConfigListPane(
+                    files = files,
+                    selectedFile = selectedFile,
+                    selectedFileForDetail = selectedFileForDetail,
+                    onFileSelectedForDetail = { file ->
+                        selectedFileForDetail = file
+                    },
+                    onReloadConfig = onReloadConfig,
+                    onEditConfigClick = onEditConfigClick,
+                    onDeleteConfigClick = onDeleteConfigClick,
+                    mainViewModel = mainViewModel,
+                    listState = listState,
+                    isWideScreen = true
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .padding(start = 8.dp)
+            ) {
+                if (selectedFileForDetail != null) {
+                    val activeFile = selectedFileForDetail!!
+                    val context = LocalContext.current
+                    key(activeFile.absolutePath) {
+                        val editViewModel = remember(activeFile.absolutePath) {
+                            ConfigEditViewModel(
+                                mainViewModel.getApplication(),
+                                activeFile.absolutePath,
+                                mainViewModel.prefs
+                            )
+                        }
+                        ConfigEditPane(
+                            viewModel = editViewModel,
+                            snackbarHostState = snackbarHostState,
+                            showNavigationIcon = false
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = stringResource(R.string.no_config_files),
+                            style = MiuixTheme.textStyles.body1,
+                            color = MiuixTheme.colorScheme.onSurfaceSecondary
+                        )
+                    }
+                }
+            }
+        }
+    } else {
+        ConfigListPane(
+            files = files,
+            selectedFile = selectedFile,
+            selectedFileForDetail = null,
+            onFileSelectedForDetail = {},
+            onReloadConfig = onReloadConfig,
+            onEditConfigClick = onEditConfigClick,
+            onDeleteConfigClick = onDeleteConfigClick,
+            mainViewModel = mainViewModel,
+            listState = listState,
+            isWideScreen = false
+        )
+    }
+}
+
+@Composable
+private fun ConfigListPane(
+    files: List<File>,
+    selectedFile: File?,
+    selectedFileForDetail: File?,
+    onFileSelectedForDetail: (File) -> Unit,
+    onReloadConfig: () -> Unit,
+    onEditConfigClick: (File) -> Unit,
+    onDeleteConfigClick: (File, () -> Unit) -> Unit,
+    mainViewModel: MainViewModel,
+    listState: LazyListState,
+    isWideScreen: Boolean
+) {
+    val showDeleteDialog = remember { mutableStateOf<File?>(null) }
+    val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     DisposableEffect(lifecycleOwner) {
@@ -93,9 +200,7 @@ fun ConfigScreen(
         hapticFeedback.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         if (files.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
@@ -118,20 +223,34 @@ fun ConfigScreen(
                 items(files, key = { it }) { file ->
                     ReorderableItem(state = reorderableLazyListState, key = file) {
                         val isSelected = file == selectedFile
+                        val isEditingDetail = isWideScreen && file == selectedFileForDetail
+
+                        val cardModifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp)
+                            .then(
+                                if (isEditingDetail) Modifier.border(
+                                    width = 2.dp,
+                                    color = MiuixTheme.colorScheme.primary,
+                                    shape = RoundedCornerShape(12.dp)
+                                ) else Modifier
+                            )
+                            .clickable {
+                                if (isWideScreen) {
+                                    onFileSelectedForDetail(file)
+                                }
+                                mainViewModel.updateSelectedConfigFile(file)
+                                if (isServiceEnabled) {
+                                    Log.d(
+                                        TAG,
+                                        "Config selected while service is running, requesting reload."
+                                    )
+                                    onReloadConfig()
+                                }
+                            }
+
                         Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                                .clickable {
-                                    mainViewModel.updateSelectedConfigFile(file)
-                                    if (isServiceEnabled) {
-                                        Log.d(
-                                            TAG,
-                                            "Config selected while service is running, requesting reload."
-                                        )
-                                        onReloadConfig()
-                                    }
-                                },
+                            modifier = cardModifier,
                             colors = CardDefaults.defaultColors(
                                 color = if (isSelected) MiuixTheme.colorScheme.primaryContainer
                                 else MiuixTheme.colorScheme.surfaceContainer
@@ -170,7 +289,13 @@ fun ConfigScreen(
                                             color = if (isSelected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSecondaryContainer
                                         )
                                     }
-                                    IconButton(onClick = { onEditConfigClick(file) }) {
+                                    IconButton(onClick = {
+                                        if (isWideScreen) {
+                                            onFileSelectedForDetail(file)
+                                        } else {
+                                            onEditConfigClick(file)
+                                        }
+                                    }) {
                                         Icon(
                                             painter = painterResource(R.drawable.edit),
                                             contentDescription = "Edit"

@@ -1,6 +1,6 @@
 package com.simplexray.re.ui.screens
 
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -9,13 +9,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -58,125 +58,92 @@ fun DashboardScreen(
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isWideScreen = configuration.screenWidthDp >= 600
 
-    val trafficSection: @Composable () -> Unit = {
-        Column {
-            SmallTitle(text = "流量信息")
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    StatRow(
-                        label = stringResource(id = R.string.stats_uplink),
-                        value = formatBytes(coreStats.uplink)
-                    )
-                    StatRow(
-                        label = stringResource(id = R.string.stats_downlink),
-                        value = formatBytes(coreStats.downlink)
-                    )
-                }
-            }
-        }
-    }
-
-    val statusSection: @Composable () -> Unit = {
-        Column {
-            SmallTitle(text = "核心运行状态")
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    StatRow(
-                        label = stringResource(id = R.string.stats_num_goroutine),
-                        value = formatNumber(coreStats.numGoroutine.toLong())
-                    )
-                    StatRow(
-                        label = stringResource(id = R.string.stats_num_gc),
-                        value = formatNumber(coreStats.numGC.toLong())
-                    )
-                    StatRow(
-                        label = stringResource(id = R.string.stats_alloc),
-                        value = formatBytes(coreStats.alloc)
-                    )
-                    StatRow(
-                        label = stringResource(id = R.string.stats_uptime),
-                        value = formatUptime(coreStats.uptime)
-                    )
-                }
-            }
-        }
-    }
-
-    val controlSection: @Composable () -> Unit = {
-        val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsState()
-        Column {
-            SmallTitle(text = stringResource(id = R.string.core_control))
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
-                ) {
-                    Button(
-                        onClick = onSwitchVpnService,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp),
-                        colors = if (isServiceEnabled) ButtonDefaults.buttonColors(
-                            color = MiuixTheme.colorScheme.error,
-                            contentColor = MiuixTheme.colorScheme.onError
-                        ) else ButtonDefaults.buttonColorsPrimary()
-                    ) {
-                        Icon(
-                            painter = painterResource(
-                                id = if (isServiceEnabled) R.drawable.pause else R.drawable.play
-                            ),
-                            contentDescription = null,
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
-                        Text(
-                            text = if (isServiceEnabled) stringResource(R.string.cancel) else stringResource(R.string.app_name),
-                            fontSize = MiuixTheme.textStyles.body1.fontSize
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    if (isWideScreen) {
-        Row(
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                controlSection()
-                Spacer(modifier = Modifier.height(12.dp))
-                statusSection()
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                trafficSection()
-            }
-        }
-    } else {
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+                .then(
+                    if (isWideScreen) Modifier.widthIn(max = 840.dp) else Modifier
+                ),
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
         ) {
             item {
-                trafficSection()
+                SmallTitle(text = "流量信息")
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        StatRow(
+                            label = stringResource(id = R.string.stats_uplink),
+                            value = formatBytes(coreStats.uplink)
+                        )
+                        StatRow(
+                            label = stringResource(id = R.string.stats_downlink),
+                            value = formatBytes(coreStats.downlink)
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(12.dp))
             }
+
             item {
-                statusSection()
+                SmallTitle(text = "核心运行状态")
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        StatRow(
+                            label = stringResource(id = R.string.stats_num_goroutine),
+                            value = formatNumber(coreStats.numGoroutine.toLong())
+                        )
+                        StatRow(
+                            label = stringResource(id = R.string.stats_num_gc),
+                            value = formatNumber(coreStats.numGC.toLong())
+                        )
+                        StatRow(
+                            label = stringResource(id = R.string.stats_alloc),
+                            value = formatBytes(coreStats.alloc)
+                        )
+                        StatRow(
+                            label = stringResource(id = R.string.stats_uptime),
+                            value = formatUptime(coreStats.uptime)
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(12.dp))
             }
+
             item {
-                controlSection()
+                val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsState()
+                SmallTitle(text = stringResource(id = R.string.core_control))
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Button(
+                            onClick = onSwitchVpnService,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp),
+                            colors = if (isServiceEnabled) ButtonDefaults.buttonColors(
+                                color = MiuixTheme.colorScheme.error,
+                                contentColor = MiuixTheme.colorScheme.onError
+                            ) else ButtonDefaults.buttonColorsPrimary()
+                        ) {
+                            Icon(
+                                painter = painterResource(
+                                    id = if (isServiceEnabled) R.drawable.pause else R.drawable.play
+                                ),
+                                contentDescription = null,
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                            Text(
+                                text = if (isServiceEnabled) stringResource(R.string.cancel) else stringResource(R.string.app_name),
+                                fontSize = MiuixTheme.textStyles.body1.fontSize
+                            )
+                        }
+                    }
+                }
             }
         }
     }
