@@ -30,11 +30,11 @@ def versionProps = new Properties()
 file("$rootDir/version.properties").withInputStream { versionProps.load(it) }
 
 android {
-    namespace = "com.simplexray.an"
+    namespace = "com.simplexray.re"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.simplexray.an"
+        applicationId = "com.simplexray.re"
         versionCode = versionProps.APP_VERSION_CODE.toInteger()
         versionName = versionProps.APP_VERSION_NAME
         targetSdk = 36
