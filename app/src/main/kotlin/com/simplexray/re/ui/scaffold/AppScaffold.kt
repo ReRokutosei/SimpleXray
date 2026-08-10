@@ -266,7 +266,7 @@ private fun ConfigActions(
 ) {
     IconButton(onClick = { mainViewModel.testConnectivity() }) {
         Icon(
-            imageVector = Icons.Default.Refresh,
+            painter = painterResource(id = R.drawable.ic_flash),
             contentDescription = stringResource(R.string.connectivity_test)
         )
     }
