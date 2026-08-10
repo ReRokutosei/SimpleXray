@@ -1,5 +1,6 @@
 package com.simplexray.re.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -9,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -52,18 +55,13 @@ fun DashboardScreen(
         }
     }
 
-    LazyColumn(
-        modifier = Modifier
-            .fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
-    ) {
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isWideScreen = configuration.screenWidthDp >= 600
 
-        item {
+    val trafficSection: @Composable () -> Unit = {
+        Column {
             SmallTitle(text = "流量信息")
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
+            Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     StatRow(
                         label = stringResource(id = R.string.stats_uplink),
@@ -75,15 +73,13 @@ fun DashboardScreen(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
         }
+    }
 
-        item {
+    val statusSection: @Composable () -> Unit = {
+        Column {
             SmallTitle(text = "核心运行状态")
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
+            Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     StatRow(
                         label = stringResource(id = R.string.stats_num_goroutine),
@@ -103,16 +99,14 @@ fun DashboardScreen(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(12.dp))
         }
+    }
 
-        item {
-            val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsState()
+    val controlSection: @Composable () -> Unit = {
+        val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsState()
+        Column {
             SmallTitle(text = stringResource(id = R.string.core_control))
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-            ) {
+            Card(modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
@@ -140,6 +134,49 @@ fun DashboardScreen(
                         )
                     }
                 }
+            }
+        }
+    }
+
+    if (isWideScreen) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                controlSection()
+                Spacer(modifier = Modifier.height(12.dp))
+                statusSection()
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                trafficSection()
+            }
+        }
+    } else {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+        ) {
+            item {
+                trafficSection()
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            item {
+                statusSection()
+                Spacer(modifier = Modifier.height(12.dp))
+            }
+            item {
+                controlSection()
             }
         }
     }

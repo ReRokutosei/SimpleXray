@@ -405,7 +405,7 @@ private fun SettingsActions(
 fun AppNavigationRail(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val railState = remember { top.yukonga.miuix.kmp.basic.NavigationRailState() }
+    val railState = remember { top.yukonga.miuix.kmp.basic.NavigationRailState(initialValue = top.yukonga.miuix.kmp.basic.NavigationRailValue.Expanded) }
 
     top.yukonga.miuix.kmp.basic.NavigationRail(state = railState) {
         top.yukonga.miuix.kmp.basic.NavigationRailItem(

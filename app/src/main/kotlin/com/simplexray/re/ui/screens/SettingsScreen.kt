@@ -3,6 +3,7 @@ package com.simplexray.re.ui.screens
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.result.ActivityResultLauncher
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
@@ -239,11 +241,22 @@ fun SettingsScreen(
         )
     }
 
-    LazyColumn(
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isWideScreen = configuration.screenWidthDp >= 600
+
+    androidx.compose.foundation.layout.Box(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+        contentAlignment = Alignment.TopCenter
     ) {
-        item {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(
+                    if (isWideScreen) Modifier.widthIn(max = 840.dp) else Modifier
+                ),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
+        ) {
+            item {
             SmallTitle(text = stringResource(R.string.general))
             Card(modifier = Modifier.fillMaxWidth()) {
                 SwitchPreference(
@@ -588,6 +601,7 @@ fun SettingsScreen(
             }
         }
     }
+}
 }
 
 @Composable

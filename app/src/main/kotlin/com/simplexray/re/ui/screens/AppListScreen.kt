@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -215,21 +216,29 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
         },
         contentWindowInsets = WindowInsets(0)
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else {
-                val adapter = rememberScrollBarAdapter(scrollState = lazyListState)
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    state = lazyListState,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
+        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+        val isWideScreen = configuration.screenWidthDp >= 600
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues),
+        contentAlignment = Alignment.TopCenter
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+        } else {
+            val adapter = rememberScrollBarAdapter(scrollState = lazyListState)
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .then(
+                        if (isWideScreen) Modifier.widthIn(max = 840.dp) else Modifier
+                    ),
+                state = lazyListState,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
                     items(filteredList, key = { it.packageName }) { pkg ->
                         AppItem(pkg) { isChecked ->
                             viewModel.onPackageSelected(pkg, isChecked)
