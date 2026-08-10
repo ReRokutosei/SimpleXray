@@ -31,7 +31,7 @@
     <string name="use_template_title">使用模板创建新配置</string>
     <string name="use_template_summary">启用时，创建新配置会预填充模板内容</string>
     <string name="loglevel_title">日志等级</string>
-    <string name="loglevel_summary">Auto 跟随配置，指定时强制覆盖日志记录级别</string>
+    <string name="loglevel_summary">Auto 跟随配置，指定时强制覆盖日志记录级别（需重启核心）</string>
     <string name="theme_title">主题</string>
     <string name="theme_summary">调整主题为深色或浅色</string>
     <string name="theme_light">浅色</string>
@@ -43,6 +43,7 @@
     <string name="apps_summary">选择需要代理的应用，否则使用全局模式</string>
     <string name="apps_not_found">没有找到应用</string>
     <string name="show_system_apps">显示系统应用</string>
+    <string name="show_no_internet_apps">显示无网络应用</string>
     <string name="bypass_selected_apps">绕过所选应用</string>
     <string name="select_all">全选</string>
     <string name="inverse_selection">反选</string>

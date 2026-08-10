@@ -17,6 +17,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -33,6 +34,7 @@ import kotlinx.coroutines.delay
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
@@ -115,33 +117,32 @@ fun DashboardScreen(
             item {
                 val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsState()
                 SmallTitle(text = stringResource(id = R.string.core_control))
-                Card(modifier = Modifier.fillMaxWidth()) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.defaultColors(color = Color.Transparent),
+                    insideMargin = PaddingValues(0.dp)
+                ) {
+                    Button(
+                        onClick = onSwitchVpnService,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
+                        colors = if (isServiceEnabled) ButtonDefaults.buttonColors(
+                            color = MiuixTheme.colorScheme.error,
+                            contentColor = MiuixTheme.colorScheme.onError
+                        ) else ButtonDefaults.buttonColorsPrimary()
                     ) {
-                        Button(
-                            onClick = onSwitchVpnService,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(48.dp),
-                            colors = if (isServiceEnabled) ButtonDefaults.buttonColors(
-                                color = MiuixTheme.colorScheme.error,
-                                contentColor = MiuixTheme.colorScheme.onError
-                            ) else ButtonDefaults.buttonColorsPrimary()
-                        ) {
-                            Icon(
-                                painter = painterResource(
-                                    id = if (isServiceEnabled) R.drawable.pause else R.drawable.play
-                                ),
-                                contentDescription = null,
-                                modifier = Modifier.padding(end = 8.dp)
-                            )
-                            Text(
-                                text = if (isServiceEnabled) stringResource(R.string.cancel) else stringResource(R.string.app_name),
-                                fontSize = MiuixTheme.textStyles.body1.fontSize
-                            )
-                        }
+                        Icon(
+                            painter = painterResource(
+                                id = if (isServiceEnabled) R.drawable.pause else R.drawable.play
+                            ),
+                            contentDescription = null,
+                            modifier = Modifier.padding(end = 8.dp)
+                        )
+                        Text(
+                            text = if (isServiceEnabled) stringResource(R.string.cancel) else stringResource(R.string.app_name),
+                            fontSize = MiuixTheme.textStyles.body1.fontSize
+                        )
                     }
                 }
             }
