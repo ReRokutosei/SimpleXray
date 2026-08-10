@@ -245,6 +245,15 @@ class Preferences(context: Context) {
             setValueInProvider(HIDE_FROM_RECENTS, value)
         }
 
+    var geoUpdateIntervalHours: Int
+        get() {
+            val v = getPrefData(GEO_UPDATE_INTERVAL_HOURS).first
+            return v?.toIntOrNull() ?: 0
+        }
+        set(value) {
+            setValueInProvider(GEO_UPDATE_INTERVAL_HOURS, value)
+        }
+
     var httpProxyEnabled: Boolean
         get() = getBooleanPref(HTTP_PROXY_ENABLED, false)
         set(enable) {
@@ -396,6 +405,7 @@ class Preferences(context: Context) {
         const val BYPASS_SELECTED_APPS: String = "BypassSelectedApps"
         const val THEME: String = "Theme"
         const val HIDE_FROM_RECENTS: String = "HideFromRecents"
+        const val GEO_UPDATE_INTERVAL_HOURS: String = "GeoUpdateIntervalHours"
         const val CUSTOM_DAT_URLS: String = "CustomDatUrls"
         private const val TAG = "Preferences"
     }

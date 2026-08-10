@@ -531,6 +531,15 @@ fun SettingsScreen(
                     title = "+ " + stringResource(R.string.import_from_file) + " (.dat)",
                     onClick = { customDatPickerLauncher.launch(arrayOf("*/*")) }
                 )
+
+                EditableListItemWithMiuixBottomSheet(
+                    headline = stringResource(R.string.geo_update_interval_title),
+                    currentValue = settingsState.geoUpdateIntervalHours.value,
+                    onValueConfirmed = { newValue -> mainViewModel.updateGeoUpdateInterval(newValue) },
+                    label = stringResource(R.string.geo_update_interval_title),
+                    supportingText = stringResource(R.string.geo_update_interval_summary),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
             }
         }
 
