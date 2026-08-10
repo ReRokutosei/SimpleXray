@@ -5,7 +5,9 @@ import android.net.Uri
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,28 +15,31 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SheetState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -94,7 +99,6 @@ fun SettingsScreen(
         ThemeMode.Auto
     )
     var selectedThemeOption by remember { mutableStateOf(settingsState.switches.themeMode) }
-    var themeExpanded by remember { mutableStateOf(false) }
 
     if (editingRuleFile != null) {
         ModalBottomSheet(
@@ -273,80 +277,23 @@ fun SettingsScreen(
             }
         )
 
-        ListItem(
-            headlineContent = { Text(stringResource(R.string.theme_title)) },
-            supportingContent = {
-                Text(stringResource(id = R.string.theme_summary))
+        DropdownSettingItem(
+            headline = stringResource(R.string.theme_title),
+            supportingText = stringResource(R.string.theme_summary),
+            options = themeOptions,
+            selectedOption = selectedThemeOption,
+            onOptionSelected = { option ->
+                selectedThemeOption = option
+                mainViewModel.setTheme(option)
             },
-            trailingContent = {
-                ExposedDropdownMenuBox(
-                    expanded = themeExpanded,
-                    onExpandedChange = { themeExpanded = it }
-                ) {
-                    TextButton(
-                        onClick = {},
-                        modifier = Modifier
-                            .menuAnchor(MenuAnchorType.PrimaryEditable, true),
-                        colors = ButtonDefaults.textButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceContainer
-                        )
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = stringResource(
-                                    id = when (selectedThemeOption) {
-                                        ThemeMode.Light -> R.string.theme_light
-                                        ThemeMode.Dark -> R.string.theme_dark
-                                        ThemeMode.Auto -> R.string.auto
-                                    }
-                                ),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            if (themeExpanded) {
-                                Icon(
-                                    imageVector = Icons.Filled.KeyboardArrowUp,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            } else {
-                                Icon(
-                                    imageVector = Icons.Filled.KeyboardArrowDown,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            }
-                        }
+            optionLabel = { option ->
+                stringResource(
+                    id = when (option) {
+                        ThemeMode.Light -> R.string.theme_light
+                        ThemeMode.Dark -> R.string.theme_dark
+                        ThemeMode.Auto -> R.string.auto
                     }
-                    ExposedDropdownMenu(
-                        expanded = themeExpanded,
-                        onDismissRequest = { themeExpanded = false }
-                    ) {
-                        themeOptions.forEach { option ->
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        stringResource(
-                                            id = when (option) {
-                                                ThemeMode.Light -> R.string.theme_light
-                                                ThemeMode.Dark -> R.string.theme_dark
-                                                ThemeMode.Auto -> R.string.auto
-                                            }
-                                        )
-                                    )
-                                },
-                                onClick = {
-                                    selectedThemeOption = option
-                                    mainViewModel.setTheme(option)
-                                    themeExpanded = false
-                                }
-                            )
-                        }
-                    }
-                }
+                )
             }
         )
 
@@ -505,55 +452,17 @@ fun SettingsScreen(
             }
         )
 
-        var logLevelDialogShowing by remember { mutableStateOf(false) }
-
-        ListItem(
-            headlineContent = { Text(stringResource(R.string.loglevel_title)) },
-            supportingContent = { Text(stringResource(R.string.loglevel_summary)) },
-            trailingContent = {
-                TextButton(onClick = { logLevelDialogShowing = true }) {
-                    Text(settingsState.switches.logLevel.name)
-                }
-            }
+        DropdownSettingItem(
+            headline = stringResource(R.string.loglevel_title),
+            supportingText = stringResource(R.string.loglevel_summary),
+            options = com.simplexray.re.prefs.LogLevel.entries,
+            selectedOption = settingsState.switches.logLevel,
+            onOptionSelected = { level ->
+                mainViewModel.setLogLevel(level)
+            },
+            optionLabel = { level -> level.name },
+            enabled = !vpnDisabled
         )
-
-        if (logLevelDialogShowing) {
-            AlertDialog(
-                onDismissRequest = { logLevelDialogShowing = false },
-                title = { Text(stringResource(R.string.loglevel_title)) },
-                text = {
-                    Column {
-                        com.simplexray.re.prefs.LogLevel.entries.forEach { level ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        mainViewModel.setLogLevel(level)
-                                        logLevelDialogShowing = false
-                                    }
-                                    .padding(vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = settingsState.switches.logLevel == level,
-                                    onClick = {
-                                        mainViewModel.setLogLevel(level)
-                                        logLevelDialogShowing = false
-                                    }
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(level.name)
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { logLevelDialogShowing = false }) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                }
-            )
-        }
 
         PreferenceCategoryTitle(stringResource(R.string.rule_files_category_title))
 
@@ -924,5 +833,82 @@ fun PreferenceCategoryTitle(title: String) {
         style = MaterialTheme.typography.titleSmall,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 4.dp)
+    )
+}
+
+@Composable
+fun <T> DropdownSettingItem(
+    headline: String,
+    supportingText: String? = null,
+    options: List<T>,
+    selectedOption: T,
+    onOptionSelected: (T) -> Unit,
+    optionLabel: @Composable (T) -> String,
+    enabled: Boolean = true
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ListItem(
+        headlineContent = { Text(headline) },
+        supportingContent = supportingText?.let { { Text(it) } },
+        trailingContent = {
+            Box {
+                Surface(
+                    onClick = { if (enabled) expanded = true },
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    enabled = enabled
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = optionLabel(selectedOption),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        )
+                        Icon(
+                            imageVector = if (expanded) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                        )
+                    }
+                }
+
+                DropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false }
+                ) {
+                    options.forEach { option ->
+                        val isSelected = option == selectedOption
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = optionLabel(option),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                                )
+                            },
+                            trailingIcon = if (isSelected) {
+                                {
+                                    Icon(
+                                        imageVector = Icons.Filled.Check,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            } else null,
+                            onClick = {
+                                onOptionSelected(option)
+                                expanded = false
+                            },
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+                        )
+                    }
+                }
+            }
+        }
     )
 }
