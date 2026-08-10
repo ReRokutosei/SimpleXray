@@ -61,6 +61,21 @@ fun ConfigEditScreen(
     snackbarHostState: SnackbarHostState,
     viewModel: ConfigEditViewModel
 ) {
+    ConfigEditPane(
+        onBackClick = onBackClick,
+        snackbarHostState = snackbarHostState,
+        viewModel = viewModel,
+        showNavigationIcon = true
+    )
+}
+
+@Composable
+fun ConfigEditPane(
+    onBackClick: () -> Unit = {},
+    snackbarHostState: SnackbarHostState,
+    viewModel: ConfigEditViewModel,
+    showNavigationIcon: Boolean = true
+) {
     val filename by viewModel.filename.collectAsStateWithLifecycle()
     val configTextFieldValue by viewModel.configTextFieldValue.collectAsStateWithLifecycle()
     val filenameErrorMessage by viewModel.filenameErrorMessage.collectAsStateWithLifecycle()
@@ -143,21 +158,34 @@ fun ConfigEditScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = if (isSearching) "" else stringResource(id = R.string.config),
+                title = if (isSearching) "" else (filename.ifEmpty { stringResource(id = R.string.config) }),
                 navigationIcon = {
-                    IconButton(onClick = {
-                        if (isSearching) {
+                    if (showNavigationIcon) {
+                        IconButton(onClick = {
+                            if (isSearching) {
+                                isSearching = false
+                                searchQuery = ""
+                                matchIndices = emptyList()
+                            } else {
+                                onBackClick()
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
+                        }
+                    } else if (isSearching) {
+                        IconButton(onClick = {
                             isSearching = false
                             searchQuery = ""
                             matchIndices = emptyList()
-                        } else {
-                            onBackClick()
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.close_search)
+                            )
                         }
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
                     }
                 },
                 actions = {
