@@ -9,16 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -31,6 +27,13 @@ import com.simplexray.re.common.formatNumber
 import com.simplexray.re.common.formatUptime
 import com.simplexray.re.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
+import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @Composable
 fun DashboardScreen(
@@ -51,26 +54,17 @@ fun DashboardScreen(
 
     LazyColumn(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(start = 16.dp, end = 16.dp),
-        contentPadding = PaddingValues(bottom = 16.dp, top = 16.dp)
+            .fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
     ) {
 
         item {
+            SmallTitle(text = "流量信息")
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.extraLarge),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        text = "Traffic",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+                Column(modifier = Modifier.padding(16.dp)) {
                     StatRow(
                         label = stringResource(id = R.string.stats_uplink),
                         value = formatBytes(coreStats.uplink)
@@ -81,24 +75,16 @@ fun DashboardScreen(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
         item {
+            SmallTitle(text = "核心运行状态")
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.extraLarge),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
             ) {
-                Column(modifier = Modifier.padding(20.dp)) {
-                    Text(
-                        text = "Stats",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+                Column(modifier = Modifier.padding(16.dp)) {
                     StatRow(
                         label = stringResource(id = R.string.stats_num_goroutine),
                         value = formatNumber(coreStats.numGoroutine.toLong())
@@ -117,44 +103,32 @@ fun DashboardScreen(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
         }
 
         item {
             val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsState()
+            SmallTitle(text = stringResource(id = R.string.core_control))
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clip(MaterialTheme.shapes.extraLarge),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer
-                )
             ) {
                 Column(
-                    modifier = Modifier.padding(20.dp),
+                    modifier = Modifier.padding(16.dp),
                     horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = stringResource(id = R.string.core_control),
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 12.dp),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Start
-                    )
-                    androidx.compose.material3.Button(
+                    Button(
                         onClick = onSwitchVpnService,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp),
-                        shape = MaterialTheme.shapes.large,
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = if (isServiceEnabled) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
-                            contentColor = if (isServiceEnabled) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer
-                        )
+                            .height(48.dp),
+                        colors = if (isServiceEnabled) ButtonDefaults.buttonColors(
+                            color = MiuixTheme.colorScheme.error,
+                            contentColor = MiuixTheme.colorScheme.onError
+                        ) else ButtonDefaults.buttonColorsPrimary()
                     ) {
-                        androidx.compose.material3.Icon(
-                            painter = androidx.compose.ui.res.painterResource(
+                        Icon(
+                            painter = painterResource(
                                 id = if (isServiceEnabled) R.drawable.pause else R.drawable.play
                             ),
                             contentDescription = null,
@@ -162,7 +136,7 @@ fun DashboardScreen(
                         )
                         Text(
                             text = if (isServiceEnabled) stringResource(R.string.cancel) else stringResource(R.string.app_name),
-                            style = MaterialTheme.typography.titleMedium
+                            fontSize = MiuixTheme.textStyles.body1.fontSize
                         )
                     }
                 }
@@ -176,18 +150,18 @@ fun StatRow(label: String, value: String) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 6.dp)
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = MiuixTheme.textStyles.body2.fontSize,
+            color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
             modifier = Modifier.weight(1f)
         )
         Text(
             text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = MiuixTheme.textStyles.body1.fontSize,
+            color = MiuixTheme.colorScheme.onSurface,
             fontFamily = FontFamily.Monospace
         )
     }

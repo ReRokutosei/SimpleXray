@@ -2,14 +2,14 @@ package com.simplexray.re.ui.screens
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -29,13 +29,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
-import com.simplexray.re.ui.theme.ScrollbarDefaults
 import com.simplexray.re.viewmodel.LogViewModel
-import my.nanihadesuka.compose.LazyColumnScrollbar
+import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-import androidx.compose.foundation.text.selection.SelectionContainer
-
-@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalScrollBarApi::class)
 @Composable
 fun LogScreen(
     logViewModel: LogViewModel,
@@ -69,27 +70,32 @@ fun LogScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    stringResource(R.string.no_log_entries),
+                    text = stringResource(R.string.no_log_entries),
                     modifier = Modifier.fillMaxWidth(),
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
                     textAlign = TextAlign.Center,
                 )
             }
         } else {
             SelectionContainer {
-                LazyColumnScrollbar(
-                    state = listState,
-                    settings = ScrollbarDefaults.defaultScrollbarSettings()
-                ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    val adapter = rememberScrollBarAdapter(scrollState = listState)
                     LazyColumn(
                         state = listState,
-                        modifier = Modifier.padding(start = 6.dp, end = 6.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 12.dp),
                         reverseLayout = true
                     ) {
                         items(filteredEntries) { logEntry ->
                             LogEntryItem(logEntry = logEntry)
                         }
                     }
+                    VerticalScrollBar(
+                        adapter = adapter,
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                    )
                 }
             }
         }
@@ -98,8 +104,8 @@ fun LogScreen(
 
 @Composable
 fun LogEntryItem(logEntry: String) {
-    val colorOnSurface = MaterialTheme.colorScheme.onSurface
-    val timestampColor = MaterialTheme.colorScheme.primary
+    val colorOnSurface = MiuixTheme.colorScheme.onSurface
+    val timestampColor = MiuixTheme.colorScheme.primary
 
     val annotatedString = remember(logEntry) {
         buildAnnotatedString {
@@ -137,6 +143,6 @@ fun LogEntryItem(logEntry: String) {
         fontSize = 13.sp,
         fontFamily = FontFamily.Monospace,
         color = colorOnSurface,
-        modifier = Modifier.padding(vertical = 2.dp)
+        modifier = Modifier.padding(vertical = 3.dp)
     )
 }

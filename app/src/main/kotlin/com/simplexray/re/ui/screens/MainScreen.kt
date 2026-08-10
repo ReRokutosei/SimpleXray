@@ -4,8 +4,6 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -32,6 +30,7 @@ import com.simplexray.re.viewmodel.MainViewUiEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import top.yukonga.miuix.kmp.basic.SnackbarHostState
 
 @Composable
 fun MainScreen(
@@ -76,10 +75,7 @@ fun MainScreen(
         mainViewModel.uiEvent.collectLatest { event ->
             when (event) {
                 is MainViewUiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(
-                        event.message,
-                        duration = SnackbarDuration.Short
-                    )
+                    snackbarHostState.showSnackbar(event.message)
                 }
 
                 is MainViewUiEvent.ShareLauncher -> {
