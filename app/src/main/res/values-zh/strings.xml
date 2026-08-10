@@ -17,9 +17,9 @@
     <string name="dns_ipv6_summary">系统 VPN 接口使用的 IPv6 DNS 服务器地址</string>
     <string name="ipv6">IPv6 支持</string>
     <string name="ipv6_summary">为系统 VPN 接口启用 IPv6 路由与协议栈支持</string>
-    <string name="disable_vpn_title">禁用VPN接口</string>
-    <string name="disable_vpn_summary">启用时，仅启动核心而不启用VPN</string>
-    <string name="http_proxy_title">通过HTTP代理</string>
+    <string name="disable_vpn_title">禁用 VPN 接口</string>
+    <string name="disable_vpn_summary">启用时，仅启动核心而不启用 VPN</string>
+    <string name="http_proxy_title">通过 HTTP 代理</string>
     <string name="http_proxy_summary">向 Android 系统注册全局 HTTP 代理 (127.0.0.1:10809)。常规 TUN 模式下保持关闭即可，开启可兼容部分不支持 TUN 的特殊应用</string>
     <string name="bypass_lan_title">绕过局域网</string>
     <string name="bypass_lan_summary">启用时，局域网流量不通过代理</string>
@@ -27,11 +27,11 @@
     <!-- 常规偏好设置 -->
     <string name="general">通用</string>
     <string name="settings">设置</string>
-    <string name="core_control">Core Control</string>
-    <string name="use_template_title">使用模版创建新配置</string>
-    <string name="use_template_summary">启用时，创建新配置会预填充模版内容</string>
+    <string name="core_control">内核控制</string>
+    <string name="use_template_title">使用模板创建新配置</string>
+    <string name="use_template_summary">启用时，创建新配置会预填充模板内容</string>
     <string name="loglevel_title">日志等级</string>
-    <string name="loglevel_summary">Auto跟随配置，指定时强制覆盖日志记录级别</string>
+    <string name="loglevel_summary">Auto 跟随配置，指定时强制覆盖日志记录级别</string>
     <string name="theme_title">主题</string>
     <string name="theme_summary">调整主题为深色或浅色</string>
     <string name="theme_light">浅色</string>
@@ -40,7 +40,7 @@
 
     <!-- 分应用代理 -->
     <string name="apps_title">分应用代理</string>
-    <string name="apps_summary">选择需要代理的应用,否则使用全局模式</string>
+    <string name="apps_summary">选择需要代理的应用，否则使用全局模式</string>
     <string name="apps_not_found">没有找到应用</string>
     <string name="show_system_apps">显示系统应用</string>
     <string name="bypass_selected_apps">绕过所选应用</string>
@@ -50,7 +50,6 @@
 
     <!-- 配置文件与管理 -->
     <string name="configuration">配置</string>
-    <string name="new_profile">新建</string>
     <string name="config">编辑配置</string>
     <string name="content">内容</string>
     <string name="filename">文件名</string>
@@ -70,13 +69,11 @@
     <string name="export">导出</string>
     <string name="export_to_clipboard">导出到剪贴板</string>
     <string name="share">分享</string>
-    <string name="backup">备份</string>
-    <string name="restore">恢复</string>
 
     <!-- 规则文件管理 -->
     <string name="rule_files_category_title">规则文件</string>
     <string name="rule_file_default">默认规则文件</string>
-    <string name="rule_file_update_url">从URL更新</string>
+    <string name="rule_file_update_url">从 URL 更新</string>
     <string name="reset_file">重置</string>
     <string name="delete_rule_file_title">删除规则文件</string>
     <string name="delete_rule_file_message">这将恢复为默认规则文件，确定吗？</string>
@@ -96,7 +93,7 @@
     <string name="core_stats_title">状态</string>
     <string name="stats_uplink">上行流量</string>
     <string name="stats_downlink">下行流量</string>
-    <string name="stats_num_goroutine">Goroutine数量</string>
+    <string name="stats_num_goroutine">Goroutine 数量</string>
     <string name="stats_num_gc">垃圾回收次数</string>
     <string name="stats_alloc">已分配内存</string>
     <string name="stats_uptime">运行时间</string>
@@ -138,21 +135,17 @@
     <string name="filename_empty">文件名不能为空</string>
     <string name="filename_invalid">文件名包含无效字符</string>
     <string name="filename_already_exists">文件名已存在</string>
-    <string name="invalid_ipv4">请输入有效的IPv4地址</string>
-    <string name="invalid_ipv6">请输入有效的IPv6地址</string>
-    <string name="invalid_ipv4_or_ipv6">请输入有效的IPv4/IPv6地址</string>
+    <string name="invalid_ipv4">请输入有效的 IPv4 地址</string>
+    <string name="invalid_ipv6">请输入有效的 IPv6 地址</string>
+    <string name="invalid_ipv4_or_ipv6">请输入有效的 IPv4/IPv6 地址</string>
     <string name="invalid_port">请输入有效的端口号</string>
-    <string name="invalid_port_range">端口号必须在1024到65535之间</string>
+    <string name="invalid_port_range">端口号必须在 1024 到 65535 之间</string>
     <string name="invalid_timeout">请输入有效的超时时间（正整数）</string>
-    <string name="import_failed">导入失败: 粘贴板上未找到配置</string>
+    <string name="import_failed">导入失败: 剪贴板上未找到配置</string>
     <string name="import_success">导入成功</string>
     <string name="import_invalid_format">导入格式无效</string>
-    <string name="backup_success">备份成功</string>
-    <string name="backup_failed">备份失败</string>
-    <string name="restore_success">恢复成功</string>
-    <string name="restore_failed">恢复失败</string>
     <string name="no_log_entries">无日志</string>
-    <string name="vpn_interface">VPN接口</string>
+    <string name="vpn_interface">VPN 接口</string>
     <string name="create_config_failed">配置创建失败</string>
     <string name="no_app_for_export">没有可用于导出的应用</string>
     <string name="export_failed">导出失败</string>
