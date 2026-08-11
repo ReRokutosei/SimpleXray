@@ -2,117 +2,68 @@ package com.simplexray.re.common
 
 import android.content.Context
 import android.util.Log
-import com.simplexray.re.service.TProxyService
 import java.io.File
-import java.io.FileOutputStream
-import java.util.concurrent.TimeUnit
 
 object GeoDataValidator {
     private const val TAG = "GeoDataValidator"
 
     /**
-     * Validate candidate dat file before saving or overwriting.
-     * 1. Basic sanity check (file size >= 1KB, non-HTML/HTTP error header).
-     * 2. Spawn a temporary shadow sandbox child process of `libxray.so` to verify parsing.
+     * Validate a candidate dat file before saving or overwriting.
+     *
+     * Performs a lightweight sanity check only:
+     * 1. File must exist and be at least 1 KB.
+     * 2. File header must not be an HTML page or HTTP error response
+     *    (i.e., the file is not a download-error page served by a CDN/mirror).
+     *
+     * Why no xray shadow-sandbox test?
+     * - Standard geo files (geoip.dat ~17 MB, geosite.dat ~4 MB) require copying the
+     *   companion file into a temp dir, then spawning libxray.so to parse both.
+     *   That consistently exceeds a 5-second timeout on real devices.
+     * - Third-party dat files have unknown tag names, so any tag reference in the
+     *   test config would cause xray to exit with a non-zero code regardless of
+     *   file validity.
+     * - A genuinely corrupt dat file will cause xray to fail on startup, which the
+     *   user will see immediately in the logs. The sanity check prevents the most
+     *   common failure mode: a CDN returning an HTML 404/403 page instead of the
+     *   actual binary file.
      */
     fun validateDatFile(context: Context, candidateFile: File, targetFileName: String): Boolean {
-        // Step 1: Basic sanity check
+        // Check 1: file must exist and be at least 1 KB
         if (!candidateFile.exists() || candidateFile.length() < 1024) {
-            Log.e(TAG, "Validation failed for $targetFileName: file does not exist or is too small (${candidateFile.length()} bytes)")
+            Log.e(
+                TAG,
+                "Validation failed for $targetFileName: file does not exist or is too small " +
+                    "(${candidateFile.length()} bytes)"
+            )
             return false
         }
 
-        try {
+        // Check 2: header must not be an HTML page or HTTP error body
+        return try {
             val headerBytes = ByteArray(512)
-            candidateFile.inputStream().use { it.read(headerBytes) }
-            val headerStr = String(headerBytes, Charsets.UTF_8).lowercase()
-            if (headerStr.contains("<html") || headerStr.contains("<!doctype") ||
-                headerStr.contains("404: not found") || headerStr.contains("404 not found") ||
-                headerStr.contains("403 forbidden") || headerStr.contains("500 internal server error")
-            ) {
-                Log.e(TAG, "Validation failed for $targetFileName: file content is HTML or HTTP error response")
+            val read = candidateFile.inputStream().use { it.read(headerBytes) }
+            if (read <= 0) {
+                Log.e(TAG, "Validation failed for $targetFileName: could not read file header")
                 return false
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error checking file header for $targetFileName", e)
-            return false
-        }
+            val headerStr = String(headerBytes, 0, read, Charsets.UTF_8).lowercase()
+            val isHtmlOrError = headerStr.contains("<html") ||
+                headerStr.contains("<!doctype") ||
+                headerStr.contains("404: not found") ||
+                headerStr.contains("404 not found") ||
+                headerStr.contains("403 forbidden") ||
+                headerStr.contains("500 internal server error")
 
-        // Step 2: Xray-core Child Process Shadow Sandbox Verification
-        val sandboxDir = File(context.cacheDir, "geodata_sandbox_${System.currentTimeMillis()}")
-        if (!sandboxDir.mkdirs()) {
-            Log.e(TAG, "Failed to create sandbox directory: ${sandboxDir.absolutePath}")
-            return false
-        }
-
-        val testConfigFile = File(sandboxDir, "test_config.json")
-
-        try {
-            // Copy candidate file to sandbox directory
-            val sandboxDatFile = File(sandboxDir, targetFileName)
-            candidateFile.copyTo(sandboxDatFile, overwrite = true)
-
-            // Copy existing valid geoip.dat & geosite.dat from filesDir if available
-            val filesDir = context.filesDir
-            listOf("geoip.dat", "geosite.dat").forEach { defaultDat ->
-                if (defaultDat != targetFileName) {
-                    val existing = File(filesDir, defaultDat)
-                    if (existing.exists()) {
-                        existing.copyTo(File(sandboxDir, defaultDat), overwrite = true)
-                    }
-                }
-            }
-
-            val ruleType = if (targetFileName == "geoip.dat") "geoip" else "geosite"
-            val isCustom = targetFileName != "geoip.dat" && targetFileName != "geosite.dat"
-            val tagRef = if (isCustom) "ext:$targetFileName:cn" else "cn"
-
-            val testConfigJson = """
-                {
-                  "log": { "loglevel": "warning" },
-                  "inbounds": [],
-                  "outbounds": [{ "protocol": "freedom", "tag": "direct" }],
-                  "routing": {
-                    "rules": [
-                      { "type": "field", "outboundTag": "direct", "$ruleType": ["$tagRef"] }
-                    ]
-                  }
-                }
-            """.trimIndent()
-
-            FileOutputStream(testConfigFile).use { it.write(testConfigJson.toByteArray(Charsets.UTF_8)) }
-
-            val libraryDir = TProxyService.getNativeLibraryDir(context)
-            val xrayPath = "$libraryDir/libxray.so"
-
-            val processBuilder = ProcessBuilder(xrayPath, "run", "-test", "-config", testConfigFile.absolutePath)
-            processBuilder.directory(sandboxDir)
-            processBuilder.environment()["XRAY_LOCATION_ASSET"] = sandboxDir.absolutePath
-            processBuilder.redirectErrorStream(true)
-
-            val process = processBuilder.start()
-
-            val finished = process.waitFor(5, TimeUnit.SECONDS)
-            if (!finished) {
-                process.destroyForcibly()
-                Log.e(TAG, "Validation failed: Xray sandbox process timed out for $targetFileName.")
-                return false
-            }
-
-            val exitCode = process.exitValue()
-            if (exitCode == 0) {
-                Log.d(TAG, "Validation SUCCESS: Xray sandbox verified $targetFileName successfully.")
-                return true
+            if (isHtmlOrError) {
+                Log.e(TAG, "Validation failed for $targetFileName: header looks like an HTML/HTTP error page")
+                false
             } else {
-                val errorLog = process.inputStream.bufferedReader().readText()
-                Log.e(TAG, "Validation FAILED: Xray sandbox exitCode=$exitCode for $targetFileName. Output:\n$errorLog")
-                return false
+                Log.d(TAG, "Validation passed for $targetFileName (size=${candidateFile.length()} bytes)")
+                true
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Exception during Xray sandbox validation for $targetFileName", e)
-            return false
-        } finally {
-            sandboxDir.deleteRecursively()
+            Log.e(TAG, "Error reading file header for $targetFileName", e)
+            false
         }
     }
 }

@@ -638,7 +638,7 @@ class MainViewModel(application: Application) :
                     )
                 )
             } else {
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.import_failed)))
+                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_validation_failed)))
             }
         }
     }
