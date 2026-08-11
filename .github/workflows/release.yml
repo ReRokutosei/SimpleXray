@@ -67,23 +67,20 @@ jobs:
           mkdir -p ../app/src/main/jniLibs/arm64-v8a
           mv xray ../app/src/main/jniLibs/arm64-v8a/libxray.so
 
+      - name: Set up signing keystore
+        run: echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.jks
+
       - name: Build release APK
         run: bash ./gradlew assembleRelease -x lint -PappVerName=${{ env.RELEASE_VERSION }}
-
-      - name: Sign APK
-        uses: ilharp/sign-android-release@13dd52242698526f951aa8bb8696204f6fea702a # v2.0.0
-        id: sign_app
-        with:
-          releaseDir: app/build/outputs/apk/release
-          signingKey: ${{ secrets.SIGNING_KEY }}
-          keyAlias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
-          buildToolsVersion: "34.0.0"
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/release.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
       - name: Prepare release files
         run: |
-          cp ${{ steps.sign_app.outputs.signedFile }} SimpleXray-arm64-v8a-${{ env.RELEASE_VERSION }}.apk
+          cp app/build/outputs/apk/release/simplexray-arm64-v8a.apk SimpleXray-arm64-v8a-${{ env.RELEASE_VERSION }}.apk
 
       - name: Generate release notes
         shell: bash
