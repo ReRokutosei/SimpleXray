@@ -54,9 +54,11 @@ jobs:
           rm android-ndk.zip
           NDK_HOME=$(realpath android-ndk-*)
 
-          git clone --depth=1 https://github.com/XTLS/Xray-core.git
+          # Shallow-clone the exact tag: a plain --depth=1 clone of the default
+          # branch does not fetch any tags, so `git checkout <tag>` would fail
+          # (pathspec did not match). --branch accepts a tag and checks it out.
+          git clone --depth=1 --branch ${{ env.XRAY_VERSION }} https://github.com/XTLS/Xray-core.git
           cd Xray-core
-          git checkout ${{ env.XRAY_VERSION }}
           COMMID=$(git rev-parse HEAD | cut -c 1-7)
 
           export GOOS=android
