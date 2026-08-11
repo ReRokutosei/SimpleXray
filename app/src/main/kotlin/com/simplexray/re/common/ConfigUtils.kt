@@ -293,6 +293,12 @@ object ConfigUtils {
         return sanitizeConfig(content)
     }
 
+    /**
+     * Returns true when [content] parses as a full config in JSON or YAML form.
+     * Used to reject share/subscription URIs and other non-config text.
+     */
+    fun isValidConfigContent(content: String): Boolean = parseToJsonObject(content) != null
+
     @Throws(JSONException::class)
     fun injectStatsService(prefs: Preferences, configContent: String): String {
         val sanitized = sanitizeConfig(configContent, prefs)

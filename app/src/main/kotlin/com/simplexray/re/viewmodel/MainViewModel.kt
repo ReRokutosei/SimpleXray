@@ -342,17 +342,6 @@ class MainViewModel(application: Application) :
         return filePath
     }
 
-    suspend fun handleSharedContent(content: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            if (!fileManager.importConfigFromContent(content).isNullOrEmpty()) {
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.import_success)))
-                refreshConfigFileList()
-            } else {
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.invalid_config_format)))
-            }
-        }
-    }
-
     suspend fun deleteConfigFile(file: File, callback: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             if (_isServiceEnabled.value && _selectedConfigFile.value != null &&

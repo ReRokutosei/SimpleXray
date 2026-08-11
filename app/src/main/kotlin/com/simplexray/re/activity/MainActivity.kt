@@ -23,13 +23,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
-import androidx.lifecycle.lifecycleScope
 import com.simplexray.re.common.ThemeMode
 import com.simplexray.re.ui.navigation.AppNavHost
 import com.simplexray.re.viewmodel.MainViewModel
 import com.simplexray.re.viewmodel.MainViewModelFactory
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels { MainViewModelFactory(application) }
@@ -43,7 +40,6 @@ class MainActivity : ComponentActivity() {
         mainViewModel.reloadView = { initView() }
         initView()
 
-        processShareIntent(intent)
         Log.d(TAG, "MainActivity onCreate called.")
     }
 
@@ -110,9 +106,6 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        intent?.let {
-            processShareIntent(intent)
-        }
     }
 
     override fun onDestroy() {
@@ -133,40 +126,7 @@ class MainActivity : ComponentActivity() {
         Log.d(TAG, "MainActivity onConfigurationChanged called.")
     }
 
-    private fun processShareIntent(intent: Intent) {
-        val currentIntentHash = intent.hashCode()
-        if (lastProcessedIntentHash == currentIntentHash) return
-        lastProcessedIntentHash = currentIntentHash
-
-        when (intent.action) {
-            Intent.ACTION_SEND -> {
-                intent.clipData?.getItemAt(0)?.uri?.let { uri ->
-                    lifecycleScope.launch(Dispatchers.IO) {
-                        try {
-                            val text =
-                                contentResolver.openInputStream(uri)?.bufferedReader()?.readText()
-                            text?.let { mainViewModel.handleSharedContent(it) }
-                        } catch (e: Exception) {
-                            Log.e("Share", "Error reading shared file", e)
-                        }
-                    }
-                }
-            }
-
-            Intent.ACTION_VIEW -> {
-                intent.data?.toString()?.let { uriString ->
-                    if (uriString.startsWith("simplexray://")) {
-                        lifecycleScope.launch {
-                            mainViewModel.handleSharedContent(uriString)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     companion object {
         const val TAG = "MainActivity"
-        private var lastProcessedIntentHash: Int = 0
     }
 }
