@@ -103,7 +103,10 @@ jobs:
         shell: bash
         run: |
           CURRENT_TAG="${RELEASE_VERSION}"
-          PREV_TAG="$(git tag --sort=-v:refname | grep -Fxv "$CURRENT_TAG" | head -n 1)"
+          # No previous tag on first release: grep exits 1 on no match, which
+          # pipefail turns into a step failure. `|| true` keeps PREV_TAG empty
+          # so the script falls back to a single-tag range.
+          PREV_TAG="$(git tag --sort=-v:refname | grep -Fxv "$CURRENT_TAG" | head -n 1 || true)"
           if [ -z "$PREV_TAG" ]; then
             RANGE="$CURRENT_TAG"
           else
