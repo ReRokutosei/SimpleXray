@@ -79,6 +79,9 @@
     <string name="delete_rule_file_title">删除规则文件</string>
     <string name="delete_rule_file_message">这将恢复为默认规则文件，确定吗？</string>
     <string name="restore_default_url">恢复默认地址</string>
+    <string name="download_from_url_import">从链接下载导入</string>
+    <string name="standard_geo_file_rejected">该文件属于标准 GEO 资源，请前往上方专门区域进行替换或更新</string>
+    <string name="invalid_dat_url">无法从该链接解析出文件名</string>
     <string name="rule_file_restore_geoip_success">geoip.dat 已恢复为默认</string>
     <string name="rule_file_restore_geosite_success">geosite.dat 已恢复为默认</string>
 

@@ -86,6 +86,9 @@
     <string name="delete_rule_file_title">Delete rule file</string>
     <string name="delete_rule_file_message">This will restore the default rule file. Are you sure?</string>
     <string name="restore_default_url">Restore default URL</string>
+    <string name="download_from_url_import">Download from URL</string>
+    <string name="standard_geo_file_rejected">This file is a standard GEO resource. Please use the dedicated area above to replace or update it.</string>
+    <string name="invalid_dat_url">Unable to determine the file name from this URL</string>
     <string name="rule_file_restore_geoip_success">geoip.dat restored to default</string>
     <string name="rule_file_restore_geosite_success">geosite.dat restored to default</string>
 

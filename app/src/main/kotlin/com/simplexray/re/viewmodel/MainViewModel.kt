@@ -149,6 +149,17 @@ class MainViewModel(application: Application) :
     val geositeDownloadProgress: StateFlow<String?> = _geositeDownloadProgress.asStateFlow()
     private var geositeDownloadJob: Job? = null
 
+    // Third-party dat files download state, keyed by file name.
+    private val _customDatDownloadProgress = MutableStateFlow<Map<String, String?>>(emptyMap())
+    val customDatDownloadProgress: StateFlow<Map<String, String?>> = _customDatDownloadProgress.asStateFlow()
+    private val customDatDownloadJobs = mutableMapOf<String, Job>()
+
+    private fun updateCustomDatProgress(fileName: String, progress: String?) {
+        val map = _customDatDownloadProgress.value.toMutableMap()
+        if (progress == null) map.remove(fileName) else map[fileName] = progress
+        _customDatDownloadProgress.value = map
+    }
+
     private val _isCheckingForUpdates = MutableStateFlow(false)
     val isCheckingForUpdates: StateFlow<Boolean> = _isCheckingForUpdates.asStateFlow()
 
@@ -968,29 +979,71 @@ class MainViewModel(application: Application) :
 
     fun cancelDownload(fileName: String) {
         viewModelScope.launch {
-            if (fileName == "geoip.dat") {
-                geoipDownloadJob?.cancel()
-            } else {
-                geositeDownloadJob?.cancel()
+            when (fileName) {
+                "geoip.dat" -> geoipDownloadJob?.cancel()
+                "geosite.dat" -> geositeDownloadJob?.cancel()
+                else -> customDatDownloadJobs[fileName]?.cancel()
             }
             Log.d(TAG, "Download cancellation requested for $fileName")
         }
     }
 
     fun downloadRuleFile(url: String, fileName: String) {
-        val currentJob = if (fileName == "geoip.dat") geoipDownloadJob else geositeDownloadJob
+        // Normalize standard GEO file names (case-insensitive) so e.g. "GEOIP.dat"
+        // always targets the built-in geoip.dat instead of an orphan custom file.
+        val targetName = if (fileManager.isStandardGeoDat(fileName)) fileName.lowercase() else fileName
+        val isStandard = targetName == "geoip.dat" || targetName == "geosite.dat"
+        val currentJob = if (isStandard) {
+            if (targetName == "geoip.dat") geoipDownloadJob else geositeDownloadJob
+        } else {
+            customDatDownloadJobs[targetName]
+        }
         if (currentJob?.isActive == true) {
             Log.w(TAG, "Download already in progress for $fileName")
             return
         }
 
-        val job = viewModelScope.launch(Dispatchers.IO) {
-            val progressFlow = if (fileName == "geoip.dat") {
-                prefs.geoipUrl = url
-                _geoipDownloadProgress
-            } else {
-                prefs.geositeUrl = url
-                _geositeDownloadProgress
+        // `job` must be declared before the coroutine: the coroutine body (and the
+        // local setProgress) reference it for the latest-job guard, and Kotlin
+        // forbids referencing a `val` from within its own initializer.
+        var job: Job? = null
+        job = viewModelScope.launch(Dispatchers.IO) {
+            val standardProgress: MutableStateFlow<String?>? = when (targetName) {
+                "geoip.dat" -> {
+                    prefs.geoipUrl = url
+                    _geoipDownloadProgress
+                }
+
+                "geosite.dat" -> {
+                    prefs.geositeUrl = url
+                    _geositeDownloadProgress
+                }
+
+                else -> {
+                    // Third-party dat: persist its URL and report progress per file.
+                    val urls = prefs.customDatUrls.toMutableMap()
+                    urls[targetName] = url
+                    prefs.customDatUrls = urls
+                    null
+                }
+            }
+
+            fun setProgress(text: String?) {
+                // Only the latest job for this file may clear the progress, so a
+                // cancelled job cannot wipe the state of a replacement download.
+                if (text == null) {
+                    val isLatest = when {
+                        targetName == "geoip.dat" -> geoipDownloadJob === job
+                        targetName == "geosite.dat" -> geositeDownloadJob === job
+                        else -> customDatDownloadJobs[targetName] === job
+                    }
+                    if (!isLatest) return
+                }
+                if (standardProgress != null) {
+                    standardProgress.value = text
+                } else {
+                    updateCustomDatProgress(targetName, text)
+                }
             }
 
             val client = OkHttpClient.Builder().apply {
@@ -1000,7 +1053,7 @@ class MainViewModel(application: Application) :
             }.build()
 
             try {
-                progressFlow.value = application.getString(R.string.connecting)
+                setProgress(application.getString(R.string.connecting))
 
                 val request = Request.Builder().url(url).build()
                 val call = client.newCall(request)
@@ -1016,46 +1069,50 @@ class MainViewModel(application: Application) :
                 var lastProgress = -1
 
                 body.byteStream().use { inputStream ->
-                    val success = fileManager.saveRuleFile(inputStream, fileName) { read ->
+                    val success = fileManager.saveRuleFile(inputStream, targetName) { read ->
                         ensureActive()
                         bytesRead += read
                         if (totalBytes > 0) {
                             val progress = (bytesRead * 100 / totalBytes).toInt()
                             if (progress != lastProgress) {
-                                progressFlow.value =
+                                setProgress(
                                     application.getString(R.string.downloading, progress)
+                                )
                                 lastProgress = progress
                             }
                         } else {
                             if (lastProgress == -1) {
-                                progressFlow.value =
+                                setProgress(
                                     application.getString(R.string.downloading_no_size)
+                                )
                                 lastProgress = 0
                             }
                         }
                     }
                     if (success) {
-                        when (fileName) {
-                            "geoip.dat" -> {
-                                _settingsState.value = _settingsState.value.copy(
-                                    files = _settingsState.value.files.copy(
-                                        isGeoipCustom = prefs.customGeoipImported
-                                    ),
-                                    info = _settingsState.value.info.copy(
-                                        geoipSummary = fileManager.getRuleFileSummary("geoip.dat")
+                        if (isStandard) {
+                            when (targetName) {
+                                "geoip.dat" -> {
+                                    _settingsState.value = _settingsState.value.copy(
+                                        files = _settingsState.value.files.copy(
+                                            isGeoipCustom = prefs.customGeoipImported
+                                        ),
+                                        info = _settingsState.value.info.copy(
+                                            geoipSummary = fileManager.getRuleFileSummary("geoip.dat")
+                                        )
                                     )
-                                )
-                            }
+                                }
 
-                            "geosite.dat" -> {
-                                _settingsState.value = _settingsState.value.copy(
-                                    files = _settingsState.value.files.copy(
-                                        isGeositeCustom = prefs.customGeositeImported
-                                    ),
-                                    info = _settingsState.value.info.copy(
-                                        geositeSummary = fileManager.getRuleFileSummary("geosite.dat")
+                                "geosite.dat" -> {
+                                    _settingsState.value = _settingsState.value.copy(
+                                        files = _settingsState.value.files.copy(
+                                            isGeositeCustom = prefs.customGeositeImported
+                                        ),
+                                        info = _settingsState.value.info.copy(
+                                            geositeSummary = fileManager.getRuleFileSummary("geosite.dat")
+                                        )
                                     )
-                                )
+                                }
                             }
                         }
                         updateSettingsState()
@@ -1069,21 +1126,27 @@ class MainViewModel(application: Application) :
                 Log.e(TAG, "Download failed for $fileName", e)
                 _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.download_failed)))
             } finally {
-                progressFlow.value = null
+                setProgress(null)
             }
         }
 
-        if (fileName == "geoip.dat") {
+        if (targetName == "geoip.dat") {
             geoipDownloadJob = job
-        } else if (fileName == "geosite.dat") {
+        } else if (targetName == "geosite.dat") {
             geositeDownloadJob = job
+        } else {
+            customDatDownloadJobs[targetName] = job
         }
 
         job.invokeOnCompletion {
-            if (fileName == "geoip.dat") {
-                geoipDownloadJob = null
-            } else if (fileName == "geosite.dat") {
-                geositeDownloadJob = null
+            // Only clear the stored job reference if it is still the latest one,
+            // so a cancelled job cannot remove the reference of a replacement download.
+            if (targetName == "geoip.dat") {
+                if (geoipDownloadJob === job) geoipDownloadJob = null
+            } else if (targetName == "geosite.dat") {
+                if (geositeDownloadJob === job) geositeDownloadJob = null
+            } else {
+                if (customDatDownloadJobs[targetName] === job) customDatDownloadJobs.remove(targetName)
             }
         }
     }
@@ -1097,6 +1160,12 @@ class MainViewModel(application: Application) :
 
     fun importCustomDatFile(uri: android.net.Uri) {
         viewModelScope.launch(Dispatchers.IO) {
+            // Defense: reject standard GEO file names (case-insensitive) before importing.
+            val candidateName = fileManager.getDatFileNameFromUri(application, uri)
+            if (fileManager.isStandardGeoDat(candidateName)) {
+                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.standard_geo_file_rejected)))
+                return@launch
+            }
             val fileName = fileManager.importDatFileFromUri(application, uri)
             if (fileName != null) {
                 refreshCustomDatFiles()
@@ -1104,6 +1173,49 @@ class MainViewModel(application: Application) :
             } else {
                 _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_validation_failed)))
             }
+        }
+    }
+
+    /**
+     * Download and import a new third-party .dat file from a direct link.
+     * The file name is inferred from the URL path; standard GEO file names
+     * (case-insensitive) are rejected.
+     */
+    fun downloadDatFromUrl(url: String) {
+        if (url.isBlank()) {
+            _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.invalid_dat_url)))
+            return
+        }
+        val fileName = extractDatFileName(url)
+        if (fileName == null) {
+            _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.invalid_dat_url)))
+            return
+        }
+        if (fileManager.isStandardGeoDat(fileName)) {
+            _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.standard_geo_file_rejected)))
+            return
+        }
+        downloadRuleFile(url, fileName)
+    }
+
+    fun getCustomDatSummary(fileName: String): String = fileManager.getCustomDatSummary(fileName)
+
+    private fun extractDatFileName(url: String): String? {
+        return try {
+            // java.net.URL.getPath() already returns the URL-decoded path.
+            val path = URL(url).path
+            val name = path.substringAfterLast('/')
+            if (name.isBlank() || name == "." || name == ".." ||
+                name.contains('/') || name.contains('\\')
+            ) {
+                null
+            } else if (name.lowercase().endsWith(".dat")) {
+                name
+            } else {
+                "$name.dat"
+            }
+        } catch (e: Exception) {
+            null
         }
     }
 

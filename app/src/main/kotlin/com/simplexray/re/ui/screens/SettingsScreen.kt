@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -69,6 +70,7 @@ fun SettingsScreen(
     val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
     val geoipProgress by mainViewModel.geoipDownloadProgress.collectAsStateWithLifecycle()
     val geositeProgress by mainViewModel.geositeDownloadProgress.collectAsStateWithLifecycle()
+    val customDatProgress by mainViewModel.customDatDownloadProgress.collectAsStateWithLifecycle()
     val isCheckingForUpdates by mainViewModel.isCheckingForUpdates.collectAsStateWithLifecycle()
     val newVersionTag by mainViewModel.newVersionAvailable.collectAsStateWithLifecycle()
 
@@ -81,6 +83,9 @@ fun SettingsScreen(
 
     var editingRuleFile by remember { mutableStateOf<String?>(null) }
     var ruleFileUrl by remember { mutableStateOf("") }
+
+    var showDatUrlImportSheet by remember { mutableStateOf(false) }
+    var datImportUrl by remember { mutableStateOf("") }
 
     val themeOptions = listOf(
         stringResource(R.string.theme_light),
@@ -133,14 +138,58 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                TextButton(
-                    text = stringResource(id = R.string.restore_default_url),
-                    onClick = {
-                        ruleFileUrl =
-                            if (editingRuleFile == "geoip.dat") context.getString(R.string.geoip_url)
-                            else if (editingRuleFile == "geosite.dat") context.getString(R.string.geosite_url)
-                            else ""
-                    }
+                // "Restore default URL" only applies to the built-in GEO files;
+                // third-party dat files have no default address.
+                if (editingRuleFile == "geoip.dat" || editingRuleFile == "geosite.dat") {
+                    TextButton(
+                        text = stringResource(id = R.string.restore_default_url),
+                        onClick = {
+                            ruleFileUrl =
+                                if (editingRuleFile == "geoip.dat") context.getString(R.string.geoip_url)
+                                else context.getString(R.string.geosite_url)
+                        }
+                    )
+                }
+            }
+        }
+    }
+
+    if (showDatUrlImportSheet) {
+        OverlayBottomSheet(
+            title = stringResource(R.string.download_from_url_import),
+            show = showDatUrlImportSheet,
+            onDismissRequest = {
+                showDatUrlImportSheet = false
+                datImportUrl = ""
+            },
+            startAction = {
+                IconButton(onClick = {
+                    showDatUrlImportSheet = false
+                    datImportUrl = ""
+                }) {
+                    Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.cancel))
+                }
+            },
+            endAction = {
+                IconButton(onClick = {
+                    mainViewModel.downloadDatFromUrl(datImportUrl.trim())
+                    showDatUrlImportSheet = false
+                    datImportUrl = ""
+                }) {
+                    Icon(imageVector = MiuixIcons.Ok, contentDescription = stringResource(R.string.confirm))
+                }
+            }
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+            ) {
+                TextField(
+                    value = datImportUrl,
+                    onValueChange = { datImportUrl = it },
+                    label = "URL",
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
@@ -480,57 +529,41 @@ fun SettingsScreen(
                         mainViewModel.importCustomDatFile(uri)
                     }
                 }
-                val customDatVersion by mainViewModel.customDatVersion.collectAsState()
-                val customDatFiles = remember(settingsState, customDatVersion) {
-                    context.filesDir.listFiles { file ->
-                        file.isFile && file.name.lowercase().endsWith(".dat") && file.name != "geoip.dat" && file.name != "geosite.dat" && !file.name.lowercase().startsWith("profileinstaller_")
-                    }?.toList() ?: emptyList()
-                }
 
-                customDatFiles.forEach { customFile ->
-                    val datName = customFile.name
-                    val customUrl = prefs.customDatUrls[datName] ?: ""
-                    BasicComponent(
-                        title = datName,
-                        summary = if (customUrl.isNotEmpty()) customUrl else "${customFile.length() / 1024} KB",
-                        endActions = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                IconButton(onClick = {
-                                    ruleFileUrl = customUrl
-                                    editingRuleFile = datName
-                                }) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.cloud_download),
-                                        contentDescription = stringResource(R.string.rule_file_update_url)
-                                    )
-                                }
-                                IconButton(onClick = {
-                                    if (customUrl.isNotEmpty()) {
-                                        mainViewModel.downloadRuleFile(customUrl, datName)
-                                    } else {
-                                        customDatPickerLauncher.launch(arrayOf("*/*"))
-                                    }
-                                }) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.place_item),
-                                        contentDescription = stringResource(R.string.import_file)
-                                    )
-                                }
-                                IconButton(onClick = { mainViewModel.deleteCustomDatFile(datName) }) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.delete),
-                                        contentDescription = stringResource(R.string.delete_config)
-                                    )
-                                }
-                            }
-                        }
+                // The third-party dat list lives in its own composable: its size
+                // changes while downloads are in progress, and keeping it in a
+                // separate composition context prevents those changes from shifting
+                // the Compose slots of the ArrowPreference rows below (previously
+                // caused "Boolean cannot be cast to ComposableLambdaImpl").
+                CustomDatFilesSection(
+                    mainViewModel = mainViewModel,
+                    prefs = prefs,
+                    customDatProgress = customDatProgress,
+                    customDatPickerLauncher = customDatPickerLauncher,
+                    onEditUrl = { datName, url ->
+                        ruleFileUrl = url
+                        editingRuleFile = datName
+                    }
+                )
+
+                // Wrap each ArrowPreference in its own keyed group: they are
+                // @NonRestartableComposable and call the same BasicComponent
+                // overload, so two adjacent rows would otherwise collide on the
+                // same composable-lambda slot key during recomposition ("Boolean
+                // cannot be cast to ComposableLambdaImpl").
+                key("import-from-file") {
+                    ArrowPreference(
+                        title = "+ " + stringResource(R.string.import_from_file) + " (.dat)",
+                        onClick = { customDatPickerLauncher.launch(arrayOf("*/*")) }
                     )
                 }
 
-                ArrowPreference(
-                    title = "+ " + stringResource(R.string.import_from_file) + " (.dat)",
-                    onClick = { customDatPickerLauncher.launch(arrayOf("*/*")) }
-                )
+                key("import-from-url") {
+                    ArrowPreference(
+                        title = "+ " + stringResource(R.string.download_from_url_import) + " (.dat)",
+                        onClick = { showDatUrlImportSheet = true }
+                    )
+                }
 
                 EditableListItemWithMiuixBottomSheet(
                     headline = stringResource(R.string.geo_update_interval_title),
@@ -673,4 +706,84 @@ fun EditableListItemWithMiuixBottomSheet(
         },
         enabled = enabled
     )
+}
+
+/**
+ * Renders the third-party dat file rows. Kept as a separate composable so that
+ * list-size changes (a download in progress adds/removes entries) are isolated
+ * from the sibling ArrowPreference rows that follow in the settings card —
+ * otherwise Compose slot movement can leak into those groups and crash with
+ * "Boolean cannot be cast to ComposableLambdaImpl".
+ */
+@Composable
+private fun CustomDatFilesSection(
+    mainViewModel: MainViewModel,
+    prefs: com.simplexray.re.prefs.Preferences,
+    customDatProgress: Map<String, String?>,
+    customDatPickerLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>,
+    onEditUrl: (datName: String, url: String) -> Unit,
+) {
+    val context = LocalContext.current
+    val customDatVersion by mainViewModel.customDatVersion.collectAsState()
+    val customDatFiles = remember(customDatVersion, customDatProgress) {
+        val names = LinkedHashSet<String>()
+        context.filesDir.listFiles { file ->
+            file.isFile &&
+                file.name.lowercase().endsWith(".dat") &&
+                !file.name.equals("geoip.dat", ignoreCase = true) &&
+                !file.name.equals("geosite.dat", ignoreCase = true) &&
+                !file.name.lowercase().startsWith("profileinstaller_")
+        }?.forEach { names.add(it.name) }
+        // Include files that are still downloading (may not exist on disk yet).
+        names.addAll(customDatProgress.keys)
+        names.toList()
+    }
+
+    customDatFiles.forEach { datName ->
+        val customUrl = prefs.customDatUrls[datName] ?: ""
+        val isDownloading = customDatProgress[datName] != null
+        key(datName) {
+            BasicComponent(
+                title = datName,
+                summary = customDatProgress[datName] ?: mainViewModel.getCustomDatSummary(datName),
+                endActions = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isDownloading) {
+                            IconButton(onClick = { mainViewModel.cancelDownload(datName) }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.cancel),
+                                    contentDescription = stringResource(R.string.cancel)
+                                )
+                            }
+                        } else {
+                            IconButton(onClick = { onEditUrl(datName, customUrl) }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.cloud_download),
+                                    contentDescription = stringResource(R.string.rule_file_update_url)
+                                )
+                            }
+                            IconButton(onClick = {
+                                if (customUrl.isNotEmpty()) {
+                                    mainViewModel.downloadRuleFile(customUrl, datName)
+                                } else {
+                                    customDatPickerLauncher.launch(arrayOf("*/*"))
+                                }
+                            }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.place_item),
+                                    contentDescription = stringResource(R.string.import_file)
+                                )
+                            }
+                            IconButton(onClick = { mainViewModel.deleteCustomDatFile(datName) }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.delete),
+                                    contentDescription = stringResource(R.string.delete_config)
+                                )
+                            }
+                        }
+                    }
+                }
+            )
+        }
+    }
 }

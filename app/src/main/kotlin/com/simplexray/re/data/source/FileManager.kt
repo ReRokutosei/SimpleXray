@@ -345,14 +345,31 @@ class FileManager(private val application: Application, private val prefs: Prefe
         val isCustomImported =
             if (filename == "geoip.dat") prefs.customGeoipImported else prefs.customGeositeImported
         return if (file.exists() && isCustomImported) {
-            val lastModified = file.lastModified()
-            val sdf = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
-            val date = sdf.format(Date(lastModified))
-            val size = formatFileSize(file.length())
-            "$date | $size"
+            formatRuleFileSummary(file) ?: application.getString(R.string.rule_file_default)
         } else {
             application.getString(R.string.rule_file_default)
         }
+    }
+
+    /**
+     * Unified summary for third-party dat files: "yyyy/MM/dd HH:mm | size".
+     * Returns an empty string when the file does not exist (e.g. still downloading).
+     */
+    fun getCustomDatSummary(filename: String): String {
+        val file = File(application.filesDir, filename)
+        return if (file.exists()) {
+            formatRuleFileSummary(file) ?: ""
+        } else {
+            ""
+        }
+    }
+
+    private fun formatRuleFileSummary(file: File): String? {
+        if (!file.exists()) return null
+        val lastModified = file.lastModified()
+        val sdf = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
+        val date = sdf.format(Date(lastModified))
+        return "$date | ${formatFileSize(file.length())}"
     }
 
     private fun formatFileSize(size: Long): String {
@@ -465,9 +482,12 @@ class FileManager(private val application: Application, private val prefs: Prefe
     suspend fun importDatFileFromUri(context: Context, uri: Uri): String? {
         return withContext(Dispatchers.IO) {
             try {
-                var fileName = getFileNameFromUri(context, uri) ?: "custom.dat"
-                if (!fileName.lowercase().endsWith(".dat")) {
-                    fileName += ".dat"
+                val fileName = getDatFileNameFromUri(context, uri)
+                // Defense: standard GEO file names (case-insensitive) must not be
+                // imported through the third-party dat path.
+                if (isStandardGeoDat(fileName)) {
+                    Log.w(TAG, "Rejected import of standard GEO file via custom dat path: $fileName")
+                    return@withContext null
                 }
                 val targetFile = File(application.filesDir, fileName)
                 val tempFile = File(application.filesDir, "$fileName.tmp")
@@ -488,6 +508,34 @@ class FileManager(private val application: Application, private val prefs: Prefe
                 null
             }
         }
+    }
+
+    /**
+     * Resolve the target file name (with .dat suffix) for a dat file picked from URI.
+     * Exposed so the ViewModel can run the standard-GEO defense before importing.
+     * Sanitizes the display name so a malicious provider cannot inject path
+     * separators or relative segments.
+     */
+    fun getDatFileNameFromUri(context: Context, uri: Uri): String {
+        var fileName = getFileNameFromUri(context, uri) ?: "custom.dat"
+        // Strip any path separators / relative segments a provider might inject.
+        fileName = fileName.substringAfterLast('/').substringAfterLast('\\')
+        if (fileName.isBlank() || fileName == "." || fileName == "..") {
+            fileName = "custom.dat"
+        }
+        if (!fileName.lowercase().endsWith(".dat")) {
+            fileName += ".dat"
+        }
+        return fileName
+    }
+
+    /**
+     * True when [fileName] collides (case-insensitively) with the built-in standard
+     * GEO resources, which must only be replaced via the dedicated top section.
+     */
+    fun isStandardGeoDat(fileName: String): Boolean {
+        val lower = fileName.lowercase()
+        return lower == "geoip.dat" || lower == "geosite.dat"
     }
 
     suspend fun importConfigFileFromUri(context: Context, uri: Uri): String? {
