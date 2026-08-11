@@ -1,5 +1,6 @@
 .gradle
 .idea
+.reasonix
 app/.externalNativeBuild
 app/build
 app/debug
@@ -16,3 +17,5 @@ obj/*
 *.so
 build/*
 app/.cxx/*
+*.dex
+.cxx_tmp2/*
