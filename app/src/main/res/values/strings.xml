@@ -70,14 +70,12 @@
     <string name="add_config_profile">Add Profile</string>
     <string name="create_new_config_title">Create New Config</string>
     <string name="create_new_config_summary">Manually create a blank configuration file</string>
-    <string name="import_from_clipboard_summary">Import share links or config text from clipboard</string>
+    <string name="import_from_clipboard_summary">Import a full config (JSON/YAML) from clipboard</string>
     <string name="import_from_local_file_title">Import Local File</string>
     <string name="import_from_local_file_summary">Select a configuration file via system file manager</string>
     <string name="import_file">Import</string>
     <string name="export">Export</string>
     <string name="export_to_clipboard">Export to Clipboard</string>
-    <string name="share">Share</string>
-
     <!-- Rule Files Management -->
     <string name="rule_files_category_title">Rule Files</string>
     <string name="rule_file_default">Default rule file</string>

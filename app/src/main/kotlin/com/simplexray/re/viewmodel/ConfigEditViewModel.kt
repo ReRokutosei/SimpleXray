@@ -21,18 +21,13 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONException
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
-import java.net.URLEncoder
-import java.util.Base64
-import java.util.zip.Deflater
 
 private const val TAG = "ConfigEditViewModel"
 
 sealed class ConfigEditUiEvent {
     data class ShowSnackbar(val message: String) : ConfigEditUiEvent()
-    data class ShareContent(val content: String) : ConfigEditUiEvent()
     data object NavigateBack : ConfigEditUiEvent()
 }
 
@@ -189,39 +184,6 @@ class ConfigEditViewModel(
                     )
                 )
             }
-        }
-    }
-
-    fun shareConfigFile() {
-        viewModelScope.launch(Dispatchers.IO) {
-            if (!_configFile.exists()) {
-                Log.e(TAG, "Config file not found.")
-                _uiEvent.trySend(
-                    ConfigEditUiEvent.ShowSnackbar(
-                        application.getString(R.string.config_not_found)
-                    )
-                )
-                return@launch
-            }
-            val content = readConfigFileContent()
-            val name = _filename.value
-
-            val input = content.toByteArray(Charsets.UTF_8)
-            val outputStream = ByteArrayOutputStream()
-            val deflater = Deflater()
-            val buffer = ByteArray(1024)
-            deflater.setInput(input)
-            deflater.finish()
-            while (!deflater.finished()) {
-                val count = deflater.deflate(buffer)
-                outputStream.write(buffer, 0, count)
-            }
-            deflater.end()
-            val compressed = outputStream.toByteArray()
-            val encodedContent = Base64.getUrlEncoder().encodeToString(compressed)
-            val encodedName = URLEncoder.encode(name, "UTF-8")
-            val shareableLink = "simplexray://config/$encodedName/$encodedContent"
-            _uiEvent.trySend(ConfigEditUiEvent.ShareContent(shareableLink))
         }
     }
 

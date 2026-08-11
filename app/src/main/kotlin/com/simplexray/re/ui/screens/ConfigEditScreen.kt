@@ -94,9 +94,6 @@ fun ConfigEditPane(
     val scrollBehavior = MiuixScrollBehavior()
     val isKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     val focusManager = LocalFocusManager.current
-    val shareLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) {}
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collectLatest { event ->
@@ -107,14 +104,6 @@ fun ConfigEditPane(
 
                 is ConfigEditUiEvent.ShowSnackbar -> {
                     snackbarHostState.showSnackbar(event.message)
-                }
-
-                is ConfigEditUiEvent.ShareContent -> {
-                    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, event.content)
-                    }
-                    shareLauncher.launch(Intent.createChooser(shareIntent, null))
                 }
             }
         }
@@ -297,12 +286,6 @@ fun ConfigEditPane(
                                     contentDescription = stringResource(id = R.string.save)
                                 )
                             }
-                            IconButton(onClick = { viewModel.shareConfigFile() }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.ic_share),
-                                    contentDescription = stringResource(R.string.share)
-                                )
-                            }
                         }
                     },
                     scrollBehavior = scrollBehavior
@@ -407,12 +390,6 @@ fun ConfigEditPane(
                             Icon(
                                 painter = painterResource(id = R.drawable.save),
                                 contentDescription = stringResource(id = R.string.save)
-                            )
-                        }
-                        IconButton(onClick = { viewModel.shareConfigFile() }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_share),
-                                contentDescription = stringResource(R.string.share)
                             )
                         }
                     }

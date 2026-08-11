@@ -13,11 +13,9 @@ import com.simplexray.re.R
 import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.isConfigFile
 import com.simplexray.re.common.FilenameValidator
-import com.simplexray.re.common.configFormat.ConfigFormatConverter
 import com.simplexray.re.prefs.Preferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import org.json.JSONException
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -123,19 +121,15 @@ class FileManager(private val application: Application, private val prefs: Prefe
                 return@withContext null
             }
 
-            val (name, configContent) = ConfigFormatConverter.convert(application, content).getOrElse { e ->
-                Log.e(TAG, "Failed to parse config", e)
+            // This project only deals with full configs: the provided content must
+            // be valid JSON or YAML. Share/subscription URIs are not supported.
+            if (!ConfigUtils.isValidConfigContent(content)) {
+                Log.e(TAG, "Rejected import: content is not a valid JSON/YAML config.")
                 return@withContext null
             }
+            val formattedContent = ConfigUtils.formatConfigContent(content)
 
-            val formattedContent = try {
-                ConfigUtils.formatConfigContent(configContent)
-            } catch (e: JSONException) {
-                Log.e(TAG, "Invalid JSON format in provided content.", e)
-                return@withContext null
-            }
-
-            val filename = "$name.json"
+            val filename = "imported_" + System.currentTimeMillis() + ".json"
             val newFile = File(application.filesDir, filename)
 
             try {
@@ -542,6 +536,11 @@ class FileManager(private val application: Application, private val prefs: Prefe
         return withContext(Dispatchers.IO) {
             try {
                 var fileName = getFileNameFromUri(context, uri) ?: "imported_config.json"
+                // Only full config files (.json/.yaml/.yml) are supported.
+                if (!fileName.isConfigFile()) {
+                    Log.e(TAG, "Rejected config import: unsupported file extension: $fileName")
+                    return@withContext null
+                }
                 val extIndex = fileName.lastIndexOf('.')
                 val nameWithoutExt = if (extIndex > 0) fileName.substring(0, extIndex) else fileName
                 val ext = if (extIndex > 0) fileName.substring(extIndex) else ".json"

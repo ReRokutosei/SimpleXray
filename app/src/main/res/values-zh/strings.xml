@@ -63,13 +63,12 @@
     <string name="add_config_profile">添加配置文件</string>
     <string name="create_new_config_title">新建配置文件</string>
     <string name="create_new_config_summary">手动创建一个空白配置文件</string>
-    <string name="import_from_clipboard_summary">导入剪贴板中的分享链接或配置文本</string>
+    <string name="import_from_clipboard_summary">从剪贴板导入完整配置（JSON/YAML）</string>
     <string name="import_from_local_file_title">从本地文件导入</string>
     <string name="import_from_local_file_summary">打开文件管理器选择配置文件</string>
     <string name="import_file">导入</string>
     <string name="export">导出</string>
     <string name="export_to_clipboard">导出到剪贴板</string>
-    <string name="share">分享</string>
 
     <!-- 规则文件管理 -->
     <string name="rule_files_category_title">规则文件</string>
