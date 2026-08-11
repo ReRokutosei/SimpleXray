@@ -436,13 +436,15 @@ private fun ConfigListPane(
                                 }) {
                                     Icon(
                                         painter = painterResource(R.drawable.edit),
-                                        contentDescription = "Edit"
+                                        contentDescription = "Edit",
+                                        tint = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
                                     )
                                 }
                                 IconButton(onClick = { showDeleteDialog.value = file }) {
                                     Icon(
                                         painter = painterResource(R.drawable.delete),
-                                        contentDescription = "Delete"
+                                        contentDescription = "Delete",
+                                        tint = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
                                     )
                                 }
                             }
