@@ -25,7 +25,11 @@ SimpleXray 主要负责在 Android 上运行和管理 Xray-core。应用接受�
 ### 手机端
 
 <div align="center">
-  <img src="./images/photo.webp" alt="手机端界面预览" width="300">
+  <img src="./images/mobile_01.webp" alt="手机端界面 1" width="48%">
+  <img src="./images/mobile_02.webp" alt="手机端界面 2" width="48%">
+  <br>
+  <img src="./images/mobile_03.webp" alt="手机端界面 3" width="48%">
+  <img src="./images/mobile_04.webp" alt="手机端界面 4" width="48%">
 </div>
 
 ### 平板端
