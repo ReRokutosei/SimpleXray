@@ -28,6 +28,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -48,6 +50,7 @@ import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
 import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
+import top.yukonga.miuix.kmp.basic.FloatingToolbarDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
@@ -57,6 +60,13 @@ import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.blur.BlendColorEntry
+import top.yukonga.miuix.kmp.blur.BlurDefaults
+import top.yukonga.miuix.kmp.blur.LayerBackdrop
+import top.yukonga.miuix.kmp.blur.highlight.Highlight
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.blur.textureBlur
 import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -125,11 +135,16 @@ fun AppScaffold(
             }
         }
     } else {
+        val surfaceColor = MiuixTheme.colorScheme.surface
+        val backdrop = rememberLayerBackdrop {
+            drawRect(surfaceColor)
+            drawContent()
+        }
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             topBar = topBarContent,
             floatingToolbar = {
-                AppBottomNavigationBar(navController)
+                AppBottomNavigationBar(navController, backdrop)
             },
             floatingToolbarPosition = top.yukonga.miuix.kmp.basic.ToolbarPosition.BottomCenter,
             snackbarHost = { SnackbarHost(state = snackbarHostState) },
@@ -141,7 +156,9 @@ fun AppScaffold(
                 end = paddingValues.calculateEndPadding(LayoutDirection.Ltr),
                 bottom = 100.dp
             )
-            content(overlayPaddingValues)
+            Box(modifier = Modifier.fillMaxSize().layerBackdrop(backdrop)) {
+                content(overlayPaddingValues)
+            }
         }
     }
 }
@@ -353,11 +370,33 @@ fun AppNavigationRail(navController: NavHostController) {
 }
 
 @Composable
-fun AppBottomNavigationBar(navController: NavHostController) {
+fun AppBottomNavigationBar(navController: NavHostController, backdrop: LayerBackdrop? = null) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
+    val surfaceContainer = MiuixTheme.colorScheme.surfaceContainer
+    val barShape = remember { RoundedCornerShape(FloatingToolbarDefaults.CornerRadius) }
+    val highlight = remember(isDark) {
+        if (isDark) Highlight.GlassStrokeMiddleDark else Highlight.GlassStrokeMiddleLight
+    }
+    val blurColors = BlurDefaults.blurColors(
+        blendColors = listOf(
+            BlendColorEntry(color = surfaceContainer.copy(alpha = 0.65f))
+        )
+    )
 
-    FloatingNavigationBar {
+    FloatingNavigationBar(
+        modifier = if (backdrop != null) {
+            Modifier.textureBlur(
+                backdrop = backdrop,
+                shape = barShape,
+                blurRadius = 25f,
+                colors = blurColors,
+                highlight = null
+            )
+        } else Modifier,
+        color = if (backdrop != null) Color.Transparent else surfaceContainer
+    ) {
         FloatingNavigationBarItem(
             selected = currentRoute == ROUTE_STATS,
             onClick = { navigateToRoute(navController, ROUTE_STATS) },
