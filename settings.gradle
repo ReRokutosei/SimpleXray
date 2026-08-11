@@ -8,7 +8,7 @@ pluginManagement {
 
 include ':app'
 
-includeBuild('../miuix') {
+includeBuild('third_party/miuix') {
     dependencySubstitution {
         substitute module('top.yukonga.miuix.kmp:miuix-core') using project(':miuix-core')
         substitute module('top.yukonga.miuix.kmp:miuix-ui') using project(':miuix-ui')
