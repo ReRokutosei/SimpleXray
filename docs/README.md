@@ -23,7 +23,11 @@ This repository is a personal fork based on the upstream [SimpleXray](https://gi
 ### Mobile
 
 <div align="center">
-  <img src="./images/photo.webp" alt="Mobile UI preview" width="300">
+  <img src="./images/mobile_01.webp" alt="Mobile UI 1" width="48%">
+  <img src="./images/mobile_02.webp" alt="Mobile UI 2" width="48%">
+  <br>
+  <img src="./images/mobile_03.webp" alt="Mobile UI 3" width="48%">
+  <img src="./images/mobile_04.webp" alt="Mobile UI 4" width="48%">
 </div>
 
 ### Tablet
