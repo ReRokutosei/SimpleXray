@@ -14,7 +14,8 @@ class PrefsProvider : ContentProvider() {
     private lateinit var prefs: SharedPreferences
 
     override fun onCreate(): Boolean {
-        prefs = context!!.getSharedPreferences("${context!!.packageName}_preferences", Context.MODE_PRIVATE)
+        val appContext = context ?: return false
+        prefs = appContext.getSharedPreferences("${appContext.packageName}_preferences", Context.MODE_PRIVATE)
         return true
     }
 
