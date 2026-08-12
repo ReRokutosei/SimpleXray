@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +23,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.simplexray.re.R
 import com.simplexray.re.common.formatBytes
@@ -46,7 +46,7 @@ fun DashboardScreen(
     onSwitchVpnService: () -> Unit = {},
     paddingValues: PaddingValues = PaddingValues()
 ) {
-    val coreStats by mainViewModel.coreStatsState.collectAsState()
+    val coreStats by mainViewModel.coreStatsState.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(Unit) {
@@ -117,7 +117,7 @@ fun DashboardScreen(
             }
 
             item {
-                val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsState()
+                val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsStateWithLifecycle()
                 SmallTitle(text = stringResource(id = R.string.core_control))
                 Card(
                     modifier = Modifier.fillMaxWidth(),

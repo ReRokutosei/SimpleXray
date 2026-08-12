@@ -88,7 +88,7 @@ fun AppScaffold(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
     var isLogSearching by remember { mutableStateOf(false) }
-    val logSearchQuery by logViewModel.searchQuery.collectAsState()
+    val logSearchQuery by logViewModel.searchQuery.collectAsStateWithLifecycle()
     val focusRequester = remember { FocusRequester() }
 
     LaunchedEffect(isLogSearching) {
@@ -107,8 +107,8 @@ fun AppScaffold(
             onImportConfigFromClipboard = onImportConfigFromClipboard,
             onPerformExport = onPerformExport,
             onSwitchVpnService = onSwitchVpnService,
-            controlMenuClickable = mainViewModel.controlMenuClickable.collectAsState().value,
-            isServiceEnabled = mainViewModel.isServiceEnabled.collectAsState().value,
+            controlMenuClickable = mainViewModel.controlMenuClickable.collectAsStateWithLifecycle().value,
+            isServiceEnabled = mainViewModel.isServiceEnabled.collectAsStateWithLifecycle().value,
             logViewModel = logViewModel,
             logListState = logListState,
             configListState = configListState,

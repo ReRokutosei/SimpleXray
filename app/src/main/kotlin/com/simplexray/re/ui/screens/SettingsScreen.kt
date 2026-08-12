@@ -724,7 +724,7 @@ private fun CustomDatFilesSection(
     onEditUrl: (datName: String, url: String) -> Unit,
 ) {
     val context = LocalContext.current
-    val customDatVersion by mainViewModel.customDatVersion.collectAsState()
+    val customDatVersion by mainViewModel.customDatVersion.collectAsStateWithLifecycle()
     val customDatFiles = remember(customDatVersion, customDatProgress) {
         val names = LinkedHashSet<String>()
         context.filesDir.listFiles { file ->

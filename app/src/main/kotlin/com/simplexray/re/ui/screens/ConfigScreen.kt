@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
@@ -53,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
 import com.simplexray.re.viewmodel.ConfigEditViewModel
 import com.simplexray.re.viewmodel.MainViewModel
@@ -97,8 +97,8 @@ fun ConfigScreen(
     val isMasterDetailSupported = isLandscape && configuration.screenWidthDp >= 840
     val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
 
-    val files by mainViewModel.configFiles.collectAsState()
-    val selectedFile by mainViewModel.selectedConfigFile.collectAsState()
+    val files by mainViewModel.configFiles.collectAsStateWithLifecycle()
+    val selectedFile by mainViewModel.selectedConfigFile.collectAsStateWithLifecycle()
     var selectedFileForDetail by remember { mutableStateOf<File?>(null) }
     var isEditorExpanded by remember { mutableStateOf(false) }
 
@@ -290,7 +290,7 @@ private fun ConfigListPane(
     val showDeleteDialog = remember { mutableStateOf<File?>(null) }
     var showAddConfigSheet by remember { mutableStateOf(false) }
 
-    val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsState()
+    val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
 
