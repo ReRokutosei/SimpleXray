@@ -4,10 +4,12 @@ import android.content.ContentResolver
 import android.content.ContentValues
 import android.content.Context
 import android.util.Log
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import com.simplexray.re.R
 import com.simplexray.re.common.ThemeMode
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KProperty
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 enum class LogLevel(val value: String) {
     Auto("auto"),
@@ -109,69 +111,59 @@ class Preferences(context: Context) {
         }
     }
 
-    var socksAddress: String
-        get() = getPrefData(SOCKS_ADDR).first ?: "127.0.0.1"
-        set(address) {
-            setValueInProvider(SOCKS_ADDR, address)
+    // --- Provider-backed property delegates (collapse the repetitive get/set boilerplate) ---
+
+    private fun stringPref(key: String, default: () -> String = { "" }): ReadWriteProperty<Any?, String> =
+        object : ReadWriteProperty<Any?, String> {
+            override fun getValue(thisRef: Any?, property: KProperty<*>): String =
+                getPrefData(key).first ?: default()
+            override fun setValue(thisRef: Any?, property: KProperty<*>, value: String) =
+                setValueInProvider(key, value)
         }
 
-    var socksPort: Int
-        get() {
-            val value = getPrefData(SOCKS_PORT).first
-            val port = value?.toIntOrNull()
-            if (value != null && port == null) {
-                Log.e(TAG, "Failed to parse SocksPort as Integer: $value")
+    private fun nullableStringPref(key: String): ReadWriteProperty<Any?, String?> =
+        object : ReadWriteProperty<Any?, String?> {
+            override fun getValue(thisRef: Any?, property: KProperty<*>): String? =
+                getPrefData(key).first
+            override fun setValue(thisRef: Any?, property: KProperty<*>, value: String?) =
+                setValueInProvider(key, value)
+        }
+
+    private fun booleanPref(key: String, default: Boolean): ReadWriteProperty<Any?, Boolean> =
+        object : ReadWriteProperty<Any?, Boolean> {
+            override fun getValue(thisRef: Any?, property: KProperty<*>): Boolean =
+                getBooleanPref(key, default)
+            override fun setValue(thisRef: Any?, property: KProperty<*>, value: Boolean) =
+                setValueInProvider(key, value)
+        }
+
+    private fun intPref(key: String, default: Int, logTag: String? = null): ReadWriteProperty<Any?, Int> =
+        object : ReadWriteProperty<Any?, Int> {
+            override fun getValue(thisRef: Any?, property: KProperty<*>): Int {
+                val value = getPrefData(key).first
+                val intValue = value?.toIntOrNull()
+                if (value != null && intValue == null) {
+                    logTag?.let { Log.e(TAG, "Failed to parse $it as Integer: $value") }
+                }
+                return intValue ?: default
             }
-            return port ?: 10808
-        }
-        set(port) {
-            setValueInProvider(SOCKS_PORT, port.toString())
+            override fun setValue(thisRef: Any?, property: KProperty<*>, value: Int) =
+                setValueInProvider(key, value)
         }
 
-    var socksUsername: String
-        get() = getPrefData(SOCKS_USER).first ?: ""
-        set(user) {
-            setValueInProvider(SOCKS_USER, user)
-        }
-
-    var socksPassword: String
-        get() = getPrefData(SOCKS_PASS).first ?: ""
-        set(pass) {
-            setValueInProvider(SOCKS_PASS, pass)
-        }
-
-    var dnsIpv4: String
-        get() = getPrefData(DNS_IPV4).first ?: "8.8.8.8"
-        set(addr) {
-            setValueInProvider(DNS_IPV4, addr)
-        }
-
-    var dnsIpv6: String
-        get() = getPrefData(DNS_IPV6).first ?: "2001:4860:4860::8888"
-        set(addr) {
-            setValueInProvider(DNS_IPV6, addr)
-        }
+    var socksAddress: String by stringPref(SOCKS_ADDR) { "127.0.0.1" }
+    var socksPort: Int by intPref(SOCKS_PORT, 10808, "SocksPort")
+    var socksUsername: String by stringPref(SOCKS_USER)
+    var socksPassword: String by stringPref(SOCKS_PASS)
+    var dnsIpv4: String by stringPref(DNS_IPV4) { "8.8.8.8" }
+    var dnsIpv6: String by stringPref(DNS_IPV6) { "2001:4860:4860::8888" }
 
     val udpInTcp: Boolean
         get() = getBooleanPref(UDP_IN_TCP, false)
 
-    var ipv4: Boolean
-        get() = getBooleanPref(IPV4, true)
-        set(enable) {
-            setValueInProvider(IPV4, enable)
-        }
-
-    var ipv6: Boolean
-        get() = getBooleanPref(IPV6, false)
-        set(enable) {
-            setValueInProvider(IPV6, enable)
-        }
-
-    var global: Boolean
-        get() = getBooleanPref(GLOBAL, false)
-        set(enable) {
-            setValueInProvider(GLOBAL, enable)
-        }
+    var ipv4: Boolean by booleanPref(IPV4, true)
+    var ipv6: Boolean by booleanPref(IPV6, false)
+    var global: Boolean by booleanPref(GLOBAL, false)
 
     var apps: Set<String?>?
         get() {
@@ -191,99 +183,26 @@ class Preferences(context: Context) {
             setValueInProvider(APPS, jsonSet)
         }
 
-    var enable: Boolean
-        get() = getBooleanPref(ENABLE, false)
-        set(enable) {
-            setValueInProvider(ENABLE, enable)
-        }
+    var enable: Boolean by booleanPref(ENABLE, false)
+    var disableVpn: Boolean by booleanPref(DISABLE_VPN, false)
 
-    var disableVpn: Boolean
-        get() = getBooleanPref(DISABLE_VPN, false)
-        set(value) {
-            setValueInProvider(DISABLE_VPN, value)
-        }
+    // Fixed tunnel constants (not persisted)
+    val tunnelMtu: Int get() = 8500
+    val tunnelIpv4Address: String get() = "198.18.0.1"
+    val tunnelIpv4Prefix: Int get() = 32
+    val tunnelIpv6Address: String get() = "fc00::1"
+    val tunnelIpv6Prefix: Int get() = 128
+    val taskStackSize: Int get() = 81920
 
-    val tunnelMtu: Int
-        get() = 8500
-
-    val tunnelIpv4Address: String
-        get() = "198.18.0.1"
-
-    val tunnelIpv4Prefix: Int
-        get() = 32
-
-    val tunnelIpv6Address: String
-        get() = "fc00::1"
-
-    val tunnelIpv6Prefix: Int
-        get() = 128
-
-    val taskStackSize: Int
-        get() = 81920
-
-    var selectedConfigPath: String?
-        get() = getPrefData(SELECTED_CONFIG_PATH).first
-        set(path) {
-            setValueInProvider(SELECTED_CONFIG_PATH, path)
-        }
-
-    var bypassLan: Boolean
-        get() = getBooleanPref(BYPASS_LAN, true)
-        set(enable) {
-            setValueInProvider(BYPASS_LAN, enable)
-        }
-
-    var useTemplate: Boolean
-        get() = getBooleanPref(USE_TEMPLATE, true)
-        set(enable) {
-            setValueInProvider(USE_TEMPLATE, enable)
-        }
-
-    var hideFromRecents: Boolean
-        get() = getBooleanPref(HIDE_FROM_RECENTS, true)
-        set(value) {
-            setValueInProvider(HIDE_FROM_RECENTS, value)
-        }
-
-    var geoUpdateIntervalHours: Int
-        get() {
-            val v = getPrefData(GEO_UPDATE_INTERVAL_HOURS).first
-            return v?.toIntOrNull() ?: 0
-        }
-        set(value) {
-            setValueInProvider(GEO_UPDATE_INTERVAL_HOURS, value)
-        }
-
-    var httpProxyEnabled: Boolean
-        get() = getBooleanPref(HTTP_PROXY_ENABLED, false)
-        set(enable) {
-            setValueInProvider(HTTP_PROXY_ENABLED, enable)
-        }
-
-    var httpPort: Int
-        get() {
-            val value = getPrefData(HTTP_PORT).first
-            val port = value?.toIntOrNull()
-            if (value != null && port == null) {
-                Log.e(TAG, "Failed to parse HttpPort as Integer: $value")
-            }
-            return port ?: 10809
-        }
-        set(port) {
-            setValueInProvider(HTTP_PORT, port.toString())
-        }
-
-    var customGeoipImported: Boolean
-        get() = getBooleanPref(CUSTOM_GEOIP_IMPORTED, false)
-        set(imported) {
-            setValueInProvider(CUSTOM_GEOIP_IMPORTED, imported)
-        }
-
-    var customGeositeImported: Boolean
-        get() = getBooleanPref(CUSTOM_GEOSITE_IMPORTED, false)
-        set(imported) {
-            setValueInProvider(CUSTOM_GEOSITE_IMPORTED, imported)
-        }
+    var selectedConfigPath: String? by nullableStringPref(SELECTED_CONFIG_PATH)
+    var bypassLan: Boolean by booleanPref(BYPASS_LAN, true)
+    var useTemplate: Boolean by booleanPref(USE_TEMPLATE, true)
+    var hideFromRecents: Boolean by booleanPref(HIDE_FROM_RECENTS, true)
+    var geoUpdateIntervalHours: Int by intPref(GEO_UPDATE_INTERVAL_HOURS, 0)
+    var httpProxyEnabled: Boolean by booleanPref(HTTP_PROXY_ENABLED, false)
+    var httpPort: Int by intPref(HTTP_PORT, 10809, "HttpPort")
+    var customGeoipImported: Boolean by booleanPref(CUSTOM_GEOIP_IMPORTED, false)
+    var customGeositeImported: Boolean by booleanPref(CUSTOM_GEOSITE_IMPORTED, false)
 
     var configFilesOrder: List<String>
         get() {
@@ -302,52 +221,15 @@ class Preferences(context: Context) {
             setValueInProvider(CONFIG_FILES_ORDER, jsonList)
         }
 
-    var connectivityTestTarget: String
-        get() = getPrefData(CONNECTIVITY_TEST_TARGET).first
-            ?: context1.getString(R.string.connectivity_test_url)
-        set(value) {
-            setValueInProvider(CONNECTIVITY_TEST_TARGET, value)
-        }
-
-    var connectivityTestTimeout: Int
-        get() = getPrefData(CONNECTIVITY_TEST_TIMEOUT).first?.toIntOrNull() ?: 3000
-        set(value) {
-            setValueInProvider(CONNECTIVITY_TEST_TIMEOUT, value.toString())
-        }
-
-    var geoipUrl: String
-        get() = getPrefData(GEOIP_URL).first ?: context1.getString(R.string.geoip_url)
-        set(value) {
-            setValueInProvider(GEOIP_URL, value)
-        }
-
-    var geositeUrl: String
-        get() = getPrefData(GEOSITE_URL).first ?: context1.getString(R.string.geosite_url)
-        set(value) {
-            setValueInProvider(GEOSITE_URL, value)
-        }
-
-    var apiAddress: String
-        get() = getPrefData(API_ADDRESS).first ?: "127.0.0.1"
-        set(address) {
-            setValueInProvider(API_ADDRESS, address)
-        }
-
-    var apiPort: Int
-        get() {
-            val value = getPrefData(API_PORT).first
-            val port = value?.toIntOrNull()
-            return port ?: 0
-        }
-        set(port) {
-            setValueInProvider(API_PORT, port.toString())
-        }
-
-    var bypassSelectedApps: Boolean
-        get() = getBooleanPref(BYPASS_SELECTED_APPS, false)
-        set(enable) {
-            setValueInProvider(BYPASS_SELECTED_APPS, enable)
-        }
+    var connectivityTestTarget: String by stringPref(CONNECTIVITY_TEST_TARGET) {
+        context1.getString(R.string.connectivity_test_url)
+    }
+    var connectivityTestTimeout: Int by intPref(CONNECTIVITY_TEST_TIMEOUT, 3000)
+    var geoipUrl: String by stringPref(GEOIP_URL) { context1.getString(R.string.geoip_url) }
+    var geositeUrl: String by stringPref(GEOSITE_URL) { context1.getString(R.string.geosite_url) }
+    var apiAddress: String by stringPref(API_ADDRESS) { "127.0.0.1" }
+    var apiPort: Int by intPref(API_PORT, 0)
+    var bypassSelectedApps: Boolean by booleanPref(BYPASS_SELECTED_APPS, false)
 
     var theme: ThemeMode
         get() = getPrefData(THEME).first?.let { ThemeMode.fromString(it) } ?: ThemeMode.Auto
