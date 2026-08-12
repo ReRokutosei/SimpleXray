@@ -31,6 +31,7 @@ import com.simplexray.re.common.formatNumber
 import com.simplexray.re.common.formatUptime
 import com.simplexray.re.viewmodel.MainViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -51,7 +52,7 @@ fun DashboardScreen(
 
     LaunchedEffect(Unit) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            while (true) {
+            while (isActive) {
                 mainViewModel.updateCoreStats()
                 delay(1000)
             }
