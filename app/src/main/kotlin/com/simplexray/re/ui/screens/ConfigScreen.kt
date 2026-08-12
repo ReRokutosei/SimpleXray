@@ -61,7 +61,6 @@ import kotlinx.coroutines.launch
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import top.yukonga.miuix.kmp.basic.Button
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
@@ -70,13 +69,12 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.simplexray.re.ui.components.ConfirmOverlayDialog
 import java.io.File
 
 private const val TAG = "ConfigScreen"
@@ -500,35 +498,19 @@ private fun ConfigListPane(
     }
 
     showDeleteDialog.value?.let { fileToDelete ->
-        OverlayDialog(
-            show = true,
+        ConfirmOverlayDialog(
             title = stringResource(R.string.delete_config),
             summary = fileToDelete.name,
-            onDismissRequest = { showDeleteDialog.value = null },
-            content = {
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    TextButton(
-                        text = stringResource(R.string.cancel),
-                        onClick = { showDeleteDialog.value = null },
-                        modifier = Modifier.weight(1f),
-                    )
-                    Spacer(Modifier.width(16.dp))
-                    TextButton(
-                        text = stringResource(R.string.confirm),
-                        onClick = {
-                            showDeleteDialog.value = null
-                            onDeleteConfigClick(fileToDelete) {
-                                mainViewModel.refreshConfigFileList()
-                                mainViewModel.updateSelectedConfigFile(null)
-                            }
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.textButtonColorsPrimary()
-                    )
+            confirmText = stringResource(R.string.confirm),
+            cancelText = stringResource(R.string.cancel),
+            onConfirm = {
+                showDeleteDialog.value = null
+                onDeleteConfigClick(fileToDelete) {
+                    mainViewModel.refreshConfigFileList()
+                    mainViewModel.updateSelectedConfigFile(null)
                 }
-            }
+            },
+            onDismiss = { showDeleteDialog.value = null }
         )
     }
 }

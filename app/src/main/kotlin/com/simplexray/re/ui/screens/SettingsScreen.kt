@@ -39,7 +39,6 @@ import com.simplexray.re.viewmodel.MainViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -52,11 +51,11 @@ import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Ok
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import com.simplexray.re.ui.components.ConfirmOverlayDialog
 
 @Composable
 fun SettingsScreen(
@@ -196,83 +195,41 @@ fun SettingsScreen(
     }
 
     if (showGeoipDeleteDialog) {
-        OverlayDialog(
-            show = true,
+        ConfirmOverlayDialog(
             title = stringResource(R.string.delete_rule_file_title),
             summary = stringResource(R.string.delete_rule_file_message),
-            onDismissRequest = { showGeoipDeleteDialog = false },
-            content = {
-                Row {
-                    TextButton(
-                        text = stringResource(R.string.cancel),
-                        onClick = { showGeoipDeleteDialog = false },
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(Modifier.width(16.dp))
-                    TextButton(
-                        text = stringResource(R.string.confirm),
-                        onClick = {
-                            mainViewModel.restoreDefaultGeoip { }
-                            showGeoipDeleteDialog = false
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.textButtonColorsPrimary()
-                    )
-                }
-            }
+            confirmText = stringResource(R.string.confirm),
+            cancelText = stringResource(R.string.cancel),
+            onConfirm = {
+                mainViewModel.restoreDefaultGeoip { }
+                showGeoipDeleteDialog = false
+            },
+            onDismiss = { showGeoipDeleteDialog = false }
         )
     }
 
     if (showGeositeDeleteDialog) {
-        OverlayDialog(
-            show = true,
+        ConfirmOverlayDialog(
             title = stringResource(R.string.delete_rule_file_title),
             summary = stringResource(R.string.delete_rule_file_message),
-            onDismissRequest = { showGeositeDeleteDialog = false },
-            content = {
-                Row {
-                    TextButton(
-                        text = stringResource(R.string.cancel),
-                        onClick = { showGeositeDeleteDialog = false },
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(Modifier.width(16.dp))
-                    TextButton(
-                        text = stringResource(R.string.confirm),
-                        onClick = {
-                            mainViewModel.restoreDefaultGeosite { }
-                            showGeositeDeleteDialog = false
-                        },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.textButtonColorsPrimary()
-                    )
-                }
-            }
+            confirmText = stringResource(R.string.confirm),
+            cancelText = stringResource(R.string.cancel),
+            onConfirm = {
+                mainViewModel.restoreDefaultGeosite { }
+                showGeositeDeleteDialog = false
+            },
+            onDismiss = { showGeositeDeleteDialog = false }
         )
     }
 
     if (newVersionTag != null) {
-        OverlayDialog(
-            show = true,
+        ConfirmOverlayDialog(
             title = stringResource(R.string.new_version_available_title),
             summary = stringResource(R.string.new_version_available_message, newVersionTag!!),
-            onDismissRequest = { mainViewModel.clearNewVersionAvailable() },
-            content = {
-                Row {
-                    TextButton(
-                        text = stringResource(id = android.R.string.cancel),
-                        onClick = { mainViewModel.clearNewVersionAvailable() },
-                        modifier = Modifier.weight(1f)
-                    )
-                    Spacer(Modifier.width(16.dp))
-                    TextButton(
-                        text = stringResource(R.string.download),
-                        onClick = { mainViewModel.downloadNewVersion(newVersionTag!!) },
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.textButtonColorsPrimary()
-                    )
-                }
-            }
+            confirmText = stringResource(R.string.download),
+            cancelText = stringResource(android.R.string.cancel),
+            onConfirm = { mainViewModel.downloadNewVersion(newVersionTag!!) },
+            onDismiss = { mainViewModel.clearNewVersionAvailable() }
         )
     }
 
