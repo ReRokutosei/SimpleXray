@@ -1,4 +1,6 @@
 # SimpleXray (Personal Fork)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FReRokutosei%2FSimpleXray.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FReRokutosei%2FSimpleXray?ref=badge_shield)
+
 <div align="center">
 <img src="https://raw.githubusercontent.com/lhear/SimpleXray/main/metadata/en-US/images/icon.png" alt="SimpleXray icon" width="150">
 
@@ -227,3 +229,6 @@ By using this application, you acknowledge that you have read and agree to the P
 Unless otherwise stated, this project is distributed under the Mozilla Public License 2.0 (MPL-2.0), in accordance with the licensing terms of the upstream project.
 
 See [`LICENSE`](../LICENSE) for the complete license text.
+
+
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FReRokutosei%2FSimpleXray.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2FReRokutosei%2FSimpleXray?ref=badge_large)
