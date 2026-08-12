@@ -14,7 +14,7 @@ jobs:
       - name: Merge PR if label is merge-ready
         uses: actions/github-script@v9
         with:
-          github-token: ${{ secrets.PAT_TOKEN }}
+          github-token : ${{ secrets.GITHUB_TOKEN }}
           script: |
             const prNumber = context.payload.pull_request.number;
             const labelName = context.payload.label.name.toLowerCase();
