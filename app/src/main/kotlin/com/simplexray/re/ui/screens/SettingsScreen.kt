@@ -227,7 +227,7 @@ fun SettingsScreen(
             title = stringResource(R.string.new_version_available_title),
             summary = stringResource(R.string.new_version_available_message, newVersionTag!!),
             confirmText = stringResource(R.string.download),
-            cancelText = stringResource(android.R.string.cancel),
+            cancelText = stringResource(R.string.cancel),
             onConfirm = { mainViewModel.downloadNewVersion(newVersionTag!!) },
             onDismiss = { mainViewModel.clearNewVersionAvailable() }
         )
