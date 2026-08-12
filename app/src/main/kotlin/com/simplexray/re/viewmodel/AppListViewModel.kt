@@ -39,6 +39,22 @@ data class Package(
     val hasInternetPermission: Boolean = true
 )
 
+/**
+ * Pure filtering logic for the app list, kept free of Android dependencies so it
+ * can be unit-tested on the JVM.
+ */
+internal fun filterPackages(
+    list: List<Package>,
+    query: String,
+    showSystemApps: Boolean,
+    showNoInternetApps: Boolean,
+): List<Package> = list.filter { pkg ->
+    (showSystemApps || !pkg.isSystemApp) &&
+        (showNoInternetApps || pkg.hasInternetPermission) &&
+        pkg.label.lowercase(Locale.getDefault())
+            .contains(query.lowercase(Locale.getDefault()))
+}
+
 class AppListViewModel(application: Application) : AndroidViewModel(application) {
     val prefs = Preferences(getApplication<Application>().applicationContext)
 
@@ -71,12 +87,7 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
         _showSystemApps,
         _showNoInternetApps
     ) { list, query, showSystem, showNoInternet ->
-        list.filter { pkg ->
-            (showSystem || !pkg.isSystemApp) &&
-                (showNoInternet || pkg.hasInternetPermission) &&
-                pkg.label.lowercase(Locale.getDefault())
-                    .contains(query.lowercase(Locale.getDefault()))
-        }
+        filterPackages(list, query, showSystem, showNoInternet)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {
