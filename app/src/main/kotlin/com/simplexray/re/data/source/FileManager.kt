@@ -26,9 +26,10 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
-import java.text.SimpleDateFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Base64
-import java.util.Date
 import java.util.Locale
 import java.util.zip.DataFormatException
 import java.util.zip.Deflater
@@ -361,8 +362,8 @@ class FileManager(private val application: Application, private val prefs: Prefe
     private fun formatRuleFileSummary(file: File): String? {
         if (!file.exists()) return null
         val lastModified = file.lastModified()
-        val sdf = SimpleDateFormat("yyyy/MM/dd HH:mm", Locale.getDefault())
-        val date = sdf.format(Date(lastModified))
+        val date = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm")
+            .format(Instant.ofEpochMilli(lastModified).atZone(ZoneId.systemDefault()))
         return "$date | ${formatFileSize(file.length())}"
     }
 
