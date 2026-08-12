@@ -70,6 +70,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
 import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
@@ -162,8 +163,7 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = if (isSearching) "" else stringResource(R.string.apps_title),
-                navigationIcon = {
+                title = if (isSearching) "" else stringResource(R.string.apps_title),                navigationIcon = {
                     IconButton(onClick = {
                         if (isSearching) {
                             isSearching = false
@@ -220,6 +220,7 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
                 scrollBehavior = scrollBehavior
             )
         },
+        snackbarHost = { SnackbarHost(state = snackbarHostState) },
         contentWindowInsets = WindowInsets(0)
     ) { paddingValues ->
         val configuration = androidx.compose.ui.platform.LocalConfiguration.current
