@@ -4,6 +4,8 @@
 
 **[English](./README.md)** | **中文**
 
+<img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FReRokutosei%2FSimpleXray.svg?type=shield" alt="FOSSA Status" width="150">
+
 </div>
 
 SimpleXray 是一款面向 Android 的轻量级代理客户端。项目使用 [Xray-core](https://github.com/XTLS/Xray-core) 作为代理核心，并结合 Android `VpnService` 与 `hev-socks5-tunnel` 实现网络流量处理。
@@ -262,3 +264,9 @@ SimpleXray 使用或基于以下开源项目开发。
 除另有说明外，本项目按照上游项目的许可条款使用 Mozilla Public License 2.0（也称 MPL-2.0）
 
 完整许可证文本请参阅 [`LICENSE`](../LICENSE) 文件。
+
+<div align="center">
+
+<img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FReRokutosei%2FSimpleXray.svg?type=large" alt="FOSSA Status"  width="300">
+
+</div>

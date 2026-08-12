@@ -1,8 +1,12 @@
 # SimpleXray (Personal Fork)
+
+
 <div align="center">
 <img src="https://raw.githubusercontent.com/lhear/SimpleXray/main/metadata/en-US/images/icon.png" alt="SimpleXray icon" width="150">
 
 **English** | **[中文](./README_CN.md)**
+
+<img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FReRokutosei%2FSimpleXray.svg?type=shield" alt="FOSSA Status" width="150">
 
 </div>
 
@@ -216,7 +220,7 @@ The versions and modifications used by this fork may differ from those in the up
 
 ## Privacy Policy and Disclaimer
 
-For details, please refer to the [Privacy Policy](./PrivacyPolicy_CN.md) and [Disclaimer](./Disclaimer_CN.md).
+For details, please refer to the [Privacy Policy](./PrivacyPolicy_EN.md) and [Disclaimer](./Disclaimer_EN.md).
 
 By using this application, you acknowledge that you have read and agree to the Privacy Policy and Disclaimer. If you do not agree with either document, please uninstall the application and discontinue its use.
 
@@ -227,3 +231,9 @@ By using this application, you acknowledge that you have read and agree to the P
 Unless otherwise stated, this project is distributed under the Mozilla Public License 2.0 (MPL-2.0), in accordance with the licensing terms of the upstream project.
 
 See [`LICENSE`](../LICENSE) for the complete license text.
+
+<div align="center">
+
+<img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FReRokutosei%2FSimpleXray.svg?type=large" alt="FOSSA Status"  width="300">
+
+</div>
