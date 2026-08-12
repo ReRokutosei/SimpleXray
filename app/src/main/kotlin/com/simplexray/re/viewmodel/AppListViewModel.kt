@@ -8,11 +8,6 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.simplexray.re.BuildConfig
@@ -21,7 +16,13 @@ import com.simplexray.re.prefs.Preferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -40,32 +41,50 @@ data class Package(
 
 class AppListViewModel(application: Application) : AndroidViewModel(application) {
     val prefs = Preferences(getApplication<Application>().applicationContext)
-    private val packageList = mutableStateListOf<Package>()
-    var isLoading by mutableStateOf(false)
-    var searchQuery by mutableStateOf("")
-    var showSystemApps by mutableStateOf(true)
-    var showNoInternetApps by mutableStateOf(false)
-    var bypassSelectedApps by mutableStateOf(prefs.bypassSelectedApps)
-    private var _isChanged by mutableStateOf(false)
+
+    private val _packageList = MutableStateFlow<List<Package>>(emptyList())
+    val packageList: StateFlow<List<Package>> = _packageList.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    private val _showSystemApps = MutableStateFlow(true)
+    val showSystemApps: StateFlow<Boolean> = _showSystemApps.asStateFlow()
+
+    private val _showNoInternetApps = MutableStateFlow(false)
+    val showNoInternetApps: StateFlow<Boolean> = _showNoInternetApps.asStateFlow()
+
+    private val _bypassSelectedApps = MutableStateFlow(prefs.bypassSelectedApps)
+    val bypassSelectedApps: StateFlow<Boolean> = _bypassSelectedApps.asStateFlow()
+
+    private var isChanged = false
 
     private val _uiEvent = Channel<AppListViewUiEvent>(Channel.BUFFERED)
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    val filteredList by derivedStateOf {
-        packageList.filter { pkg ->
-            (showSystemApps || !pkg.isSystemApp) &&
-                    (showNoInternetApps || pkg.hasInternetPermission) &&
-                    pkg.label.lowercase(Locale.getDefault())
-                        .contains(searchQuery.lowercase(Locale.getDefault()))
+    val filteredList: StateFlow<List<Package>> = combine(
+        _packageList,
+        _searchQuery,
+        _showSystemApps,
+        _showNoInternetApps
+    ) { list, query, showSystem, showNoInternet ->
+        list.filter { pkg ->
+            (showSystem || !pkg.isSystemApp) &&
+                (showNoInternet || pkg.hasInternetPermission) &&
+                pkg.label.lowercase(Locale.getDefault())
+                    .contains(query.lowercase(Locale.getDefault()))
         }
-    }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {
         loadAppList()
     }
 
     private fun loadAppList() {
-        isLoading = true
+        _isLoading.value = true
         val pm = getApplication<Application>().packageManager
         val appPackageName = getApplication<Application>().packageName
         val apps = prefs.apps ?: emptySet()
@@ -100,43 +119,43 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                 )
                 .toList()
             withContext(Dispatchers.Main) {
-                packageList.clear()
-                packageList.addAll(list)
-                isLoading = false
+                _packageList.value = list
+                _isLoading.value = false
             }
         }
     }
 
     fun onPackageSelected(pkg: Package, isSelected: Boolean) {
-        val index = packageList.indexOf(pkg)
+        val index = _packageList.value.indexOf(pkg)
         if (index != -1) {
-            val updatedPackage = pkg.copy(selected = isSelected)
-            packageList[index] = updatedPackage
-            _isChanged = true
+            val updated = _packageList.value.toMutableList()
+            updated[index] = pkg.copy(selected = isSelected)
+            _packageList.value = updated
+            isChanged = true
             saveChanges()
         }
     }
 
     fun onSearchQueryChange(query: String) {
-        searchQuery = query
+        _searchQuery.value = query
     }
 
     fun onShowSystemAppsChange(show: Boolean) {
-        showSystemApps = show
+        _showSystemApps.value = show
     }
 
     fun onShowNoInternetAppsChange(show: Boolean) {
-        showNoInternetApps = show
+        _showNoInternetApps.value = show
     }
 
     fun onBypassSelectedAppsChange(bypass: Boolean) {
-        bypassSelectedApps = bypass
+        _bypassSelectedApps.value = bypass
         prefs.bypassSelectedApps = bypass
     }
 
     fun exportAppsToClipboard(context: Context) {
-        val selectedApps = packageList.filter { it.selected }.map { it.packageName }
-        val bypassMode = bypassSelectedApps.toString()
+        val selectedApps = _packageList.value.filter { it.selected }.map { it.packageName }
+        val bypassMode = bypassSelectedApps.value.toString()
         val exportString = (listOf(bypassMode) + selectedApps).joinToString("\n")
 
         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -161,12 +180,11 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                     if (newBypassMode != null) {
                         onBypassSelectedAppsChange(newBypassMode)
                         val importedPackageNames = lines.drop(1).toSet()
-                        val updatedPackageList = packageList.map { pkg ->
+                        val updatedPackageList = _packageList.value.map { pkg ->
                             pkg.copy(selected = importedPackageNames.contains(pkg.packageName))
                         }
-                        packageList.clear()
-                        packageList.addAll(updatedPackageList)
-                        _isChanged = true
+                        _packageList.value = updatedPackageList
+                        isChanged = true
                         saveChanges()
                         _uiEvent.trySend(AppListViewUiEvent.ShowSnackbar(context.getString(R.string.import_success)))
                     } else {
@@ -184,34 +202,34 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun saveChanges() {
-        if (_isChanged) {
+        if (isChanged) {
             viewModelScope.launch(Dispatchers.IO) {
                 val apps: MutableSet<String> = HashSet()
-                packageList.forEach { pkg ->
+                _packageList.value.forEach { pkg ->
                     if (pkg.selected) apps.add(pkg.packageName)
                 }
                 prefs.apps = apps
-                _isChanged = false
+                isChanged = false
             }
         }
     }
 
     fun selectAll() {
-        for (i in packageList.indices) {
-            val pkg = packageList[i]
+        _packageList.value = _packageList.value.map { pkg ->
             if (!pkg.selected) {
-                packageList[i] = pkg.copy(selected = true)
-                _isChanged = true
+                isChanged = true
+                pkg.copy(selected = true)
+            } else {
+                pkg
             }
         }
         saveChanges()
     }
 
     fun inverseSelection() {
-        for (i in packageList.indices) {
-            val pkg = packageList[i]
-            packageList[i] = pkg.copy(selected = !pkg.selected)
-            _isChanged = true
+        _packageList.value = _packageList.value.map { pkg ->
+            isChanged = true
+            pkg.copy(selected = !pkg.selected)
         }
         saveChanges()
     }
