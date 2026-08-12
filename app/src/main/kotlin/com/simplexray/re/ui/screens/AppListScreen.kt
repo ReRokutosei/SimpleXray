@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -52,6 +51,7 @@ import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
 import com.simplexray.re.viewmodel.AppListViewModel
 import com.simplexray.re.viewmodel.AppListViewUiEvent
@@ -83,13 +83,14 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 @OptIn(ExperimentalScrollBarApi::class)
 @Composable
 fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
-    val isLoading by remember { derivedStateOf { viewModel.isLoading } }
-    val searchQuery by remember { derivedStateOf { viewModel.searchQuery } }
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var isSearching by remember { mutableStateOf(false) }
-    val filteredList by remember { derivedStateOf { viewModel.filteredList } }
-    val showSystemApps by remember { derivedStateOf { viewModel.showSystemApps } }
-    val showNoInternetApps by remember { derivedStateOf { viewModel.showNoInternetApps } }
+    val filteredList by viewModel.filteredList.collectAsStateWithLifecycle()
+    val showSystemApps by viewModel.showSystemApps.collectAsStateWithLifecycle()
+    val showNoInternetApps by viewModel.showNoInternetApps.collectAsStateWithLifecycle()
+    val bypassSelectedApps by viewModel.bypassSelectedApps.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
     val lazyListState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
@@ -122,7 +123,7 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
         }
     }
 
-    val menuEntry = remember(showSystemApps, showNoInternetApps, viewModel.bypassSelectedApps) {
+    val menuEntry = remember(showSystemApps, showNoInternetApps, bypassSelectedApps) {
         DropdownEntry(
             items = listOf(
                 DropdownItem(
@@ -153,8 +154,8 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
                 ),
                 DropdownItem(
                     text = context.getString(R.string.bypass_selected_apps),
-                    selected = viewModel.bypassSelectedApps,
-                    onClick = { viewModel.onBypassSelectedAppsChange(!viewModel.bypassSelectedApps) }
+                    selected = bypassSelectedApps,
+                    onClick = { viewModel.onBypassSelectedAppsChange(!bypassSelectedApps) }
                 )
             )
         )
