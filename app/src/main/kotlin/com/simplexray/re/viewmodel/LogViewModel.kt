@@ -16,11 +16,13 @@ import com.simplexray.re.service.TProxyService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -42,8 +44,15 @@ class LogViewModel(application: Application) :
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
-    private val _filteredEntries = MutableStateFlow<List<String>>(emptyList())
-    val filteredEntries: StateFlow<List<String>> = _filteredEntries.asStateFlow()
+    val filteredEntries: StateFlow<List<String>> = combine(
+        logEntries,
+        searchQuery.debounce(300)
+    ) { logs, query ->
+        if (query.isBlank()) logs
+        else logs.filter { it.contains(query, ignoreCase = true) }
+    }
+        .flowOn(Dispatchers.Default)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun onSearchQueryChange(query: String) {
         _searchQuery.value = query
@@ -76,17 +85,6 @@ class LogViewModel(application: Application) :
             logEntries.collect { entries ->
                 _hasLogsToExport.value = entries.isNotEmpty() && logFileManager.logFile.exists()
             }
-        }
-        viewModelScope.launch {
-            combine(
-                logEntries,
-                searchQuery.debounce(300)
-            ) { logs, query ->
-                if (query.isBlank()) logs
-                else logs.filter { it.contains(query, ignoreCase = true) }
-            }
-                .flowOn(Dispatchers.Default)
-                .collect { _filteredEntries.value = it }
         }
     }
 
