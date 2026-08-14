@@ -24,6 +24,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -75,8 +77,9 @@ fun DashboardScreen(
         }
     }
 
-    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-    val isWideScreen = configuration.screenWidthDp >= 600
+    val isWideScreen = with(LocalDensity.current) {
+        LocalWindowInfo.current.containerSize.width >= 600.dp.roundToPx()
+    }
     val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
 
     Box(

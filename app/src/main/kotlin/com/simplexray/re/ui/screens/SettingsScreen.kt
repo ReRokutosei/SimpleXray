@@ -28,6 +28,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -238,8 +240,9 @@ fun SettingsScreen(
         )
     }
 
-    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-    val isWideScreen = configuration.screenWidthDp >= 600
+    val isWideScreen = with(LocalDensity.current) {
+        LocalWindowInfo.current.containerSize.width >= 600.dp.roundToPx()
+    }
     val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
 
     androidx.compose.foundation.layout.Box(
