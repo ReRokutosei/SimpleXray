@@ -9,10 +9,12 @@ import android.graphics.Canvas
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.util.TypedValue
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -23,6 +25,7 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.graphics.createBitmap
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
@@ -55,13 +58,23 @@ class MainActivity : ComponentActivity() {
      */
     private fun updateTaskDescription() {
         val iconRes = appIconRes(mainViewModel.prefs.appIcon)
-        val drawable = getDrawable(iconRes) ?: return
+        val drawable = AppCompatResources.getDrawable(this, iconRes) ?: return
         val sizePx = (108 * resources.displayMetrics.density).toInt()
-        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(sizePx, sizePx)
         val canvas = Canvas(bitmap)
         drawable.setBounds(0, 0, sizePx, sizePx)
         drawable.draw(canvas)
-        setTaskDescription(ActivityManager.TaskDescription(getString(R.string.app_name), bitmap))
+        val outValue = TypedValue()
+        if (theme.resolveAttribute(android.R.attr.colorPrimary, outValue, true)) {
+            // Mask alpha: TaskDescription colorPrimary must be an opaque RGB.
+            setTaskDescription(
+                ActivityManager.TaskDescription(getString(R.string.app_name), bitmap, outValue.data and 0xFFFFFF)
+            )
+        } else {
+            setTaskDescription(
+                ActivityManager.TaskDescription(getString(R.string.app_name), bitmap, 0)
+            )
+        }
     }
 
     private fun appIconRes(key: String?): Int = when (key) {

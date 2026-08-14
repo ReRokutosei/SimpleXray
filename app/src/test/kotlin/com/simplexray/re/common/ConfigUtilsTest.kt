@@ -83,4 +83,52 @@ class ConfigUtilsTest {
         assertFalse(log.has("error"))
         assertEquals("info", log.getString("loglevel"))
     }
+
+    @Test
+    fun testExtractOutboundsExcludesNonProxyProtocols() {
+        val rawConfig = """
+        {
+          "outbounds": [
+            { "tag": "proxy-1", "protocol": "vless" },
+            { "tag": "direct", "protocol": "freedom" },
+            { "tag": "black", "protocol": "blackhole" },
+            { "tag": "dns-out", "protocol": "dns" },
+            { "tag": "proxy-2", "protocol": "VMess" }
+          ]
+        }
+        """.trimIndent()
+
+        val outbounds = ConfigUtils.extractOutbounds(rawConfig)
+
+        assertEquals(2, outbounds.size)
+        assertEquals("proxy-1", outbounds[0].tag)
+        assertEquals("vless", outbounds[0].protocol)
+        assertEquals("proxy-2", outbounds[1].tag)
+        assertEquals("vmess", outbounds[1].protocol)
+    }
+
+    @Test
+    fun testExtractOutboundsHandlesInvalidInput() {
+        assertTrue(ConfigUtils.extractOutbounds("not json").isEmpty())
+        assertTrue(ConfigUtils.extractOutbounds("{}").isEmpty())
+        assertTrue(ConfigUtils.extractOutbounds("").isEmpty())
+    }
+
+    @Test
+    fun testExtractOutboundsSkipsOutboundWithoutTag() {
+        val rawConfig = """
+        {
+          "outbounds": [
+            { "protocol": "vless" },
+            { "tag": "ok", "protocol": "trojan" }
+          ]
+        }
+        """.trimIndent()
+
+        val outbounds = ConfigUtils.extractOutbounds(rawConfig)
+
+        assertEquals(1, outbounds.size)
+        assertEquals("ok", outbounds[0].tag)
+        assertEquals("trojan", outbounds[0].protocol)
+    }
 }

@@ -480,7 +480,7 @@ class FileManager(private val application: Application, private val prefs: Prefe
                 val fileName = getDatFileNameFromUri(context, uri)
                 // Defense: standard GEO file names (case-insensitive) must not be
                 // imported through the third-party dat path.
-                if (isStandardGeoDat(fileName)) {
+                if (FileManager.isStandardGeoDat(fileName)) {
                     Log.w(TAG, "Rejected import of standard GEO file via custom dat path: $fileName")
                     return@withContext null
                 }
@@ -534,17 +534,7 @@ class FileManager(private val application: Application, private val prefs: Prefe
         return name
     }
 
-    /**
-     * True when [fileName] collides (case-insensitively) with the built-in standard
-     * GEO resources, which must only be replaced via the dedicated top section.
-     */
-    fun isStandardGeoDat(fileName: String): Boolean {
-        val lower = fileName.lowercase()
-        return lower == "geoip.dat" || lower == "geosite.dat"
-    }
-
-    suspend fun importConfigFileFromUri(context: Context, uri: Uri): String? {
-        return withContext(Dispatchers.IO) {
+    suspend fun importConfigFileFromUri(context: Context, uri: Uri): String? {        return withContext(Dispatchers.IO) {
             try {
                 var fileName = sanitizeFileName(
                     getFileNameFromUri(context, uri) ?: "imported_config.json",
@@ -605,5 +595,15 @@ class FileManager(private val application: Application, private val prefs: Prefe
 
     companion object {
         const val TAG = "FileManager"
+
+        /**
+         * True when [fileName] collides (case-insensitively) with the built-in
+         * standard GEO resources, which must only be replaced via the dedicated
+         * top section.
+         */
+        fun isStandardGeoDat(fileName: String): Boolean {
+            val lower = fileName.lowercase()
+            return lower == "geoip.dat" || lower == "geosite.dat"
+        }
     }
 }

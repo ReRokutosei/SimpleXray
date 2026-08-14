@@ -1081,7 +1081,7 @@ class MainViewModel(application: Application) :
     fun downloadRuleFile(url: String, fileName: String) {
         // Normalize standard GEO file names (case-insensitive) so e.g. "GEOIP.dat"
         // always targets the built-in geoip.dat instead of an orphan custom file.
-        val targetName = if (fileManager.isStandardGeoDat(fileName)) fileName.lowercase() else fileName
+        val targetName = if (FileManager.isStandardGeoDat(fileName)) fileName.lowercase() else fileName
         val isStandard = targetName == "geoip.dat" || targetName == "geosite.dat"
         val currentJob = if (isStandard) {
             if (targetName == "geoip.dat") geoipDownloadJob else geositeDownloadJob
@@ -1252,7 +1252,7 @@ class MainViewModel(application: Application) :
         viewModelScope.launch(Dispatchers.IO) {
             // Defense: reject standard GEO file names (case-insensitive) before importing.
             val candidateName = fileManager.getDatFileNameFromUri(application, uri)
-            if (fileManager.isStandardGeoDat(candidateName)) {
+            if (FileManager.isStandardGeoDat(candidateName)) {
                 _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.standard_geo_file_rejected)))
                 return@launch
             }
@@ -1281,7 +1281,7 @@ class MainViewModel(application: Application) :
             _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.invalid_dat_url)))
             return
         }
-        if (fileManager.isStandardGeoDat(fileName)) {
+        if (FileManager.isStandardGeoDat(fileName)) {
             _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.standard_geo_file_rejected)))
             return
         }
