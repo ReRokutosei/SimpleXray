@@ -562,27 +562,6 @@ fun SettingsScreen(
         }
 
         item {
-            SmallTitle(text = stringResource(R.string.connectivity_test))
-            Card(modifier = Modifier.fillMaxWidth()) {
-                EditableListItemWithMiuixBottomSheet(
-                    headline = stringResource(R.string.connectivity_test_target),
-                    currentValue = settingsState.connectivityTestTarget.value,
-                    onValueConfirmed = { newValue -> mainViewModel.updateConnectivityTestTarget(newValue) },
-                    label = stringResource(R.string.connectivity_test_target),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)
-                )
-
-                EditableListItemWithMiuixBottomSheet(
-                    headline = stringResource(R.string.connectivity_test_timeout),
-                    currentValue = settingsState.connectivityTestTimeout.value,
-                    onValueConfirmed = { newValue -> mainViewModel.updateConnectivityTestTimeout(newValue) },
-                    label = stringResource(R.string.connectivity_test_timeout),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-            }
-        }
-
-        item {
             SmallTitle(text = stringResource(R.string.about))
             Card(modifier = Modifier.fillMaxWidth()) {
                 BasicComponent(

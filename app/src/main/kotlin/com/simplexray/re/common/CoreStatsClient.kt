@@ -19,7 +19,7 @@ class CoreStatsClient(private val channel: ManagedChannel) : Closeable {
     suspend fun getSystemStats(): SysStatsResponse? = withContext(Dispatchers.IO) {
         runCatching {
             val request = SysStatsRequest.newBuilder().build()
-            blockingStub.getSysStats(request)
+            blockingStub.withDeadlineAfter(2, TimeUnit.SECONDS).getSysStats(request)
         }.getOrNull()
     }
 
@@ -29,7 +29,9 @@ class CoreStatsClient(private val channel: ManagedChannel) : Closeable {
             .setReset(false)
             .build()
 
-        runCatching { blockingStub.queryStats(request) }
+        runCatching {
+            blockingStub.withDeadlineAfter(2, TimeUnit.SECONDS).queryStats(request)
+        }
             .getOrNull()
             ?.statList
             ?.groupBy {

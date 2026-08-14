@@ -104,6 +104,8 @@ android {
             minifyEnabled = false
             signingConfig = (signingConfigs.release.storeFile != null && signingConfigs.release.storeFile.exists()) ? signingConfigs.release : signingConfigs.debug
             debuggable = true
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
         }
     }
 

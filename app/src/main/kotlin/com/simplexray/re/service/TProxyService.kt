@@ -22,12 +22,14 @@ import com.simplexray.re.R
 import com.simplexray.re.activity.MainActivity
 import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.ConfigUtils.extractPortsFromJson
+import com.simplexray.re.common.CoreStatsClient
 import com.simplexray.re.data.source.LogFileManager
 import com.simplexray.re.prefs.Preferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.File
@@ -86,6 +88,7 @@ class TProxyService : VpnService() {
     @Volatile
     private var xrayProcess: Process? = null
 private var isStopping = false
+@Volatile
 private var xrayStarted = false
 private var xrayStartAttempt = 0
     private var tunFd: ParcelFileDescriptor? = null
@@ -234,6 +237,38 @@ private var xrayStartAttempt = 0
                 os.flush()
             }
 
+            // Startup detection must not rely on stdout text: with
+            // "loglevel": "none" xray prints nothing, so a text-based "started"
+            // match never fires and the UI never learns the core is up. Probe the
+            // injected StatsService gRPC API instead — reachable API == ready,
+            // independent of log level.
+            serviceScope.launch {
+                // Capture this attempt's process: on retry xrayProcess points at a
+                // newer process, and a stale probe must not claim success for it.
+                val probeProcess = currentProcess
+                val client = CoreStatsClient.create("127.0.0.1", prefs.apiPort)
+                try {
+                    val deadline = System.currentTimeMillis() + STARTUP_PROBE_TIMEOUT_MS
+                    while (!xrayStarted &&
+                        probeProcess?.isAlive == true &&
+                        System.currentTimeMillis() < deadline
+                    ) {
+                        if (client.getSystemStats() != null) {
+                            xrayStarted = true
+                            xrayStartAttempt = 0
+                            Log.d(TAG, "Xray core ready (gRPC API reachable), broadcasting ACTION_START.")
+                            val successIntent = Intent(ACTION_START)
+                            successIntent.setPackage(application.packageName)
+                            sendBroadcast(successIntent)
+                            break
+                        }
+                        delay(STARTUP_PROBE_INTERVAL_MS)
+                    }
+                } finally {
+                    client.close()
+                }
+            }
+
             val reader = BufferedReader(InputStreamReader(currentProcess.inputStream))
             Log.d(TAG, "Reading native Xray process log stream.")
             var line = reader.readLine()
@@ -244,14 +279,6 @@ private var xrayStartAttempt = 0
                 // the log view is consistent (same approach as v2rayNG/MikuRay,
                 // which stamp logs on the app side).
                 val stampedLine = stampLogLine(line)
-                if (!xrayStarted && line.contains("Xray") && line.contains("started")) {
-                    xrayStarted = true
-                    xrayStartAttempt = 0
-                    Log.d(TAG, "Xray core started detected! Broadcasting ACTION_START to UI.")
-                    val successIntent = Intent(ACTION_START)
-                    successIntent.setPackage(application.packageName)
-                    sendBroadcast(successIntent)
-                }
                 logFileManager.appendLog(stampedLine)
                 synchronized(logBroadcastBuffer) {
                     logBroadcastBuffer.add(stampedLine)
@@ -453,12 +480,24 @@ private var xrayStartAttempt = 0
         )
         val notification = NotificationCompat.Builder(this, channelName)
         val notify = notification.setContentTitle(getString(R.string.app_name))
-            .setSmallIcon(R.mipmap.ic_launcher_lineal_foreground).setContentIntent(pi).build()
+            .setSmallIcon(smallIconRes()).setContentIntent(pi).build()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(1, notify)
         } else {
             startForeground(1, notify, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         }
+    }
+
+    /**
+     * Notification small icon follows the launcher icon preference. Note: only
+     * "lineal" is a true single-color icon; the colored styles render as a dark
+     * silhouette in the status bar (the system tints the alpha channel).
+     */
+    private fun smallIconRes(): Int = when (Preferences(this).appIcon) {
+        "flat" -> R.mipmap.ic_launcher_flat_foreground
+        "lineal" -> R.mipmap.ic_launcher_lineal_foreground
+        "lineal_color" -> R.mipmap.ic_launcher_lineal_color_foreground
+        else -> R.mipmap.ic_launcher_origin_foreground
     }
 
     private fun exit() {
@@ -493,6 +532,8 @@ private var xrayStartAttempt = 0
         private const val TAG = "TProxyService"
         private const val BROADCAST_DELAY_MS: Long = 3000
         private const val MAX_START_ATTEMPTS = 2
+        private const val STARTUP_PROBE_TIMEOUT_MS: Long = 15000
+        private const val STARTUP_PROBE_INTERVAL_MS: Long = 500
         private val GO_LOG_TIMESTAMP_PREFIX = Regex("""^\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}(\.\d+)? """)
         private val logTimestampFormat = SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS", Locale.US)
 
