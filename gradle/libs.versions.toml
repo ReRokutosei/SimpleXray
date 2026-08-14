@@ -17,6 +17,8 @@ navigationevent = "1.1.2"
 lazyColumnScrollbar = "2.2.0"
 reorderable = "3.1.0"
 okhttp = "4.12.0"
+junit = "4.13.2"
+orgJson = "20231013"
 
 [libraries]
 # Plugins for buildscript
@@ -57,6 +59,8 @@ lazycolumnscrollbar = { module = "com.github.nanihadesuka:LazyColumnScrollbar", 
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 yaml = { module = "org.yaml:snakeyaml", version = "2.2" }
+junit = { module = "junit:junit", version.ref = "junit" }
+org-json = { module = "org.json:json", version.ref = "orgJson" }
 
 # MIUIX Components
 miuix-ui = { module = "top.yukonga.miuix.kmp:miuix-ui" }
