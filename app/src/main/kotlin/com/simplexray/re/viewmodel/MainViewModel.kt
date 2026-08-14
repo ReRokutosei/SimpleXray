@@ -67,11 +67,14 @@ private const val TAG = "MainViewModel"
 
 private const val APP_ICON_DEFAULT = "origin"
 private val APP_ICON_OPTIONS = listOf("flat", "lineal", "lineal_color", "origin")
+// Full component class names: manifest relative names (".MainActivityFlat") are
+// resolved against the namespace (com.simplexray.re), NOT the applicationId —
+// the debug build has applicationIdSuffix ".debug" and must keep working.
 private val APP_ICON_ALIASES = listOf(
-    "flat" to "MainActivityFlat",
-    "lineal" to "MainActivityLineal",
-    "lineal_color" to "MainActivityLinealColor",
-    "origin" to "MainActivityOrigin"
+    "flat" to "com.simplexray.re.MainActivityFlat",
+    "lineal" to "com.simplexray.re.MainActivityLineal",
+    "lineal_color" to "com.simplexray.re.MainActivityLinealColor",
+    "origin" to "com.simplexray.re.MainActivityOrigin"
 )
 
 sealed class MainViewUiEvent {
@@ -356,7 +359,10 @@ class MainViewModel(application: Application) :
     private fun applyAppIcon(key: String) {
         val pm = application.packageManager
         APP_ICON_ALIASES.forEach { (option, className) ->
-            val component = ComponentName(application, "${application.packageName}.$className")
+            // packageName here is the applicationId (may carry the ".debug"
+            // suffix); className is the full component name (namespace-based),
+            // which is what the merged manifest actually declares.
+            val component = ComponentName(application.packageName, className)
             val targetState = if (option == key) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
             else PackageManager.COMPONENT_ENABLED_STATE_DISABLED
             if (pm.getComponentEnabledSetting(component) != targetState) {

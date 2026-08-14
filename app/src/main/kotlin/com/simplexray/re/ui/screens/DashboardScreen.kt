@@ -111,42 +111,6 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
-            if (outboundNodes.isNotEmpty()) {
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        SmallTitle(
-                            text = stringResource(id = R.string.outbound_nodes),
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(
-                            onClick = { mainViewModel.refreshLatency() },
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = stringResource(R.string.refresh_latency),
-                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-                items(outboundNodes, key = { it.tag }) { node ->
-                    OutboundNodeCard(
-                        node = node,
-                        latency = outboundLatency[node.tag],
-                        serviceEnabled = isServiceEnabled
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-                item {
-                    Spacer(modifier = Modifier.height(12.dp))
-                }
-            }
-
             item {
                 SmallTitle(text = stringResource(id = R.string.core_runtime_status))
                 Card(modifier = Modifier.fillMaxWidth()) {
@@ -201,6 +165,42 @@ fun DashboardScreen(
                             fontSize = MiuixTheme.textStyles.body1.fontSize
                         )
                     }
+                }
+            }
+
+            if (outboundNodes.isNotEmpty()) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SmallTitle(
+                            text = stringResource(id = R.string.outbound_nodes),
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(
+                            onClick = { mainViewModel.refreshLatency() },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = stringResource(R.string.refresh_latency),
+                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                items(outboundNodes, key = { it.tag }) { node ->
+                    OutboundNodeCard(
+                        node = node,
+                        latency = outboundLatency[node.tag],
+                        serviceEnabled = isServiceEnabled
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                item {
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
             }
         }
