@@ -9,7 +9,6 @@ import android.graphics.Canvas
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
-import android.util.TypedValue
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -55,7 +54,13 @@ class MainActivity : ComponentActivity() {
      * to the recents card via TaskDescription. The launcher icon itself is
      * switched through activity-alias; recents/notifications read the app icon
      * statically, so this keeps them in sync at runtime.
+     *
+     * Uses the two-arg ctor on purpose: colorPrimary stays 0 (unset), which
+     * skips TaskDescription's "primary color should be opaque" check (a theme-
+     * resolved color crashes on dynamic-color devices). TaskDescription.Builder
+     * is not portable either — its setIcon() only exists from API 37.
      */
+    @Suppress("DEPRECATION")
     private fun updateTaskDescription() {
         val iconRes = appIconRes(mainViewModel.prefs.appIcon)
         val drawable = AppCompatResources.getDrawable(this, iconRes) ?: return
@@ -64,17 +69,9 @@ class MainActivity : ComponentActivity() {
         val canvas = Canvas(bitmap)
         drawable.setBounds(0, 0, sizePx, sizePx)
         drawable.draw(canvas)
-        val outValue = TypedValue()
-        if (theme.resolveAttribute(android.R.attr.colorPrimary, outValue, true)) {
-            // Mask alpha: TaskDescription colorPrimary must be an opaque RGB.
-            setTaskDescription(
-                ActivityManager.TaskDescription(getString(R.string.app_name), bitmap, outValue.data and 0xFFFFFF)
-            )
-        } else {
-            setTaskDescription(
-                ActivityManager.TaskDescription(getString(R.string.app_name), bitmap, 0)
-            )
-        }
+        setTaskDescription(
+            ActivityManager.TaskDescription(getString(R.string.app_name), bitmap)
+        )
     }
 
     private fun appIconRes(key: String?): Int = when (key) {
