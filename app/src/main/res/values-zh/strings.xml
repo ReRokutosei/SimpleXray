@@ -89,7 +89,6 @@
     <string name="icon_flat">Flat</string>
     <string name="icon_lineal">Lineal</string>
     <string name="icon_lineal_color">Lineal Color</string>
-    <string name="icon_origin">Origin</string>
 
     <!-- 仪表盘与统计 -->
     <string name="core_stats_title">状态</string>

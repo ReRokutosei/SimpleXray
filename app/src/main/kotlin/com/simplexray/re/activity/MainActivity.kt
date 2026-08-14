@@ -77,8 +77,7 @@ class MainActivity : ComponentActivity() {
     private fun appIconRes(key: String?): Int = when (key) {
         "flat" -> R.mipmap.ic_launcher_flat
         "lineal" -> R.mipmap.ic_launcher_lineal
-        "lineal_color" -> R.mipmap.ic_launcher_lineal_color
-        else -> R.mipmap.ic_launcher_origin
+        else -> R.mipmap.ic_launcher_lineal_color
     }
 
     private fun initView() {

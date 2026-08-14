@@ -65,16 +65,15 @@ import kotlin.coroutines.cancellation.CancellationException
 
 private const val TAG = "MainViewModel"
 
-private const val APP_ICON_DEFAULT = "origin"
-private val APP_ICON_OPTIONS = listOf("flat", "lineal", "lineal_color", "origin")
+private const val APP_ICON_DEFAULT = "lineal"
+private val APP_ICON_OPTIONS = listOf("flat", "lineal", "lineal_color")
 // Full component class names: manifest relative names (".MainActivityFlat") are
 // resolved against the namespace (com.simplexray.re), NOT the applicationId —
 // the debug build has applicationIdSuffix ".debug" and must keep working.
 private val APP_ICON_ALIASES = listOf(
     "flat" to "com.simplexray.re.MainActivityFlat",
     "lineal" to "com.simplexray.re.MainActivityLineal",
-    "lineal_color" to "com.simplexray.re.MainActivityLinealColor",
-    "origin" to "com.simplexray.re.MainActivityOrigin"
+    "lineal_color" to "com.simplexray.re.MainActivityLinealColor"
 )
 
 sealed class MainViewUiEvent {

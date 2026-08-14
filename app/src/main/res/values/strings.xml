@@ -94,7 +94,6 @@
     <string name="icon_flat">Flat</string>
     <string name="icon_lineal">Lineal</string>
     <string name="icon_lineal_color">Lineal Color</string>
-    <string name="icon_origin">Origin</string>
 
     <!-- Core Stats & Dashboard -->
     <string name="core_stats_title">Dashboard</string>
