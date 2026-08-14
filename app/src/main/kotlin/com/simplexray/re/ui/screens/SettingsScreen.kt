@@ -99,9 +99,10 @@ fun SettingsScreen(
     val iconOptions = listOf(
         stringResource(R.string.icon_flat),
         stringResource(R.string.icon_lineal),
-        stringResource(R.string.icon_lineal_color)
+        stringResource(R.string.icon_lineal_color),
+        stringResource(R.string.icon_origin)
     )
-    val iconKeys = listOf("flat", "lineal", "lineal_color")
+    val iconKeys = listOf("flat", "lineal", "lineal_color", "origin")
 
     val geoipUrlDefault = stringResource(R.string.geoip_url)
     val geositeUrlDefault = stringResource(R.string.geosite_url)

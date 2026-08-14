@@ -453,7 +453,7 @@ private var xrayStartAttempt = 0
         )
         val notification = NotificationCompat.Builder(this, channelName)
         val notify = notification.setContentTitle(getString(R.string.app_name))
-            .setSmallIcon(R.drawable.ic_stat_name).setContentIntent(pi).build()
+            .setSmallIcon(R.mipmap.ic_launcher_lineal_foreground).setContentIntent(pi).build()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(1, notify)
         } else {

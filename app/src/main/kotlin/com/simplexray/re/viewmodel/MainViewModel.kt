@@ -65,12 +65,13 @@ import kotlin.coroutines.cancellation.CancellationException
 
 private const val TAG = "MainViewModel"
 
-private const val APP_ICON_DEFAULT = "flat"
-private val APP_ICON_OPTIONS = listOf("flat", "lineal", "lineal_color")
+private const val APP_ICON_DEFAULT = "origin"
+private val APP_ICON_OPTIONS = listOf("flat", "lineal", "lineal_color", "origin")
 private val APP_ICON_ALIASES = listOf(
     "flat" to "MainActivityFlat",
     "lineal" to "MainActivityLineal",
-    "lineal_color" to "MainActivityLinealColor"
+    "lineal_color" to "MainActivityLinealColor",
+    "origin" to "MainActivityOrigin"
 )
 
 sealed class MainViewUiEvent {
