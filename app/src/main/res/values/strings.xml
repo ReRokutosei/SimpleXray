@@ -155,6 +155,7 @@
     <string name="invalid_port_range">Port number must be between 1024 and 65535</string>
     <string name="invalid_timeout">Please enter a valid timeout (positive integer)</string>
     <string name="import_failed">Import failed: No config found on clipboard</string>
+    <string name="core_start_failed">Core failed to start, please check the logs</string>
     <string name="import_success">import successful</string>
     <string name="import_invalid_format">Invalid import format</string>
     <string name="no_log_entries">No log entries</string>

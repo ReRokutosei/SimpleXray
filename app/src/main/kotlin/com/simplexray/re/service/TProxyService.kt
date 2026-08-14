@@ -82,6 +82,9 @@ class TProxyService : VpnService() {
 
     @Volatile
     private var xrayProcess: Process? = null
+private var isStopping = false
+private var xrayStarted = false
+private var xrayStartAttempt = 0
     private var tunFd: ParcelFileDescriptor? = null
 
     @Volatile
@@ -109,6 +112,7 @@ class TProxyService : VpnService() {
                     Log.d(TAG, "Received RELOAD_CONFIG action (core-only mode)")
                     reloadingRequested = true
                     xrayProcess?.destroy()
+                    xrayProcess = null
                     serviceScope.launch { runXrayProcess() }
                     return START_NOT_STICKY
                 }
@@ -119,6 +123,7 @@ class TProxyService : VpnService() {
                 Log.d(TAG, "Received RELOAD_CONFIG action.")
                 reloadingRequested = true
                 xrayProcess?.destroy()
+                xrayProcess = null
                 serviceScope.launch { runXrayProcess() }
                 return START_NOT_STICKY
             }
@@ -127,6 +132,8 @@ class TProxyService : VpnService() {
                 logFileManager.clearLogs()
                 val prefs = Preferences(this)
                 if (prefs.disableVpn) {
+                    isStopping = false
+                    xrayStartAttempt = 0
                     serviceScope.launch { runXrayProcess() }
                     val successIntent = Intent(ACTION_START)
                     successIntent.setPackage(application.packageName)
@@ -175,12 +182,16 @@ class TProxyService : VpnService() {
     }
 
     private fun startXray() {
+        isStopping = false
+        xrayStartAttempt = 0
         startService()
         serviceScope.launch { runXrayProcess() }
     }
 
     private fun runXrayProcess() {
+        xrayStarted = false
         var stdoutPfd: ParcelFileDescriptor? = null
+        var currentProcess: Process? = null
 
         try {
             Log.d(TAG, "Attempting to start native Xray process with TUN fd & UDS API.")
@@ -211,7 +222,7 @@ class TProxyService : VpnService() {
             Log.d(TAG, "Injected final config (${finalConfigContent.length} chars) ready for stdin ($format)")
 
             val processBuilder = getProcessBuilder(xrayPath)
-            val currentProcess = processBuilder.start()
+            currentProcess = processBuilder.start()
             this.xrayProcess = currentProcess
             Log.d(TAG, "Xray child process started successfully via ProcessBuilder.")
 
@@ -223,11 +234,11 @@ class TProxyService : VpnService() {
             val reader = BufferedReader(InputStreamReader(currentProcess.inputStream))
             Log.d(TAG, "Reading native Xray process log stream.")
             var line = reader.readLine()
-            var hasBroadcastedStarted = false
             while (line != null) {
                 Log.d(TAG, "XrayLog: $line")
-                if (!hasBroadcastedStarted && line.contains("Xray") && line.contains("started")) {
-                    hasBroadcastedStarted = true
+                if (!xrayStarted && line.contains("Xray") && line.contains("started")) {
+                    xrayStarted = true
+                    xrayStartAttempt = 0
                     Log.d(TAG, "Xray core started detected! Broadcasting ACTION_START to UI.")
                     val successIntent = Intent(ACTION_START)
                     successIntent.setPackage(application.packageName)
@@ -243,11 +254,47 @@ class TProxyService : VpnService() {
                 line = reader.readLine()
             }
             Log.d(TAG, "Native Xray process log stream finished.")
+            currentProcess?.let { onXrayProcessExited(it) }
         } catch (e: Exception) {
             Log.e(TAG, "Error executing native Xray", e)
+            currentProcess?.let { onXrayProcessExited(it) }
         } finally {
             stdoutPfd?.close()
             Log.d(TAG, "Native Xray process task finished.")
+        }
+    }
+
+    /**
+     * Handles an xray process exit. Intentional stops (stopXray) and processes
+     * superseded by a reload/new start are ignored. Otherwise: a process that
+     * never reported "started" is retried once; repeated failure stops the
+     * service and broadcasts ACTION_STOP so the UI returns to the stopped
+     * state.
+     */
+    private fun onXrayProcessExited(myProcess: Process) {
+        if (isStopping) {
+            Log.d(TAG, "Xray process exited after intentional stop, ignoring.")
+            return
+        }
+        if (myProcess !== xrayProcess) {
+            Log.d(TAG, "Xray process superseded by a newer one, ignoring.")
+            return
+        }
+        if (xrayStarted) {
+            Log.e(TAG, "Xray process exited unexpectedly, stopping service.")
+            exit()
+            return
+        }
+        if (xrayStartAttempt < MAX_START_ATTEMPTS) {
+            xrayStartAttempt++
+            Log.w(TAG, "Xray failed to start, retrying (attempt $xrayStartAttempt/$MAX_START_ATTEMPTS).")
+            serviceScope.launch { runXrayProcess() }
+        } else {
+            Log.e(TAG, "Xray failed to start after $MAX_START_ATTEMPTS attempts, stopping service.")
+            val failIntent = Intent(ACTION_START_FAILED)
+            failIntent.setPackage(application.packageName)
+            sendBroadcast(failIntent)
+            exit()
         }
     }
 
@@ -263,6 +310,7 @@ class TProxyService : VpnService() {
     }
 
     private fun stopXray() {
+        isStopping = true
         Log.d(TAG, "stopXray called with keepExecutorAlive=" + false)
         serviceScope.cancel()
         Log.d(TAG, "CoroutineScope cancelled.")
@@ -420,11 +468,13 @@ class TProxyService : VpnService() {
         const val ACTION_DISCONNECT: String = "com.simplexray.re.DISCONNECT"
         const val ACTION_START: String = "com.simplexray.re.START"
         const val ACTION_STOP: String = "com.simplexray.re.STOP"
+        const val ACTION_START_FAILED: String = "com.simplexray.re.START_FAILED"
         const val ACTION_LOG_UPDATE: String = "com.simplexray.re.LOG_UPDATE"
         const val ACTION_RELOAD_CONFIG: String = "com.simplexray.re.RELOAD_CONFIG"
         const val EXTRA_LOG_DATA: String = "log_data"
         private const val TAG = "TProxyService"
         private const val BROADCAST_DELAY_MS: Long = 3000
+        private const val MAX_START_ATTEMPTS = 2
 
         init {
             try {
