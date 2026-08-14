@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.1.0](https://github.com/ReRokutosei/SimpleXray/compare/v1.0.0...v1.1.0) (2026-08-14)
+
+
+### Features
+
+* **dashboard:** show outbound nodes with latency ([191342a](https://github.com/ReRokutosei/SimpleXray/commit/191342a3c261330208bc8b7f083e35a21aa31f41))
+* **ui:** add Origin icon as default, recents icon follows selection, lineal notification icon ([1164e18](https://github.com/ReRokutosei/SimpleXray/commit/1164e18f02a3a7f98edda80b580d8cbdd6cf4b46))
+* **ui:** add runtime-switchable app icons ([c7c89f1](https://github.com/ReRokutosei/SimpleXray/commit/c7c89f179804c5b037542387787dc7ea40fba0c6))
+* **ui:** hide log page when log level is none ([56409e7](https://github.com/ReRokutosei/SimpleXray/commit/56409e7417d3eb64cb8da34056b6800d39e31e18))
+* **ui:** move app icon picker into General section as dropdown ([222a072](https://github.com/ReRokutosei/SimpleXray/commit/222a072b775f9ed6cf1ba180133eb7277a394049))
+
+
+### Bug Fixes
+
+* **config:** do not switch config on import while service is running ([40dc2fb](https://github.com/ReRokutosei/SimpleXray/commit/40dc2fbf43e354d4c5a97c0951f378ee11c34f13))
+* **deps:** update dependency androidx.compose:compose-bom to v2025.12.01 ([#6](https://github.com/ReRokutosei/SimpleXray/issues/6)) ([cb007fc](https://github.com/ReRokutosei/SimpleXray/commit/cb007fca6d3d45c6a9b5d1260d33c55564573157))
+* **deps:** update dependency androidx.navigation:navigation-compose-android to v2.9.8 ([#1](https://github.com/ReRokutosei/SimpleXray/issues/1)) ([6afc06e](https://github.com/ReRokutosei/SimpleXray/commit/6afc06ec9203d1e21b80e1a09a0de1c3bdc65649))
+* **deps:** update dependency com.google.protobuf:protoc to v3.25.9 ([#2](https://github.com/ReRokutosei/SimpleXray/issues/2)) ([6243c79](https://github.com/ReRokutosei/SimpleXray/commit/6243c79ec90f8a553fa29730f602212a258f1d4e))
+* **import:** sanitize file names from content URIs ([99f8f56](https://github.com/ReRokutosei/SimpleXray/commit/99f8f56b6d83f2ac913fddf169627b6a72da5874))
+* **security:** skip private-address pings, redact config logs ([bdc8ce1](https://github.com/ReRokutosei/SimpleXray/commit/bdc8ce18a20a1ea63e8f54753b15a0a9d01062d0))
+* **service:** retry xray start once and stop on repeated failure ([d30dc15](https://github.com/ReRokutosei/SimpleXray/commit/d30dc1552ac00a95bafec8d293f38b0689722960))
+* **service:** stamp xray logs with device-local time ([d59d2db](https://github.com/ReRokutosei/SimpleXray/commit/d59d2dbcbfb39789e3e79f7ef324af6ec0654f75))
+* **ui:** keep config editor snackbar above system nav bar ([1c40f06](https://github.com/ReRokutosei/SimpleXray/commit/1c40f0634b670b25c99b6c12a94e397929246ad1))
+* **ui:** record random app icon on first launch without touching component states ([2c2aa5f](https://github.com/ReRokutosei/SimpleXray/commit/2c2aa5fc4ab8b05aee5f2f8914a3f328ce9f039a))
+* **ui:** show snackbar on AppListScreen ([cac2272](https://github.com/ReRokutosei/SimpleXray/commit/cac2272f16ab7016ab3c38126cbd497eeefff4eb))
+
 ## 1.0.0 (2026-08-11)
 
 
