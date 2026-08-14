@@ -474,24 +474,6 @@ private var xrayStartAttempt = 0
 
     @Suppress("SameParameterValue")
     private fun createNotification(channelName: String) {
-        // [DEBUG-ICON] Temporary diagnostics for notification small icon
-        // investigation; remove after confirming which resource is rendered.
-        val iconId = R.drawable.ic_stat_lineal
-        Log.d(TAG, "DEBUG-ICON createNotification channel=$channelName")
-        Log.d(
-            TAG,
-            "DEBUG-ICON smallIcon resId=0x${Integer.toHexString(iconId)} " +
-                "entry=${resources.getResourceEntryName(iconId)} type=${resources.getResourceTypeName(iconId)}"
-        )
-        val iconDrawable = resources.getDrawable(iconId, null)
-        Log.d(
-            TAG,
-            "DEBUG-ICON smallIcon drawable=${iconDrawable::class.simpleName} " +
-                "intrinsic=${iconDrawable.intrinsicWidth}x${iconDrawable.intrinsicHeight}"
-        )
-        Log.d(TAG, "DEBUG-ICON prefs.appIcon=${Preferences(this).appIcon}")
-        // [/DEBUG-ICON]
-
         val i = Intent(this, MainActivity::class.java)
         val pi = PendingIntent.getActivity(
             this, 0, i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
