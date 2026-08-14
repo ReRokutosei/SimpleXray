@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
@@ -97,8 +99,9 @@ fun AppScaffold(
         }
     }
 
-    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-    val isWideScreen = configuration.screenWidthDp >= 600
+    val isWideScreen = with(LocalDensity.current) {
+        LocalWindowInfo.current.containerSize.width >= 600.dp.roundToPx()
+    }
 
     val topBarContent: @Composable () -> Unit = {
         AppTopAppBar(

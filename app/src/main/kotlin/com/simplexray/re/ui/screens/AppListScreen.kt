@@ -45,6 +45,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
@@ -232,8 +234,9 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
         snackbarHost = { SnackbarHost(state = snackbarHostState) },
         contentWindowInsets = WindowInsets(0)
     ) { paddingValues ->
-        val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-        val isWideScreen = configuration.screenWidthDp >= 600
+        val isWideScreen = with(LocalDensity.current) {
+            LocalWindowInfo.current.containerSize.width >= 600.dp.roundToPx()
+        }
 
     Box(
         modifier = Modifier
