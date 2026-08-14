@@ -123,37 +123,45 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
         }
     }
 
+    val selectAllText = stringResource(R.string.select_all)
+    val inverseSelectionText = stringResource(R.string.inverse_selection)
+    val exportToClipboardText = stringResource(R.string.export_to_clipboard)
+    val importFromClipboardText = stringResource(R.string.import_from_clipboard)
+    val showSystemAppsText = stringResource(R.string.show_system_apps)
+    val showNoInternetAppsText = stringResource(R.string.show_no_internet_apps)
+    val bypassSelectedAppsText = stringResource(R.string.bypass_selected_apps)
+
     val menuEntry = remember(showSystemApps, showNoInternetApps, bypassSelectedApps) {
         DropdownEntry(
             items = listOf(
                 DropdownItem(
-                    text = context.getString(R.string.select_all),
+                    text = selectAllText,
                     onClick = { viewModel.selectAll() }
                 ),
                 DropdownItem(
-                    text = context.getString(R.string.inverse_selection),
+                    text = inverseSelectionText,
                     onClick = { viewModel.inverseSelection() }
                 ),
                 DropdownItem(
-                    text = context.getString(R.string.export_to_clipboard),
+                    text = exportToClipboardText,
                     onClick = { viewModel.exportAppsToClipboard(context) }
                 ),
                 DropdownItem(
-                    text = context.getString(R.string.import_from_clipboard),
+                    text = importFromClipboardText,
                     onClick = { viewModel.importAppsFromClipboard(context) }
                 ),
                 DropdownItem(
-                    text = context.getString(R.string.show_system_apps),
+                    text = showSystemAppsText,
                     selected = showSystemApps,
                     onClick = { viewModel.onShowSystemAppsChange(!showSystemApps) }
                 ),
                 DropdownItem(
-                    text = context.getString(R.string.show_no_internet_apps),
+                    text = showNoInternetAppsText,
                     selected = showNoInternetApps,
                     onClick = { viewModel.onShowNoInternetAppsChange(!showNoInternetApps) }
                 ),
                 DropdownItem(
-                    text = context.getString(R.string.bypass_selected_apps),
+                    text = bypassSelectedAppsText,
                     selected = bypassSelectedApps,
                     onClick = { viewModel.onBypassSelectedAppsChange(!bypassSelectedApps) }
                 )
