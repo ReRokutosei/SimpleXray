@@ -55,6 +55,7 @@
     <string name="content">内容</string>
     <string name="filename">文件名</string>
     <string name="config_in_use">配置文件正在使用</string>
+    <string name="config_import_service_running">服务运行中：配置已导入但未切换。请先停止服务或手动点选该文件切换。</string>
     <string name="delete_config">删除配置</string>
     <string name="not_select_config">未选择配置文件</string>
     <string name="no_config_files">无配置文件</string>

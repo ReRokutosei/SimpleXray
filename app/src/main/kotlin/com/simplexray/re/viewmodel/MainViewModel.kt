@@ -798,7 +798,18 @@ class MainViewModel(application: Application) :
             val path = fileManager.importConfigFileFromUri(application, uri)
             if (path != null) {
                 refreshConfigFileList()
-                updateSelectedConfigFile(File(path))
+                if (_isServiceEnabled.value) {
+                    // Keep the running core untouched: do not switch the selected
+                    // config while the service is active. The user can still pick
+                    // the imported file manually (which reloads the core).
+                    _uiEvent.trySend(
+                        MainViewUiEvent.ShowSnackbar(
+                            application.getString(R.string.config_import_service_running)
+                        )
+                    )
+                } else {
+                    updateSelectedConfigFile(File(path))
+                }
             }
         }
     }

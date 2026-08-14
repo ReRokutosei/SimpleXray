@@ -62,6 +62,7 @@
     <string name="content">Content</string>
     <string name="filename">Filename</string>
     <string name="config_in_use">Profile in Use</string>
+    <string name="config_import_service_running">Service running: config imported but not switched. Stop the service or pick the file manually to switch.</string>
     <string name="delete_config">Delete Config</string>
     <string name="not_select_config">No profile selected</string>
     <string name="no_config_files">No configuration files</string>
