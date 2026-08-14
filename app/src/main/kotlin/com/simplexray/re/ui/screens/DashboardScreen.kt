@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,10 +27,12 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import com.simplexray.re.R
+import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.formatBytes
 import com.simplexray.re.common.formatNumber
 import com.simplexray.re.common.formatUptime
 import com.simplexray.re.viewmodel.MainViewModel
+import com.simplexray.re.viewmodel.OutboundLatency
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import top.yukonga.miuix.kmp.basic.Button
@@ -41,6 +44,10 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
+private val LatencyGood = Color(0xFF4CAF50)
+private val LatencyFair = Color(0xFFFF9800)
+private const val LatencyStaleSeconds = 60L
+
 @Composable
 fun DashboardScreen(
     mainViewModel: MainViewModel,
@@ -48,13 +55,25 @@ fun DashboardScreen(
     paddingValues: PaddingValues = PaddingValues()
 ) {
     val coreStats by mainViewModel.coreStatsState.collectAsStateWithLifecycle()
+    val outboundNodes by mainViewModel.outboundNodes.collectAsStateWithLifecycle()
+    val outboundLatency by mainViewModel.outboundLatency.collectAsStateWithLifecycle()
+    val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
     LaunchedEffect(Unit) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            mainViewModel.refreshOutboundNodes()
             while (isActive) {
                 mainViewModel.updateCoreStats()
                 delay(1000)
+            }
+        }
+    }
+    LaunchedEffect(Unit) {
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (isActive) {
+                mainViewModel.updateOutboundLatency()
+                delay(3000)
             }
         }
     }
@@ -92,6 +111,24 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.height(12.dp))
             }
 
+            if (outboundNodes.isNotEmpty()) {
+                item {
+                    SmallTitle(text = stringResource(id = R.string.outbound_nodes))
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                items(outboundNodes, key = { it.tag }) { node ->
+                    OutboundNodeCard(
+                        node = node,
+                        latency = outboundLatency[node.tag],
+                        serviceEnabled = isServiceEnabled
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+                item {
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
+
             item {
                 SmallTitle(text = stringResource(id = R.string.core_runtime_status))
                 Card(modifier = Modifier.fillMaxWidth()) {
@@ -118,7 +155,6 @@ fun DashboardScreen(
             }
 
             item {
-                val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsStateWithLifecycle()
                 SmallTitle(text = stringResource(id = R.string.core_control))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -172,5 +208,56 @@ fun StatRow(label: String, value: String) {
             color = MiuixTheme.colorScheme.onSurface,
             fontFamily = FontFamily.Monospace
         )
+    }
+}
+
+@Composable
+private fun OutboundNodeCard(
+    node: ConfigUtils.OutboundInfo,
+    latency: OutboundLatency?,
+    serviceEnabled: Boolean
+) {
+    val nowSeconds = System.currentTimeMillis() / 1000
+    val stale = latency != null && nowSeconds - latency.lastTryTime > LatencyStaleSeconds
+
+    val (text, color) = when {
+        !serviceEnabled || latency == null || stale || !latency.alive ->
+            "-ms" to MiuixTheme.colorScheme.onSurfaceVariantSummary
+        latency.delayMs <= 100 ->
+            "${latency.delayMs}ms" to LatencyGood
+        latency.delayMs <= 300 ->
+            "${latency.delayMs}ms" to LatencyFair
+        else ->
+            "${latency.delayMs}ms" to MiuixTheme.colorScheme.error
+    }
+
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = node.tag,
+                    fontSize = MiuixTheme.textStyles.body1.fontSize,
+                    color = MiuixTheme.colorScheme.onSurface,
+                    maxLines = 1
+                )
+                Text(
+                    text = node.protocol,
+                    fontSize = MiuixTheme.textStyles.body2.fontSize,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    maxLines = 1
+                )
+            }
+            Text(
+                text = text,
+                fontSize = MiuixTheme.textStyles.body1.fontSize,
+                color = color,
+                fontFamily = FontFamily.Monospace
+            )
+        }
     }
 }

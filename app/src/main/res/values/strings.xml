@@ -101,6 +101,7 @@
     <!-- Core Stats & Dashboard -->
     <string name="core_stats_title">Dashboard</string>
     <string name="traffic_info">Traffic Information</string>
+    <string name="outbound_nodes">Outbound Nodes</string>
     <string name="core_runtime_status">Core Runtime Status</string>
     <string name="stats_uplink">Uplink Traffic</string>
     <string name="stats_downlink">Downlink Traffic</string>
