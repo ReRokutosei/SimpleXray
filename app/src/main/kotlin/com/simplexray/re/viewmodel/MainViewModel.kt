@@ -20,6 +20,7 @@ import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.simplexray.re.BuildConfig
 import com.simplexray.re.R
+import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.CoreStatsClient
 import com.simplexray.re.common.ROUTE_APP_LIST
 import com.simplexray.re.common.ROUTE_CONFIG_EDIT
@@ -121,6 +122,12 @@ class MainViewModel(application: Application) :
 
     private val _coreStatsState = MutableStateFlow(CoreStatsState())
     val coreStatsState: StateFlow<CoreStatsState> = _coreStatsState.asStateFlow()
+
+    private val _outboundNodes = MutableStateFlow<List<ConfigUtils.OutboundInfo>>(emptyList())
+    val outboundNodes: StateFlow<List<ConfigUtils.OutboundInfo>> = _outboundNodes.asStateFlow()
+
+    private val _outboundLatency = MutableStateFlow<Map<String, OutboundLatency>>(emptyMap())
+    val outboundLatency: StateFlow<Map<String, OutboundLatency>> = _outboundLatency.asStateFlow()
 
     private val _controlMenuClickable = MutableStateFlow(true)
     val controlMenuClickable: StateFlow<Boolean> = _controlMenuClickable.asStateFlow()
@@ -330,6 +337,42 @@ class MainViewModel(application: Application) :
             uptime = stats?.uptime ?: 0
         )
         Log.d(TAG, "Core stats updated")
+    }
+
+    /**
+     * Refreshes the outbound node list from the currently selected config file.
+     * Works whether or not the service is running.
+     */
+    suspend fun refreshOutboundNodes() {
+        val file = _selectedConfigFile.value ?: return
+        val content = withContext(Dispatchers.IO) {
+            runCatching { file.readText() }.getOrNull()
+        } ?: return
+        val nodes = ConfigUtils.extractOutbounds(content)
+        _outboundNodes.value = nodes
+        Log.d(TAG, "Refreshed ${nodes.size} outbound nodes from ${file.name}")
+    }
+
+    /**
+     * Queries the observatory API for per-outbound latency. No-op when the
+     * service is not running; the client is created lazily like updateCoreStats.
+     */
+    suspend fun updateOutboundLatency() {
+        if (!_isServiceEnabled.value) return
+        if (coreStatsClient == null) {
+            coreStatsClient = CoreStatsClient.create(prefs.apiAddress, prefs.apiPort)
+        }
+
+        val result = coreStatsClient?.getOutboundStatus() ?: return
+        val now = System.currentTimeMillis() / 1000
+        _outboundLatency.value = result.statusList.associate { status ->
+            status.outboundTag to OutboundLatency(
+                alive = status.alive,
+                delayMs = status.delay,
+                lastTryTime = now
+            )
+        }
+        Log.d(TAG, "Outbound latency updated: ${_outboundLatency.value.size} entries")
     }
 
     suspend fun importConfigFromClipboard(): String? {

@@ -26,6 +26,15 @@ object ConfigUtils {
         "domain", "ip", "port", "network", "process", "geosite", "geoip", "inboundtag", "protocol", "user", "attrs"
     )
 
+    private val EXCLUDED_OUTBOUND_PROTOCOLS = setOf("freedom", "blackhole", "dns")
+
+    private const val DEFAULT_OBSERVATORY_PROBE_URL = "https://connectivitycheck.gstatic.com/generate_204"
+    private const val DEFAULT_OBSERVATORY_INTERVAL = "10s"
+    private const val DEFAULT_OBSERVATORY_TIMEOUT = "5s"
+    private const val DEFAULT_OBSERVATORY_SAMPLING = 3
+
+    data class OutboundInfo(val tag: String, val protocol: String)
+
     fun sanitizeConfig(content: String, prefs: Preferences? = null): String {
         val rootJson = parseToJsonObject(content) ?: return content
 
@@ -309,6 +318,7 @@ object ConfigUtils {
         apiObject.put("listen", "${prefs.apiAddress}:${prefs.apiPort}")
         val servicesArray = JSONArray()
         servicesArray.put("StatsService")
+        servicesArray.put("ObservatoryService")
         apiObject.put("services", servicesArray)
 
         jsonObject.put("api", apiObject)
@@ -321,6 +331,28 @@ object ConfigUtils {
         policyObject.put("system", systemObject)
 
         jsonObject.put("policy", policyObject)
+
+        // Inject burst observatory so the dashboard can show per-outbound latency,
+        // unless the user already provides observatory/burstObservatory blocks
+        // (full-config is always respected).
+        if (!jsonObject.has("observatory") && !jsonObject.has("burstObservatory")) {
+            val tags = extractOutboundsFrom(jsonObject).map { it.tag }
+            if (tags.isNotEmpty()) {
+                val pingConfig = JSONObject().apply {
+                    put("destination", DEFAULT_OBSERVATORY_PROBE_URL)
+                    put("interval", DEFAULT_OBSERVATORY_INTERVAL)
+                    put("sampling", DEFAULT_OBSERVATORY_SAMPLING)
+                    put("timeout", DEFAULT_OBSERVATORY_TIMEOUT)
+                    put("httpMethod", "HEAD")
+                }
+                val burstObservatory = JSONObject().apply {
+                    put("subjectSelector", JSONArray(tags))
+                    put("pingConfig", pingConfig)
+                }
+                jsonObject.put("burstObservatory", burstObservatory)
+                Log.d(TAG, "Injected burst observatory for ${tags.size} outbounds.")
+            }
+        }
 
         if (prefs.httpProxyEnabled) {
             val inbounds = jsonObject.optJSONArray("inbounds") ?: JSONArray().also { jsonObject.put("inbounds", it) }
@@ -348,6 +380,29 @@ object ConfigUtils {
     fun File.isConfigFile(): Boolean {
         val ext = extension.lowercase()
         return ext == "json" || ext == "yaml" || ext == "yml"
+    }
+
+    /**
+     * Extracts proxy outbounds (tag + protocol) from a config in JSON or YAML form,
+     * in config order. Non-proxy protocols (freedom/blackhole/dns) are excluded.
+     */
+    fun extractOutbounds(content: String): List<OutboundInfo> {
+        val root = parseToJsonObject(content) ?: return emptyList()
+        return extractOutboundsFrom(root)
+    }
+
+    private fun extractOutboundsFrom(root: JSONObject): List<OutboundInfo> {
+        val outbounds = root.optJSONArray("outbounds") ?: return emptyList()
+        return buildList {
+            for (i in 0 until outbounds.length()) {
+                val ob = outbounds.optJSONObject(i) ?: continue
+                val protocol = ob.optString("protocol").lowercase()
+                if (protocol in EXCLUDED_OUTBOUND_PROTOCOLS) continue
+                val tag = ob.optString("tag")
+                if (tag.isEmpty()) continue
+                add(OutboundInfo(tag, protocol))
+            }
+        }
     }
 
     fun buildInjectedConfig(content: String, isYaml: Boolean, prefs: Preferences): String {

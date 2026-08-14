@@ -19,3 +19,9 @@ data class CoreStatsState(
     val pauseTotalNs: Long = 0,
     val uptime: Int = 0
 )
+
+data class OutboundLatency(
+    val alive: Boolean,
+    val delayMs: Long,
+    val lastTryTime: Long
+)
