@@ -318,18 +318,19 @@ class MainViewModel(application: Application) :
     }
 
     /**
-     * Picks a random app icon on first launch (when no choice was persisted)
-     * and applies it; afterwards only manual switching via [setAppIcon] changes
-     * it. The launcher alias of the chosen style is enabled, the others disabled.
+     * Initializes the app icon preference on first launch: defaults to the
+     * manifest-enabled alias (flat) so the first launcher icon and the settings
+     * dropdown agree. Component states are never touched here — disabling the
+     * currently running launcher alias mid-run makes the system rebuild the
+     * task (feels like a crash + auto-restart). The choice is only applied when
+     * the user manually switches via [setAppIcon].
      */
     fun ensureAppIconSelected() {
         val current = prefs.appIcon
         if (current == null) {
-            val pick = APP_ICON_OPTIONS.random()
-            applyAppIcon(pick)
-            prefs.appIcon = pick
-            _appIcon.value = pick
-            Log.d(TAG, "Randomly selected app icon: $pick")
+            prefs.appIcon = APP_ICON_DEFAULT
+            _appIcon.value = APP_ICON_DEFAULT
+            Log.d(TAG, "App icon defaulted to: $APP_ICON_DEFAULT")
         } else {
             _appIcon.value = current
         }
@@ -337,6 +338,7 @@ class MainViewModel(application: Application) :
 
     fun setAppIcon(key: String) {
         if (key !in APP_ICON_OPTIONS) return
+        if (key == _appIcon.value) return
         applyAppIcon(key)
         prefs.appIcon = key
         _appIcon.value = key
@@ -347,12 +349,15 @@ class MainViewModel(application: Application) :
         val pm = application.packageManager
         APP_ICON_ALIASES.forEach { (option, className) ->
             val component = ComponentName(application, "${application.packageName}.$className")
-            pm.setComponentEnabledSetting(
-                component,
-                if (option == key) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-                else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-                PackageManager.DONT_KILL_APP
-            )
+            val targetState = if (option == key) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+            else PackageManager.COMPONENT_ENABLED_STATE_DISABLED
+            if (pm.getComponentEnabledSetting(component) != targetState) {
+                pm.setComponentEnabledSetting(
+                    component,
+                    targetState,
+                    PackageManager.DONT_KILL_APP
+                )
+            }
         }
     }
 
