@@ -195,6 +195,15 @@ class MainViewModel(application: Application) :
         }
     }
 
+    private val startFailedReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            Log.d(TAG, "Xray start failed")
+            _uiEvent.trySend(
+                MainViewUiEvent.ShowSnackbar(application.getString(R.string.core_start_failed))
+            )
+        }
+    }
+
     init {
         Log.d(TAG, "MainViewModel initialized.")
 
@@ -928,6 +937,18 @@ class MainViewModel(application: Application) :
             @Suppress("UnspecifiedRegisterReceiverFlag")
             application.registerReceiver(stopReceiver, stopSuccessFilter)
         }
+
+        val startFailedFilter = IntentFilter(TProxyService.ACTION_START_FAILED)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            application.registerReceiver(
+                startFailedReceiver,
+                startFailedFilter,
+                Context.RECEIVER_NOT_EXPORTED
+            )
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            application.registerReceiver(startFailedReceiver, startFailedFilter)
+        }
         Log.d(TAG, "TProxyService receivers registered.")
     }
 
@@ -935,6 +956,7 @@ class MainViewModel(application: Application) :
         val application = application
         application.unregisterReceiver(startReceiver)
         application.unregisterReceiver(stopReceiver)
+        application.unregisterReceiver(startFailedReceiver)
         Log.d(TAG, "TProxyService receivers unregistered.")
     }
 
