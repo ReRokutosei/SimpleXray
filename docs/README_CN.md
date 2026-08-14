@@ -128,7 +128,7 @@ SimpleXray 保留内置的 `geoip.dat` 和 `geosite.dat` 规则文件，并增�
 * 将 `domainMatcher` 从 `mph` 调整为 `hybrid`，以改善内存占用和域名匹配性能之间的平衡。
 * 为 DoH 服务增加静态主机映射，以避免 DoH 服务自身的域名解析依赖本地 DNS 引导。
 * 在 Android 环境需要时，将 `::` 和 `0.0.0.0` 等通配监听地址调整为 `127.0.0.1`。
-* **仪表盘延迟展示**：仪表盘的每节点延迟来自 Xray 内核的 `observatory` / `burstObservatory` 探测。若导入的配置中没有 observatory 配置块，本应用会注入默认的 `burstObservatory`（10 秒间隔、3 次采样、探测目标为“连通性测试”设置中的目标地址）；若配置中已有观测配置，则完全遵循用户的配置（探测目标、间隔、覆盖节点均由配置决定）。因此显示的延迟反映的是每个出站到探测目标的真实链路耗时，例如 `https://` 探测目标包含 TLS 握手开销，与纯 TCP/HTTP 往返数值不可直接比较；标记为失败的节点表示其在超时时间内无法访问探测目标。
+* **仪表盘延迟展示**：仪表盘的每节点延迟来自轻量级 TCP 连接探测（1 个 RTT），目标是配置中各出站的服务器端点（解析规则：vless/vmess 取 `settings.vnext[0]`，trojan/shadowsocks/http/socks 取 `settings.servers[0]`）。进入仪表盘时探测一次，并提供手动刷新按钮。UDP-only 协议（wireguard/hysteria2）与 QUIC 传输不参与探测，私网/环回/链路本地 IP 字面量也从不探测。显示的值是从设备到节点的 TCP 握手 RTT，与 Xray 内核无关；不可达节点显示为失败。
 
 ### 6. Android 平台配置适配
 
