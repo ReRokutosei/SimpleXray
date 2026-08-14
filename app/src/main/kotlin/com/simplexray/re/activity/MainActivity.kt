@@ -4,6 +4,8 @@ import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -23,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.simplexray.re.R
 import com.simplexray.re.common.ThemeMode
 import com.simplexray.re.ui.navigation.AppNavHost
 import com.simplexray.re.viewmodel.MainViewModel
@@ -39,8 +42,33 @@ class MainActivity : ComponentActivity() {
 
         mainViewModel.reloadView = { initView() }
         initView()
+        updateTaskDescription()
 
         Log.d(TAG, "MainActivity onCreate called.")
+    }
+
+    /**
+     * Renders the currently selected adaptive icon into a Bitmap and applies it
+     * to the recents card via TaskDescription. The launcher icon itself is
+     * switched through activity-alias; recents/notifications read the app icon
+     * statically, so this keeps them in sync at runtime.
+     */
+    private fun updateTaskDescription() {
+        val iconRes = appIconRes(mainViewModel.prefs.appIcon)
+        val drawable = getDrawable(iconRes) ?: return
+        val sizePx = (108 * resources.displayMetrics.density).toInt()
+        val bitmap = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bitmap)
+        drawable.setBounds(0, 0, sizePx, sizePx)
+        drawable.draw(canvas)
+        setTaskDescription(ActivityManager.TaskDescription(getString(R.string.app_name), bitmap))
+    }
+
+    private fun appIconRes(key: String?): Int = when (key) {
+        "flat" -> R.mipmap.ic_launcher_flat
+        "lineal" -> R.mipmap.ic_launcher_lineal
+        "lineal_color" -> R.mipmap.ic_launcher_lineal_color
+        else -> R.mipmap.ic_launcher_origin
     }
 
     private fun initView() {
@@ -62,6 +90,13 @@ class MainActivity : ComponentActivity() {
             androidx.compose.runtime.LaunchedEffect(settingsState.switches.hideFromRecents) {
                 val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
                 activityManager?.appTasks?.firstOrNull()?.setExcludeFromRecents(settingsState.switches.hideFromRecents)
+            }
+
+            val currentIcon by mainViewModel.appIcon.collectAsStateWithLifecycle()
+            androidx.compose.runtime.LaunchedEffect(currentIcon) {
+                // Keep the recents-card icon in sync with the chosen launcher icon
+                // (launcher icon itself is switched via activity-alias).
+                updateTaskDescription()
             }
 
             val colorScheme = when {

@@ -97,6 +97,7 @@
     <string name="icon_flat">Flat</string>
     <string name="icon_lineal">Lineal</string>
     <string name="icon_lineal_color">Lineal Color</string>
+    <string name="icon_origin">Origin</string>
     <string name="connectivity_test_target">Target Address</string>
     <string name="connectivity_test_timeout">Test Timeout (ms)</string>
     <string name="connectivity_test_invalid_url">Invalid target address format</string>
