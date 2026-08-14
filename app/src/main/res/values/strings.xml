@@ -163,13 +163,11 @@
     <string name="no_app_for_export">No app available for export</string>
     <string name="export_failed">Export failed</string>
     <string name="export_success">Export successfully</string>
-    <string name="config_not_found">Configuration file not found</string>
     <string name="download_success">Download successful</string>
     <string name="download_failed">Download failed</string>
     <string name="connecting">Connecting…</string>
     <string name="downloading">Downloading… %1$d%%</string>
     <string name="downloading_no_size">Downloading…</string>
-    <string name="download_cancelled">Download cancelled</string>
     <string name="file_imported">Imported %s</string>
     <string name="file_deleted">Deleted %s</string>
     <string name="hide_from_recents_title">Hide from Recent Tasks</string>

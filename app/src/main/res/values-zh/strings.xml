@@ -156,13 +156,11 @@
     <string name="no_app_for_export">没有可用于导出的应用</string>
     <string name="export_failed">导出失败</string>
     <string name="export_success">导出成功</string>
-    <string name="config_not_found">配置文件不存在</string>
     <string name="download_success">下载成功</string>
     <string name="download_failed">下载失败</string>
     <string name="connecting">连接中…</string>
     <string name="downloading">下载中… %1$d%%</string>
     <string name="downloading_no_size">下载中…</string>
-    <string name="download_cancelled">下载已取消</string>
     <string name="file_imported">已导入 %s</string>
     <string name="file_deleted">已删除 %s</string>
     <string name="hide_from_recents_title">从后台任务隐藏</string>
