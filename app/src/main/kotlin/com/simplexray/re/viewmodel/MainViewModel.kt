@@ -126,8 +126,6 @@ class MainViewModel(application: Application) :
                 isGeoipCustom = prefs.customGeoipImported,
                 isGeositeCustom = prefs.customGeositeImported
             ),
-            connectivityTestTarget = InputFieldState(prefs.connectivityTestTarget),
-            connectivityTestTimeout = InputFieldState(prefs.connectivityTestTimeout.toString()),
             geoUpdateIntervalHours = InputFieldState(prefs.geoUpdateIntervalHours.toString())
         )
     )
@@ -276,8 +274,6 @@ class MainViewModel(application: Application) :
                 isGeoipCustom = prefs.customGeoipImported,
                 isGeositeCustom = prefs.customGeositeImported
             ),
-            connectivityTestTarget = InputFieldState(prefs.connectivityTestTarget),
-            connectivityTestTimeout = InputFieldState(prefs.connectivityTestTimeout.toString()),
             geoUpdateIntervalHours = InputFieldState(prefs.geoUpdateIntervalHours.toString())
         )
     }
@@ -938,47 +934,6 @@ class MainViewModel(application: Application) :
     fun updateSelectedConfigFile(file: File?) {
         _selectedConfigFile.value = file
         prefs.selectedConfigPath = file?.absolutePath
-    }
-
-    fun updateConnectivityTestTarget(target: String) {
-        val isValid = try {
-            val url = URL(target)
-            url.protocol == "http" || url.protocol == "https"
-        } catch (e: Exception) {
-            false
-        }
-        if (isValid) {
-            prefs.connectivityTestTarget = target
-            _settingsState.value = _settingsState.value.copy(
-                connectivityTestTarget = InputFieldState(target)
-            )
-        } else {
-            _settingsState.value = _settingsState.value.copy(
-                connectivityTestTarget = InputFieldState(
-                    value = target,
-                    error = application.getString(R.string.connectivity_test_invalid_url),
-                    isValid = false
-                )
-            )
-        }
-    }
-
-    fun updateConnectivityTestTimeout(timeout: String) {
-        val timeoutInt = timeout.toIntOrNull()
-        if (timeoutInt != null && timeoutInt > 0) {
-            prefs.connectivityTestTimeout = timeoutInt
-            _settingsState.value = _settingsState.value.copy(
-                connectivityTestTimeout = InputFieldState(timeout)
-            )
-        } else {
-            _settingsState.value = _settingsState.value.copy(
-                connectivityTestTimeout = InputFieldState(
-                    value = timeout,
-                    error = application.getString(R.string.invalid_timeout),
-                    isValid = false
-                )
-            )
-        }
     }
 
     fun registerTProxyServiceReceivers() {

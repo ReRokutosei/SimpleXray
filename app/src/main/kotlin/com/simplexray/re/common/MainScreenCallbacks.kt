@@ -55,7 +55,7 @@ fun rememberMainScreenCallbacks(
                     val fileUri =
                         FileProvider.getUriForFile(
                             applicationContext,
-                            "com.simplexray.re.fileprovider",
+                            "${applicationContext.packageName}.fileprovider",
                             logFile
                         )
                     val shareIntent = Intent(Intent.ACTION_SEND)

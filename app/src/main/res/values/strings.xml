@@ -5,7 +5,6 @@
     <string name="source_url" translatable="false">https://github.com/ReRokutosei/SimpleXray</string>
     <string name="geoip_url" translatable="false">https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat</string>
     <string name="geosite_url" translatable="false">https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat</string>
-    <string name="connectivity_test_url" translatable="false">http://www.gstatic.com/generate_204</string>
 
     <!-- SOCKS Local Inbound Settings -->
     <string name="socks_address">SOCKS Inbound Address</string>
@@ -91,16 +90,11 @@
     <string name="rule_file_restore_geoip_success">geoip.dat restored to default</string>
     <string name="rule_file_restore_geosite_success">geosite.dat restored to default</string>
 
-    <!-- Connectivity Test -->
-    <string name="connectivity_test">Connectivity Test</string>
     <string name="app_icon_summary">Choose the launcher icon style</string>
     <string name="icon_flat">Flat</string>
     <string name="icon_lineal">Lineal</string>
     <string name="icon_lineal_color">Lineal Color</string>
     <string name="icon_origin">Origin</string>
-    <string name="connectivity_test_target">Target Address</string>
-    <string name="connectivity_test_timeout">Test Timeout (ms)</string>
-    <string name="connectivity_test_invalid_url">Invalid target address format</string>
 
     <!-- Core Stats & Dashboard -->
     <string name="core_stats_title">Dashboard</string>
@@ -158,7 +152,6 @@
     <string name="invalid_ipv4_or_ipv6">Please enter a valid IPv4/IPv6 address</string>
     <string name="invalid_port">Please enter a valid port number</string>
     <string name="invalid_port_range">Port number must be between 1024 and 65535</string>
-    <string name="invalid_timeout">Please enter a valid timeout (positive integer)</string>
     <string name="import_failed">Import failed: No config found on clipboard</string>
     <string name="core_start_failed">Core failed to start, please check the logs</string>
     <string name="import_success">import successful</string>

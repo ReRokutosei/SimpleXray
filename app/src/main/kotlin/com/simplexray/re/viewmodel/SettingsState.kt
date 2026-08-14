@@ -45,7 +45,5 @@ data class SettingsState(
     val switches: SwitchStates,
     val info: InfoStates,
     val files: FileStates,
-    val connectivityTestTarget: InputFieldState,
-    val connectivityTestTimeout: InputFieldState,
     val geoUpdateIntervalHours: InputFieldState = InputFieldState("0")
 ) 

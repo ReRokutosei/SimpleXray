@@ -221,10 +221,6 @@ class Preferences(context: Context) {
             setValueInProvider(CONFIG_FILES_ORDER, jsonList)
         }
 
-    var connectivityTestTarget: String by stringPref(CONNECTIVITY_TEST_TARGET) {
-        context1.getString(R.string.connectivity_test_url)
-    }
-    var connectivityTestTimeout: Int by intPref(CONNECTIVITY_TEST_TIMEOUT, 3000)
     var geoipUrl: String by stringPref(GEOIP_URL) { context1.getString(R.string.geoip_url) }
     var geositeUrl: String by stringPref(GEOSITE_URL) { context1.getString(R.string.geosite_url) }
     var apiAddress: String by stringPref(API_ADDRESS) { "127.0.0.1" }
@@ -279,8 +275,6 @@ class Preferences(context: Context) {
         const val CUSTOM_GEOSITE_IMPORTED: String = "CustomGeositeImported"
         const val CONFIG_FILES_ORDER: String = "ConfigFilesOrder"
         const val DISABLE_VPN: String = "DisableVpn"
-        const val CONNECTIVITY_TEST_TARGET: String = "ConnectivityTestTarget"
-        const val CONNECTIVITY_TEST_TIMEOUT: String = "ConnectivityTestTimeout"
         const val APP_ICON: String = "AppIcon"
         const val GEOIP_URL: String = "GeoipUrl"
         const val GEOSITE_URL: String = "GeositeUrl"
