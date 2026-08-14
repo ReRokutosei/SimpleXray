@@ -563,6 +563,28 @@ fun SettingsScreen(
         }
 
         item {
+            val currentIcon by mainViewModel.appIcon.collectAsStateWithLifecycle()
+            SmallTitle(text = stringResource(R.string.app_icon))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                ArrowPreference(
+                    title = stringResource(R.string.icon_flat),
+                    summary = if (currentIcon == "flat") stringResource(R.string.app_icon_current) else null,
+                    onClick = { mainViewModel.setAppIcon("flat") }
+                )
+                ArrowPreference(
+                    title = stringResource(R.string.icon_lineal),
+                    summary = if (currentIcon == "lineal") stringResource(R.string.app_icon_current) else null,
+                    onClick = { mainViewModel.setAppIcon("lineal") }
+                )
+                ArrowPreference(
+                    title = stringResource(R.string.icon_lineal_color),
+                    summary = if (currentIcon == "lineal_color") stringResource(R.string.app_icon_current) else null,
+                    onClick = { mainViewModel.setAppIcon("lineal_color") }
+                )
+            }
+        }
+
+        item {
             SmallTitle(text = stringResource(R.string.about))
             Card(modifier = Modifier.fillMaxWidth()) {
                 BasicComponent(

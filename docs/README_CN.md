@@ -234,21 +234,18 @@ git submodule update --init --recursive
 
 ## 上游项目与依赖
 
-SimpleXray 使用或基于以下开源项目开发。
+SimpleXray 使用或基于以下开源项目开发：
 
-* [`compose-miuix-ui`](https://github.com/compose-miuix/miuix)
-  面向 Kotlin Multiplatform 的 Jetpack Compose UI 组件库，界面设计参考 Xiaomi HyperOS / MIUI。
+* [**`compose-miuix-ui`**](https://github.com/compose-miuix-ui/miuix) — 面向 Kotlin Multiplatform 的 Jetpack Compose UI 组件库，界面设计参考 Xiaomi HyperOS / MIUI
+* [**`Xray-core`**](https://github.com/XTLS/Xray-core) — SimpleXray 使用的代理网络核心
+* [**`SimpleXray`**](https://github.com/lhear/SimpleXray) — 本项目所基于的上游 Android 客户端
+* [**`hev-socks5-tunnel`**](https://github.com/heiher/hev-socks5-tunnel) — 用于 Android 网络流量处理的 SOCKS5 VPN 隧道实现
 
-* [`Xray-core`](https://github.com/XTLS/Xray-core)
-  SimpleXray 使用的代理核心。
+### 致谢
 
-* [`SimpleXray`](https://github.com/lhear/SimpleXray)
-  本项目所基于的上游 Android 客户端。
+本项目的应用图标使用了来自 Magnific 平台的免费资源，在此感谢原作者的创作：
 
-* [`hev-socks5-tunnel`](https://github.com/heiher/hev-socks5-tunnel)
-  用于 Android 网络流量处理的 SOCKS5 VPN 隧道实现。
-
-本项目使用的组件版本和具体修改内容可能与对应上游项目存在差异。
+* 由 [Magnific](https://www.magnific.com) 设计的 [Cookie 图标（包含 Special Lineal, Flat, Lineal Color 三种风格）](https://www.magnific.com/icon/cookie_1047813)
 
 ---
 
