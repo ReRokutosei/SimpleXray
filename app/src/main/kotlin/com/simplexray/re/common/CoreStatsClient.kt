@@ -1,13 +1,10 @@
 package com.simplexray.re.common
 
 import com.simplexray.re.viewmodel.TrafficState
-import com.xray.app.observatory.ObservationResult
 import com.xray.app.stats.command.QueryStatsRequest
 import com.xray.app.stats.command.StatsServiceGrpc
 import com.xray.app.stats.command.SysStatsRequest
 import com.xray.app.stats.command.SysStatsResponse
-import com.xray.core.app.observatory.command.GetOutboundStatusRequest
-import com.xray.core.app.observatory.command.ObservatoryServiceGrpc
 import io.grpc.ManagedChannel
 import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.Dispatchers
@@ -18,8 +15,6 @@ import java.util.concurrent.TimeUnit
 class CoreStatsClient(private val channel: ManagedChannel) : Closeable {
     private val blockingStub: StatsServiceGrpc.StatsServiceBlockingStub =
         StatsServiceGrpc.newBlockingStub(channel)
-    private val observatoryStub: ObservatoryServiceGrpc.ObservatoryServiceBlockingStub =
-        ObservatoryServiceGrpc.newBlockingStub(channel)
 
     suspend fun getSystemStats(): SysStatsResponse? = withContext(Dispatchers.IO) {
         runCatching {
@@ -49,12 +44,6 @@ class CoreStatsClient(private val channel: ManagedChannel) : Closeable {
                 val downlink = groups["downlink"]?.sumOf { it.value } ?: 0L
                 TrafficState(uplink, downlink)
             }
-    }
-
-    suspend fun getOutboundStatus(): ObservationResult? = withContext(Dispatchers.IO) {
-        runCatching {
-            observatoryStub.getOutboundStatus(GetOutboundStatusRequest.newBuilder().build()).status
-        }.getOrNull()
     }
 
     override fun close() {

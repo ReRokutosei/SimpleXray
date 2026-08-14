@@ -9,9 +9,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -40,6 +43,7 @@ import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
+import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -63,17 +67,10 @@ fun DashboardScreen(
     LaunchedEffect(Unit) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             mainViewModel.refreshOutboundNodes()
+            mainViewModel.testOutboundLatency()
             while (isActive) {
                 mainViewModel.updateCoreStats()
                 delay(1000)
-            }
-        }
-    }
-    LaunchedEffect(Unit) {
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            while (isActive) {
-                mainViewModel.updateOutboundLatency()
-                delay(3000)
             }
         }
     }
@@ -113,7 +110,25 @@ fun DashboardScreen(
 
             if (outboundNodes.isNotEmpty()) {
                 item {
-                    SmallTitle(text = stringResource(id = R.string.outbound_nodes))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SmallTitle(
+                            text = stringResource(id = R.string.outbound_nodes),
+                            modifier = Modifier.weight(1f)
+                        )
+                        IconButton(
+                            onClick = { mainViewModel.refreshLatency() },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = stringResource(R.string.refresh_latency),
+                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                            )
+                        }
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 items(outboundNodes, key = { it.tag }) { node ->
