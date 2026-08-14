@@ -2,7 +2,7 @@
 
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/lhear/SimpleXray/main/metadata/en-US/images/icon.png" alt="SimpleXray icon" width="150">
+<img src="images/lineal.svg" alt="SimpleXray icon" width="150">
 
 **English** | **[中文](./README_CN.md)**
 

@@ -1,6 +1,6 @@
 # SimpleXray 个人分支
 <div align="center">
-<img src="https://raw.githubusercontent.com/lhear/SimpleXray/main/metadata/en-US/images/icon.png" alt="SimpleXray 图标" width="150">
+<img src="images/lineal.svg" alt="SimpleXray 图标" width="150">
 
 **[English](./README.md)** | **中文**
 
