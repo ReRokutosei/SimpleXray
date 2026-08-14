@@ -195,10 +195,9 @@ class TProxyService : VpnService() {
             }
 
             val rawConfigContent = runCatching { configFile.readText() }.getOrDefault("")
-            Log.d(TAG, "=== [DEBUG 1: RAW USER CONFIG (${configFile.name})] ===\n$rawConfigContent")
+            Log.d(TAG, "Loaded raw user config: ${configFile.name}, ${rawConfigContent.length} chars")
 
             val sanitizedConfigContent = ConfigUtils.sanitizeConfig(rawConfigContent)
-            Log.d(TAG, "=== [DEBUG 2: SANITIZED CONFIG] ===\n$sanitizedConfigContent")
 
             val isYaml = configFile.extension.lowercase() in listOf("yaml", "yml")
             val format = "json"
@@ -209,7 +208,7 @@ class TProxyService : VpnService() {
             prefs.apiAddress = "127.0.0.1"
 
             val finalConfigContent = ConfigUtils.injectStatsService(prefs, sanitizedConfigContent)
-            Log.d(TAG, "=== [DEBUG 3: FINAL STDIN CONFIG (Format: $format)] ===\n$finalConfigContent")
+            Log.d(TAG, "Injected final config (${finalConfigContent.length} chars) ready for stdin ($format)")
 
             val processBuilder = getProcessBuilder(xrayPath)
             val currentProcess = processBuilder.start()
