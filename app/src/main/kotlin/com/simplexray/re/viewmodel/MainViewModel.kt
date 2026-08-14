@@ -227,12 +227,23 @@ class MainViewModel(application: Application) :
             if (legacyExtraApi.exists()) {
                 runCatching { legacyExtraApi.delete() }
             }
-            _isServiceEnabled.value = isServiceRunning(application, TProxyService::class.java)
 
-            ensureAppIconSelected()
-            updateSettingsState()
-            loadKernelVersion()
-            refreshConfigFileList()
+            // Independent initializations run concurrently to reduce first-launch
+            // latency; coroutineScope waits for all of them before init finishes.
+            // updateSettingsState and loadKernelVersion both read-modify-write
+            // _settingsState, so they must run serially (concurrent RMW would
+            // drop fields); the rest are independent.
+            coroutineScope {
+                launch {
+                    _isServiceEnabled.value = isServiceRunning(application, TProxyService::class.java)
+                }
+                launch { ensureAppIconSelected() }
+                launch {
+                    updateSettingsState()
+                    refreshConfigFileList()
+                    loadKernelVersion()
+                }
+            }
         }
     }
 
