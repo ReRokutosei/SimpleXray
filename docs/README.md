@@ -119,6 +119,7 @@ The fork includes several configuration-level optimizations and Android-specific
 * **Hybrid domain matcher**: Changes `domainMatcher` from `mph` to `hybrid` to balance memory usage and domain lookup performance.
 * **DoH bootstrap configuration**: Adds static host mappings for DoH providers to avoid DNS bootstrap dependencies.
 * **Listen address normalization**: Converts wildcard listen addresses such as `::` and `0.0.0.0` to `127.0.0.1` where required by the Android execution environment.
+* **Dashboard latency display**: The dashboard shows per-outbound latency from Xray's `observatory` / `burstObservatory` probing. When the imported config has no observatory block, a default `burstObservatory` is injected (10s interval, 3 samples, probe URL = the configured connectivity test target); otherwise the user's own observatory settings fully control the probe target, interval and coverage. The shown latency reflects the real path from each outbound to the probe URL — e.g. an `https://` probe includes TLS handshake cost — and is therefore not comparable with a plain TCP/HTTP round trip. Nodes reported as failed (e.g. `-ms` in red) simply could not reach the probe URL within the timeout.
 
 ### 6. Platform-Specific Configuration Sanitization
 

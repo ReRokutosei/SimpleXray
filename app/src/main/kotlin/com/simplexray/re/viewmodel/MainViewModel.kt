@@ -54,10 +54,8 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.net.InetSocketAddress
 import java.net.Proxy
-import java.net.Socket
 import java.net.URL
 import java.util.regex.Pattern
-import javax.net.ssl.SSLSocketFactory
 import kotlin.coroutines.cancellation.CancellationException
 
 private const val TAG = "MainViewModel"
@@ -366,6 +364,10 @@ class MainViewModel(application: Application) :
         val result = coreStatsClient?.getOutboundStatus() ?: return
         val now = System.currentTimeMillis() / 1000
         _outboundLatency.value = result.statusList.associate { status ->
+            Log.d(
+                TAG,
+                "[latency] tag=${status.outboundTag} alive=${status.alive} delay=${status.delay}ms"
+            )
             status.outboundTag to OutboundLatency(
                 alive = status.alive,
                 delayMs = status.delay,
@@ -866,73 +868,6 @@ class MainViewModel(application: Application) :
                     isValid = false
                 )
             )
-        }
-    }
-
-    fun testConnectivity() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val prefs = prefs
-            val url: URL
-            try {
-                url = URL(prefs.connectivityTestTarget)
-            } catch (e: Exception) {
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.connectivity_test_invalid_url)))
-                return@launch
-            }
-            val host = url.host
-            val port = if (url.port > 0) url.port else url.defaultPort
-            val path = if (url.path.isNullOrEmpty()) "/" else url.path
-            val isHttps = url.protocol == "https"
-            val proxy =
-                Proxy(Proxy.Type.SOCKS, InetSocketAddress(prefs.socksAddress, prefs.socksPort))
-            val timeout = prefs.connectivityTestTimeout
-            val start = System.currentTimeMillis()
-            try {
-                Socket(proxy).use { socket ->
-                    socket.soTimeout = timeout
-                    socket.connect(InetSocketAddress(host, port), timeout)
-                    val (writer, reader) = if (isHttps) {
-                        val sslSocket = (SSLSocketFactory.getDefault() as SSLSocketFactory)
-                            .createSocket(socket, host, port, true) as javax.net.ssl.SSLSocket
-                        sslSocket.startHandshake()
-                        Pair(
-                            sslSocket.outputStream.bufferedWriter(),
-                            sslSocket.inputStream.bufferedReader()
-                        )
-                    } else {
-                        Pair(
-                            socket.getOutputStream().bufferedWriter(),
-                            socket.getInputStream().bufferedReader()
-                        )
-                    }
-                    writer.write("GET $path HTTP/1.1\r\nHost: $host\r\nConnection: close\r\n\r\n")
-                    writer.flush()
-                    val firstLine = reader.readLine()
-                    val latency = System.currentTimeMillis() - start
-                    if (firstLine != null && firstLine.startsWith("HTTP/")) {
-                        _uiEvent.trySend(
-                            MainViewUiEvent.ShowSnackbar(
-                                application.getString(
-                                    R.string.connectivity_test_latency,
-                                    latency.toInt()
-                                )
-                            )
-                        )
-                    } else {
-                        _uiEvent.trySend(
-                            MainViewUiEvent.ShowSnackbar(
-                                application.getString(R.string.connectivity_test_failed)
-                            )
-                        )
-                    }
-                }
-            } catch (e: Exception) {
-                _uiEvent.trySend(
-                    MainViewUiEvent.ShowSnackbar(
-                        application.getString(R.string.connectivity_test_failed)
-                    )
-                )
-            }
         }
     }
 
