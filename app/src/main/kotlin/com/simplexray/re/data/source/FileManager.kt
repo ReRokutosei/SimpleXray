@@ -512,16 +512,26 @@ class FileManager(private val application: Application, private val prefs: Prefe
      * separators or relative segments.
      */
     fun getDatFileNameFromUri(context: Context, uri: Uri): String {
-        var fileName = getFileNameFromUri(context, uri) ?: "custom.dat"
-        // Strip any path separators / relative segments a provider might inject.
-        fileName = fileName.substringAfterLast('/').substringAfterLast('\\')
-        if (fileName.isBlank() || fileName == "." || fileName == "..") {
-            fileName = "custom.dat"
-        }
+        var fileName = sanitizeFileName(
+            getFileNameFromUri(context, uri) ?: "custom.dat",
+            fallback = "custom.dat"
+        )
         if (!fileName.lowercase().endsWith(".dat")) {
             fileName += ".dat"
         }
         return fileName
+    }
+
+    /**
+     * Strips path separators and relative segments from a provider-supplied
+     * display name so it cannot escape the target directory.
+     */
+    private fun sanitizeFileName(fileName: String, fallback: String): String {
+        var name = fileName.substringAfterLast('/').substringAfterLast('\\')
+        if (name.isBlank() || name == "." || name == "..") {
+            name = fallback
+        }
+        return name
     }
 
     /**
@@ -536,7 +546,10 @@ class FileManager(private val application: Application, private val prefs: Prefe
     suspend fun importConfigFileFromUri(context: Context, uri: Uri): String? {
         return withContext(Dispatchers.IO) {
             try {
-                var fileName = getFileNameFromUri(context, uri) ?: "imported_config.json"
+                var fileName = sanitizeFileName(
+                    getFileNameFromUri(context, uri) ?: "imported_config.json",
+                    fallback = "imported_config.json"
+                )
                 // Only full config files (.json/.yaml/.yml) are supported.
                 if (!fileName.isConfigFile()) {
                     Log.e(TAG, "Rejected config import: unsupported file extension: $fileName")
