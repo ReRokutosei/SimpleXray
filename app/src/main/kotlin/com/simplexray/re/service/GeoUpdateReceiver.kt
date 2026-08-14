@@ -5,7 +5,6 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.util.Log
 import com.simplexray.re.data.source.FileManager
 import com.simplexray.re.prefs.Preferences
@@ -100,21 +99,12 @@ class GeoUpdateReceiver : BroadcastReceiver() {
             val intervalMs = intervalHours * 60L * 60L * 1000L
             val triggerAtMs = System.currentTimeMillis() + intervalMs
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setInexactRepeating(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMs,
-                    intervalMs,
-                    pendingIntent
-                )
-            } else {
-                alarmManager.setInexactRepeating(
-                    AlarmManager.RTC_WAKEUP,
-                    triggerAtMs,
-                    intervalMs,
-                    pendingIntent
-                )
-            }
+            alarmManager.setInexactRepeating(
+                AlarmManager.RTC_WAKEUP,
+                triggerAtMs,
+                intervalMs,
+                pendingIntent
+            )
             Log.d(TAG, "Geo auto-update scheduled every $intervalHours hour(s).")
         }
 

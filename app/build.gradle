@@ -193,8 +193,8 @@ dependencies {
     implementation libs.miuix.squircle
     implementation libs.miuix.icons
     implementation libs.miuix.nav
-    testImplementation 'junit:junit:4.13.2'
-    testImplementation 'org.json:json:20231013'
+    testImplementation libs.junit
+    testImplementation libs.org.json
     androidTestImplementation platform(libs.androidx.compose.bom)
     androidTestImplementation libs.androidx.test.ext.junit
     androidTestImplementation libs.androidx.test.runner
