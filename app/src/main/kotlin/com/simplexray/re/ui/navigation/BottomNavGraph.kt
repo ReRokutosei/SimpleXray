@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
@@ -158,10 +160,12 @@ fun BottomNavHost(
             popEnterTransition = { popEnterTransition() },
             popExitTransition = { popExitTransition() }
         ) {
+            val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
             LogScreen(
                 logViewModel = logViewModel,
                 listState = logListState,
-                paddingValues = paddingValues
+                paddingValues = paddingValues,
+                logLevel = settingsState.switches.logLevel
             )
         }
 

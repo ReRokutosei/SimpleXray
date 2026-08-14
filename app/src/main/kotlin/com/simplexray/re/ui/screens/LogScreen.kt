@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
+import com.simplexray.re.prefs.LogLevel
 import com.simplexray.re.viewmodel.LogViewModel
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
@@ -42,7 +43,8 @@ import top.yukonga.miuix.kmp.theme.MiuixTheme
 fun LogScreen(
     logViewModel: LogViewModel,
     listState: LazyListState,
-    paddingValues: PaddingValues = PaddingValues()
+    paddingValues: PaddingValues = PaddingValues(),
+    logLevel: LogLevel = LogLevel.Auto
 ) {
     val context = LocalContext.current
     val filteredEntries by logViewModel.filteredEntries.collectAsStateWithLifecycle()
@@ -67,7 +69,23 @@ fun LogScreen(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        if (filteredEntries.isEmpty()) {
+        if (logLevel == LogLevel.None) {
+            // Logging is disabled by the user (loglevel: none): hide every log
+            // entry and show a centered card instead. File logging continues so
+            // switching back to another level immediately shows history.
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = stringResource(R.string.log_disabled_none),
+                    modifier = Modifier.fillMaxWidth(),
+                    style = MiuixTheme.textStyles.body1,
+                    color = MiuixTheme.colorScheme.onSurfaceSecondary,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        } else if (filteredEntries.isEmpty()) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
