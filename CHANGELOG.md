@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/ReRokutosei/SimpleXray/compare/v1.1.0...v1.2.0) (2026-08-14)
+
+
+### Bug Fixes
+
+* **service:** gRPC-based startup detection (works with loglevel none); drop connectivity test; dynamic provider authorities ([fa77018](https://github.com/ReRokutosei/SimpleXray/commit/fa7701824d138e1b49b203eaec49df80be10ac00))
+* **service:** use bitmap webp for notification small icon ([e2c86a6](https://github.com/ReRokutosei/SimpleXray/commit/e2c86a6e5961cc440751e12adf596e307da9f378))
+* **ui:** resolve icon alias by full class name (debug suffix); move outbound nodes card after core control ([cd1ead7](https://github.com/ReRokutosei/SimpleXray/commit/cd1ead7a8205989fdd21c218a20296912e0e240d))
+
 ## [1.1.0](https://github.com/ReRokutosei/SimpleXray/compare/v1.0.0...v1.1.0) (2026-08-14)
 
 
