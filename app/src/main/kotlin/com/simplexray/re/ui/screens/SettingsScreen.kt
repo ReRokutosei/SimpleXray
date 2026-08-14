@@ -1,7 +1,7 @@
 package com.simplexray.re.ui.screens
 
 import android.content.Intent
-import android.net.Uri
+import androidx.core.net.toUri
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -94,6 +94,11 @@ fun SettingsScreen(
     val themeModes = listOf(ThemeMode.Light, ThemeMode.Dark, ThemeMode.Auto)
     val currentThemeIndex = themeModes.indexOf(settingsState.switches.themeMode).coerceAtLeast(0)
 
+    val geoipUrlDefault = stringResource(R.string.geoip_url)
+    val geositeUrlDefault = stringResource(R.string.geosite_url)
+    val sourceUrl = stringResource(R.string.source_url)
+    val privacyDisclaimerUrl = stringResource(R.string.privacy_disclaimer_url)
+
     val logLevelOptions = com.simplexray.re.prefs.LogLevel.entries
     val logLevelNames = logLevelOptions.map { it.name }
     val currentLogLevelIndex = logLevelOptions.indexOf(settingsState.switches.logLevel).coerceAtLeast(0)
@@ -144,8 +149,8 @@ fun SettingsScreen(
                         text = stringResource(id = R.string.restore_default_url),
                         onClick = {
                             ruleFileUrl =
-                                if (editingRuleFile == "geoip.dat") context.getString(R.string.geoip_url)
-                                else context.getString(R.string.geosite_url)
+                                if (editingRuleFile == "geoip.dat") geoipUrlDefault
+                                else geositeUrlDefault
                         }
                     )
                 }
@@ -578,7 +583,7 @@ fun SettingsScreen(
                     title = stringResource(R.string.source),
                     summary = stringResource(R.string.open_source),
                     onClick = {
-                        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(context.getString(R.string.source_url)))
+                        val browserIntent = Intent(Intent.ACTION_VIEW, sourceUrl.toUri())
                         context.startActivity(browserIntent)
                     }
                 )
@@ -587,7 +592,7 @@ fun SettingsScreen(
                     title = stringResource(R.string.privacy_disclaimer_title),
                     summary = stringResource(R.string.privacy_disclaimer_summary),
                     onClick = {
-                        val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(context.getString(R.string.privacy_disclaimer_url)))
+                        val browserIntent = Intent(Intent.ACTION_VIEW, privacyDisclaimerUrl.toUri())
                         context.startActivity(browserIntent)
                     }
                 )

@@ -290,7 +290,7 @@ private fun LogActions(
 ) {
     val hasLogsToExport by logViewModel.hasLogsToExport.collectAsStateWithLifecycle()
     val logEntries by logViewModel.logEntries.collectAsStateWithLifecycle()
-    val context = androidx.compose.ui.platform.LocalContext.current
+    val logsCleared = stringResource(R.string.logs_cleared)
 
     IconButton(onClick = { onLogSearchingChange(true) }) {
         Icon(
@@ -310,7 +310,7 @@ private fun LogActions(
     IconButton(
         onClick = {
             logViewModel.clearLogs()
-            mainViewModel.showSnackbar(context.getString(R.string.logs_cleared))
+            mainViewModel.showSnackbar(logsCleared)
         },
         enabled = logEntries.isNotEmpty()
     ) {
