@@ -163,6 +163,7 @@
     <string name="import_success">import successful</string>
     <string name="import_invalid_format">Invalid import format</string>
     <string name="no_log_entries">No log entries</string>
+    <string name="log_disabled_none">Logging is disabled (none)</string>
     <string name="vpn_interface">VPN Interface</string>
     <string name="create_config_failed">Configuration creation failed</string>
     <string name="no_app_for_export">No app available for export</string>

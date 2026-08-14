@@ -156,6 +156,7 @@
     <string name="import_success">导入成功</string>
     <string name="import_invalid_format">导入格式无效</string>
     <string name="no_log_entries">无日志</string>
+    <string name="log_disabled_none">日志已按设置关闭（none）</string>
     <string name="vpn_interface">VPN 接口</string>
     <string name="create_config_failed">配置创建失败</string>
     <string name="no_app_for_export">没有可用于导出的应用</string>
