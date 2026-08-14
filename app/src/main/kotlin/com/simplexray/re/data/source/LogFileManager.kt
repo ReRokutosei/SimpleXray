@@ -2,10 +2,8 @@ package com.simplexray.re.data.source
 
 import android.content.Context
 import android.util.Log
-import java.io.BufferedReader
 import java.io.File
 import java.io.FileOutputStream
-import java.io.FileReader
 import java.io.FileWriter
 import java.io.IOException
 import java.io.PrintWriter
@@ -38,25 +36,37 @@ class LogFileManager(context: Context) {
     }
 
     fun readLogs(): String? {
-        val logContent = StringBuilder()
         if (!logFile.exists()) {
             Log.d(TAG, "Log file does not exist.")
             return ""
         }
-        try {
-            FileReader(logFile).use { fileReader ->
-                BufferedReader(fileReader).use { bufferedReader ->
-                    var line: String?
-                    while (bufferedReader.readLine().also { line = it } != null) {
-                        logContent.append(line).append("\n")
+        return try {
+            // Read only the tail of the file: the file can grow up to
+            // MAX_LOG_SIZE_BYTES and the UI only ever shows the last
+            // MAX_LOG_ENTRIES, so reading everything would waste memory/CPU.
+            RandomAccessFile(logFile, "r").use { raf ->
+                val fileSize = raf.length()
+                if (fileSize == 0L) {
+                    return ""
+                }
+                val readStart = (fileSize - READ_TAIL_BYTES).coerceAtLeast(0L)
+                raf.seek(readStart)
+                val bytes = ByteArray((fileSize - readStart).toInt())
+                raf.readFully(bytes)
+                var content = String(bytes, Charsets.UTF_8)
+                if (readStart > 0L) {
+                    // Drop the possibly half-cut first line from the tail window.
+                    val firstNewline = content.indexOf('\n')
+                    if (firstNewline > 0) {
+                        content = content.substring(firstNewline + 1)
                     }
                 }
+                content
             }
         } catch (e: IOException) {
             Log.e(TAG, "Error reading log file", e)
-            return null
+            null
         }
-        return logContent.toString()
     }
 
     @Synchronized
@@ -147,5 +157,6 @@ class LogFileManager(context: Context) {
         private const val LOG_FILE_NAME = "app_log.txt"
         private const val MAX_LOG_SIZE_BYTES = (10 * 1024 * 1024).toLong()
         private const val TRUNCATE_SIZE_BYTES = (5 * 1024 * 1024).toLong()
+        private const val READ_TAIL_BYTES = (1 * 1024 * 1024).toLong()
     }
 }
