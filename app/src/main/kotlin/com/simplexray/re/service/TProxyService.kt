@@ -37,6 +37,9 @@ import java.io.IOException
 import java.io.InputStreamReader
 import java.io.InterruptedIOException
 import java.net.ServerSocket
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlin.concurrent.Volatile
 import kotlin.system.exitProcess
 
@@ -236,6 +239,11 @@ private var xrayStartAttempt = 0
             var line = reader.readLine()
             while (line != null) {
                 Log.d(TAG, "XrayLog: $line")
+                // xray (Go log) prepends "2006/01/02 15:04:05.xxxxxx " whose clock
+                // may be UTC on Android. Replace it with the device-local time so
+                // the log view is consistent (same approach as v2rayNG/MikuRay,
+                // which stamp logs on the app side).
+                val stampedLine = stampLogLine(line)
                 if (!xrayStarted && line.contains("Xray") && line.contains("started")) {
                     xrayStarted = true
                     xrayStartAttempt = 0
@@ -244,9 +252,9 @@ private var xrayStartAttempt = 0
                     successIntent.setPackage(application.packageName)
                     sendBroadcast(successIntent)
                 }
-                logFileManager.appendLog(line)
+                logFileManager.appendLog(stampedLine)
                 synchronized(logBroadcastBuffer) {
-                    logBroadcastBuffer.add(line)
+                    logBroadcastBuffer.add(stampedLine)
                     if (!handler.hasCallbacks(broadcastLogsRunnable)) {
                         handler.postDelayed(broadcastLogsRunnable, BROADCAST_DELAY_MS)
                     }
@@ -307,6 +315,16 @@ private var xrayStartAttempt = 0
         processBuilder.directory(filesDir)
         processBuilder.redirectErrorStream(true)
         return processBuilder
+    }
+
+    /**
+     * Replaces the Go-log timestamp prefix of an xray log line ("2006/01/02
+     * 15:04:05.xxxxxx ") with the current device-local time. Lines without such
+     * a prefix are returned unchanged.
+     */
+    private fun stampLogLine(line: String): String {
+        val message = GO_LOG_TIMESTAMP_PREFIX.replaceFirst(line, "")
+        return if (message === line) line else "${logTimestampFormat.format(Date())} $message"
     }
 
     private fun stopXray() {
@@ -475,6 +493,8 @@ private var xrayStartAttempt = 0
         private const val TAG = "TProxyService"
         private const val BROADCAST_DELAY_MS: Long = 3000
         private const val MAX_START_ATTEMPTS = 2
+        private val GO_LOG_TIMESTAMP_PREFIX = Regex("""^\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}(\.\d+)? """)
+        private val logTimestampFormat = SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS", Locale.US)
 
         init {
             try {
