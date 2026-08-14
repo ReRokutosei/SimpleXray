@@ -228,6 +228,7 @@ class Preferences(context: Context) {
     var geoipUrl: String by stringPref(GEOIP_URL) { context1.getString(R.string.geoip_url) }
     var geositeUrl: String by stringPref(GEOSITE_URL) { context1.getString(R.string.geosite_url) }
     var apiAddress: String by stringPref(API_ADDRESS) { "127.0.0.1" }
+    var appIcon: String? by nullableStringPref(APP_ICON)
     var apiPort: Int by intPref(API_PORT, 0)
     var bypassSelectedApps: Boolean by booleanPref(BYPASS_SELECTED_APPS, false)
 
@@ -280,6 +281,7 @@ class Preferences(context: Context) {
         const val DISABLE_VPN: String = "DisableVpn"
         const val CONNECTIVITY_TEST_TARGET: String = "ConnectivityTestTarget"
         const val CONNECTIVITY_TEST_TIMEOUT: String = "ConnectivityTestTimeout"
+        const val APP_ICON: String = "AppIcon"
         const val GEOIP_URL: String = "GeoipUrl"
         const val GEOSITE_URL: String = "GeositeUrl"
         const val API_ADDRESS: String = "ApiAddress"

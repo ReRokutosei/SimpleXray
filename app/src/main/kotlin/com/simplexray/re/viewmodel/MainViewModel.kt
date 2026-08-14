@@ -6,6 +6,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.core.net.toUri
@@ -63,6 +64,14 @@ import java.util.regex.Pattern
 import kotlin.coroutines.cancellation.CancellationException
 
 private const val TAG = "MainViewModel"
+
+private const val APP_ICON_DEFAULT = "flat"
+private val APP_ICON_OPTIONS = listOf("flat", "lineal", "lineal_color")
+private val APP_ICON_ALIASES = listOf(
+    "flat" to "MainActivityFlat",
+    "lineal" to "MainActivityLineal",
+    "lineal_color" to "MainActivityLinealColor"
+)
 
 sealed class MainViewUiEvent {
     data class ShowSnackbar(val message: String) : MainViewUiEvent()
@@ -137,6 +146,9 @@ class MainViewModel(application: Application) :
 
     private val _isServiceEnabled = MutableStateFlow(false)
     val isServiceEnabled: StateFlow<Boolean> = _isServiceEnabled.asStateFlow()
+
+    private val _appIcon = MutableStateFlow(prefs.appIcon ?: APP_ICON_DEFAULT)
+    val appIcon: StateFlow<String> = _appIcon.asStateFlow()
 
     private val _uiEvent = Channel<MainViewUiEvent>(Channel.BUFFERED)
     val uiEvent = _uiEvent.receiveAsFlow()
@@ -216,6 +228,7 @@ class MainViewModel(application: Application) :
             }
             _isServiceEnabled.value = isServiceRunning(application, TProxyService::class.java)
 
+            ensureAppIconSelected()
             updateSettingsState()
             loadKernelVersion()
             refreshConfigFileList()
@@ -302,6 +315,45 @@ class MainViewModel(application: Application) :
     fun setServiceEnabled(enabled: Boolean) {
         _isServiceEnabled.value = enabled
         prefs.enable = enabled
+    }
+
+    /**
+     * Picks a random app icon on first launch (when no choice was persisted)
+     * and applies it; afterwards only manual switching via [setAppIcon] changes
+     * it. The launcher alias of the chosen style is enabled, the others disabled.
+     */
+    fun ensureAppIconSelected() {
+        val current = prefs.appIcon
+        if (current == null) {
+            val pick = APP_ICON_OPTIONS.random()
+            applyAppIcon(pick)
+            prefs.appIcon = pick
+            _appIcon.value = pick
+            Log.d(TAG, "Randomly selected app icon: $pick")
+        } else {
+            _appIcon.value = current
+        }
+    }
+
+    fun setAppIcon(key: String) {
+        if (key !in APP_ICON_OPTIONS) return
+        applyAppIcon(key)
+        prefs.appIcon = key
+        _appIcon.value = key
+        Log.d(TAG, "App icon switched to: $key")
+    }
+
+    private fun applyAppIcon(key: String) {
+        val pm = application.packageManager
+        APP_ICON_ALIASES.forEach { (option, className) ->
+            val component = ComponentName(application, "${application.packageName}.$className")
+            pm.setComponentEnabledSetting(
+                component,
+                if (option == key) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
+                else PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                PackageManager.DONT_KILL_APP
+            )
+        }
     }
 
 

@@ -23,7 +23,7 @@
 
     <application
         android:banner="@mipmap/ic_banner"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mipmap/ic_launcher_lineal"
         android:label="@string/app_name"
         android:theme="@style/Theme.Material3.DynamicColors.DayNight.NoActionBar">
         <provider
@@ -74,14 +74,51 @@
             android:windowSoftInputMode="adjustPan"
             tools:targetApi="tiramisu">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-
-                <category android:name="android.intent.category.LAUNCHER" />
-                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
-            </intent-filter>
-            <intent-filter>
                 <action android:name="android.service.quicksettings.action.QS_TILE_PREFERENCES" />
             </intent-filter>
         </activity>
+
+        <!-- Launcher aliases for runtime app-icon switching (one enabled at a time). -->
+        <activity-alias
+            android:name=".MainActivityFlat"
+            android:enabled="true"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_flat"
+            android:label="@string/app_name"
+            android:targetActivity="com.simplexray.re.activity.MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".MainActivityLineal"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_lineal"
+            android:label="@string/app_name"
+            android:targetActivity="com.simplexray.re.activity.MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
+
+        <activity-alias
+            android:name=".MainActivityLinealColor"
+            android:enabled="false"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher_lineal_color"
+            android:label="@string/app_name"
+            android:targetActivity="com.simplexray.re.activity.MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+            </intent-filter>
+        </activity-alias>
     </application>
 </manifest>

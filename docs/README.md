@@ -210,12 +210,16 @@ git submodule update --init --recursive
 
 SimpleXray incorporates or builds upon the following open-source projects:
 
-* [`compose-miuix-ui`](https://github.com/compose-miuix-ui/miuix) — Jetpack Compose UI component library inspired by Xiaomi HyperOS / MIUI.
-* [`Xray-core`](https://github.com/XTLS/Xray-core) — Proxy and network core used by SimpleXray.
-* [`SimpleXray`](https://github.com/lhear/SimpleXray) — Upstream Android client on which this fork is based.
-* [`hev-socks5-tunnel`](https://github.com/heiher/hev-socks5-tunnel) — SOCKS5 VPN tunnel implementation used for Android traffic handling.
+* [**`compose-miuix-ui`**](https://github.com/compose-miuix-ui/miuix) — A Jetpack Compose UI component library for Kotlin Multiplatform, inspired by Xiaomi HyperOS / MIUI.
+* [**`Xray-core`**](https://github.com/XTLS/Xray-core) — The proxy and network core used by SimpleXray.
+* [**`SimpleXray`**](https://github.com/lhear/SimpleXray) — The upstream Android client on which this fork is based.
+* [**`hev-socks5-tunnel`**](https://github.com/heiher/hev-socks5-tunnel) — A SOCKS5 VPN tunnel implementation used for handling Android network traffic.
 
-The versions and modifications used by this fork may differ from those in the upstream projects.
+### Acknowledgements
+
+This project uses free icons provided by Magnific. We would like to express our gratitude for the original creator's work:
+
+* [Cookie Icons (Special Lineal, Flat, Lineal Color)](https://www.magnific.com/icon/cookie_1047813) — Designed by [Magnific](https://www.magnific.com)
 
 ---
 
