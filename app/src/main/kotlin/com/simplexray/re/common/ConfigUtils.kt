@@ -28,12 +28,12 @@ object ConfigUtils {
 
     private val EXCLUDED_OUTBOUND_PROTOCOLS = setOf("freedom", "blackhole", "dns")
 
-    private const val DEFAULT_OBSERVATORY_PROBE_URL = "https://connectivitycheck.gstatic.com/generate_204"
-    private const val DEFAULT_OBSERVATORY_INTERVAL = "10s"
-    private const val DEFAULT_OBSERVATORY_TIMEOUT = "5s"
-    private const val DEFAULT_OBSERVATORY_SAMPLING = 3
+    // UDP-only protocols that cannot be latency-tested via TCP connect.
+    private val UDP_ONLY_OUTBOUND_PROTOCOLS = setOf("wireguard", "hysteria2")
 
     data class OutboundInfo(val tag: String, val protocol: String)
+
+    data class OutboundEndpoint(val tag: String, val protocol: String, val host: String, val port: Int)
 
     fun sanitizeConfig(content: String, prefs: Preferences? = null): String {
         val rootJson = parseToJsonObject(content) ?: return content
@@ -318,7 +318,6 @@ object ConfigUtils {
         apiObject.put("listen", "${prefs.apiAddress}:${prefs.apiPort}")
         val servicesArray = JSONArray()
         servicesArray.put("StatsService")
-        servicesArray.put("ObservatoryService")
         apiObject.put("services", servicesArray)
 
         jsonObject.put("api", apiObject)
@@ -331,37 +330,6 @@ object ConfigUtils {
         policyObject.put("system", systemObject)
 
         jsonObject.put("policy", policyObject)
-
-        // Inject burst observatory so the dashboard can show per-outbound latency,
-        // unless the user already provides observatory/burstObservatory blocks
-        // (full-config is always respected).
-        if (!jsonObject.has("observatory") && !jsonObject.has("burstObservatory")) {
-            val tags = extractOutboundsFrom(jsonObject).map { it.tag }
-            if (tags.isNotEmpty()) {
-                // Use the same probe target as the connectivity test (dashboard
-                // latency and the top-bar test then share one scale).
-                val probeTarget = prefs.connectivityTestTarget
-                    .takeIf { it.isNotBlank() } ?: DEFAULT_OBSERVATORY_PROBE_URL
-                val pingConfig = JSONObject().apply {
-                    put("destination", probeTarget)
-                    put("interval", DEFAULT_OBSERVATORY_INTERVAL)
-                    put("sampling", DEFAULT_OBSERVATORY_SAMPLING)
-                    put("timeout", DEFAULT_OBSERVATORY_TIMEOUT)
-                    put("httpMethod", "HEAD")
-                }
-                val burstObservatory = JSONObject().apply {
-                    put("subjectSelector", JSONArray(tags))
-                    put("pingConfig", pingConfig)
-                }
-                jsonObject.put("burstObservatory", burstObservatory)
-                Log.d(
-                    TAG,
-                    "Injected burstObservatory: destination=$probeTarget, " +
-                        "subjectSelector=${tags.joinToString(",")}, " +
-                        "interval=${DEFAULT_OBSERVATORY_INTERVAL}, sampling=${DEFAULT_OBSERVATORY_SAMPLING}"
-                )
-            }
-        }
 
         if (prefs.httpProxyEnabled) {
             val inbounds = jsonObject.optJSONArray("inbounds") ?: JSONArray().also { jsonObject.put("inbounds", it) }
@@ -412,6 +380,44 @@ object ConfigUtils {
                 add(OutboundInfo(tag, protocol))
             }
         }
+    }
+
+    /**
+     * Extracts the TCP server endpoint (host:port) of each proxy outbound, in
+     * config order. Protocols with no TCP endpoint to test are skipped:
+     * non-proxy protocols (freedom/blackhole/dns), UDP-only protocols
+     * (wireguard/hysteria2) and QUIC transports.
+     */
+    fun extractOutboundEndpoints(content: String): List<OutboundEndpoint> {
+        val root = parseToJsonObject(content) ?: return emptyList()
+        val outbounds = root.optJSONArray("outbounds") ?: return emptyList()
+        return buildList {
+            for (i in 0 until outbounds.length()) {
+                val ob = outbounds.optJSONObject(i) ?: continue
+                val protocol = ob.optString("protocol").lowercase()
+                if (protocol in EXCLUDED_OUTBOUND_PROTOCOLS) continue
+                if (protocol in UDP_ONLY_OUTBOUND_PROTOCOLS) continue
+                val network = ob.optJSONObject("streamSettings")
+                    ?.optString("network")?.lowercase()
+                if (network == "quic") continue
+                val tag = ob.optString("tag")
+                if (tag.isEmpty()) continue
+                val (host, port) = extractServerEndpoint(ob, protocol) ?: continue
+                add(OutboundEndpoint(tag, protocol, host, port))
+            }
+        }
+    }
+
+    private fun extractServerEndpoint(ob: JSONObject, protocol: String): Pair<String, Int>? {
+        val settings = ob.optJSONObject("settings") ?: return null
+        val server = when (protocol) {
+            "vless", "vmess" -> settings.optJSONArray("vnext")?.optJSONObject(0)
+            "trojan", "shadowsocks", "http", "socks" -> settings.optJSONArray("servers")?.optJSONObject(0)
+            else -> null
+        } ?: return null
+        val host = server.optString("address").takeIf { it.isNotBlank() } ?: return null
+        val port = server.optInt("port").takeIf { it > 0 && it <= 65535 } ?: return null
+        return host to port
     }
 
     fun buildInjectedConfig(content: String, isYaml: Boolean, prefs: Preferences): String {

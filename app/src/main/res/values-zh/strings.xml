@@ -94,6 +94,7 @@
     <string name="core_stats_title">状态</string>
     <string name="traffic_info">流量信息</string>
     <string name="outbound_nodes">出站节点</string>
+    <string name="refresh_latency">重新测试延迟</string>
     <string name="core_runtime_status">核心运行状态</string>
     <string name="stats_uplink">上行流量</string>
     <string name="stats_downlink">下行流量</string>

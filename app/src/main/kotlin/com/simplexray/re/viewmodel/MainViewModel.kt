@@ -24,6 +24,7 @@ import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.CoreStatsClient
 import com.simplexray.re.common.ROUTE_APP_LIST
 import com.simplexray.re.common.ROUTE_CONFIG_EDIT
+import com.simplexray.re.common.TcpPing
 import com.simplexray.re.common.isConfigFile
 import com.simplexray.re.common.ThemeMode
 import com.simplexray.re.data.source.FileManager
@@ -34,7 +35,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -74,6 +78,7 @@ class MainViewModel(application: Application) :
     private val activityScope: CoroutineScope = viewModelScope
 
     private var coreStatsClient: CoreStatsClient? = null
+    private var latencyTestJob: Job? = null
 
     private val fileManager: FileManager = FileManager(application, prefs)
 
@@ -352,29 +357,45 @@ class MainViewModel(application: Application) :
     }
 
     /**
-     * Queries the observatory API for per-outbound latency. No-op when the
-     * service is not running; the client is created lazily like updateCoreStats.
+     * Latency-tests every TCP-capable outbound endpoint (1-RTT TCP connect,
+     * independent of the core). Called when the dashboard is shown and on
+     * manual refresh. UDP-only protocols (wireguard/hysteria2) and QUIC
+     * transports are skipped and keep showing no data.
      */
-    suspend fun updateOutboundLatency() {
-        if (!_isServiceEnabled.value) return
-        if (coreStatsClient == null) {
-            coreStatsClient = CoreStatsClient.create(prefs.apiAddress, prefs.apiPort)
+    suspend fun testOutboundLatency() {
+        val file = _selectedConfigFile.value ?: return
+        val content = withContext(Dispatchers.IO) {
+            runCatching { file.readText() }.getOrNull()
+        } ?: return
+        val endpoints = ConfigUtils.extractOutboundEndpoints(content)
+        if (endpoints.isEmpty()) {
+            _outboundLatency.value = emptyMap()
+            return
         }
-
-        val result = coreStatsClient?.getOutboundStatus() ?: return
         val now = System.currentTimeMillis() / 1000
-        _outboundLatency.value = result.statusList.associate { status ->
-            Log.d(
-                TAG,
-                "[latency] tag=${status.outboundTag} alive=${status.alive} delay=${status.delay}ms"
-            )
-            status.outboundTag to OutboundLatency(
-                alive = status.alive,
-                delayMs = status.delay,
+        val io = Dispatchers.IO.limitedParallelism(8)
+        val results = coroutineScope {
+            endpoints.map { ep ->
+                async(io) {
+                    ep.tag to TcpPing.pingBlocking(ep.host, ep.port)
+                }
+            }.awaitAll()
+        }
+        _outboundLatency.value = results.associate { (tag, delay) ->
+            Log.d(TAG, "[tcping] tag=$tag delay=${if (delay >= 0) "${delay}ms" else "failed"}")
+            tag to OutboundLatency(
+                alive = delay >= 0,
+                delayMs = delay.coerceAtLeast(0),
                 lastTryTime = now
             )
         }
-        Log.d(TAG, "Outbound latency updated: ${_outboundLatency.value.size} entries")
+        Log.d(TAG, "Outbound latency (TCPing) updated: ${results.size} entries")
+    }
+
+    /** Non-suspend wrapper for UI callbacks (e.g. the dashboard refresh button). */
+    fun refreshLatency() {
+        if (latencyTestJob?.isActive == true) return
+        latencyTestJob = viewModelScope.launch { testOutboundLatency() }
     }
 
     suspend fun importConfigFromClipboard(): String? {
