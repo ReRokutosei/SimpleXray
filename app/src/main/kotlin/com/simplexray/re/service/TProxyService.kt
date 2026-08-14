@@ -474,30 +474,36 @@ private var xrayStartAttempt = 0
 
     @Suppress("SameParameterValue")
     private fun createNotification(channelName: String) {
+        // [DEBUG-ICON] Temporary diagnostics for notification small icon
+        // investigation; remove after confirming which resource is rendered.
+        val iconId = R.drawable.ic_stat_lineal
+        Log.d(TAG, "DEBUG-ICON createNotification channel=$channelName")
+        Log.d(
+            TAG,
+            "DEBUG-ICON smallIcon resId=0x${Integer.toHexString(iconId)} " +
+                "entry=${resources.getResourceEntryName(iconId)} type=${resources.getResourceTypeName(iconId)}"
+        )
+        val iconDrawable = resources.getDrawable(iconId, null)
+        Log.d(
+            TAG,
+            "DEBUG-ICON smallIcon drawable=${iconDrawable::class.simpleName} " +
+                "intrinsic=${iconDrawable.intrinsicWidth}x${iconDrawable.intrinsicHeight}"
+        )
+        Log.d(TAG, "DEBUG-ICON prefs.appIcon=${Preferences(this).appIcon}")
+        // [/DEBUG-ICON]
+
         val i = Intent(this, MainActivity::class.java)
         val pi = PendingIntent.getActivity(
             this, 0, i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val notification = NotificationCompat.Builder(this, channelName)
         val notify = notification.setContentTitle(getString(R.string.app_name))
-            .setSmallIcon(smallIconRes()).setContentIntent(pi).build()
+            .setSmallIcon(R.drawable.ic_stat_lineal).setContentIntent(pi).build()
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
             startForeground(1, notify)
         } else {
             startForeground(1, notify, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
         }
-    }
-
-    /**
-     * Notification small icon follows the launcher icon preference. Note: only
-     * "lineal" is a true single-color icon; the colored styles render as a dark
-     * silhouette in the status bar (the system tints the alpha channel).
-     */
-    private fun smallIconRes(): Int = when (Preferences(this).appIcon) {
-        "flat" -> R.mipmap.ic_launcher_flat_foreground
-        "lineal" -> R.mipmap.ic_launcher_lineal_foreground
-        "lineal_color" -> R.mipmap.ic_launcher_lineal_color_foreground
-        else -> R.mipmap.ic_launcher_origin_foreground
     }
 
     private fun exit() {
