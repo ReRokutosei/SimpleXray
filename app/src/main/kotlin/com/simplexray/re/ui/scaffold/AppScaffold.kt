@@ -266,11 +266,9 @@ private fun TopAppBarActions(
     mainViewModel: MainViewModel
 ) {
     when (currentRoute) {
-        ROUTE_CONFIG -> ConfigActions(
-            mainViewModel = mainViewModel
-        )
+        ROUTE_STATS -> { /* No actions */ }
 
-        ROUTE_STATS -> { /* Actions moved to StatsScreen content card */ }
+        ROUTE_CONFIG -> { /* No actions */ }
 
         ROUTE_LOG -> LogActions(
             onPerformExport = onPerformExport,
@@ -280,18 +278,6 @@ private fun TopAppBarActions(
         )
 
         ROUTE_SETTINGS -> { /* No actions */ }
-    }
-}
-
-@Composable
-private fun ConfigActions(
-    mainViewModel: MainViewModel
-) {
-    IconButton(onClick = { mainViewModel.testConnectivity() }) {
-        Icon(
-            painter = painterResource(id = R.drawable.ic_flash),
-            contentDescription = stringResource(R.string.connectivity_test)
-        )
     }
 }
 

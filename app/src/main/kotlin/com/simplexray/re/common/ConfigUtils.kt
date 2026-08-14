@@ -338,8 +338,12 @@ object ConfigUtils {
         if (!jsonObject.has("observatory") && !jsonObject.has("burstObservatory")) {
             val tags = extractOutboundsFrom(jsonObject).map { it.tag }
             if (tags.isNotEmpty()) {
+                // Use the same probe target as the connectivity test (dashboard
+                // latency and the top-bar test then share one scale).
+                val probeTarget = prefs.connectivityTestTarget
+                    .takeIf { it.isNotBlank() } ?: DEFAULT_OBSERVATORY_PROBE_URL
                 val pingConfig = JSONObject().apply {
-                    put("destination", DEFAULT_OBSERVATORY_PROBE_URL)
+                    put("destination", probeTarget)
                     put("interval", DEFAULT_OBSERVATORY_INTERVAL)
                     put("sampling", DEFAULT_OBSERVATORY_SAMPLING)
                     put("timeout", DEFAULT_OBSERVATORY_TIMEOUT)
@@ -350,7 +354,12 @@ object ConfigUtils {
                     put("pingConfig", pingConfig)
                 }
                 jsonObject.put("burstObservatory", burstObservatory)
-                Log.d(TAG, "Injected burst observatory for ${tags.size} outbounds.")
+                Log.d(
+                    TAG,
+                    "Injected burstObservatory: destination=$probeTarget, " +
+                        "subjectSelector=${tags.joinToString(",")}, " +
+                        "interval=${DEFAULT_OBSERVATORY_INTERVAL}, sampling=${DEFAULT_OBSERVATORY_SAMPLING}"
+                )
             }
         }
 
