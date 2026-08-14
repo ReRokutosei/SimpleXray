@@ -8,6 +8,8 @@ import org.json.JSONException
 import org.json.JSONObject
 import org.yaml.snakeyaml.Yaml
 import java.io.File
+import java.net.Inet6Address
+import java.net.InetAddress
 
 fun File.isConfigFile(): Boolean {
     val ext = extension.lowercase()
@@ -403,7 +405,54 @@ object ConfigUtils {
                 val tag = ob.optString("tag")
                 if (tag.isEmpty()) continue
                 val (host, port) = extractServerEndpoint(ob, protocol) ?: continue
+                // Reject IP literals pointing at private/loopback/link-local space
+                // so a malicious or mistyped config cannot turn the dashboard
+                // probe into an internal-network scanner (SSRF-like surface).
+                if (isPrivateOrLoopbackHost(host)) continue
                 add(OutboundEndpoint(tag, protocol, host, port))
+            }
+        }
+    }
+
+    /**
+     * True when [host] is an IP literal in private, loopback, link-local or
+     * reserved space. Hostnames are resolved by the system DNS at connect
+     * time and are intentionally not validated here.
+     */
+    private fun isPrivateOrLoopbackHost(host: String): Boolean {
+        if (host.isEmpty()) return true
+        if (!isIpLiteral(host)) return false // hostname, resolved by DNS
+        return runCatching {
+            // getByName on an IP literal (including inet_aton short/octal/hex
+            // forms like 127.1, 2130706433 or 0xC0A80101) parses locally and
+            // matches the semantics Socket.connect uses.
+            val addr = InetAddress.getByName(host)
+            if (addr is Inet6Address) {
+                val b = addr.address
+                // fc00::/7 unique local addresses (not covered by isSiteLocalAddress).
+                if (b.size == 16 && (b[0].toInt() and 0xFE) == 0xFC) return@runCatching true
+            }
+            addr.isAnyLocalAddress || addr.isLoopbackAddress ||
+                addr.isLinkLocalAddress || addr.isSiteLocalAddress ||
+                addr.isMulticastAddress
+        }.getOrDefault(true) // unparseable literal -> skip probing
+    }
+
+    /** True when [host] looks like an IP literal rather than a hostname. */
+    private fun isIpLiteral(host: String): Boolean {
+        val h = host.trim('[', ']')
+        if (h.contains(':')) {
+            return h.all { it.isDigit() || it in 'a'..'f' || it in 'A'..'F' || it == ':' || it == '.' }
+        }
+        // inet_aton IPv4 forms: 1-4 dot-separated segments; each segment is
+        // decimal, octal (leading 0), or hexadecimal (0x/0X prefix).
+        return h.split('.').all { seg ->
+            if (seg.isEmpty()) return@all false
+            if (seg.startsWith("0x", ignoreCase = true)) {
+                seg.length > 2 &&
+                    seg.substring(2).all { it.isDigit() || it in 'a'..'f' || it in 'A'..'F' }
+            } else {
+                seg.all { it.isDigit() }
             }
         }
     }
