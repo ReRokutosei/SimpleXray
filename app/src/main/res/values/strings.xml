@@ -93,7 +93,7 @@
 
     <!-- Connectivity Test -->
     <string name="connectivity_test">Connectivity Test</string>
-    <string name="app_icon_current">Current</string>
+    <string name="app_icon_summary">Choose the launcher icon style</string>
     <string name="icon_flat">Flat</string>
     <string name="icon_lineal">Lineal</string>
     <string name="icon_lineal_color">Lineal Color</string>

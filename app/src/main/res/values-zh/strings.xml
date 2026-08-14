@@ -87,7 +87,7 @@
 
     <!-- 连通性测试 -->
     <string name="connectivity_test">连通性测试</string>
-    <string name="app_icon_current">当前</string>
+    <string name="app_icon_summary">选择桌面图标风格</string>
     <string name="icon_flat">Flat</string>
     <string name="icon_lineal">Lineal</string>
     <string name="icon_lineal_color">Lineal Color</string>

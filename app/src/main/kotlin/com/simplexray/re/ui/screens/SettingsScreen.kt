@@ -96,6 +96,13 @@ fun SettingsScreen(
     val themeModes = listOf(ThemeMode.Light, ThemeMode.Dark, ThemeMode.Auto)
     val currentThemeIndex = themeModes.indexOf(settingsState.switches.themeMode).coerceAtLeast(0)
 
+    val iconOptions = listOf(
+        stringResource(R.string.icon_flat),
+        stringResource(R.string.icon_lineal),
+        stringResource(R.string.icon_lineal_color)
+    )
+    val iconKeys = listOf("flat", "lineal", "lineal_color")
+
     val geoipUrlDefault = stringResource(R.string.geoip_url)
     val geositeUrlDefault = stringResource(R.string.geosite_url)
     val sourceUrl = stringResource(R.string.source_url)
@@ -274,6 +281,18 @@ fun SettingsScreen(
                     selectedIndex = currentThemeIndex,
                     onSelectedIndexChange = { index ->
                         mainViewModel.setTheme(themeModes[index])
+                    }
+                )
+
+                val currentIcon by mainViewModel.appIcon.collectAsStateWithLifecycle()
+                val currentIconIndex = iconKeys.indexOf(currentIcon).coerceAtLeast(0)
+                OverlayDropdownPreference(
+                    title = stringResource(R.string.app_icon),
+                    summary = stringResource(R.string.app_icon_summary),
+                    items = iconOptions,
+                    selectedIndex = currentIconIndex,
+                    onSelectedIndexChange = { index ->
+                        mainViewModel.setAppIcon(iconKeys[index])
                     }
                 )
 
@@ -558,28 +577,6 @@ fun SettingsScreen(
                     onValueConfirmed = { newValue -> mainViewModel.updateConnectivityTestTimeout(newValue) },
                     label = stringResource(R.string.connectivity_test_timeout),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-            }
-        }
-
-        item {
-            val currentIcon by mainViewModel.appIcon.collectAsStateWithLifecycle()
-            SmallTitle(text = stringResource(R.string.app_icon))
-            Card(modifier = Modifier.fillMaxWidth()) {
-                ArrowPreference(
-                    title = stringResource(R.string.icon_flat),
-                    summary = if (currentIcon == "flat") stringResource(R.string.app_icon_current) else null,
-                    onClick = { mainViewModel.setAppIcon("flat") }
-                )
-                ArrowPreference(
-                    title = stringResource(R.string.icon_lineal),
-                    summary = if (currentIcon == "lineal") stringResource(R.string.app_icon_current) else null,
-                    onClick = { mainViewModel.setAppIcon("lineal") }
-                )
-                ArrowPreference(
-                    title = stringResource(R.string.icon_lineal_color),
-                    summary = if (currentIcon == "lineal_color") stringResource(R.string.app_icon_current) else null,
-                    onClick = { mainViewModel.setAppIcon("lineal_color") }
                 )
             }
         }
