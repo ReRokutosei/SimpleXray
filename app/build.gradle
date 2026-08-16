@@ -168,6 +168,9 @@ dependencies {
     implementation libs.grpc.protobuf
     implementation libs.grpc.stub
     implementation libs.grpc.kotlin.stub
+    // Pin the protobuf runtime to the protoc version (4.x) so generated code
+    // and runtime stay paired (protoc 4.x output requires protobuf-java 4.x).
+    implementation libs.protobuf.java
 
     implementation libs.kotlinx.serialization.json
     implementation libs.material

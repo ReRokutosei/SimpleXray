@@ -4,7 +4,7 @@ kotlin = "2.4.10"
 kotlinxSerializationJson = "1.11.0"
 protobufPlugin = "0.10.0"
 gradleVersionsPlugin = "0.61.0"
-protoc = "3.25.9"
+protoc = "4.35.1"
 grpc = "1.83.1"
 grpcGenJava = "1.83.1"
 grpcKotlin = "1.5.0"
@@ -28,6 +28,7 @@ kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serializa
 
 # Protobuf & gRPC
 protobuf-protoc = { module = "com.google.protobuf:protoc", version.ref = "protoc" }
+protobuf-java = { module = "com.google.protobuf:protobuf-java", version.ref = "protoc" }
 grpc-gen-java = { module = "io.grpc:protoc-gen-grpc-java", version.ref = "grpcGenJava" }
 grpc-okhttp = { module = "io.grpc:grpc-okhttp", version.ref = "grpc" }
 grpc-protobuf = { module = "io.grpc:grpc-protobuf", version.ref = "grpc" }
