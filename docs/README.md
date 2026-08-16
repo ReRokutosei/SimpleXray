@@ -10,7 +10,7 @@
 
 </div>
 
-SimpleXray is a lightweight proxy client for Android built on [Xray-core](https://github.com/XTLS/Xray-core) and Android `VpnService` / `hev-socks5-tunnel`. It separates the Android application layer from the proxy core by launching the native Xray-core shared library (`libxray.so`) through `ProcessBuilder`.
+SimpleXray is an Android proxy client built on [Xray-core](https://github.com/XTLS/Xray-core), Android `VpnService`, and `hev-socks5-tunnel`. The packaged Xray-core executable, `libxray.so`, runs as a separate child process. In Hev mode, Xray is started with `ProcessBuilder`; native Xray TUN mode uses a small JNI launcher to pass the VPN file descriptor to the child process.
 
 ## Scope
 
@@ -18,7 +18,7 @@ SimpleXray is primarily an Android frontend and launcher for Xray-core. It accep
 
 The application does not parse or generate configurations from share links or subscription URIs such as `vless://`, `vmess://`, or `trojan://`. Users are expected to have a basic understanding of Xray-core configuration files.
 
-Imported configurations may be processed before execution to accommodate Android-specific requirements. This includes removing or modifying configuration elements that are specific to desktop or root environments, while preserving supported Xray-core functionality.
+Imported configurations may be processed before execution to accommodate Android-specific requirements. This includes removing or modifying configuration elements that are specific to desktop or root environments.
 
 This repository is a personal fork based on the upstream [SimpleXray](https://github.com/lhear/SimpleXray) project.
 
@@ -50,15 +50,17 @@ This repository is a personal fork based on the upstream [SimpleXray](https://gi
 
 | Area | Upstream | Personal Fork |
 |-|-|-|
-| **Process & Execution**         | `ProcessBuilder`-based stdin pipe execution                                       | `ProcessBuilder`-based configuration streaming via stdin, with CMake-based multi-ABI builds                                                                                       |
-| **Traffic & IPC**               | Loopback SOCKS5 proxying and dynamically allocated `127.x.x.x` gRPC ports         | Unix Domain Sockets (UDS) and loopback gRPC for local IPC and statistics                                                                                                          |
-| **Configuration Import**        | JSON-only                                 | JSON and YAML import through the Storage Access Framework (SAF)                                |
-| **Rule Files**                  | Embedded `geoip.dat` and `geosite.dat` files                                      | Retains embedded rule files and adds local import/replacement, support for arbitrary custom `.dat` files, and per-file update URLs                                                |
-| **Configuration Sanitization**  | Basic regular-expression-based removal of selected inbound configuration elements | SnakeYAML-based AST processing with a one-way sanitization pipeline for Android-specific configuration compatibility                                                              |
-| **Build System**                | Legacy `ndkBuild` (`Android.mk`) and standard Gradle configuration                | CMake (`CMakeLists.txt`) with Android 16 KB page alignment support; Gradle Wrapper `9.7.0`, Android Gradle Plugin `9.3.1`, Version Catalogs, and Plugins DSL                      |
+| **Process & Execution**         | Runs Xray in a separate child process and sends the configuration through stdin | Runs Xray in a separate child process and sends the configuration through stdin. Native Xray TUN mode starts the child through the JNI launcher; Hev mode uses `ProcessBuilder`. APK packaging includes `arm64-v8a` only |
+| **Traffic & IPC**               | `hev-socks5-tunnel` reads the Android VPN file descriptor and forwards traffic to Xray through its local SOCKS5 inbound. Statistics use a dynamically allocated loopback TCP gRPC port | The selected TUN backend determines the data path. Native Xray TUN mode receives the VPN file descriptor through the JNI launcher; Hev mode forwards traffic through the local SOCKS5 inbound. Core status and traffic statistics use a dynamically allocated `127.0.0.1` TCP gRPC port |
+| **Configuration Import**        | JSON configurations, `vless://` links, and `simplexray://config/` links | Full JSON and YAML configurations imported through the Storage Access Framework (SAF) or clipboard; share links are not supported |
+| **Rule Files**                  | Embedded `geoip.dat` and `geosite.dat` files, with local replacement and URL updates for these two files | Retains the standard rule-file management and adds arbitrary custom `.dat` files, `ext:` file references, per-file update URLs, validation, and background updates |
+| **Configuration Sanitization**  | JSON formatting with removal of `log.access` and `log.error` | SnakeYAML-based parsing with a one-way Android compatibility pipeline that modifies inbounds, routing rules, DNS bootstrap hosts, logging, and selected outbound settings |
+| **Build System**                | Legacy `ndkBuild` (`Android.mk`) and standard Gradle configuration                | CMake (`CMakeLists.txt`); the native tunnel target includes Android 16 KB page-alignment linker options. Gradle Wrapper `9.7.0`, Android Gradle Plugin `9.3.1`, Version Catalogs, and Plugins DSL |
 | **UI & Layout**                 | Standard Material 3 UI                                                            | Xiaomi HyperOS / MIUI-inspired UI implemented with `compose-miuix-ui`, with adaptive layouts for phones and large screens, NavigationRail support, and Android 12+ dynamic colors |
-| **Persistence & Serialization** | `SharedPreferences` and `Gson`                                                    | Provider-backed `Preferences` and `kotlinx.serialization`, with Compose `StateFlow` state management                                                                              |
+| **Persistence & Serialization** | ContentProvider-backed `SharedPreferences` and `Gson`                             | The same ContentProvider-backed `SharedPreferences` with `kotlinx.serialization` for structured values and Compose `StateFlow` for UI state |
 | **Core Components**             | Xray-core `v26.3.27` and `hev-socks5-tunnel` `v2.14.3`                            | Xray-core `v26.7.28` and `hev-socks5-tunnel` `v2.17.0`, including updated `hev-socks5-core`, `hev-task-system`, and `lwip` components                                             |
+| **ABI Packaging**               | `arm64-v8a` and `x86_64` split APKs, plus a universal APK                                | `arm64-v8a` APK only                                                                                                                                                |
+| **TUN Backend Setting**         | No Xray TUN backend setting                                      | `Xray TUN` and `Hev Socks5 Tunnel` selector, defaulting to `Xray TUN`                                                                                              |
 
 ---
 
@@ -72,10 +74,10 @@ The user interface has been refactored around `compose-miuix-ui`, using a design
 * **Theme support**: Provides Light, Dark, and Automatic theme modes, together with Android 12+ Monet dynamic colors integrated with the Miuix color scheme.
 * **Adaptive navigation**: Uses a vertical Miuix `NavigationRail` on wide screens when `screenWidthDp >= 600dp`.
 * **Master-detail layout**: Uses a dual-pane layout for `ConfigScreen` on larger landscape displays when `screenWidthDp >= 840dp`, allowing profile selection and configuration editing to be displayed side by side.
-* **Editor layout**: Provides a fullscreen editor mode and constrains the maximum content width to `840dp` on large displays.
+* **Editor layout**: Provides a fullscreen editor mode. Dashboard, Settings, and App-Based Proxy content use a maximum width of `840dp` on wide screens.
 * **Edge-to-edge navigation**: Uses a floating navigation bar that allows page content to scroll beneath the translucent navigation surface.
 * **Per-app proxy filtering**: Adds an option in the App-Based Proxy screen to show or hide applications that do not declare `android.permission.INTERNET`.
-* **Direct actions**: Replaces legacy three-dot menus on the main screens with direct actions for importing, running latency tests, exporting, and clearing data.
+* **Direct controls**: Provides direct controls for log search, log export, log clearing, and dashboard latency refresh. Configuration import remains available from the configuration screen.
 
 ### 2. Xray-core Configuration Import
 
@@ -90,9 +92,9 @@ Supported input formats include:
 
 Share links and subscription URIs, such as `vless://`, `vmess://`, and `trojan://`, are not supported.
 
-YAML configurations are parsed into an abstract syntax tree (AST), processed by the configuration sanitization pipeline, and serialized before being passed to Xray-core.
+YAML configurations are parsed into structured data, processed by the configuration sanitization pipeline, and serialized before being passed to Xray-core.
 
-The application also provides an in-app configuration editor with syntax display, search, and editing support.
+The application also provides an in-app configuration editor with text editing, search, and bracket matching.
 
 ### 3. Rule File Management
 
@@ -106,20 +108,22 @@ SimpleXray retains the embedded `geoip.dat` and `geosite.dat` rule files and pro
 
 ### 4. Process Management and IPC
 
-The process execution and local IPC mechanisms have been refactored to reduce reliance on temporary files and loopback ports.
+SimpleXray uses separate channels for configuration, VPN traffic, process logs, and statistics queries.
 
-* **Configuration streaming**: Generated JSON configuration data is passed to Xray-core through stdin instead of being written to an intermediate configuration file.
-* **Local IPC**: Uses Unix Domain Sockets (UDS) where appropriate for communication between application components and the proxy core.
-* **Statistics**: Uses local loopback gRPC and UDS-based communication for core status and real-time bandwidth statistics.
+* **Configuration**: Generated JSON is written to Xray-core through stdin; no intermediate configuration file is required.
+* **Native TUN mode**: The JNI launcher passes the Android `VpnService` file descriptor to the Xray child process, which attaches it to the TUN inbound.
+* **Process logs**: Xray stdout and stderr are collected through pipes.
+* **Statistics**: Core status and traffic statistics are queried through plaintext gRPC on a dynamically allocated `127.0.0.1` TCP port.
+* **Hev tunnel mode**: When selected, `hev-socks5-tunnel` reads the Android VPN file descriptor and forwards traffic to Xray through its local SOCKS5 inbound.
 
 ### 5. Routing and Core Configuration
 
 The fork includes several configuration-level optimizations and Android-specific adjustments.
 
 * **Hybrid domain matcher**: Changes `domainMatcher` from `mph` to `hybrid` to balance memory usage and domain lookup performance.
-* **DoH bootstrap configuration**: Adds static host mappings for DoH providers to avoid DNS bootstrap dependencies.
+* **DoH bootstrap configuration**: Adds static host mappings for matching AliDNS DoH hostnames to avoid DNS bootstrap dependencies for those endpoints.
 * **Listen address normalization**: Converts wildcard listen addresses such as `::` and `0.0.0.0` to `127.0.0.1` where required by the Android execution environment.
-* **Dashboard latency display**: The dashboard shows per-outbound latency from a lightweight 1-RTT TCP connect to each outbound's server endpoint (parsed from the config: vless/vmess `settings.vnext[0]`, trojan/shadowsocks/http/socks `settings.servers[0]`). Probes run once when the dashboard is shown, plus a manual refresh button. UDP-only protocols (wireguard/hysteria2) and QUIC transports are skipped, and IP literals in private/loopback/link-local space are never probed. The shown value is the TCP handshake RTT from the device to the node, independent of the Xray core; unreachable nodes are shown as failed.
+* **Dashboard latency display**: The dashboard shows the TCP handshake time to each outbound's server endpoint. Endpoints are parsed from the configuration: vless and vmess use `settings.vnext[0]`, while trojan, shadowsocks, HTTP, and SOCKS use `settings.servers[0]`. Probes run once when the dashboard is shown and can also be started manually. UDP-only protocols such as WireGuard and Hysteria2, QUIC transports, and private, loopback, or link-local IP literals are skipped. The result measures the network path from the device to the node and does not measure Xray processing time. Unreachable nodes are marked as failed.
 
 ### 6. Platform-Specific Configuration Sanitization
 
@@ -128,7 +132,7 @@ Complete Xray-core configuration files can be imported without requiring users t
 The pipeline currently handles the following cases:
 
 * **Windows process rules**: Removes Windows-specific executable paths such as `chrome.exe` from `routing.rules` and removes rules that become invalid as a result.
-* **Desktop TUN inbounds**: Removes desktop-specific `protocol: tun` inbounds when running in a non-root Android environment.
+* **TUN inbounds**: When VPN and Xray TUN mode are enabled, keeps a `protocol: tun` inbound, supplies an Android-compatible name, and removes desktop automatic-routing fields. In Hev mode, or when VPN is disabled, removes `protocol: tun` inbounds.
 * **File-based logging**: Removes filesystem paths configured through the `access` and `error` logging fields where required to avoid Android filesystem permission errors.
 * **Listen addresses**: Normalizes `::` and `0.0.0.0` to `127.0.0.1` where required by the Android execution environment.
 * **Sniffing configuration**: Preserves supported sniffing-related settings, including `destOverride`, when sanitizing the configuration.
