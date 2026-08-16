@@ -113,7 +113,7 @@ class MainViewModel(application: Application) :
                 httpProxyEnabled = prefs.httpProxyEnabled,
                 bypassLanEnabled = prefs.bypassLan,
                 disableVpn = prefs.disableVpn,
-                useXrayTun = prefs.useXrayTun,
+                tunnelMode = prefs.tunnelMode,
                 themeMode = prefs.theme,
                 logLevel = prefs.logLevel
             ),
@@ -263,7 +263,7 @@ class MainViewModel(application: Application) :
                 httpProxyEnabled = prefs.httpProxyEnabled,
                 bypassLanEnabled = prefs.bypassLan,
                 disableVpn = prefs.disableVpn,
-                useXrayTun = prefs.useXrayTun,
+                tunnelMode = prefs.tunnelMode,
                 themeMode = prefs.theme,
                 logLevel = prefs.logLevel
             ),
@@ -744,10 +744,10 @@ class MainViewModel(application: Application) :
         )
     }
 
-    fun setUseXrayTun(enabled: Boolean) {
-        prefs.useXrayTun = enabled
+    fun setTunnelMode(mode: com.simplexray.re.prefs.TunnelMode) {
+        prefs.tunnelMode = mode
         _settingsState.value = _settingsState.value.copy(
-            switches = _settingsState.value.switches.copy(useXrayTun = enabled)
+            switches = _settingsState.value.switches.copy(tunnelMode = mode)
         )
     }
 

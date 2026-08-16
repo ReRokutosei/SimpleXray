@@ -3,6 +3,7 @@ package com.simplexray.re.common
 import android.util.Log
 import com.simplexray.re.prefs.LogLevel
 import com.simplexray.re.prefs.Preferences
+import com.simplexray.re.prefs.TunnelMode
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -94,7 +95,7 @@ object ConfigUtils {
             val inbound = inbounds.optJSONObject(i) ?: continue
             val protocol = inbound.optString("protocol").lowercase()
             if (protocol == "tun") {
-                if (prefs?.useXrayTun == true && prefs.disableVpn == false) {
+                if (prefs?.tunnelMode == TunnelMode.XrayTun && prefs.disableVpn == false) {
                     hasTunInbound = true
                     val settings = inbound.optJSONObject("settings") ?: JSONObject().also { inbound.put("settings", it) }
                     // Android receives an already-established VPN fd. Xray's
@@ -139,7 +140,7 @@ object ConfigUtils {
             }
         }
 
-        if (prefs?.useXrayTun == true && prefs.disableVpn == false && !hasTunInbound) {
+        if (prefs?.tunnelMode == TunnelMode.XrayTun && prefs.disableVpn == false && !hasTunInbound) {
             val newTunInbound = JSONObject().apply {
                 put("protocol", "tun")
                 put("tag", "tun-inbound")

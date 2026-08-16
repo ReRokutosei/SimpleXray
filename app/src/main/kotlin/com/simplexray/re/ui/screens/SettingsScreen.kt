@@ -37,11 +37,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
 import com.simplexray.re.common.ThemeMode
+import com.simplexray.re.prefs.TunnelMode
 import com.simplexray.re.viewmodel.MainViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.DropdownEntry
+import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
@@ -111,6 +114,25 @@ fun SettingsScreen(
     val logLevelOptions = com.simplexray.re.prefs.LogLevel.entries
     val logLevelNames = logLevelOptions.map { it.name }
     val currentLogLevelIndex = logLevelOptions.indexOf(settingsState.switches.logLevel).coerceAtLeast(0)
+
+    val tunnelModeEntries = listOf(
+        DropdownEntry(
+            items = listOf(
+                DropdownItem(
+                    text = stringResource(R.string.tunnel_mode_xray_tun),
+                    summary = stringResource(R.string.tunnel_mode_xray_tun_summary),
+                    selected = settingsState.switches.tunnelMode == TunnelMode.XrayTun,
+                    onClick = { mainViewModel.setTunnelMode(TunnelMode.XrayTun) }
+                ),
+                DropdownItem(
+                    text = stringResource(R.string.tunnel_mode_hev_socks5),
+                    summary = stringResource(R.string.tunnel_mode_hev_socks5_summary),
+                    selected = settingsState.switches.tunnelMode == TunnelMode.HevSocks5Tunnel,
+                    onClick = { mainViewModel.setTunnelMode(TunnelMode.HevSocks5Tunnel) }
+                )
+            )
+        )
+    )
 
     if (editingRuleFile != null) {
         OverlayBottomSheet(
@@ -321,11 +343,10 @@ fun SettingsScreen(
                     onCheckedChange = { mainViewModel.setDisableVpnEnabled(it) }
                 )
 
-                SwitchPreference(
-                    title = stringResource(R.string.use_xray_tun_title),
-                    summary = stringResource(R.string.use_xray_tun_summary),
-                    checked = settingsState.switches.useXrayTun,
-                    onCheckedChange = { mainViewModel.setUseXrayTun(it) },
+                OverlayDropdownPreference(
+                    title = stringResource(R.string.tunnel_mode_title),
+                    summary = stringResource(R.string.tunnel_mode_summary),
+                    entries = tunnelModeEntries,
                     enabled = !vpnDisabled
                 )
 
@@ -334,7 +355,13 @@ fun SettingsScreen(
                     currentValue = settingsState.socksAddress.value,
                     onValueConfirmed = { newValue -> mainViewModel.updateSocksAddress(newValue) },
                     label = stringResource(R.string.socks_address),
-                    supportingText = stringResource(R.string.socks_address_summary),
+                    supportingText = stringResource(
+                        if (settingsState.switches.tunnelMode == TunnelMode.HevSocks5Tunnel) {
+                            R.string.socks_address_summary_socks_tunnel
+                        } else {
+                            R.string.socks_address_summary
+                        }
+                    ),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     enabled = !vpnDisabled
                 )
@@ -344,7 +371,13 @@ fun SettingsScreen(
                     currentValue = settingsState.socksPort.value,
                     onValueConfirmed = { newValue -> mainViewModel.updateSocksPort(newValue) },
                     label = stringResource(R.string.socks_port),
-                    supportingText = stringResource(R.string.socks_port_summary),
+                    supportingText = stringResource(
+                        if (settingsState.switches.tunnelMode == TunnelMode.HevSocks5Tunnel) {
+                            R.string.socks_port_summary_socks_tunnel
+                        } else {
+                            R.string.socks_port_summary
+                        }
+                    ),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     enabled = !vpnDisabled
                 )

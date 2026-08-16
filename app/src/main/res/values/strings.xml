@@ -8,9 +8,11 @@
 
     <!-- SOCKS Local Inbound Settings -->
     <string name="socks_address">SOCKS Inbound Address</string>
-    <string name="socks_address_summary">Bound listening IP for TUN forwarding &amp; local SOCKS5 proxy</string>
+    <string name="socks_address_summary">Bound listening IP for the local SOCKS5 proxy</string>
+    <string name="socks_address_summary_socks_tunnel">Bound listening IP for TUN forwarding and the local SOCKS5 proxy</string>
     <string name="socks_port">SOCKS Inbound Port</string>
-    <string name="socks_port_summary">Listening port for TUN forwarding &amp; local SOCKS5 proxy (Auto-synced to config)</string>
+    <string name="socks_port_summary">Listening port for the local SOCKS5 proxy (Auto-synced to config)</string>
+    <string name="socks_port_summary_socks_tunnel">Listening port for TUN forwarding and the local SOCKS5 proxy (Auto-synced to config)</string>
     <string name="socks_user">SOCKS Username</string>
     <string name="socks_user_summary">Optional username required for local SOCKS5 authentication</string>
     <string name="socks_pass">SOCKS Password</string>
@@ -29,8 +31,12 @@
     <string name="http_proxy_summary">Registers a system-wide HTTP proxy (127.0.0.1:10809). Keep off in standard TUN mode.</string>
     <string name="bypass_lan_title">Bypass LAN</string>
     <string name="bypass_lan_summary">When enabled, LAN traffic will not go through the proxy.</string>
-    <string name="use_xray_tun_title">Use Xray Native TUN</string>
-    <string name="use_xray_tun_summary">Bypass SOCKS wrapper and use Xray\'s native TUN stack</string>
+    <string name="tunnel_mode_title">TUN Transport Mode</string>
+    <string name="tunnel_mode_summary">Select the component responsible for forwarding traffic from the Android VPN interface</string>
+    <string name="tunnel_mode_xray_tun">Xray TUN</string>
+    <string name="tunnel_mode_xray_tun_summary">Use Xray\'s native TUN inbound to process VPN packets directly</string>
+    <string name="tunnel_mode_hev_socks5">Hev Socks5 Tunnel</string>
+    <string name="tunnel_mode_hev_socks5_summary">Use Hev Socks5 Tunnel to forward VPN traffic to Xray</string>
 
     <!-- General Settings & Preferences -->
     <string name="general">General</string>
