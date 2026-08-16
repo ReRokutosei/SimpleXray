@@ -44,7 +44,7 @@ object ConfigUtils {
             for (i in 0 until inbounds.length()) {
                 val inbound = inbounds.optJSONObject(i) ?: continue
                 if (inbound.optString("protocol") == "tun") {
-                    return inbound.optJSONObject("settings")?.optInt("MTU", -1)
+                    return inbound.optJSONObject("settings")?.optInt("mtu", -1)
                         ?.takeIf { it > 0 }
                 }
             }
@@ -97,8 +97,6 @@ object ConfigUtils {
                 if (prefs?.useXrayTun == true && prefs.disableVpn == false) {
                     hasTunInbound = true
                     val settings = inbound.optJSONObject("settings") ?: JSONObject().also { inbound.put("settings", it) }
-                    settings.put("autoRoute", false)
-                    settings.put("strictRoute", false)
                     settings.remove("autoSystemRoutingTable")
                     settings.remove("autoOutboundsInterface")
                     Log.d(TAG, "Sanitized existing tun inbound for Android VpnService (removed auto-routing).")
@@ -139,8 +137,6 @@ object ConfigUtils {
                 put("tag", "tun-inbound")
                 put("settings", JSONObject().apply {
                     put("network", "tcp,udp")
-                    put("autoRoute", false)
-                    put("strictRoute", false)
                 })
             }
             inbounds.put(newTunInbound)

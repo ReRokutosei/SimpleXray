@@ -121,8 +121,7 @@ class TProxyService : VpnService() {
                 if (prefs.disableVpn) {
                     Log.d(TAG, "Received RELOAD_CONFIG action (core-only mode)")
                     reloadingRequested = true
-                    xrayProcess?.destroy()
-                    xrayProcess = null
+                    killXrayProcess()
                     serviceScope.launch { runXrayProcess() }
                     return START_NOT_STICKY
                 }
@@ -132,8 +131,7 @@ class TProxyService : VpnService() {
                 }
                 Log.d(TAG, "Received RELOAD_CONFIG action.")
                 reloadingRequested = true
-                xrayProcess?.destroy()
-                xrayProcess = null
+                killXrayProcess()
                 serviceScope.launch { runXrayProcess() }
                 return START_NOT_STICKY
             }
