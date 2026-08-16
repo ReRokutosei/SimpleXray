@@ -63,7 +63,7 @@ class GeoUpdateReceiver : BroadcastReceiver() {
                         Log.w(TAG, "Auto-update failed for $fileName: HTTP ${response.code}")
                         return@forEach
                     }
-                    val body = response.body
+                    val body = response.body ?: return@forEach
                     val tempFile = File(context.filesDir, "$fileName.autoupdate.tmp")
                     FileOutputStream(tempFile).use { body.byteStream().copyTo(it) }
                     val success = fileManager.saveRuleFileFromTemp(tempFile, fileName)
