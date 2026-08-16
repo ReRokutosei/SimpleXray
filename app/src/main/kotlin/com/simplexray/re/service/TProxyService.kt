@@ -15,6 +15,9 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.ParcelFileDescriptor
+import android.system.ErrnoException
+import android.system.Os
+import android.system.OsConstants
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.simplexray.re.BuildConfig
@@ -87,10 +90,11 @@ class TProxyService : VpnService() {
 
     @Volatile
     private var xrayProcess: Process? = null
-private var isStopping = false
-@Volatile
-private var xrayStarted = false
-private var xrayStartAttempt = 0
+    private var xrayPid: Int = -1
+    private var isStopping = false
+    @Volatile
+    private var xrayStarted = false
+    private var xrayStartAttempt = 0
     private var tunFd: ParcelFileDescriptor? = null
 
     @Volatile
@@ -198,6 +202,7 @@ private var xrayStartAttempt = 0
         xrayStarted = false
         var stdoutPfd: ParcelFileDescriptor? = null
         var currentProcess: Process? = null
+        var currentPid = -1
 
         try {
             Log.d(TAG, "Attempting to start native Xray process with TUN fd & UDS API.")
@@ -227,14 +232,46 @@ private var xrayStartAttempt = 0
             val finalConfigContent = ConfigUtils.injectStatsService(prefs, sanitizedConfigContent)
             Log.d(TAG, "Injected final config (${finalConfigContent.length} chars) ready for stdin ($format)")
 
-            val processBuilder = getProcessBuilder(xrayPath)
-            currentProcess = processBuilder.start()
-            this.xrayProcess = currentProcess
-            Log.d(TAG, "Xray child process started successfully via ProcessBuilder.")
+            val useXrayTun = prefs.useXrayTun && !prefs.disableVpn
+            val reader: BufferedReader
 
-            currentProcess.outputStream.use { os ->
-                os.write(finalConfigContent.toByteArray(Charsets.UTF_8))
-                os.flush()
+            if (useXrayTun) {
+                val vpnFd = tunFd?.fd ?: run {
+                    Log.e(TAG, "tunFd is null for Xray TUN mode")
+                    return
+                }
+                val spawnResult = nativeSpawnXray(xrayPath, applicationContext.filesDir.path, vpnFd)
+                    ?: run {
+                        Log.e(TAG, "nativeSpawnXray returned null - spawn failed")
+                        return
+                    }
+                currentPid = spawnResult[0]
+                val stdoutReadFd = spawnResult[1]
+                val stdinWriteFd = spawnResult[2]
+                this.xrayPid = currentPid
+                Log.d(TAG, "Xray TUN process started: pid=$currentPid")
+
+                ParcelFileDescriptor.adoptFd(stdinWriteFd).use { pfd ->
+                    ParcelFileDescriptor.AutoCloseOutputStream(pfd).use { out ->
+                        out.write(finalConfigContent.toByteArray(Charsets.UTF_8))
+                        out.flush()
+                    }
+                }
+                stdoutPfd = ParcelFileDescriptor.adoptFd(stdoutReadFd)
+                reader = BufferedReader(
+                    InputStreamReader(ParcelFileDescriptor.AutoCloseInputStream(stdoutPfd))
+                )
+            } else {
+                val processBuilder = getProcessBuilder(xrayPath)
+                currentProcess = processBuilder.start()
+                this.xrayProcess = currentProcess
+                Log.d(TAG, "Xray child process started successfully via ProcessBuilder.")
+
+                currentProcess.outputStream.use { os ->
+                    os.write(finalConfigContent.toByteArray(Charsets.UTF_8))
+                    os.flush()
+                }
+                reader = BufferedReader(InputStreamReader(currentProcess.inputStream))
             }
 
             // Startup detection must not rely on stdout text: with
@@ -250,7 +287,7 @@ private var xrayStartAttempt = 0
                 try {
                     val deadline = System.currentTimeMillis() + STARTUP_PROBE_TIMEOUT_MS
                     while (!xrayStarted &&
-                        probeProcess?.isAlive == true &&
+                        (probeProcess?.isAlive == true || currentPid > 0) &&
                         System.currentTimeMillis() < deadline
                     ) {
                         if (client.getSystemStats() != null) {
@@ -269,7 +306,6 @@ private var xrayStartAttempt = 0
                 }
             }
 
-            val reader = BufferedReader(InputStreamReader(currentProcess.inputStream))
             Log.d(TAG, "Reading native Xray process log stream.")
             var line = reader.readLine()
             while (line != null) {
@@ -289,29 +325,36 @@ private var xrayStartAttempt = 0
                 line = reader.readLine()
             }
             Log.d(TAG, "Native Xray process log stream finished.")
-            currentProcess?.let { onXrayProcessExited(it) }
+            if (currentProcess != null) {
+                onXrayExited(currentProcess, -1)
+            } else {
+                onXrayExited(null, currentPid)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error executing native Xray", e)
-            currentProcess?.let { onXrayProcessExited(it) }
+            if (currentProcess != null) {
+                onXrayExited(currentProcess, -1)
+            } else if (currentPid > 0) {
+                onXrayExited(null, currentPid)
+            }
         } finally {
             stdoutPfd?.close()
             Log.d(TAG, "Native Xray process task finished.")
+            if (currentProcess != null && this.xrayProcess === currentProcess) {
+                this.xrayProcess = null
+            }
+            if (xrayPid > 0 && xrayPid == currentPid) {
+                xrayPid = -1
+            }
         }
     }
 
-    /**
-     * Handles an xray process exit. Intentional stops (stopXray) and processes
-     * superseded by a reload/new start are ignored. Otherwise: a process that
-     * never reported "started" is retried once; repeated failure stops the
-     * service and broadcasts ACTION_STOP so the UI returns to the stopped
-     * state.
-     */
-    private fun onXrayProcessExited(myProcess: Process) {
+    private fun onXrayExited(process: Process?, pid: Int) {
         if (isStopping) {
             Log.d(TAG, "Xray process exited after intentional stop, ignoring.")
             return
         }
-        if (myProcess !== xrayProcess) {
+        if ((process != null && process !== xrayProcess) || (process == null && pid != xrayPid)) {
             Log.d(TAG, "Xray process superseded by a newer one, ignoring.")
             return
         }
@@ -353,6 +396,19 @@ private var xrayStartAttempt = 0
         val message = GO_LOG_TIMESTAMP_PREFIX.replaceFirst(line, "")
         return if (message === line) line else "${logTimestampFormat.format(Date())} $message"
     }
+    private fun killXrayProcess() {
+        xrayProcess?.destroy()
+        xrayProcess = null
+        val pid = xrayPid
+        if (pid > 0) {
+            xrayPid = -1
+            try {
+                Os.kill(pid, OsConstants.SIGKILL)
+            } catch (e: ErrnoException) {
+                Log.w(TAG, "Failed to kill xray pid $pid: ${e.message}")
+            }
+        }
+    }
 
     private fun stopXray() {
         isStopping = true
@@ -360,9 +416,8 @@ private var xrayStartAttempt = 0
         serviceScope.cancel()
         Log.d(TAG, "CoroutineScope cancelled.")
 
-        xrayProcess?.destroy()
-        xrayProcess = null
-        Log.d(TAG, "xrayProcess reference nulled.")
+        killXrayProcess()
+        Log.d(TAG, "xrayProcess reference nulled and killed.")
 
         Log.d(TAG, "Calling stopService (stopping VPN).")
         stopService()
@@ -371,32 +426,49 @@ private var xrayStartAttempt = 0
     private fun startService() {
         if (tunFd != null) return
         val prefs = Preferences(this)
-        val builder = getVpnBuilder(prefs)
+
+        val selectedConfigPath = prefs.selectedConfigPath
+        var tunMtu = if (prefs.useXrayTun && !prefs.disableVpn) prefs.tunnelMtuForXrayTun else prefs.tunnelMtu
+        if (prefs.useXrayTun && !prefs.disableVpn && selectedConfigPath != null) {
+            val configFile = File(selectedConfigPath)
+            if (configFile.exists()) {
+                val configContent = runCatching { configFile.readText() }.getOrDefault("")
+                val extractedMtu = ConfigUtils.extractTunMtu(configContent)
+                if (extractedMtu != null) {
+                    tunMtu = extractedMtu
+                }
+            }
+        }
+        val builder = getVpnBuilder(prefs, tunMtu)
         tunFd = builder.establish()
         if (tunFd == null) {
             stopXray()
             return
         }
 
-        val tproxyFile = File(cacheDir, "tproxy.conf")
-        try {
-            tproxyFile.createNewFile()
-            FileOutputStream(tproxyFile, false).use { fos ->
-                val tproxyConf = getTproxyConf(prefs)
-                fos.write(tproxyConf.toByteArray())
+        if (prefs.useXrayTun && !prefs.disableVpn) {
+            Log.d(TAG, "Using Xray Native TUN mode, skipping hev-socks5-tunnel.")
+        } else {
+            val tproxyFile = File(cacheDir, "tproxy.conf")
+            try {
+                tproxyFile.createNewFile()
+                FileOutputStream(tproxyFile, false).use { fos ->
+                    val tproxyConf = getTproxyConf(prefs)
+                    fos.write(tproxyConf.toByteArray())
+                }
+            } catch (e: IOException) {
+                Log.e(TAG, e.toString())
+                stopXray()
+                return
             }
-        } catch (e: IOException) {
-            Log.e(TAG, e.toString())
-            stopXray()
-            return
-        }
 
-        tunFd?.fd?.let { fd ->
-            TProxyStartService(tproxyFile.absolutePath, fd)
-        } ?: run {
-            Log.e(TAG, "tunFd is null after establish()")
-            stopXray()
-            return
+            tunFd?.fd?.let { fd ->
+                TProxyStartService(tproxyFile.absolutePath, fd)
+            } ?: run {
+                Log.e(TAG, "tunFd is null after establish()")
+                stopXray()
+                return
+            }
         }
 
         @Suppress("SameParameterValue") val channelName = "socks5"
@@ -404,9 +476,9 @@ private var xrayStartAttempt = 0
         createNotification(channelName)
     }
 
-    private fun getVpnBuilder(prefs: Preferences): Builder = Builder().apply {
+    private fun getVpnBuilder(prefs: Preferences, tunMtu: Int): Builder = Builder().apply {
         setBlocking(false)
-        setMtu(prefs.tunnelMtu)
+        setMtu(tunMtu)
 
         setMetered(false)
 
@@ -531,7 +603,15 @@ private var xrayStartAttempt = 0
             } catch (e: Throwable) {
                 Log.e(TAG, "Failed to load hev-socks5-tunnel library", e)
             }
+            try {
+                System.loadLibrary("xray-exec")
+            } catch (e: Throwable) {
+                Log.e(TAG, "Failed to load xray-exec library", e)
+            }
         }
+
+        @JvmStatic
+        private external fun nativeSpawnXray(xrayPath: String, assetDir: String, vpnFd: Int): IntArray?
 
         fun getNativeLibraryDir(context: Context?): String? {
             if (context == null) {

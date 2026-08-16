@@ -321,6 +321,14 @@ fun SettingsScreen(
                     onCheckedChange = { mainViewModel.setDisableVpnEnabled(it) }
                 )
 
+                SwitchPreference(
+                    title = stringResource(R.string.use_xray_tun_title),
+                    summary = stringResource(R.string.use_xray_tun_summary),
+                    checked = settingsState.switches.useXrayTun,
+                    onCheckedChange = { mainViewModel.setUseXrayTun(it) },
+                    enabled = !vpnDisabled
+                )
+
                 EditableListItemWithMiuixBottomSheet(
                     headline = stringResource(R.string.socks_address),
                     currentValue = settingsState.socksAddress.value,

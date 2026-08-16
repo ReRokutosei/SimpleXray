@@ -37,6 +37,23 @@ object ConfigUtils {
 
     data class OutboundEndpoint(val tag: String, val protocol: String, val host: String, val port: Int)
 
+    fun extractTunMtu(configContent: String): Int? {
+        try {
+            val jsonObject = parseToJsonObject(configContent) ?: return null
+            val inbounds = jsonObject.optJSONArray("inbounds") ?: return null
+            for (i in 0 until inbounds.length()) {
+                val inbound = inbounds.optJSONObject(i) ?: continue
+                if (inbound.optString("protocol") == "tun") {
+                    return inbound.optJSONObject("settings")?.optInt("MTU", -1)
+                        ?.takeIf { it > 0 }
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing JSON for TUN MTU extraction", e)
+        }
+        return null
+    }
+
     fun sanitizeConfig(content: String, prefs: Preferences? = null): String {
         val rootJson = parseToJsonObject(content) ?: return content
 
@@ -69,6 +86,7 @@ object ConfigUtils {
         }
 
         var hasSocksInbound = false
+        var hasTunInbound = false
         val targetPort = prefs?.socksPort ?: 10808
         val targetListen = prefs?.socksAddress.takeIf { !it.isNullOrEmpty() } ?: "127.0.0.1"
 
@@ -76,8 +94,18 @@ object ConfigUtils {
             val inbound = inbounds.optJSONObject(i) ?: continue
             val protocol = inbound.optString("protocol").lowercase()
             if (protocol == "tun") {
-                inbounds.remove(i)
-                Log.d(TAG, "Removed desktop-only tun inbound at index $i to prevent Android permission denied.")
+                if (prefs?.useXrayTun == true && prefs.disableVpn == false) {
+                    hasTunInbound = true
+                    val settings = inbound.optJSONObject("settings") ?: JSONObject().also { inbound.put("settings", it) }
+                    settings.put("autoRoute", false)
+                    settings.put("strictRoute", false)
+                    settings.remove("autoSystemRoutingTable")
+                    settings.remove("autoOutboundsInterface")
+                    Log.d(TAG, "Sanitized existing tun inbound for Android VpnService (removed auto-routing).")
+                } else {
+                    inbounds.remove(i)
+                    Log.d(TAG, "Removed desktop-only tun inbound at index $i to prevent Android permission denied.")
+                }
                 continue
             }
             if (protocol == "socks") {
@@ -103,6 +131,20 @@ object ConfigUtils {
                     Log.d(TAG, "Converted bind address from $listen to 127.0.0.1 for inbound at index $i.")
                 }
             }
+        }
+
+        if (prefs?.useXrayTun == true && prefs.disableVpn == false && !hasTunInbound) {
+            val newTunInbound = JSONObject().apply {
+                put("protocol", "tun")
+                put("tag", "tun-inbound")
+                put("settings", JSONObject().apply {
+                    put("network", "tcp,udp")
+                    put("autoRoute", false)
+                    put("strictRoute", false)
+                })
+            }
+            inbounds.put(newTunInbound)
+            Log.d(TAG, "Injected default Android-compatible tun inbound.")
         }
 
         if (!hasSocksInbound && prefs != null) {

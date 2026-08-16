@@ -29,6 +29,8 @@
     <string name="http_proxy_summary">Registers a system-wide HTTP proxy (127.0.0.1:10809). Keep off in standard TUN mode.</string>
     <string name="bypass_lan_title">Bypass LAN</string>
     <string name="bypass_lan_summary">When enabled, LAN traffic will not go through the proxy.</string>
+    <string name="use_xray_tun_title">Use Xray Native TUN</string>
+    <string name="use_xray_tun_summary">Bypass SOCKS wrapper and use Xray\'s native TUN stack</string>
 
     <!-- General Settings & Preferences -->
     <string name="general">General</string>
