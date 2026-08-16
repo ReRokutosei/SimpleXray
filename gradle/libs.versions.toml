@@ -1,7 +1,7 @@
 [versions]
 agp = "9.3.1"
 kotlin = "2.4.10"
-kotlinxSerializationJson = "1.7.3"
+kotlinxSerializationJson = "1.11.0"
 protobufPlugin = "0.10.0"
 gradleVersionsPlugin = "0.61.0"
 protoc = "3.25.9"
