@@ -1,5 +1,3 @@
-rootProject.name = "SimpleXray"
-
 pluginManagement {
     repositories {
         google()
@@ -7,6 +5,8 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
+rootProject.name = "SimpleXray"
 
 include ':app'
 
