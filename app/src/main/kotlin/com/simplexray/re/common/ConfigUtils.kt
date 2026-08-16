@@ -97,6 +97,14 @@ object ConfigUtils {
                 if (prefs?.useXrayTun == true && prefs.disableVpn == false) {
                     hasTunInbound = true
                     val settings = inbound.optJSONObject("settings") ?: JSONObject().also { inbound.put("settings", it) }
+                    // Android receives an already-established VPN fd. Xray's
+                    // config builder otherwise tries to enumerate interfaces
+                    // to generate a desktop TUN name, which can be denied by
+                    // the Android sandbox before the fd-backed implementation
+                    // is reached.
+                    if (!settings.has("name") || settings.optString("name").isBlank()) {
+                        settings.put("name", "tun-inbound")
+                    }
                     settings.remove("autoSystemRoutingTable")
                     settings.remove("autoOutboundsInterface")
                     Log.d(TAG, "Sanitized existing tun inbound for Android VpnService (removed auto-routing).")
@@ -136,6 +144,7 @@ object ConfigUtils {
                 put("protocol", "tun")
                 put("tag", "tun-inbound")
                 put("settings", JSONObject().apply {
+                    put("name", "tun-inbound")
                     put("network", "tcp,udp")
                 })
             }
