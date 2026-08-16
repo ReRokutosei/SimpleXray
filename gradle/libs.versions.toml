@@ -77,4 +77,4 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
-versions = { id = "com.github.ben-manes.versions", version.ref = "gradleVersionsPlugin" }
+versions = { id = "io.github.ben-manes.versions", version.ref = "gradleVersionsPlugin" }
