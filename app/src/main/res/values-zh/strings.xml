@@ -2,9 +2,11 @@
 <resources>
     <!-- SOCKS 本地入站设置 -->
     <string name="socks_address">SOCKS 入站地址</string>
-    <string name="socks_address_summary">TUN 流量转发与 Xray 本地 SOCKS5 代理服务的绑定监听 IP 地址</string>
+    <string name="socks_address_summary">Xray 本地 SOCKS5 代理服务的绑定监听 IP 地址</string>
+    <string name="socks_address_summary_socks_tunnel">TUN 流量转发与 Xray 本地 SOCKS5 代理服务的绑定监听 IP 地址</string>
     <string name="socks_port">SOCKS 入站端口</string>
-    <string name="socks_port_summary">TUN 流量转发与 Xray 本地 SOCKS5 代理服务的监听端口（自动同步至内核配置）</string>
+    <string name="socks_port_summary">Xray 本地 SOCKS5 代理服务的监听端口（自动同步至内核配置）</string>
+    <string name="socks_port_summary_socks_tunnel">TUN 流量转发与 Xray 本地 SOCKS5 代理服务的监听端口（自动同步至内核配置）</string>
     <string name="socks_user">SOCKS 认证用户</string>
     <string name="socks_user_summary">SOCKS5 代理连接验证所需用户名 (可选)</string>
     <string name="socks_pass">SOCKS 认证密码</string>
@@ -23,8 +25,12 @@
     <string name="http_proxy_summary">向 Android 系统注册全局 HTTP 代理 (127.0.0.1:10809)。常规 TUN 模式下保持关闭即可，开启可兼容部分不支持 TUN 的特殊应用</string>
     <string name="bypass_lan_title">绕过局域网</string>
     <string name="bypass_lan_summary">启用时，局域网流量不通过代理</string>
-    <string name="use_xray_tun_title">使用 Xray 原生 TUN</string>
-    <string name="use_xray_tun_summary">绕过 SOCKS 封装层直接使用 Xray 的原生 TUN 栈</string>
+    <string name="tunnel_mode_title">TUN 传输模式</string>
+    <string name="tunnel_mode_summary">选择负责从 Android VPN 接口转发流量的组件</string>
+    <string name="tunnel_mode_xray_tun">Xray TUN</string>
+    <string name="tunnel_mode_xray_tun_summary">使用 Xray 原生 TUN 入站直接处理 VPN 数据包</string>
+    <string name="tunnel_mode_hev_socks5">Hev Socks5 Tunnel</string>
+    <string name="tunnel_mode_hev_socks5_summary">使用 Hev Socks5 Tunnel 将 VPN 流量转发至 Xray</string>
 
     <!-- 常规偏好设置 -->
     <string name="general">通用</string>

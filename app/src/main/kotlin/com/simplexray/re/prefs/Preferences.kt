@@ -26,6 +26,16 @@ enum class LogLevel(val value: String) {
     }
 }
 
+enum class TunnelMode(val value: String) {
+    XrayTun("xray_tun"),
+    HevSocks5Tunnel("hev_socks5_tunnel");
+
+    companion object {
+        fun fromString(value: String): TunnelMode =
+            entries.find { it.value.equals(value, ignoreCase = true) } ?: XrayTun
+    }
+}
+
 class Preferences(context: Context) {
     private val contentResolver: ContentResolver
     private val context1: Context = context.applicationContext
@@ -185,7 +195,11 @@ class Preferences(context: Context) {
 
     var enable: Boolean by booleanPref(ENABLE, false)
     var disableVpn: Boolean by booleanPref(DISABLE_VPN, false)
-    var useXrayTun: Boolean by booleanPref(USE_XRAY_TUN, false)
+    var tunnelMode: TunnelMode
+        get() = getPrefData(TUNNEL_MODE).first?.let { TunnelMode.fromString(it) } ?: TunnelMode.XrayTun
+        set(value) {
+            setValueInProvider(TUNNEL_MODE, value.value)
+        }
 
     // Fixed tunnel constants (not persisted)
     val tunnelMtu: Int get() = 8500
@@ -277,7 +291,7 @@ class Preferences(context: Context) {
         const val CUSTOM_GEOSITE_IMPORTED: String = "CustomGeositeImported"
         const val CONFIG_FILES_ORDER: String = "ConfigFilesOrder"
         const val DISABLE_VPN: String = "DisableVpn"
-        const val USE_XRAY_TUN: String = "UseXrayTun"
+        const val TUNNEL_MODE: String = "TunnelMode"
         const val APP_ICON: String = "AppIcon"
         const val GEOIP_URL: String = "GeoipUrl"
         const val GEOSITE_URL: String = "GeositeUrl"

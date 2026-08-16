@@ -26,6 +26,7 @@ import com.simplexray.re.activity.MainActivity
 import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.ConfigUtils.extractPortsFromJson
 import com.simplexray.re.common.CoreStatsClient
+import com.simplexray.re.prefs.TunnelMode
 import com.simplexray.re.data.source.LogFileManager
 import com.simplexray.re.prefs.Preferences
 import kotlinx.coroutines.CoroutineScope
@@ -217,7 +218,7 @@ class TProxyService : VpnService() {
         var currentPid = -1
 
         try {
-            Log.d(TAG, "Attempting to start native Xray process with TUN fd & UDS API.")
+            Log.d(TAG, "Attempting to start native Xray process with TUN fd & local gRPC API.")
             val libraryDir = getNativeLibraryDir(applicationContext)
             val prefs = Preferences(applicationContext)
             val selectedConfigPath = prefs.selectedConfigPath ?: return
@@ -244,7 +245,7 @@ class TProxyService : VpnService() {
             val finalConfigContent = ConfigUtils.injectStatsService(prefs, sanitizedConfigContent)
             Log.d(TAG, "Injected final config (${finalConfigContent.length} chars) ready for stdin ($format)")
 
-            val useXrayTun = prefs.useXrayTun && !prefs.disableVpn
+            val useXrayTun = prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn
             val reader: BufferedReader
 
             if (useXrayTun) {
@@ -440,8 +441,8 @@ class TProxyService : VpnService() {
         val prefs = Preferences(this)
 
         val selectedConfigPath = prefs.selectedConfigPath
-        var tunMtu = if (prefs.useXrayTun && !prefs.disableVpn) prefs.tunnelMtuForXrayTun else prefs.tunnelMtu
-        if (prefs.useXrayTun && !prefs.disableVpn && selectedConfigPath != null) {
+        var tunMtu = if (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn) prefs.tunnelMtuForXrayTun else prefs.tunnelMtu
+        if (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn && selectedConfigPath != null) {
             val configFile = File(selectedConfigPath)
             if (configFile.exists()) {
                 val configContent = runCatching { configFile.readText() }.getOrDefault("")
@@ -458,7 +459,7 @@ class TProxyService : VpnService() {
             return
         }
 
-        if (prefs.useXrayTun && !prefs.disableVpn) {
+        if (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn) {
             Log.d(TAG, "Using Xray Native TUN mode, skipping hev-socks5-tunnel.")
         } else {
             val tproxyFile = File(cacheDir, "tproxy.conf")

@@ -3,6 +3,7 @@ package com.simplexray.re.viewmodel
 import com.simplexray.re.common.ThemeMode
 
 import com.simplexray.re.prefs.LogLevel
+import com.simplexray.re.prefs.TunnelMode
 
 data class InputFieldState(
     val value: String,
@@ -17,7 +18,7 @@ data class SwitchStates(
     val httpProxyEnabled: Boolean,
     val bypassLanEnabled: Boolean,
     val disableVpn: Boolean,
-    val useXrayTun: Boolean,
+    val tunnelMode: TunnelMode,
     val themeMode: ThemeMode,
     val logLevel: LogLevel = LogLevel.Auto
 )
