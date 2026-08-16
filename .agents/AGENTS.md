@@ -11,16 +11,16 @@ This file provides the necessary context and constraints for AI agents interacti
 - **Language**: Kotlin (for Android app) and C/C++ (for JNI / native tunnels).
 - **UI Framework**: Jetpack Compose using the `miuix` component library.
 - **Architecture**: MVVM with Android ViewModels.
-- **Data Persistence**: Android DataStore Preferences (`androidx.datastore.preferences`).
-- **Communication/RPC**: gRPC with Protocol Buffers (protobuf) to communicate with the Xray core. Note that the gRPC channel leverages **Unix Domain Sockets (UDS)** (e.g., using the `unix:$socketPath` target scheme via `ManagedChannelBuilder.forTarget`) for efficient local inter-process communication between the Android app and the native Xray process.
-- **Native Components**: Uses CMake to build `hev-socks5-tunnel` and dependencies (`yaml`, `lwip`, `hev-task-system`) as native JNI libraries. The native Xray process is started with TUN file descriptors and UDS APIs.
+- **Data Persistence**: ContentProvider-backed Android `SharedPreferences`.
+- **Communication/RPC**: gRPC with Protocol Buffers (protobuf) to query Xray core status and traffic statistics through a dynamically allocated `127.0.0.1` TCP port. The current branch does not use UDS for this channel.
+- **Native Components**: Uses CMake to build `hev-socks5-tunnel` and dependencies (`yaml`, `lwip`, `hev-task-system`) as native JNI libraries. In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. Hev mode passes the VPN file descriptor to `hev-socks5-tunnel`.
 
 ## Project Structure
 - `app/src/main/kotlin/com/simplexray/re/`:
   - `ui/`: Contains all Jetpack Compose screens, navigation, and scaffolds.
   - `viewmodel/`: Contains MVVM ViewModels.
   - `service/`: Contains Android background services, including `TProxyService` (VpnService implementation).
-  - `prefs/`: Contains DataStore preference management.
+  - `prefs/`: Contains the preference contract, provider, and access wrapper for `SharedPreferences`.
   - `data/`: Data models and networking logic.
   - `common/`: Shared utilities and callbacks.
   - `activity/`: Android Activity classes (primarily `MainActivity` hosting Compose).
