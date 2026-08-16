@@ -113,6 +113,7 @@ class MainViewModel(application: Application) :
                 httpProxyEnabled = prefs.httpProxyEnabled,
                 bypassLanEnabled = prefs.bypassLan,
                 disableVpn = prefs.disableVpn,
+                useXrayTun = prefs.useXrayTun,
                 themeMode = prefs.theme,
                 logLevel = prefs.logLevel
             ),
@@ -262,6 +263,7 @@ class MainViewModel(application: Application) :
                 httpProxyEnabled = prefs.httpProxyEnabled,
                 bypassLanEnabled = prefs.bypassLan,
                 disableVpn = prefs.disableVpn,
+                useXrayTun = prefs.useXrayTun,
                 themeMode = prefs.theme,
                 logLevel = prefs.logLevel
             ),
@@ -742,6 +744,13 @@ class MainViewModel(application: Application) :
         )
     }
 
+    fun setUseXrayTun(enabled: Boolean) {
+        prefs.useXrayTun = enabled
+        _settingsState.value = _settingsState.value.copy(
+            switches = _settingsState.value.switches.copy(useXrayTun = enabled)
+        )
+    }
+
     fun setTheme(mode: ThemeMode) {
         prefs.theme = mode
         _settingsState.value = _settingsState.value.copy(
@@ -1113,7 +1122,7 @@ class MainViewModel(application: Application) :
                     throw IOException("Failed to download file: ${response.code}")
                 }
 
-                val body = response.body ?: throw IOException("Response body is null")
+                val body = response.body
                 val totalBytes = body.contentLength()
                 var bytesRead = 0L
                 var lastProgress = -1
@@ -1329,7 +1338,7 @@ class MainViewModel(application: Application) :
 
             try {
                 val response = client.newCall(request).await()
-                val responseBody = response.body?.string() ?: ""
+                val responseBody = response.body.string()
                 val json = org.json.JSONObject(responseBody)
                 val tagName = json.optString("tag_name", "").removePrefix("v")
                 Log.d(TAG, "Latest version tag: $tagName")

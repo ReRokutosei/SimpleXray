@@ -1,8 +1,26 @@
 /*
  * xray_exec.c – spawn the Xray binary with the Android VPN fd properly inherited.
+ *
+ * Problem: Android's ProcessBuilder (fork + exec) honours FD_CLOEXEC.  The fd
+ * returned by VpnService.Builder.establish() always has FD_CLOEXEC set, so it
+ * is automatically closed before the child process starts.  Passing its number
+ * via the XRAY_TUN_FD environment variable therefore gives Xray an invalid fd.
+ *
+ * Fix: fork() here in native code, then dup2() the VPN fd to a fixed target fd
+ * (CHILD_TUN_FD = 4) before exec().  dup2() does not copy FD_CLOEXEC, so fd 4
+ * survives exec and is visible to Xray as its TUN fd.
+ *
+ * The merged Xray config JSON is delivered to Xray via stdin so that no
+ * sensitive data ever touches the file system.  A stdout pipe lets the caller
+ * read Xray logs.
+ *
+ * JNI signature:
+ *   int[] TProxyService.nativeSpawnXray(String xrayPath, String assetDir, int vpnFd)
+ * Returns int[3] = { pid, stdout_read_fd, stdin_write_fd }, or null on failure.
  */
 
 #include <jni.h>
+
 #include <android/log.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -19,6 +37,10 @@
 /* fd number reserved for the VPN fd inside the Xray process */
 #define CHILD_TUN_FD 4
 
+/*
+ * Close every open fd > 2 except keep_fd.
+ * Uses only async-signal-safe syscalls so it is safe to call after fork().
+ */
 static void close_extra_fds(int keep_fd)
 {
     long max_fd = sysconf(_SC_OPEN_MAX);
@@ -29,25 +51,24 @@ static void close_extra_fds(int keep_fd)
 }
 
 JNIEXPORT jintArray JNICALL
-Java_com_simplexray_an_service_TProxyService_nativeSpawnXray(
+Java_com_simplexray_re_service_TProxyService_nativeSpawnXray(
         JNIEnv *env, jclass clazz,
         jstring xray_path_j,
         jstring asset_dir_j,
-        jint    vpn_fd,
-        jstring format_j)
+        jint    vpn_fd)
 {
     const char *xray_path = (*env)->GetStringUTFChars(env, xray_path_j, NULL);
     const char *asset_dir = (*env)->GetStringUTFChars(env, asset_dir_j,  NULL);
-    const char *format    = (*env)->GetStringUTFChars(env, format_j,    NULL);
 
     int stdin_pipe[2]  = {-1, -1};
     int stdout_pipe[2] = {-1, -1};
 
     if (pipe(stdin_pipe) < 0 || pipe(stdout_pipe) < 0) {
         LOGE("pipe() failed: %s", strerror(errno));
+        close(stdin_pipe[0]);  close(stdin_pipe[1]);
+        close(stdout_pipe[0]); close(stdout_pipe[1]);
         (*env)->ReleaseStringUTFChars(env, xray_path_j, xray_path);
         (*env)->ReleaseStringUTFChars(env, asset_dir_j,  asset_dir);
-        (*env)->ReleaseStringUTFChars(env, format_j,    format);
         return NULL;
     }
 
@@ -67,7 +88,6 @@ Java_com_simplexray_an_service_TProxyService_nativeSpawnXray(
         close(stdout_pipe[0]); close(stdout_pipe[1]);
         (*env)->ReleaseStringUTFChars(env, xray_path_j, xray_path);
         (*env)->ReleaseStringUTFChars(env, asset_dir_j,  asset_dir);
-        (*env)->ReleaseStringUTFChars(env, format_j,    format);
         return NULL;
     }
     int ni = 0;
@@ -80,7 +100,7 @@ Java_com_simplexray_an_service_TProxyService_nativeSpawnXray(
     new_env[ni++] = tun_fd_env;
     new_env[ni]   = NULL;
 
-    char *argv[] = { (char *)xray_path, "run", "-format", (char *)format, "-config", "stdin:", NULL };
+    char *argv[] = { (char *)xray_path, NULL };
 
     pid_t pid = fork();
     if (pid < 0) {
@@ -125,7 +145,6 @@ Java_com_simplexray_an_service_TProxyService_nativeSpawnXray(
 
     (*env)->ReleaseStringUTFChars(env, xray_path_j, xray_path);
     (*env)->ReleaseStringUTFChars(env, asset_dir_j,  asset_dir);
-    (*env)->ReleaseStringUTFChars(env, format_j,    format);
 
     LOGI("Spawned xray pid=%d stdout_read_fd=%d stdin_write_fd=%d",
          pid, stdout_pipe[0], stdin_pipe[1]);

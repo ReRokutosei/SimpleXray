@@ -19,3 +19,4 @@ build/*
 app/.cxx/*
 *.dex
 .cxx_tmp2/*
+docs/logs/

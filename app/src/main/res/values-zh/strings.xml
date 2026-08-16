@@ -23,6 +23,8 @@
     <string name="http_proxy_summary">向 Android 系统注册全局 HTTP 代理 (127.0.0.1:10809)。常规 TUN 模式下保持关闭即可，开启可兼容部分不支持 TUN 的特殊应用</string>
     <string name="bypass_lan_title">绕过局域网</string>
     <string name="bypass_lan_summary">启用时，局域网流量不通过代理</string>
+    <string name="use_xray_tun_title">使用 Xray 原生 TUN</string>
+    <string name="use_xray_tun_summary">绕过 SOCKS 封装层直接使用 Xray 的原生 TUN 栈</string>
 
     <!-- 常规偏好设置 -->
     <string name="general">通用</string>

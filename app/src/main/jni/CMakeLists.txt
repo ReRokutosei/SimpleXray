@@ -103,3 +103,9 @@ target_link_options(hev-socks5-tunnel PRIVATE
     -Wl,-z,max-page-size=16384
     -Wl,-z,common-page-size=16384
 )
+
+# -----------------------------------------------------------------------------
+# 3. xray-exec shared library
+# -----------------------------------------------------------------------------
+add_library(xray-exec SHARED xray-exec/xray_exec.c)
+target_link_libraries(xray-exec log)
