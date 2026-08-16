@@ -137,11 +137,12 @@ class TProxyService : VpnService() {
             }
 
             ACTION_START -> {
-                logFileManager.clearLogs()
                 val prefs = Preferences(this)
                 if (prefs.disableVpn) {
-                    isStopping = false
-                    xrayStartAttempt = 0
+                    if (!acquireStart("ACTION_START")) {
+                        return START_NOT_STICKY
+                    }
+                    logFileManager.clearLogs()
                     serviceScope.launch { runXrayProcess() }
                     val successIntent = Intent(ACTION_START)
                     successIntent.setPackage(application.packageName)
@@ -158,7 +159,6 @@ class TProxyService : VpnService() {
             }
 
             else -> {
-                logFileManager.clearLogs()
                 startXray()
                 return START_NOT_STICKY
             }
@@ -190,10 +190,24 @@ class TProxyService : VpnService() {
     }
 
     private fun startXray() {
-        isStopping = false
-        xrayStartAttempt = 0
+        if (!acquireStart("startXray")) return
+        logFileManager.clearLogs()
         startService()
         serviceScope.launch { runXrayProcess() }
+    }
+
+    /**
+     * Serializes normal start requests. A reload intentionally replaces the
+     * current process and does not call this method.
+     */
+    private fun acquireStart(source: String): Boolean {
+        if (!isStartingLock.compareAndSet(false, true)) {
+            Log.d(TAG, "Ignoring duplicate start request from $source.")
+            return false
+        }
+        isStopping = false
+        xrayStartAttempt = 0
+        return true
     }
 
     private fun runXrayProcess() {

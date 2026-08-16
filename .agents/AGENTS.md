@@ -43,3 +43,7 @@ This file provides the necessary context and constraints for AI agents interacti
 ## Key Constraints
 - NEVER break the `VpnService` transparent proxy behavior. Testing native traffic routing is critical.
 - Keep the UI responsive and aesthetic, prioritizing the `miuix` design system.
+
+## Device Testing and Commits
+- For Android/VPN/TUN or other device-dependent changes, do not create a commit until the user confirms that the change has passed real-device testing.
+- Keep such changes uncommitted in the working tree while waiting for real-device verification.
