@@ -5,6 +5,11 @@
   "labels": ["dependency"],
   "prConcurrentLimit": 10,
 
+  "ignorePaths": [
+    "**/third_party/**",
+    "**/app/src/main/jni/**"
+  ],
+
   "packageRules": [
     {
       "description": "Gradle Version Catalog",
