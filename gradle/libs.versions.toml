@@ -58,7 +58,7 @@ androidx-navigationevent = { module = "androidx.navigationevent:navigationevent-
 lazycolumnscrollbar = { module = "com.github.nanihadesuka:LazyColumnScrollbar", version.ref = "lazyColumnScrollbar" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
-yaml = { module = "org.yaml:snakeyaml", version = "2.2" }
+yaml = { module = "org.yaml:snakeyaml", version = "2.6" }
 junit = { module = "junit:junit", version.ref = "junit" }
 org-json = { module = "org.json:json", version.ref = "orgJson" }
 
