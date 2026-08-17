@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.simplexray.re.BuildConfig
@@ -108,6 +109,13 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                 loadedPackages = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
                 delay(500)
             }
+            val installedPackageNames = loadedPackages.map { it.packageName }.toSet()
+            val validSelectedApps = apps.filter { installedPackageNames.contains(it) }.toSet()
+            if (validSelectedApps.size != apps.size) {
+                prefs.apps = validSelectedApps
+                Log.d(TAG, "Pruned ${apps.size - validSelectedApps.size} uninstalled app(s) from per-app proxy list.")
+            }
+
             val list = loadedPackages.asSequence()
                 .mapNotNull {
                     if (it.packageName == appPackageName) return@mapNotNull null
@@ -117,7 +125,7 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                     val isSystemApp = appInfo.flags and ApplicationInfo.FLAG_SYSTEM != 0
                     val label = appInfo.loadLabel(pm).toString()
                     Package(
-                        selected = apps.contains(it.packageName),
+                        selected = validSelectedApps.contains(it.packageName),
                         label = label,
                         packageName = it.packageName,
                         isSystemApp = isSystemApp,
@@ -243,5 +251,9 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
             pkg.copy(selected = !pkg.selected)
         }
         saveChanges()
+    }
+
+    companion object {
+        private const val TAG = "AppListViewModel"
     }
 }
