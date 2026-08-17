@@ -37,6 +37,9 @@
     <string name="tunnel_mode_xray_tun_summary">Use Xray\'s native TUN inbound to process VPN packets directly</string>
     <string name="tunnel_mode_hev_socks5">Hev SOCKS5 Tunnel</string>
     <string name="tunnel_mode_hev_socks5_summary">Use Hev SOCKS5 Tunnel to forward VPN traffic to Xray</string>
+    <string name="tunnel_mtu_title">TUN Interface MTU</string>
+    <string name="tunnel_mtu_summary">Maximum transmission unit for system VPN interface. Valid range: 1280 to 9000 (default: 1500)</string>
+    <string name="invalid_mtu">MTU must be an integer between 1280 and 9000</string>
 
     <!-- General Settings & Preferences -->
     <string name="general">General</string>

@@ -201,9 +201,7 @@ class Preferences(context: Context) {
             setValueInProvider(TUNNEL_MODE, value.value)
         }
 
-    // Fixed tunnel constants (not persisted)
-    val tunnelMtu: Int get() = 8500
-    val tunnelMtuForXrayTun: Int get() = 1500
+    var tunnelMtu: Int by intPref(TUNNEL_MTU, 1500)
     val tunnelIpv4Address: String get() = "198.18.0.1"
     val tunnelIpv4Prefix: Int get() = 32
     val tunnelIpv6Address: String get() = "fc00::1"
@@ -295,6 +293,7 @@ class Preferences(context: Context) {
         const val CONFIG_FILES_ORDER: String = "ConfigFilesOrder"
         const val DISABLE_VPN: String = "DisableVpn"
         const val TUNNEL_MODE: String = "TunnelMode"
+        const val TUNNEL_MTU: String = "TunnelMtu"
         const val APP_ICON: String = "AppIcon"
         const val GEOIP_URL: String = "GeoipUrl"
         const val GEOSITE_URL: String = "GeositeUrl"

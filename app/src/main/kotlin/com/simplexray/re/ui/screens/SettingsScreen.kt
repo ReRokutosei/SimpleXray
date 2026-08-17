@@ -358,6 +358,16 @@ fun SettingsScreen(
                 )
 
                 EditableListItemWithMiuixBottomSheet(
+                    headline = stringResource(R.string.tunnel_mtu_title),
+                    currentValue = settingsState.tunnelMtu.value,
+                    onValueConfirmed = { newValue -> mainViewModel.updateTunnelMtu(newValue) },
+                    label = stringResource(R.string.tunnel_mtu_title),
+                    supportingText = stringResource(R.string.tunnel_mtu_summary),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    enabled = !vpnDisabled
+                )
+
+                EditableListItemWithMiuixBottomSheet(
                     headline = stringResource(R.string.socks_address),
                     currentValue = settingsState.socksAddress.value,
                     onValueConfirmed = { newValue -> mainViewModel.updateSocksAddress(newValue) },

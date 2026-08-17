@@ -454,7 +454,7 @@ class TProxyService : VpnService() {
         val prefs = Preferences(this)
 
         val selectedConfigPath = prefs.selectedConfigPath
-        var tunMtu = if (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn) prefs.tunnelMtuForXrayTun else prefs.tunnelMtu
+        var tunMtu = prefs.tunnelMtu
         if (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn && selectedConfigPath != null) {
             val configFile = File(selectedConfigPath)
             if (configFile.exists()) {

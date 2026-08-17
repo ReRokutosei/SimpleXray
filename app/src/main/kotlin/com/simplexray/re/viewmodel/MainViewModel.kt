@@ -131,7 +131,8 @@ class MainViewModel(application: Application) :
                 isGeoipCustom = prefs.customGeoipImported,
                 isGeositeCustom = prefs.customGeositeImported
             ),
-            geoUpdateIntervalHours = InputFieldState(prefs.geoUpdateIntervalHours.toString())
+            geoUpdateIntervalHours = InputFieldState(prefs.geoUpdateIntervalHours.toString()),
+            tunnelMtu = InputFieldState(prefs.tunnelMtu.toString())
         )
     )
     val settingsState: StateFlow<SettingsState> = _settingsState.asStateFlow()
@@ -710,6 +711,39 @@ class MainViewModel(application: Application) :
                     geoUpdateIntervalHours = InputFieldState(
                         value = hoursString,
                         error = application.getString(R.string.invalid_geo_update_interval),
+                        isValid = false
+                    )
+                )
+                false
+            }
+        }
+    }
+
+    fun updateTunnelMtu(mtuString: String): Boolean {
+        val mtu = mtuString.toIntOrNull()
+        return when {
+            mtu == null -> {
+                _settingsState.value = _settingsState.value.copy(
+                    tunnelMtu = InputFieldState(
+                        value = mtuString,
+                        error = application.getString(R.string.invalid_mtu),
+                        isValid = false
+                    )
+                )
+                false
+            }
+            mtu in 1280..9000 -> {
+                prefs.tunnelMtu = mtu
+                _settingsState.value = _settingsState.value.copy(
+                    tunnelMtu = InputFieldState(mtu.toString())
+                )
+                true
+            }
+            else -> {
+                _settingsState.value = _settingsState.value.copy(
+                    tunnelMtu = InputFieldState(
+                        value = mtuString,
+                        error = application.getString(R.string.invalid_mtu),
                         isValid = false
                     )
                 )
