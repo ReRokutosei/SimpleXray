@@ -19,6 +19,7 @@
  * Returns int[3] = { pid, stdout_read_fd, stdin_write_fd }, or null on failure.
  */
 
+#define _GNU_SOURCE
 #include <jni.h>
 
 #include <android/log.h>
@@ -63,8 +64,8 @@ Java_com_simplexray_re_service_TProxyService_nativeSpawnXray(
     int stdin_pipe[2]  = {-1, -1};
     int stdout_pipe[2] = {-1, -1};
 
-    if (pipe(stdin_pipe) < 0 || pipe(stdout_pipe) < 0) {
-        LOGE("pipe() failed: %s", strerror(errno));
+    if (pipe2(stdin_pipe, O_CLOEXEC) < 0 || pipe2(stdout_pipe, O_CLOEXEC) < 0) {
+        LOGE("pipe2() failed: %s", strerror(errno));
         close(stdin_pipe[0]);  close(stdin_pipe[1]);
         close(stdout_pipe[0]); close(stdout_pipe[1]);
         (*env)->ReleaseStringUTFChars(env, xray_path_j, xray_path);
