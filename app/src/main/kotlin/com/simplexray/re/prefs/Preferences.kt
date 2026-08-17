@@ -250,6 +250,8 @@ class Preferences(context: Context) {
             setValueInProvider(THEME, value.value)
         }
 
+    var notificationPrompted: Boolean by booleanPref(NOTIFICATION_PROMPTED, false)
+
     var customDatUrls: Map<String, String>
         get() {
             val json = getPrefData(CUSTOM_DAT_URLS).first
@@ -300,6 +302,7 @@ class Preferences(context: Context) {
         const val BYPASS_SELECTED_APPS: String = "BypassSelectedApps"
         const val THEME: String = "Theme"
         const val HIDE_FROM_RECENTS: String = "HideFromRecents"
+        const val NOTIFICATION_PROMPTED: String = "NotificationPrompted"
         const val GEO_UPDATE_INTERVAL_HOURS: String = "GeoUpdateIntervalHours"
         const val CUSTOM_DAT_URLS: String = "CustomDatUrls"
         private const val TAG = "Preferences"
