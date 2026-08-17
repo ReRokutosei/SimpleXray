@@ -1122,7 +1122,7 @@ class MainViewModel(application: Application) :
                     throw IOException("Failed to download file: ${response.code}")
                 }
 
-                val body = response.body ?: throw IOException("Response body is null")
+                val body = response.body
                 val totalBytes = body.contentLength()
                 var bytesRead = 0L
                 var lastProgress = -1
