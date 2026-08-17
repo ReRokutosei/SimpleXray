@@ -1,5 +1,7 @@
 ## Hardware/Software
 
+> source: https://github.com/heiher/hev-socks5-tunnel/wiki/Benchmarks
+
 CPU: AMD Ryzen 9 7950X 16-Core Processor (Max 5.7GHz)
 
 OS: Arch Linux (Linux 6.15.8)
@@ -254,8 +256,3 @@ $ iperf3 -c 192.168.0.8 -R -P 10
 CPU usage: 610%
 MEM usage: 68M
 ```
-
----
-
-注：目前xray-core最新版本是v26.7.28，完整仓库克隆在`D:\Develop\repo\clone\XrayGUI\Xray-core`，最新commit距离v26.7.28仅多了8个新提交。最新commit是`7d214f8b `；该Benchmark使用的版本26.1.13对应commit为`9a121a489b01b1af46f43cfb060fe88c89f1570b`。建议使用`git log --oneline`快速查看有关tun的变更。
-
