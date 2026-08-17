@@ -28,22 +28,10 @@ target_include_directories(lwip PUBLIC
 )
 target_compile_definitions(lwip PRIVATE FD_SET_DEFINED SOCKLEN_T_DEFINED)
 
-# hev-task-system static lib (architecture-specific assembly selection & includes)
+# hev-task-system static lib (arm64-v8a dedicated assembly & architecture header)
 file(GLOB_RECURSE TASK_SYS_C_SOURCES hev-socks5-tunnel/third-part/hev-task-system/src/*.c)
-
-if(ANDROID_ABI STREQUAL "arm64-v8a")
-    set(TASK_SYS_ASM hev-socks5-tunnel/third-part/hev-task-system/src/arch/arm/hev-task-execute-aarch64.s)
-    set(TASK_SYS_ARCH_INC hev-socks5-tunnel/third-part/hev-task-system/src/arch/arm)
-elseif(ANDROID_ABI STREQUAL "armeabi-v7a")
-    set(TASK_SYS_ASM hev-socks5-tunnel/third-part/hev-task-system/src/arch/arm/hev-task-execute-arm.s)
-    set(TASK_SYS_ARCH_INC hev-socks5-tunnel/third-part/hev-task-system/src/arch/arm)
-elseif(ANDROID_ABI STREQUAL "x86_64")
-    set(TASK_SYS_ASM hev-socks5-tunnel/third-part/hev-task-system/src/arch/x86/hev-task-execute-x86_64.s)
-    set(TASK_SYS_ARCH_INC hev-socks5-tunnel/third-part/hev-task-system/src/arch/x86)
-elseif(ANDROID_ABI STREQUAL "x86")
-    set(TASK_SYS_ASM hev-socks5-tunnel/third-part/hev-task-system/src/arch/x86/hev-task-execute-x86.s)
-    set(TASK_SYS_ARCH_INC hev-socks5-tunnel/third-part/hev-task-system/src/arch/x86)
-endif()
+set(TASK_SYS_ASM hev-socks5-tunnel/third-part/hev-task-system/src/arch/arm/hev-task-execute-aarch64.s)
+set(TASK_SYS_ARCH_INC hev-socks5-tunnel/third-part/hev-task-system/src/arch/arm)
 
 set_source_files_properties(${TASK_SYS_ASM} PROPERTIES COMPILE_FLAGS "-x assembler-with-cpp")
 
@@ -109,3 +97,7 @@ target_link_options(hev-socks5-tunnel PRIVATE
 # -----------------------------------------------------------------------------
 add_library(xray-exec SHARED xray-exec/xray_exec.c)
 target_link_libraries(xray-exec log)
+target_link_options(xray-exec PRIVATE
+    -Wl,-z,max-page-size=16384
+    -Wl,-z,common-page-size=16384
+)
