@@ -83,7 +83,7 @@ class BenchmarkReceiver : BroadcastReceiver() {
 
                 if (cmd == "start") {
                     val startIntent = Intent(context, TProxyService::class.java).apply {
-                        this.action = TProxyService.ACTION_START
+                        this.action = TProxyService.ACTION_CONNECT
                     }
                     ContextCompat.startForegroundService(context, startIntent)
                     Log.d(TAG, "Started TProxyService in ${prefs.tunnelMode.value} mode with config: ${configFile.absolutePath}")

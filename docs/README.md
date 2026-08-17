@@ -46,9 +46,10 @@ This repository is a personal fork based on the upstream [SimpleXray](https://gi
 
 ---
 
-## Differences from Upstream
+<details>
+<summary><b>Click to expand / collapse: Differences from Upstream</b></summary>
 
-| Area | Upstream | Personal Fork |
+| Area | Upstream (4c78901) | Personal Fork |
 |-|-|-|
 | **Process & Execution**         | Runs Xray in a separate child process and sends the configuration through stdin | Runs Xray in a separate child process and sends the configuration through stdin. Native Xray TUN mode starts the child through the JNI launcher; Hev mode uses `ProcessBuilder`. APK packaging includes `arm64-v8a` only |
 | **Traffic & IPC**               | `hev-socks5-tunnel` reads the Android VPN file descriptor and forwards traffic to Xray through its local SOCKS5 inbound. Statistics use a dynamically allocated loopback TCP gRPC port | The selected TUN backend determines the data path. Native Xray TUN mode receives the VPN file descriptor through the JNI launcher; Hev mode forwards traffic through the local SOCKS5 inbound. Core status and traffic statistics use a dynamically allocated `127.0.0.1` TCP gRPC port |
@@ -62,7 +63,7 @@ This repository is a personal fork based on the upstream [SimpleXray](https://gi
 | **ABI Packaging**               | `arm64-v8a` and `x86_64` split APKs, plus a universal APK                                | `arm64-v8a` APK only                                                                                                                                                |
 | **TUN Backend Setting**         | No Xray TUN backend setting                                      | `Xray TUN` and `Hev Socks5 Tunnel` selector, defaulting to `Xray TUN`                                                                                              |
 
----
+</details>
 
 ## Features and Modifications
 
@@ -115,6 +116,7 @@ SimpleXray uses separate channels for configuration, VPN traffic, process logs, 
 * **Process logs**: Xray stdout and stderr are collected through pipes.
 * **Statistics**: Core status and traffic statistics are queried through plaintext gRPC on a dynamically allocated `127.0.0.1` TCP port.
 * **Hev tunnel mode**: When selected, `hev-socks5-tunnel` reads the Android VPN file descriptor and forwards traffic to Xray through its local SOCKS5 inbound.
+* **Benchmark & Profiling**: For detailed throughput benchmarks and resource profiling results on Android devices, see [Android TUN Benchmark Report](./benchmark/android-tun-benchmark.md).
 
 ### 5. Routing and Core Configuration
 
