@@ -177,4 +177,6 @@
     <string name="geo_update_interval_title">自动更新间隔（小时）</string>
     <string name="geo_update_interval_summary">设置 GEO 规则文件的自动更新间隔，单位为小时。设置为 0 可禁用自动更新。有效值：0 或 1–168</string>
     <string name="invalid_geo_update_interval">请输入 0（禁用）或 1 到 168 之间的整数</string>
+    <string name="notification_permission_title">通知权限说明</string>
+    <string name="notification_permission_summary">为了保证 VPN 服务在后台持续稳定运行并防止系统误杀，建议授予通知权限。</string>
 </resources>
