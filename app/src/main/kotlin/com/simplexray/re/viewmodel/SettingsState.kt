@@ -48,5 +48,6 @@ data class SettingsState(
     val switches: SwitchStates,
     val info: InfoStates,
     val files: FileStates,
-    val geoUpdateIntervalHours: InputFieldState = InputFieldState("0")
+    val geoUpdateIntervalHours: InputFieldState = InputFieldState("0"),
+    val tunnelMtu: InputFieldState = InputFieldState("1500")
 ) 
