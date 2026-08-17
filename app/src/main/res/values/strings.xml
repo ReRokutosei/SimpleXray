@@ -8,46 +8,46 @@
 
     <!-- SOCKS Local Inbound Settings -->
     <string name="socks_address">SOCKS Inbound Address</string>
-    <string name="socks_address_summary">Bound listening IP for the local SOCKS5 proxy</string>
-    <string name="socks_address_summary_socks_tunnel">Bound listening IP for TUN forwarding and the local SOCKS5 proxy</string>
+    <string name="socks_address_summary">Listening IP address for Xray\'s local SOCKS5 proxy</string>
+    <string name="socks_address_summary_socks_tunnel">Listening IP address for TUN forwarding and Xray\'s local SOCKS5 proxy</string>
     <string name="socks_port">SOCKS Inbound Port</string>
-    <string name="socks_port_summary">Listening port for the local SOCKS5 proxy (Auto-synced to config)</string>
-    <string name="socks_port_summary_socks_tunnel">Listening port for TUN forwarding and the local SOCKS5 proxy (Auto-synced to config)</string>
+    <string name="socks_port_summary">Listening port for Xray\'s local SOCKS5 proxy (automatically synchronized with the Xray configuration)</string>
+    <string name="socks_port_summary_socks_tunnel">Listening port for TUN forwarding and Xray\'s local SOCKS5 proxy (automatically synchronized with the Xray configuration)</string>
     <string name="socks_user">SOCKS Username</string>
     <string name="socks_user_summary">Optional username required for local SOCKS5 authentication</string>
     <string name="socks_pass">SOCKS Password</string>
     <string name="socks_pass_summary">Optional password required for local SOCKS5 authentication</string>
 
     <!-- TUN Network & DNS Settings -->
-    <string name="dns_ipv4">TUN DNS IPv4</string>
+    <string name="dns_ipv4">TUN IPv4 DNS</string>
     <string name="dns_ipv4_summary">IPv4 DNS server used by system VPN interface</string>
-    <string name="dns_ipv6">TUN DNS IPv6</string>
+    <string name="dns_ipv6">TUN IPv6 DNS</string>
     <string name="dns_ipv6_summary">IPv6 DNS server used by system VPN interface</string>
     <string name="ipv6">IPv6 Support</string>
-    <string name="ipv6_summary">Enable IPv6 routing and stack for system VPN interface</string>
+    <string name="ipv6_summary">Enable IPv6 routing and the IPv6 protocol stack for the system VPN interface</string>
     <string name="disable_vpn_title">Disable VPN Interface</string>
-    <string name="disable_vpn_summary">When enabled, only the core will launch, and the VPN interface will be disabled.</string>
-    <string name="http_proxy_title">Proxy via HTTP</string>
-    <string name="http_proxy_summary">Registers a system-wide HTTP proxy (127.0.0.1:10809). Keep off in standard TUN mode.</string>
+    <string name="disable_vpn_summary">When enabled, only the core will start; the VPN interface will not be created.</string>
+    <string name="http_proxy_title">HTTP Proxy</string>
+    <string name="http_proxy_summary">Register a system-wide HTTP proxy at 127.0.0.1:10809. Usually keep this disabled in TUN mode; enabling it may help some applications that do not support TUN.</string>
     <string name="bypass_lan_title">Bypass LAN</string>
     <string name="bypass_lan_summary">When enabled, LAN traffic will not go through the proxy.</string>
     <string name="tunnel_mode_title">TUN Transport Mode</string>
-    <string name="tunnel_mode_summary">Select the component responsible for forwarding traffic from the Android VPN interface</string>
+    <string name="tunnel_mode_summary">Select the component that forwards traffic from the Android VPN interface</string>
     <string name="tunnel_mode_xray_tun">Xray TUN</string>
     <string name="tunnel_mode_xray_tun_summary">Use Xray\'s native TUN inbound to process VPN packets directly</string>
-    <string name="tunnel_mode_hev_socks5">Hev Socks5 Tunnel</string>
-    <string name="tunnel_mode_hev_socks5_summary">Use Hev Socks5 Tunnel to forward VPN traffic to Xray</string>
+    <string name="tunnel_mode_hev_socks5">Hev SOCKS5 Tunnel</string>
+    <string name="tunnel_mode_hev_socks5_summary">Use Hev SOCKS5 Tunnel to forward VPN traffic to Xray</string>
 
     <!-- General Settings & Preferences -->
     <string name="general">General</string>
     <string name="settings">Settings</string>
     <string name="core_control">Core Control</string>
-    <string name="use_template_title">Create new config from template</string>
-    <string name="use_template_summary">When enabled, new configs will be pre-filled with template content.</string>
+    <string name="use_template_title">Create New Configuration from Template</string>
+    <string name="use_template_summary">When enabled, new configurations will be pre-filled with template content.</string>
     <string name="loglevel_title">Log Level</string>
-    <string name="loglevel_summary">Auto follows profile. Select to override logging verbosity. (Need to restart core)</string>
+    <string name="loglevel_summary">Auto follows the configuration. Select a level to override it. Restart the core to apply changes.</string>
     <string name="theme_title">Theme</string>
-    <string name="theme_summary">Adjust the theme to dark or light</string>
+    <string name="theme_summary">Select light, dark, or system default</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="auto">Auto</string>
@@ -65,22 +65,22 @@
 
     <!-- Profile & File Management -->
     <string name="configuration">Configuration</string>
-    <string name="config">Edit Config</string>
+    <string name="config">Edit Configuration</string>
     <string name="content">Content</string>
     <string name="filename">Filename</string>
-    <string name="config_in_use">Profile in Use</string>
-    <string name="config_import_service_running">Service running: config imported but not switched. Stop the service or pick the file manually to switch.</string>
-    <string name="delete_config">Delete Config</string>
-    <string name="not_select_config">No profile selected</string>
+    <string name="config_in_use">Configuration in Use</string>
+    <string name="config_import_service_running">Service is running: the configuration was imported but not switched. Stop the service or select the file manually to switch.</string>
+    <string name="delete_config">Delete Configuration</string>
+    <string name="not_select_config">No configuration selected</string>
     <string name="no_config_files">No configuration files</string>
     <string name="import_from_clipboard">Import Clipboard</string>
     <string name="import_from_file">Import File</string>
-    <string name="add_config_profile">Add Profile</string>
-    <string name="create_new_config_title">Create New Config</string>
+    <string name="add_config_profile">Add Configuration</string>
+    <string name="create_new_config_title">Create New Configuration</string>
     <string name="create_new_config_summary">Manually create a blank configuration file</string>
-    <string name="import_from_clipboard_summary">Import a full config (JSON/YAML) from clipboard</string>
+    <string name="import_from_clipboard_summary">Import a complete configuration (JSON/YAML) from the clipboard</string>
     <string name="import_from_local_file_title">Import Local File</string>
-    <string name="import_from_local_file_summary">Select a configuration file via system file manager</string>
+    <string name="import_from_local_file_summary">Select a configuration file using the system file manager</string>
     <string name="import_file">Import</string>
     <string name="export">Export</string>
     <string name="export_to_clipboard">Export to Clipboard</string>
@@ -92,7 +92,7 @@
     <string name="delete_rule_file_title">Delete rule file</string>
     <string name="delete_rule_file_message">This will restore the default rule file. Are you sure?</string>
     <string name="restore_default_url">Restore default URL</string>
-    <string name="download_from_url_import">Download from URL</string>
+    <string name="download_from_url_import">Download and Import from URL</string>
     <string name="standard_geo_file_rejected">This file is a standard GEO resource. Please use the dedicated area above to replace or update it.</string>
     <string name="invalid_dat_url">Unable to determine the file name from this URL</string>
     <string name="rule_file_restore_geoip_success">geoip.dat restored to default</string>
@@ -107,7 +107,7 @@
     <string name="core_stats_title">Dashboard</string>
     <string name="traffic_info">Traffic Information</string>
     <string name="outbound_nodes">Outbound Nodes</string>
-    <string name="refresh_latency">Re-test latency</string>
+    <string name="refresh_latency">Retest Latency</string>
     <string name="core_runtime_status">Core Runtime Status</string>
     <string name="stats_uplink">Uplink Traffic</string>
     <string name="stats_downlink">Downlink Traffic</string>
@@ -134,8 +134,8 @@
 
     <!-- About & App Versioning -->
     <string name="privacy_disclaimer_url" translatable="false">https://github.com/ReRokutosei/SimpleXray/tree/main/docs</string>
-    <string name="privacy_disclaimer_title">Privacy &amp; Disclaimer</string>
-    <string name="privacy_disclaimer_summary">View open-source privacy policy and legal disclaimer</string>
+    <string name="privacy_disclaimer_title">Privacy Policy &amp; Disclaimer</string>
+    <string name="privacy_disclaimer_summary">View the open-source privacy policy and disclaimer</string>
     <string name="version">Version</string>
     <string name="kernel">Kernel</string>
     <string name="source">Source Code</string>
@@ -161,7 +161,7 @@
     <string name="invalid_port_range">Port number must be between 1024 and 65535</string>
     <string name="import_failed">Import failed: No config found on clipboard</string>
     <string name="core_start_failed">Core failed to start, please check the logs</string>
-    <string name="import_success">import successful</string>
+    <string name="import_success">Import successful</string>
     <string name="import_invalid_format">Invalid import format</string>
     <string name="no_log_entries">No log entries</string>
     <string name="log_disabled_none">Logging is disabled (none)</string>
@@ -169,18 +169,18 @@
     <string name="create_config_failed">Configuration creation failed</string>
     <string name="no_app_for_export">No app available for export</string>
     <string name="export_failed">Export failed</string>
-    <string name="export_success">Export successfully</string>
+    <string name="export_success">Export successful</string>
     <string name="download_success">Download successful</string>
     <string name="download_failed">Download failed</string>
     <string name="connecting">Connecting…</string>
     <string name="downloading">Downloading… %1$d%%</string>
     <string name="downloading_no_size">Downloading…</string>
-    <string name="file_imported">Imported %s</string>
-    <string name="file_deleted">Deleted %s</string>
+    <string name="file_imported">Imported %1$s</string>
+    <string name="file_deleted">Deleted %1$s</string>
     <string name="hide_from_recents_title">Hide from Recent Tasks</string>
     <string name="hide_from_recents_summary">Hide application window from Android recent apps list</string>
     <string name="rule_file_validation_failed">Rule file validation failed or corrupted</string>
     <string name="geo_update_interval_title">Auto-Update Interval (hours)</string>
-    <string name="geo_update_interval_summary">Automatically download geo rule files every N hours. Set to zero to disable. Range: 1–168</string>
-    <string name="invalid_geo_update_interval">Please enter 0 (off) or a whole number from 1 to 168</string>
+    <string name="geo_update_interval_summary">Set the interval for automatic GEO rule file updates in hours. Set to 0 to disable automatic updates. Valid values: 0 or 1–168</string>
+    <string name="invalid_geo_update_interval">Please enter 0 (disabled) or a whole number from 1 to 168</string>
 </resources>
