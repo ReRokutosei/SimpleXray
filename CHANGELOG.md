@@ -2,6 +2,40 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/ReRokutosei/SimpleXray/compare/v1.2.0...v1.3.0) (2026-08-17)
+
+
+### Features
+
+* **service:** add keep CPU awake option with partial wake lock management ([be0ee6c](https://github.com/ReRokutosei/SimpleXray/commit/be0ee6c197d20f89d2dc451b7e55dedff355adde))
+* **settings:** allow customizable MTU with range validation (1280-9000) ([111c4e4](https://github.com/ReRokutosei/SimpleXray/commit/111c4e4b00310557987e02aa47ec99eace30f74f))
+* **tun:** add native Xray TUN mode ([f85ba31](https://github.com/ReRokutosei/SimpleXray/commit/f85ba3101d8f255780540dda494526a84c9c272d))
+* **tunnel:** add selectable Xray TUN and Hev tunnel modes ([71f3752](https://github.com/ReRokutosei/SimpleXray/commit/71f3752385edded2a5dd542f144b4be8581c6920))
+* **ui:** add gentle notification permission explanation dialog for Android 13+ ([4a6d022](https://github.com/ReRokutosei/SimpleXray/commit/4a6d02207aac57c299c59432cbac6819af53b974))
+
+
+### Bug Fixes
+
+* **deps:** update dependency androidx.compose:compose-bom to v2026 ([#16](https://github.com/ReRokutosei/SimpleXray/issues/16)) ([a302eec](https://github.com/ReRokutosei/SimpleXray/commit/a302eec4006aa0786fcc4eb79787abf660668271))
+* **deps:** update dependency androidx.core:core-ktx to v1.19.0 ([#8](https://github.com/ReRokutosei/SimpleXray/issues/8)) ([50a556c](https://github.com/ReRokutosei/SimpleXray/commit/50a556c94b7c1a5f9c57006f0dfadafe8729b506))
+* **deps:** update dependency androidx.datastore:datastore-preferences to v1.2.1 ([#9](https://github.com/ReRokutosei/SimpleXray/issues/9)) ([d0ca8c9](https://github.com/ReRokutosei/SimpleXray/commit/d0ca8c984aa4d315f91c08857a9f8abb0119dc27))
+* **deps:** update dependency androidx.test:runner to v1.7.0 ([#10](https://github.com/ReRokutosei/SimpleXray/issues/10)) ([f72b9d2](https://github.com/ReRokutosei/SimpleXray/commit/f72b9d2e0ea58b039e8657ea9a6fdb7cf02a2ccf))
+* **deps:** update dependency androidx.test.ext:junit to v1.3.0 ([#11](https://github.com/ReRokutosei/SimpleXray/issues/11)) ([33cea33](https://github.com/ReRokutosei/SimpleXray/commit/33cea3303610cee85fe2ed8c1b54fc270d33c3fd))
+* **deps:** update dependency com.google.android.material:material to v1.14.0 ([#19](https://github.com/ReRokutosei/SimpleXray/issues/19)) ([fdc6d89](https://github.com/ReRokutosei/SimpleXray/commit/fdc6d896d3973a95ab1cf4c237d3676540fdb4d2))
+* **deps:** update dependency com.squareup.okhttp3:okhttp to v5 ([#18](https://github.com/ReRokutosei/SimpleXray/issues/18)) ([0921448](https://github.com/ReRokutosei/SimpleXray/commit/0921448b82773dd3e2cd6083ab06428eba7754f3))
+* **deps:** update dependency io.grpc:grpc-kotlin-stub to v1.5.0 ([#12](https://github.com/ReRokutosei/SimpleXray/issues/12)) ([db26112](https://github.com/ReRokutosei/SimpleXray/commit/db2611260097ec723373b47ec6c4d4ea8c0855a0))
+* **deps:** update dependency org.jetbrains.kotlinx:kotlinx-serialization-json to v1.11.0 ([#13](https://github.com/ReRokutosei/SimpleXray/issues/13)) ([7899e79](https://github.com/ReRokutosei/SimpleXray/commit/7899e79522525daba338f8774b09decf521071de))
+* **deps:** update dependency org.yaml:snakeyaml to v2.6 ([#14](https://github.com/ReRokutosei/SimpleXray/issues/14)) ([1ef1485](https://github.com/ReRokutosei/SimpleXray/commit/1ef14851c5f9a3f8d2eeb168e10f1f9d262a3ba0))
+* **deps:** update grpc-java monorepo to v1.83.1 ([#15](https://github.com/ReRokutosei/SimpleXray/issues/15)) ([93a16c9](https://github.com/ReRokutosei/SimpleXray/commit/93a16c9c06b8249cc2085c692c83252f67142cfe))
+* **i18n:** refine bilingual UI strings ([8615066](https://github.com/ReRokutosei/SimpleXray/commit/8615066b4c8a7690a78233fc4eafbade2e081e8a))
+* **jni:** use pipe2 with O_CLOEXEC to prevent fd leakage ([6065236](https://github.com/ReRokutosei/SimpleXray/commit/6065236e284cf319ac45aa006c3e881cd3130b36))
+* **proxy:** prune uninstalled app packages from per-app proxy list ([49359cb](https://github.com/ReRokutosei/SimpleXray/commit/49359cb15f5bda8e424298e34358273cf8bae2ed))
+* remove redundant elvis operators on non-nullable ResponseBody ([c7abe78](https://github.com/ReRokutosei/SimpleXray/commit/c7abe78a3a766f98edc99f83b7b9f3731b9db894))
+* **service:** restore TCP API and preserve logs ([82b8d9f](https://github.com/ReRokutosei/SimpleXray/commit/82b8d9f4de94789661c528434dc24e9f30b87241))
+* **service:** serialize Xray startup ([30f38f4](https://github.com/ReRokutosei/SimpleXray/commit/30f38f4a63a4d7e51cb71ace7545e316035ff09b))
+* **tun:** avoid Android interface enumeration ([6e7cb21](https://github.com/ReRokutosei/SimpleXray/commit/6e7cb21eaa6fc0bfdc901834c59f4fcbaeecf55f))
+* **tun:** harden native reload and MTU handling ([598f8a0](https://github.com/ReRokutosei/SimpleXray/commit/598f8a0ee30e62a96143d228e1a4ef448888332d))
+
 ## [1.2.0](https://github.com/ReRokutosei/SimpleXray/compare/v1.1.0...v1.2.0) (2026-08-14)
 
 
