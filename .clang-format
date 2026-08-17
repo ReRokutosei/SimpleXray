@@ -1,0 +1,28 @@
+---
+BasedOnStyle: Google
+Language: Cpp
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 100
+AccessModifierOffset: -4
+
+# Alignment and Placement
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: None
+AlignConsecutiveDeclarations: None
+AlignOperands: Align
+AllowShortBlocksOnASingleLine: false
+AllowShortCaseLabelsOnASingleLine: false
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: WithoutElse
+AllowShortLoopsOnASingleLine: false
+
+# Braces and Spacing
+BreakBeforeBraces: Attach
+IncludeBlocks: Regroup
+SpaceAfterCStyleCast: false
+SpaceBeforeParens: ControlStatements
+SpacesInContainerLiterals: false
+PointerAlignment: Right
+---
