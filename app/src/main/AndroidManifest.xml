@@ -63,6 +63,14 @@
             </intent-filter>
         </receiver>
 
+        <receiver
+            android:name="com.simplexray.re.service.BenchmarkReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.simplexray.re.action.BENCHMARK" />
+            </intent-filter>
+        </receiver>
+
 
         <activity
             android:name="com.simplexray.re.activity.MainActivity"
