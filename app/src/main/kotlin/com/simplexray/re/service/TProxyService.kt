@@ -539,15 +539,27 @@ class TProxyService : VpnService() {
             prefs.dnsIpv6.takeIf { it.isNotEmpty() }?.also { addDnsServer(it) }
         }
 
-        prefs.apps?.forEach { appName ->
-            appName?.let { name ->
+        val rawApps = prefs.apps
+        if (!rawApps.isNullOrEmpty()) {
+            val validApps = mutableSetOf<String>()
+            var hadInvalid = false
+            for (appName in rawApps) {
+                if (appName.isNullOrBlank()) continue
                 try {
-                    when {
-                        prefs.bypassSelectedApps -> addDisallowedApplication(name)
-                        else -> addAllowedApplication(name)
+                    packageManager.getPackageInfo(appName, 0)
+                    validApps.add(appName)
+                    if (prefs.bypassSelectedApps) {
+                        addDisallowedApplication(appName)
+                    } else {
+                        addAllowedApplication(appName)
                     }
-                } catch (ignored: PackageManager.NameNotFoundException) {
+                } catch (e: PackageManager.NameNotFoundException) {
+                    hadInvalid = true
+                    Log.d(TAG, "Pruning uninstalled app package from VPN routing: $appName")
                 }
+            }
+            if (hadInvalid) {
+                prefs.apps = validApps
             }
         }
         if (prefs.bypassSelectedApps || prefs.apps.isNullOrEmpty())
