@@ -185,4 +185,6 @@
     <string name="invalid_geo_update_interval">Please enter 0 (disabled) or an integer between 1 and 168</string>
     <string name="notification_permission_title">Notification Permission</string>
     <string name="notification_permission_summary">To ensure the VPN background service runs reliably and prevent it from being terminated by the system, notification permission is recommended.</string>
+    <string name="keep_awake_title">Keep CPU Awake</string>
+    <string name="keep_awake_summary">Acquire a partial wake lock while VPN is connected. Recommended if your device (e.g. HyperOS) freezes connections on screen-off; keep disabled on Pixel/Samsung to save battery.</string>
 </resources>

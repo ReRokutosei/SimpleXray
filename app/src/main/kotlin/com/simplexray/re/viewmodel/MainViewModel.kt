@@ -110,6 +110,8 @@ class MainViewModel(application: Application) :
             switches = SwitchStates(
                 ipv6Enabled = prefs.ipv6,
                 useTemplateEnabled = prefs.useTemplate,
+                hideFromRecents = prefs.hideFromRecents,
+                keepAwake = prefs.keepAwake,
                 httpProxyEnabled = prefs.httpProxyEnabled,
                 bypassLanEnabled = prefs.bypassLan,
                 disableVpn = prefs.disableVpn,
@@ -727,6 +729,13 @@ class MainViewModel(application: Application) :
         prefs.bypassLan = enabled
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(bypassLanEnabled = enabled)
+        )
+    }
+
+    fun setKeepAwakeEnabled(enabled: Boolean) {
+        prefs.keepAwake = enabled
+        _settingsState.value = _settingsState.value.copy(
+            switches = _settingsState.value.switches.copy(keepAwake = enabled)
         )
     }
 

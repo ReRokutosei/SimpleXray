@@ -179,4 +179,6 @@
     <string name="invalid_geo_update_interval">请输入 0（禁用）或 1 到 168 之间的整数</string>
     <string name="notification_permission_title">通知权限说明</string>
     <string name="notification_permission_summary">为了保证 VPN 服务在后台持续稳定运行并防止系统误杀，建议授予通知权限。</string>
+    <string name="keep_awake_title">保持唤醒锁定</string>
+    <string name="keep_awake_summary">在 VPN 连接时保持部分唤醒锁 (Partial Wake Lock)。HyperOS/部分深度休眠设备若遇到熄屏断连可开启；在原生/Pixel/三星设备上建议保持关闭以节省电量</string>
 </resources>

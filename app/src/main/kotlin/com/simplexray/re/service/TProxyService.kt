@@ -97,6 +97,7 @@ class TProxyService : VpnService() {
     private var xrayStarted = false
     private var xrayStartAttempt = 0
     private var tunFd: ParcelFileDescriptor? = null
+    private var wakeLock: android.os.PowerManager.WakeLock? = null
 
     @Volatile
     private var reloadingRequested = false
@@ -192,6 +193,18 @@ class TProxyService : VpnService() {
 
     private fun startXray() {
         if (!acquireStart("startXray")) return
+        val prefs = Preferences(this)
+        if (prefs.keepAwake && wakeLock == null) {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
+            wakeLock = powerManager?.newWakeLock(
+                android.os.PowerManager.PARTIAL_WAKE_LOCK,
+                "SimpleXray:WakeLock"
+            )?.apply {
+                setReferenceCounted(false)
+                acquire(10 * 60 * 60 * 1000L) // 10 hours safety timeout
+            }
+            Log.d(TAG, "Partial wake lock acquired.")
+        }
         logFileManager.clearLogs()
         startService()
         serviceScope.launch { runXrayProcess() }
@@ -554,6 +567,13 @@ class TProxyService : VpnService() {
             runCatching { TProxyStopService() }
         }
         stopSelf()
+        wakeLock?.let {
+            if (it.isHeld) {
+                it.release()
+                Log.d(TAG, "Partial wake lock released.")
+            }
+            wakeLock = null
+        }
         exit()
     }
 

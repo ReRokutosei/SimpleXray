@@ -324,6 +324,13 @@ fun SettingsScreen(
                     checked = settingsState.switches.hideFromRecents,
                     onCheckedChange = { mainViewModel.setHideFromRecentsEnabled(it) }
                 )
+
+                SwitchPreference(
+                    title = stringResource(R.string.keep_awake_title),
+                    summary = stringResource(R.string.keep_awake_summary),
+                    checked = settingsState.switches.keepAwake,
+                    onCheckedChange = { mainViewModel.setKeepAwakeEnabled(it) }
+                )
             }
         }
 

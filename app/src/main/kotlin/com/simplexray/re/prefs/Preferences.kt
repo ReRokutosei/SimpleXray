@@ -219,6 +219,7 @@ class Preferences(context: Context) {
     var httpPort: Int by intPref(HTTP_PORT, 10809, "HttpPort")
     var customGeoipImported: Boolean by booleanPref(CUSTOM_GEOIP_IMPORTED, false)
     var customGeositeImported: Boolean by booleanPref(CUSTOM_GEOSITE_IMPORTED, false)
+    var keepAwake: Boolean by booleanPref(KEEP_AWAKE, false)
 
     var configFilesOrder: List<String>
         get() {
@@ -302,6 +303,7 @@ class Preferences(context: Context) {
         const val BYPASS_SELECTED_APPS: String = "BypassSelectedApps"
         const val THEME: String = "Theme"
         const val HIDE_FROM_RECENTS: String = "HideFromRecents"
+        const val KEEP_AWAKE: String = "KeepAwake"
         const val NOTIFICATION_PROMPTED: String = "NotificationPrompted"
         const val GEO_UPDATE_INTERVAL_HOURS: String = "GeoUpdateIntervalHours"
         const val CUSTOM_DAT_URLS: String = "CustomDatUrls"
