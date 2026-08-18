@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -54,13 +55,18 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.basic.DropdownArrowEndAction
+import top.yukonga.miuix.kmp.basic.DropdownDefaults
 import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
+import top.yukonga.miuix.kmp.popup.OverlayDropdownPopup
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.simplexray.re.ui.components.ConfirmOverlayDialog
+import com.simplexray.re.ui.components.InfoOverlayDialog
 
 @Composable
 fun SettingsScreen(
@@ -258,6 +264,16 @@ fun SettingsScreen(
         )
     }
 
+    var activeHelpDialog by remember { mutableStateOf<Pair<String, String>?>(null) }
+
+    if (activeHelpDialog != null) {
+        InfoOverlayDialog(
+            title = activeHelpDialog!!.first,
+            summary = activeHelpDialog!!.second,
+            onDismiss = { activeHelpDialog = null }
+        )
+    }
+
     if (newVersionTag != null) {
         ConfirmOverlayDialog(
             title = stringResource(R.string.new_version_available_title),
@@ -291,7 +307,6 @@ fun SettingsScreen(
             Card(modifier = Modifier.fillMaxWidth()) {
                 OverlayDropdownPreference(
                     title = stringResource(R.string.theme_title),
-                    summary = stringResource(R.string.theme_summary),
                     items = themeOptions,
                     selectedIndex = currentThemeIndex,
                     onSelectedIndexChange = { index ->
@@ -303,7 +318,6 @@ fun SettingsScreen(
                 val currentIconIndex = iconKeys.indexOf(currentIcon).coerceAtLeast(0)
                 OverlayDropdownPreference(
                     title = stringResource(R.string.app_icon),
-                    summary = stringResource(R.string.app_icon_summary),
                     items = iconOptions,
                     selectedIndex = currentIconIndex,
                     onSelectedIndexChange = { index ->
@@ -313,14 +327,36 @@ fun SettingsScreen(
 
                 SwitchPreference(
                     title = stringResource(R.string.hide_from_recents_title),
-                    summary = stringResource(R.string.hide_from_recents_summary),
                     checked = settingsState.switches.hideFromRecents,
                     onCheckedChange = { mainViewModel.setHideFromRecentsEnabled(it) }
                 )
 
+                val keepAwakeTitle = stringResource(R.string.keep_awake_title)
+                val keepAwakeSummary = stringResource(R.string.keep_awake_summary)
                 SwitchPreference(
-                    title = stringResource(R.string.keep_awake_title),
-                    summary = stringResource(R.string.keep_awake_summary),
+                    title = "",
+                    startAction = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = keepAwakeTitle,
+                                fontSize = MiuixTheme.textStyles.headline1.fontSize,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                                color = MiuixTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            IconButton(
+                                onClick = { activeHelpDialog = keepAwakeTitle to keepAwakeSummary },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Help,
+                                    contentDescription = keepAwakeTitle,
+                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    },
                     checked = settingsState.switches.keepAwake,
                     onCheckedChange = { mainViewModel.setKeepAwakeEnabled(it) }
                 )
@@ -345,7 +381,6 @@ fun SettingsScreen(
 
                 OverlayDropdownPreference(
                     title = stringResource(R.string.tunnel_mode_title),
-                    summary = stringResource(R.string.tunnel_mode_summary),
                     entries = tunnelModeEntries,
                     enabled = !vpnDisabled
                 )
@@ -440,9 +475,32 @@ fun SettingsScreen(
                     enabled = !vpnDisabled
                 )
 
+                val httpProxyTitle = stringResource(R.string.http_proxy_title)
+                val httpProxySummary = stringResource(R.string.http_proxy_summary)
                 SwitchPreference(
-                    title = stringResource(R.string.http_proxy_title),
-                    summary = stringResource(R.string.http_proxy_summary),
+                    title = "",
+                    startAction = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = httpProxyTitle,
+                                fontSize = MiuixTheme.textStyles.headline1.fontSize,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                                color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            IconButton(
+                                onClick = { activeHelpDialog = httpProxyTitle to httpProxySummary },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Help,
+                                    contentDescription = httpProxyTitle,
+                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    },
                     checked = settingsState.switches.httpProxyEnabled,
                     onCheckedChange = { mainViewModel.setHttpProxyEnabled(it) },
                     enabled = !vpnDisabled
@@ -456,13 +514,73 @@ fun SettingsScreen(
                     enabled = !vpnDisabled
                 )
 
-                OverlayDropdownPreference(
-                    title = stringResource(R.string.loglevel_title),
-                    summary = stringResource(R.string.loglevel_summary),
-                    items = logLevelNames,
-                    selectedIndex = currentLogLevelIndex,
-                    onSelectedIndexChange = { index ->
-                        mainViewModel.setLogLevel(logLevelOptions[index])
+                val loglevelTitle = stringResource(R.string.loglevel_title)
+                val loglevelSummary = stringResource(R.string.loglevel_summary)
+                var isLogLevelDropdownExpanded by remember { mutableStateOf(false) }
+                val currentLogLevelName = logLevelNames.getOrNull(currentLogLevelIndex) ?: ""
+                BasicComponent(
+                    title = "",
+                    startAction = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = loglevelTitle,
+                                fontSize = MiuixTheme.textStyles.headline1.fontSize,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                                color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            IconButton(
+                                onClick = { activeHelpDialog = loglevelTitle to loglevelSummary },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Help,
+                                    contentDescription = loglevelTitle,
+                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    },
+                    endActions = {
+                        Text(
+                            text = currentLogLevelName,
+                            fontSize = MiuixTheme.textStyles.body2.fontSize,
+                            color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurfaceVariantActions else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
+                            modifier = Modifier.align(Alignment.CenterVertically)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        DropdownArrowEndAction(
+                            actionColor = if (!vpnDisabled) MiuixTheme.colorScheme.onSurfaceVariantActions else MiuixTheme.colorScheme.disabledOnSecondaryVariant
+                        )
+                        if (!vpnDisabled) {
+                            val logLevelDropdownEntry = remember(logLevelNames, currentLogLevelIndex) {
+                                DropdownEntry(
+                                    logLevelNames.mapIndexed { index, name ->
+                                        DropdownItem(
+                                            text = name,
+                                            selected = index == currentLogLevelIndex,
+                                            onClick = { mainViewModel.setLogLevel(logLevelOptions[index]) }
+                                        )
+                                    }
+                                )
+                            }
+                            OverlayDropdownPopup(
+                                entry = logLevelDropdownEntry,
+                                show = isLogLevelDropdownExpanded,
+                                onDismiss = { isLogLevelDropdownExpanded = false },
+                                onDismissFinished = {},
+                                maxHeight = null,
+                                dropdownColors = DropdownDefaults.dropdownColors(),
+                                renderInRootScaffold = true,
+                                collapseOnSelection = true
+                            )
+                        }
+                    },
+                    onClick = {
+                        if (!vpnDisabled) {
+                            isLogLevelDropdownExpanded = !isLogLevelDropdownExpanded
+                        }
                     },
                     enabled = !vpnDisabled
                 )
@@ -630,8 +748,8 @@ fun SettingsScreen(
             SmallTitle(text = stringResource(R.string.about))
             Card(modifier = Modifier.fillMaxWidth()) {
                 BasicComponent(
-                    title = stringResource(R.string.version),
-                    summary = settingsState.info.appVersion,
+                    title = settingsState.info.appVersion,
+                    summary = stringResource(R.string.version),
                     endActions = {
                         TextButton(
                             text = if (isCheckingForUpdates) "检查中..." else stringResource(R.string.check_for_updates),
@@ -642,13 +760,12 @@ fun SettingsScreen(
                 )
 
                 BasicComponent(
-                    title = stringResource(R.string.kernel),
-                    summary = settingsState.info.kernelVersion
+                    title = settingsState.info.kernelVersion,
+                    summary = stringResource(R.string.kernel)
                 )
 
                 ArrowPreference(
                     title = stringResource(R.string.source),
-                    summary = stringResource(R.string.open_source),
                     onClick = {
                         val browserIntent = Intent(Intent.ACTION_VIEW, sourceUrl.toUri())
                         context.startActivity(browserIntent)
@@ -657,7 +774,6 @@ fun SettingsScreen(
 
                 ArrowPreference(
                     title = stringResource(R.string.privacy_disclaimer_title),
-                    summary = stringResource(R.string.privacy_disclaimer_summary),
                     onClick = {
                         val browserIntent = Intent(Intent.ACTION_VIEW, privacyDisclaimerUrl.toUri())
                         context.startActivity(browserIntent)
@@ -729,7 +845,16 @@ fun EditableListItemWithMiuixBottomSheet(
 
     ArrowPreference(
         title = headline,
-        summary = customSummary ?: if (supportingText != null) "$supportingText\n$currentValue" else currentValue,
+        summary = customSummary,
+        endActions = {
+            if (customSummary == null) {
+                Text(
+                    text = currentValue,
+                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    style = MiuixTheme.textStyles.body2,
+                )
+            }
+        },
         onClick = {
             tempValue = currentValue
             showSheet = true

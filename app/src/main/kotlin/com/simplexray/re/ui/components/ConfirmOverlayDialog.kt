@@ -46,3 +46,31 @@ fun ConfirmOverlayDialog(
         }
     )
 }
+
+/**
+ * Generic information dialog with a single "OK" button for help/explanation messages.
+ */
+@Composable
+fun InfoOverlayDialog(
+    title: String,
+    summary: String,
+    buttonText: String = "OK",
+    onDismiss: () -> Unit,
+) {
+    OverlayDialog(
+        show = true,
+        title = title,
+        summary = summary,
+        onDismissRequest = onDismiss,
+        content = {
+            Row {
+                TextButton(
+                    text = buttonText,
+                    onClick = onDismiss,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColorsPrimary()
+                )
+            }
+        }
+    )
+}

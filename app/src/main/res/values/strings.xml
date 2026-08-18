@@ -32,7 +32,6 @@
     <string name="bypass_lan_title">Bypass LAN</string>
     <string name="bypass_lan_summary">When enabled, LAN traffic will not go through the proxy.</string>
     <string name="tunnel_mode_title">TUN Transport Mode</string>
-    <string name="tunnel_mode_summary">Select the component that forwards traffic from the Android VPN interface</string>
     <string name="tunnel_mode_xray_tun">Xray TUN</string>
     <string name="tunnel_mode_xray_tun_summary">Use Xray\'s native TUN inbound to process VPN packets directly</string>
     <string name="tunnel_mode_hev_socks5">Hev SOCKS5 Tunnel</string>
@@ -48,7 +47,6 @@
     <string name="loglevel_title">Log Level</string>
     <string name="loglevel_summary">Auto follows the configuration. Select a level to override it. Restart the core to apply changes.</string>
     <string name="theme_title">Theme</string>
-    <string name="theme_summary">Select light, dark, or system default</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="auto">Auto</string>
@@ -99,7 +97,6 @@
     <string name="rule_file_restore_geoip_success">geoip.dat restored to default</string>
     <string name="rule_file_restore_geosite_success">geosite.dat restored to default</string>
 
-    <string name="app_icon_summary">Choose the launcher icon style</string>
     <string name="icon_flat">Flat</string>
     <string name="icon_lineal">Lineal</string>
     <string name="icon_lineal_color">Lineal Color</string>
@@ -136,11 +133,9 @@
     <!-- About & App Versioning -->
     <string name="privacy_disclaimer_url" translatable="false">https://github.com/ReRokutosei/SimpleXray/tree/main/docs</string>
     <string name="privacy_disclaimer_title">Privacy Policy &amp; Disclaimer</string>
-    <string name="privacy_disclaimer_summary">View the open-source privacy policy and disclaimer</string>
     <string name="version">Version</string>
     <string name="kernel">Kernel</string>
     <string name="source">Source Code</string>
-    <string name="open_source">Open Source Repository</string>
     <string name="check_for_updates">Check for Updates</string>
     <string name="no_new_version_available">No new version available</string>
     <string name="failed_to_check_for_updates">Failed to check for updates</string>
@@ -181,7 +176,6 @@
     <string name="file_imported">Imported %1$s</string>
     <string name="file_deleted">Deleted %1$s</string>
     <string name="hide_from_recents_title">Hide from Recent Tasks</string>
-    <string name="hide_from_recents_summary">Hide application window from Android recent apps list</string>
     <string name="rule_file_validation_failed">Rule file validation failed or corrupted</string>
     <string name="geo_update_interval_title">Auto-update Interval</string>
     <string name="geo_update_interval_summary">Interval in hours between automatic rule updates. Set to 0 to disable. Valid: 0 or 1–168</string>
