@@ -132,6 +132,7 @@ class MainViewModel(application: Application) :
                 isGeositeCustom = prefs.customGeositeImported
             ),
             geoUpdateIntervalHours = InputFieldState(prefs.geoUpdateIntervalHours.toString()),
+            lastGeoUpdateTime = prefs.lastGeoUpdateTime,
             tunnelMtu = InputFieldState(prefs.tunnelMtu.toString())
         )
     )
@@ -243,6 +244,11 @@ class MainViewModel(application: Application) :
                 }
                 launch { ensureAppIconSelected() }
                 launch {
+                    if (prefs.geoUpdateIntervalHours > 0) {
+                        com.simplexray.re.service.GeoUpdateReceiver.schedule(application, prefs.geoUpdateIntervalHours)
+                    }
+                }
+                launch {
                     updateSettingsState()
                     refreshConfigFileList()
                     loadKernelVersion()
@@ -282,7 +288,8 @@ class MainViewModel(application: Application) :
                 isGeoipCustom = prefs.customGeoipImported,
                 isGeositeCustom = prefs.customGeositeImported
             ),
-            geoUpdateIntervalHours = InputFieldState(prefs.geoUpdateIntervalHours.toString())
+            geoUpdateIntervalHours = InputFieldState(prefs.geoUpdateIntervalHours.toString()),
+            lastGeoUpdateTime = prefs.lastGeoUpdateTime
         )
     }
 

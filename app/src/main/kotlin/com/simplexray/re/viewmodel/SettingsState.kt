@@ -49,5 +49,6 @@ data class SettingsState(
     val info: InfoStates,
     val files: FileStates,
     val geoUpdateIntervalHours: InputFieldState = InputFieldState("0"),
+    val lastGeoUpdateTime: Long = 0L,
     val tunnelMtu: InputFieldState = InputFieldState("1500")
 ) 

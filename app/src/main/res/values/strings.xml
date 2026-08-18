@@ -185,8 +185,14 @@
     <string name="hide_from_recents_title">Hide from Recent Tasks</string>
     <string name="hide_from_recents_summary">Hide application window from Android recent apps list</string>
     <string name="rule_file_validation_failed">Rule file validation failed or corrupted</string>
-    <string name="geo_update_interval_title">Auto-update Interval (Hours)</string>
+    <string name="geo_update_interval_title">Auto-update Interval</string>
     <string name="geo_update_interval_summary">Interval in hours between automatic rule updates. Set to 0 to disable. Valid: 0 or 1–168</string>
+    <string name="geo_update_disabled">Disabled</string>
+    <string name="geo_last_update_format">Every %1$d hrs · Last updated: %2$s</string>
+    <string name="geo_never_updated">Never</string>
+    <string name="geo_update_dialog_supporting_text">Enter 0 to disable auto-update, valid range: 1–168 hours.\nWhen the update interval is reached or when connecting to VPN after exceeding the interval, rule files will be silently downloaded and atomically replaced in the background. If the update fails, existing rule files are kept untouched.</string>
+    <string name="geo_update_failed_title">Rule Files Auto-update Failed</string>
+    <string name="geo_update_failed_body">Download or validation incomplete; existing rule files were kept.</string>
     <string name="invalid_geo_update_interval">Please enter 0 (disabled) or an integer between 1 and 168</string>
     <string name="notification_permission_title">Notification Permission</string>
     <string name="notification_permission_summary">To ensure the VPN background service runs reliably and prevent it from being terminated by the system, notification permission is recommended.</string>
