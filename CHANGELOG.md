@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/ReRokutosei/SimpleXray/compare/v1.3.0...v1.4.0) (2026-08-18)
+
+
+### Features
+
+* **service:** enhance geo rule auto-update with timeout catch-up and status display ([549b85b](https://github.com/ReRokutosei/SimpleXray/commit/549b85bdb105e0eb9493d28c8017df20573dc29b))
+
+
+### Bug Fixes
+
+* **data:** strictly validate file extensions on config and rule imports ([c01e1f9](https://github.com/ReRokutosei/SimpleXray/commit/c01e1f94c5cd63f2d93ba51de53b89e725b6c65f))
+* **prefs:** persist keepAwake across cold restarts and update state properly ([22fe5c6](https://github.com/ReRokutosei/SimpleXray/commit/22fe5c62d6e4c96a4acbfc9c9d5315fb85ae1830))
+* **ui:** add bottom spacing to core control card on dashboard ([95a471a](https://github.com/ReRokutosei/SimpleXray/commit/95a471a9d1d85a6cac551ae33a61f2d8f81600ee))
+* **ui:** request notification permission on service start and avoid repeated prompts ([b76e595](https://github.com/ReRokutosei/SimpleXray/commit/b76e5953b2319b4760bfd43eab482e466c79380d))
+
 ## [1.3.0](https://github.com/ReRokutosei/SimpleXray/compare/v1.2.0...v1.3.0) (2026-08-17)
 
 
