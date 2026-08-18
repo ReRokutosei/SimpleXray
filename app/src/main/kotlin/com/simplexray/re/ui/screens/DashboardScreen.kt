@@ -166,6 +166,7 @@ fun DashboardScreen(
                         )
                     }
                 }
+                Spacer(modifier = Modifier.height(12.dp))
             }
 
             if (outboundNodes.isNotEmpty()) {
