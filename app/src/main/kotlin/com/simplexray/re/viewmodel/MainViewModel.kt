@@ -787,10 +787,15 @@ class MainViewModel(application: Application) :
     }
 
     fun setTunnelMode(mode: com.simplexray.re.prefs.TunnelMode) {
-        prefs.tunnelMode = mode
-        _settingsState.value = _settingsState.value.copy(
-            switches = _settingsState.value.switches.copy(tunnelMode = mode)
-        )
+        if (prefs.tunnelMode != mode) {
+            prefs.tunnelMode = mode
+            _settingsState.value = _settingsState.value.copy(
+                switches = _settingsState.value.switches.copy(tunnelMode = mode)
+            )
+            if (_isServiceEnabled.value) {
+                showSnackbar(application.getString(R.string.tunnel_mode_restart_notice))
+            }
+        }
     }
 
     fun setTheme(mode: ThemeMode) {

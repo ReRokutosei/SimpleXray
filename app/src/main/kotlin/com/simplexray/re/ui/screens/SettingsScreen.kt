@@ -394,6 +394,39 @@ fun SettingsScreen(
                     enabled = !vpnDisabled
                 )
 
+                SwitchPreference(
+                    title = stringResource(R.string.ipv6),
+                    summary = stringResource(R.string.ipv6_summary),
+                    checked = settingsState.switches.ipv6Enabled,
+                    onCheckedChange = { mainViewModel.setIpv6Enabled(it) },
+                    enabled = !vpnDisabled
+                )
+
+                EditableListItemWithMiuixBottomSheet(
+                    headline = stringResource(R.string.dns_ipv4),
+                    currentValue = settingsState.dnsIpv4.value,
+                    onValueConfirmed = { newValue -> mainViewModel.updateDnsIpv4(newValue) },
+                    label = stringResource(R.string.dns_ipv4),
+                    supportingText = stringResource(R.string.dns_ipv4_summary),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    enabled = !vpnDisabled
+                )
+
+                EditableListItemWithMiuixBottomSheet(
+                    headline = stringResource(R.string.dns_ipv6),
+                    currentValue = settingsState.dnsIpv6.value,
+                    onValueConfirmed = { newValue -> mainViewModel.updateDnsIpv6(newValue) },
+                    label = stringResource(R.string.dns_ipv6),
+                    supportingText = stringResource(R.string.dns_ipv6_summary),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    enabled = settingsState.switches.ipv6Enabled && !vpnDisabled
+                )
+            }
+        }
+
+        item {
+            SmallTitle(text = stringResource(R.string.inbound_settings))
+            Card(modifier = Modifier.fillMaxWidth()) {
                 EditableListItemWithMiuixBottomSheet(
                     headline = stringResource(R.string.socks_address),
                     currentValue = settingsState.socksAddress.value,
@@ -446,34 +479,6 @@ fun SettingsScreen(
                     enabled = !vpnDisabled
                 )
 
-                EditableListItemWithMiuixBottomSheet(
-                    headline = stringResource(R.string.dns_ipv4),
-                    currentValue = settingsState.dnsIpv4.value,
-                    onValueConfirmed = { newValue -> mainViewModel.updateDnsIpv4(newValue) },
-                    label = stringResource(R.string.dns_ipv4),
-                    supportingText = stringResource(R.string.dns_ipv4_summary),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    enabled = !vpnDisabled
-                )
-
-                EditableListItemWithMiuixBottomSheet(
-                    headline = stringResource(R.string.dns_ipv6),
-                    currentValue = settingsState.dnsIpv6.value,
-                    onValueConfirmed = { newValue -> mainViewModel.updateDnsIpv6(newValue) },
-                    label = stringResource(R.string.dns_ipv6),
-                    supportingText = stringResource(R.string.dns_ipv6_summary),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    enabled = settingsState.switches.ipv6Enabled && !vpnDisabled
-                )
-
-                SwitchPreference(
-                    title = stringResource(R.string.ipv6),
-                    summary = stringResource(R.string.ipv6_summary),
-                    checked = settingsState.switches.ipv6Enabled,
-                    onCheckedChange = { mainViewModel.setIpv6Enabled(it) },
-                    enabled = !vpnDisabled
-                )
-
                 val httpProxyTitle = stringResource(R.string.http_proxy_title)
                 val httpProxySummary = stringResource(R.string.http_proxy_summary)
                 SwitchPreference(
@@ -502,85 +507,6 @@ fun SettingsScreen(
                     },
                     checked = settingsState.switches.httpProxyEnabled,
                     onCheckedChange = { mainViewModel.setHttpProxyEnabled(it) },
-                    enabled = !vpnDisabled
-                )
-
-                SwitchPreference(
-                    title = stringResource(R.string.bypass_lan_title),
-                    summary = stringResource(R.string.bypass_lan_summary),
-                    checked = settingsState.switches.bypassLanEnabled,
-                    onCheckedChange = { mainViewModel.setBypassLanEnabled(it) },
-                    enabled = !vpnDisabled
-                )
-
-                val loglevelTitle = stringResource(R.string.loglevel_title)
-                val loglevelSummary = stringResource(R.string.loglevel_summary)
-                var isLogLevelDropdownExpanded by remember { mutableStateOf(false) }
-                val currentLogLevelName = logLevelNames.getOrNull(currentLogLevelIndex) ?: ""
-                BasicComponent(
-                    title = "",
-                    startAction = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = loglevelTitle,
-                                fontSize = MiuixTheme.textStyles.headline1.fontSize,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
-                                color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            IconButton(
-                                onClick = { activeHelpDialog = loglevelTitle to loglevelSummary },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Help,
-                                    contentDescription = loglevelTitle,
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    },
-                    endActions = {
-                        Text(
-                            text = currentLogLevelName,
-                            fontSize = MiuixTheme.textStyles.body2.fontSize,
-                            color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurfaceVariantActions else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
-                            modifier = Modifier.align(Alignment.CenterVertically)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        DropdownArrowEndAction(
-                            actionColor = if (!vpnDisabled) MiuixTheme.colorScheme.onSurfaceVariantActions else MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                        )
-                        if (!vpnDisabled) {
-                            val logLevelDropdownEntry = remember(logLevelNames, currentLogLevelIndex) {
-                                DropdownEntry(
-                                    logLevelNames.mapIndexed { index, name ->
-                                        DropdownItem(
-                                            text = name,
-                                            selected = index == currentLogLevelIndex,
-                                            onClick = { mainViewModel.setLogLevel(logLevelOptions[index]) }
-                                        )
-                                    }
-                                )
-                            }
-                            OverlayDropdownPopup(
-                                entry = logLevelDropdownEntry,
-                                show = isLogLevelDropdownExpanded,
-                                onDismiss = { isLogLevelDropdownExpanded = false },
-                                onDismissFinished = {},
-                                maxHeight = null,
-                                dropdownColors = DropdownDefaults.dropdownColors(),
-                                renderInRootScaffold = true,
-                                collapseOnSelection = true
-                            )
-                        }
-                    },
-                    onClick = {
-                        if (!vpnDisabled) {
-                            isLogLevelDropdownExpanded = !isLogLevelDropdownExpanded
-                        }
-                    },
                     enabled = !vpnDisabled
                 )
             }
@@ -739,6 +665,90 @@ fun SettingsScreen(
                     supportingText = stringResource(R.string.geo_update_dialog_supporting_text),
                     customSummary = geoSummaryText,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
+        }
+
+        item {
+            SmallTitle(text = stringResource(R.string.network_settings))
+            Card(modifier = Modifier.fillMaxWidth()) {
+                SwitchPreference(
+                    title = stringResource(R.string.bypass_lan_title),
+                    summary = stringResource(R.string.bypass_lan_summary),
+                    checked = settingsState.switches.bypassLanEnabled,
+                    onCheckedChange = { mainViewModel.setBypassLanEnabled(it) },
+                    enabled = !vpnDisabled
+                )
+
+                val loglevelTitle = stringResource(R.string.loglevel_title)
+                val loglevelSummary = stringResource(R.string.loglevel_summary)
+                var isLogLevelDropdownExpanded by remember { mutableStateOf(false) }
+                val currentLogLevelName = logLevelNames.getOrNull(currentLogLevelIndex) ?: ""
+                BasicComponent(
+                    title = "",
+                    startAction = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = loglevelTitle,
+                                fontSize = MiuixTheme.textStyles.headline1.fontSize,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                                color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            IconButton(
+                                onClick = { activeHelpDialog = loglevelTitle to loglevelSummary },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Help,
+                                    contentDescription = loglevelTitle,
+                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    },
+                    endActions = {
+                        Text(
+                            text = currentLogLevelName,
+                            fontSize = MiuixTheme.textStyles.body2.fontSize,
+                            color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurfaceVariantActions else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
+                            modifier = Modifier.align(Alignment.CenterVertically)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        DropdownArrowEndAction(
+                            actionColor = if (!vpnDisabled) MiuixTheme.colorScheme.onSurfaceVariantActions else MiuixTheme.colorScheme.disabledOnSecondaryVariant
+                        )
+                        if (!vpnDisabled) {
+                            val logLevelDropdownEntry = remember(logLevelNames, currentLogLevelIndex) {
+                                DropdownEntry(
+                                    logLevelNames.mapIndexed { index, name ->
+                                        DropdownItem(
+                                            text = name,
+                                            selected = index == currentLogLevelIndex,
+                                            onClick = { mainViewModel.setLogLevel(logLevelOptions[index]) }
+                                        )
+                                    }
+                                )
+                            }
+                            OverlayDropdownPopup(
+                                entry = logLevelDropdownEntry,
+                                show = isLogLevelDropdownExpanded,
+                                onDismiss = { isLogLevelDropdownExpanded = false },
+                                onDismissFinished = {},
+                                maxHeight = null,
+                                dropdownColors = DropdownDefaults.dropdownColors(),
+                                renderInRootScaffold = true,
+                                collapseOnSelection = true
+                            )
+                        }
+                    },
+                    onClick = {
+                        if (!vpnDisabled) {
+                            isLogLevelDropdownExpanded = !isLogLevelDropdownExpanded
+                        }
+                    },
+                    enabled = !vpnDisabled
                 )
             }
         }

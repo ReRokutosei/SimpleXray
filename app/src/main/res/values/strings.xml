@@ -191,4 +191,7 @@
     <string name="notification_permission_summary">To ensure the VPN background service runs reliably and prevent it from being terminated by the system, notification permission is recommended.</string>
     <string name="keep_awake_title">Keep CPU Awake</string>
     <string name="keep_awake_summary">Acquire a partial wake lock while VPN is connected. Recommended if your device (e.g. HyperOS) freezes connections on screen-off; keep disabled on Pixel/Samsung to save battery.</string>
+    <string name="inbound_settings">Local Inbound</string>
+    <string name="network_settings">Others</string>
+    <string name="tunnel_mode_restart_notice">Tunnel mode changed. Please restart core to apply.</string>
 </resources>
