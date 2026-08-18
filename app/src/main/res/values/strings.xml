@@ -163,6 +163,8 @@
     <string name="invalid_port">Please enter a valid port number</string>
     <string name="invalid_port_range">Port number must be between 1024 and 65535</string>
     <string name="import_failed">Import failed: No config found on clipboard</string>
+    <string name="unsupported_config_format">Import failed: only JSON / YAML supported</string>
+    <string name="unsupported_dat_format">Import failed: only .dat rule files supported</string>
     <string name="core_start_failed">Core failed to start, please check the logs</string>
     <string name="import_success">Import successful</string>
     <string name="import_invalid_format">Invalid import format</string>

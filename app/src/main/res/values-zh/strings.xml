@@ -157,6 +157,8 @@
     <string name="invalid_port">请输入有效的端口号</string>
     <string name="invalid_port_range">端口号必须在 1024 到 65535 之间</string>
     <string name="import_failed">导入失败：剪贴板中未找到配置</string>
+    <string name="unsupported_config_format">导入失败！仅支持 JSON / YAML</string>
+    <string name="unsupported_dat_format">导入失败！仅支持 .dat 规则文件</string>
     <string name="core_start_failed">内核启动失败，请查看日志</string>
     <string name="import_success">导入成功</string>
     <string name="import_invalid_format">导入格式无效</string>
