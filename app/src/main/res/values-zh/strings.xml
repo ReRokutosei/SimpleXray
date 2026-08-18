@@ -132,6 +132,7 @@
     <string name="kernel">内核版本</string>
     <string name="source">源代码</string>
     <string name="check_for_updates">检查更新</string>
+    <string name="checking_for_updates">检查中…</string>
     <string name="no_new_version_available">没有新版本可用</string>
     <string name="failed_to_check_for_updates">检查更新失败</string>
     <string name="new_version_available_title">新版本可用</string>
