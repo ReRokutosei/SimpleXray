@@ -57,6 +57,7 @@
     <string name="apps_not_found">No apps found</string>
     <string name="show_system_apps">Show System Apps</string>
     <string name="show_no_internet_apps">Show No-Internet Apps</string>
+    <string name="only_proxy_selected_apps">Proxy Selected Apps</string>
     <string name="bypass_selected_apps">Bypass Selected Apps</string>
     <string name="select_all">Select All</string>
     <string name="inverse_selection">Inverse Selection</string>

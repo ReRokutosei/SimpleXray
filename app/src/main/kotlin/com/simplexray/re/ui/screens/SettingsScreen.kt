@@ -368,7 +368,6 @@ fun SettingsScreen(
             Card(modifier = Modifier.fillMaxWidth()) {
                 ArrowPreference(
                     title = stringResource(R.string.apps_title),
-                    summary = stringResource(R.string.apps_summary),
                     onClick = { mainViewModel.navigateToAppList() }
                 )
 

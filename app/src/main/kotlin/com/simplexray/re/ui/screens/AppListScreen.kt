@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -77,6 +78,7 @@ import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
+import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
@@ -131,9 +133,10 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
     val importFromClipboardText = stringResource(R.string.import_from_clipboard)
     val showSystemAppsText = stringResource(R.string.show_system_apps)
     val showNoInternetAppsText = stringResource(R.string.show_no_internet_apps)
+    val onlyProxySelectedAppsText = stringResource(R.string.only_proxy_selected_apps)
     val bypassSelectedAppsText = stringResource(R.string.bypass_selected_apps)
 
-    val menuEntry = remember(showSystemApps, showNoInternetApps, bypassSelectedApps) {
+    val menuEntry = remember(showSystemApps, showNoInternetApps) {
         DropdownEntry(
             items = listOf(
                 DropdownItem(
@@ -161,11 +164,6 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
                     text = showNoInternetAppsText,
                     selected = showNoInternetApps,
                     onClick = { viewModel.onShowNoInternetAppsChange(!showNoInternetApps) }
-                ),
-                DropdownItem(
-                    text = bypassSelectedAppsText,
-                    selected = bypassSelectedApps,
-                    onClick = { viewModel.onBypassSelectedAppsChange(!bypassSelectedApps) }
                 )
             )
         )
@@ -174,7 +172,9 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = if (isSearching) "" else stringResource(R.string.apps_title),                navigationIcon = {
+                title = if (isSearching) "" else stringResource(R.string.apps_title),
+                subtitle = if (isSearching) "" else stringResource(R.string.apps_summary),
+                navigationIcon = {
                     IconButton(onClick = {
                         if (isSearching) {
                             isSearching = false
@@ -238,43 +238,75 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
             LocalWindowInfo.current.containerSize.width >= 600.dp.roundToPx()
         }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues),
-        contentAlignment = Alignment.TopCenter
-    ) {
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-        } else {
-            val adapter = rememberScrollBarAdapter(scrollState = lazyListState)
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(
-                        if (isWideScreen) Modifier.widthIn(max = 840.dp) else Modifier
-                    ),
-                state = lazyListState,
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                    items(filteredList, key = { it.packageName }) { pkg ->
-                        AppItem(pkg) { isChecked ->
-                            viewModel.onPackageSelected(pkg, isChecked)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            if (isLoading) {
+                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+            } else {
+                val modeTabs = listOf(onlyProxySelectedAppsText, bypassSelectedAppsText)
+                val selectedTabIndex = if (bypassSelectedApps) 1 else 0
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (isWideScreen) Modifier.widthIn(max = 840.dp) else Modifier
+                        ),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                    ) {
+                        TabRowWithContour(
+                            tabs = modeTabs,
+                            selectedTabIndex = selectedTabIndex,
+                            onTabSelected = { index ->
+                                viewModel.onBypassSelectedAppsChange(index == 1)
+                            },
+                            height = 56.dp,
+                            cornerRadius = 11.dp,
+                            minWidth = 140.dp,
+                            maxWidth = 400.dp
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f)
+                    ) {
+                        val adapter = rememberScrollBarAdapter(scrollState = lazyListState)
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            state = lazyListState,
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            items(filteredList, key = { it.packageName }) { pkg ->
+                                AppItem(pkg) { isChecked ->
+                                    viewModel.onPackageSelected(pkg, isChecked)
+                                }
+                            }
+                        }
+                        VerticalScrollBar(
+                            adapter = adapter,
+                            modifier = Modifier.align(Alignment.CenterEnd)
+                        )
+                        if (filteredList.isEmpty() && searchQuery.isNotBlank()) {
+                            Text(
+                                text = stringResource(R.string.apps_not_found),
+                                modifier = Modifier.align(Alignment.Center),
+                                style = MiuixTheme.textStyles.body1,
+                                color = MiuixTheme.colorScheme.onSurfaceSecondary
+                            )
                         }
                     }
-                }
-                VerticalScrollBar(
-                    adapter = adapter,
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                )
-                if (filteredList.isEmpty() && searchQuery.isNotBlank()) {
-                    Text(
-                        text = stringResource(R.string.apps_not_found),
-                        modifier = Modifier.align(Alignment.Center),
-                        style = MiuixTheme.textStyles.body1,
-                        color = MiuixTheme.colorScheme.onSurfaceSecondary
-                    )
                 }
             }
         }

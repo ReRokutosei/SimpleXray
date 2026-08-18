@@ -51,6 +51,7 @@
     <string name="apps_not_found">没有找到应用</string>
     <string name="show_system_apps">显示系统应用</string>
     <string name="show_no_internet_apps">显示无网络应用</string>
+    <string name="only_proxy_selected_apps">仅代理所选应用</string>
     <string name="bypass_selected_apps">绕过所选应用</string>
     <string name="select_all">全选</string>
     <string name="inverse_selection">反选</string>
