@@ -607,12 +607,27 @@ fun SettingsScreen(
                     )
                 }
 
+                val geoIntervalHours = settingsState.geoUpdateIntervalHours.value.toIntOrNull() ?: 0
+                val geoSummaryText = if (geoIntervalHours <= 0) {
+                    stringResource(R.string.geo_update_disabled)
+                } else {
+                    val lastUpdateTime = settingsState.lastGeoUpdateTime
+                    val timeStr = if (lastUpdateTime > 0L) {
+                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+                        sdf.format(java.util.Date(lastUpdateTime))
+                    } else {
+                        stringResource(R.string.geo_never_updated)
+                    }
+                    stringResource(R.string.geo_last_update_format, geoIntervalHours, timeStr)
+                }
+
                 EditableListItemWithMiuixBottomSheet(
                     headline = stringResource(R.string.geo_update_interval_title),
                     currentValue = settingsState.geoUpdateIntervalHours.value,
                     onValueConfirmed = { newValue -> mainViewModel.updateGeoUpdateInterval(newValue) },
                     label = stringResource(R.string.geo_update_interval_title),
-                    supportingText = stringResource(R.string.geo_update_interval_summary),
+                    supportingText = stringResource(R.string.geo_update_dialog_supporting_text),
+                    customSummary = geoSummaryText,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
             }
@@ -668,6 +683,7 @@ fun EditableListItemWithMiuixBottomSheet(
     onValueConfirmed: (String) -> Unit,
     label: String,
     supportingText: String? = null,
+    customSummary: String? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     enabled: Boolean = true
 ) {
@@ -720,7 +736,7 @@ fun EditableListItemWithMiuixBottomSheet(
 
     ArrowPreference(
         title = headline,
-        summary = if (supportingText != null) "$supportingText\n$currentValue" else currentValue,
+        summary = customSummary ?: if (supportingText != null) "$supportingText\n$currentValue" else currentValue,
         onClick = {
             tempValue = currentValue
             showSheet = true

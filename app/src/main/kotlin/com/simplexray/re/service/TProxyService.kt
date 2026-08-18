@@ -323,6 +323,7 @@ class TProxyService : VpnService() {
                             val successIntent = Intent(ACTION_START)
                             successIntent.setPackage(application.packageName)
                             sendBroadcast(successIntent)
+                            GeoUpdateReceiver.checkAndTriggerCatchUp(applicationContext)
                             break
                         }
                         delay(STARTUP_PROBE_INTERVAL_MS)

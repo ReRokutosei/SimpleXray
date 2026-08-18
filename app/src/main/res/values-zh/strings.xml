@@ -179,11 +179,17 @@
     <string name="hide_from_recents_title">从最近任务中隐藏</string>
     <string name="hide_from_recents_summary">从 Android 最近任务中隐藏本应用</string>
     <string name="rule_file_validation_failed">规则文件校验失败或已损坏</string>
-    <string name="geo_update_interval_title">自动更新间隔（小时）</string>
-    <string name="geo_update_interval_summary">设置 GEO 规则文件的自动更新间隔，单位为小时。设置为 0 可禁用自动更新。有效值：0 或 1–168</string>
+    <string name="geo_update_interval_title">自动更新间隔</string>
+    <string name="geo_update_interval_summary">规则文件自动更新间隔（小时），设为 0 可关闭自动更新。有效值：0 或 1–168</string>
+    <string name="geo_update_disabled">已关闭</string>
+    <string name="geo_last_update_format">每 %1$d 小时 · 上次更新：%2$s</string>
+    <string name="geo_never_updated">尚未更新</string>
+    <string name="geo_update_dialog_supporting_text">输入 0 可关闭自动更新，有效范围 1–168 小时。\n当到达更新周期或连接 VPN 后发现已超出更新间隔时，将在后台静默下载并原子替换规则文件。若更新未完成将保留原规则，不影响正常使用。</string>
+    <string name="geo_update_failed_title">规则文件自动更新失败</string>
+    <string name="geo_update_failed_body">下载或校验未完成，已保留现有规则文件。</string>
     <string name="invalid_geo_update_interval">请输入 0（禁用）或 1 到 168 之间的整数</string>
     <string name="notification_permission_title">通知权限说明</string>
     <string name="notification_permission_summary">为了保证 VPN 服务在后台持续稳定运行并防止系统误杀，建议授予通知权限。</string>
     <string name="keep_awake_title">保持唤醒锁定</string>
-    <string name="keep_awake_summary">在 VPN 连接时保持部分唤醒锁 (Partial Wake Lock)。HyperOS/部分深度休眠设备若遇到熄屏断连可开启；在原生/Pixel/三星设备上建议保持关闭以节省电量</string>
+    <string name="keep_awake_summary">在 VPN 连接时保持部分唤醒锁。HyperOS 或遇到熄屏断连的设备可开启；在原生/Pixel/三星设备上建议保持关闭以节省电量</string>
 </resources>

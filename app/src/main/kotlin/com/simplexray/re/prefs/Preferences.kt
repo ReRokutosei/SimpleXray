@@ -161,6 +161,20 @@ class Preferences(context: Context) {
                 setValueInProvider(key, value)
         }
 
+    private fun longPref(key: String, default: Long, logTag: String? = null): ReadWriteProperty<Any?, Long> =
+        object : ReadWriteProperty<Any?, Long> {
+            override fun getValue(thisRef: Any?, property: KProperty<*>): Long {
+                val value = getPrefData(key).first
+                val longValue = value?.toLongOrNull()
+                if (value != null && longValue == null) {
+                    logTag?.let { Log.e(TAG, "Failed to parse $it as Long: $value") }
+                }
+                return longValue ?: default
+            }
+            override fun setValue(thisRef: Any?, property: KProperty<*>, value: Long) =
+                setValueInProvider(key, value)
+        }
+
     var socksAddress: String by stringPref(SOCKS_ADDR) { "127.0.0.1" }
     var socksPort: Int by intPref(SOCKS_PORT, 10808, "SocksPort")
     var socksUsername: String by stringPref(SOCKS_USER)
@@ -213,6 +227,7 @@ class Preferences(context: Context) {
     var useTemplate: Boolean by booleanPref(USE_TEMPLATE, true)
     var hideFromRecents: Boolean by booleanPref(HIDE_FROM_RECENTS, true)
     var geoUpdateIntervalHours: Int by intPref(GEO_UPDATE_INTERVAL_HOURS, 0)
+    var lastGeoUpdateTime: Long by longPref(LAST_GEO_UPDATE_TIME, 0L)
     var httpProxyEnabled: Boolean by booleanPref(HTTP_PROXY_ENABLED, false)
     var httpPort: Int by intPref(HTTP_PORT, 10809, "HttpPort")
     var customGeoipImported: Boolean by booleanPref(CUSTOM_GEOIP_IMPORTED, false)
@@ -305,6 +320,7 @@ class Preferences(context: Context) {
         const val KEEP_AWAKE: String = "KeepAwake"
         const val NOTIFICATION_PROMPTED: String = "NotificationPrompted"
         const val GEO_UPDATE_INTERVAL_HOURS: String = "GeoUpdateIntervalHours"
+        const val LAST_GEO_UPDATE_TIME: String = "LastGeoUpdateTime"
         const val CUSTOM_DAT_URLS: String = "CustomDatUrls"
         private const val TAG = "Preferences"
     }
