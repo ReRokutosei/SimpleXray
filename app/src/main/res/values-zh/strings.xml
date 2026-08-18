@@ -26,7 +26,6 @@
     <string name="bypass_lan_title">绕过局域网</string>
     <string name="bypass_lan_summary">启用时，局域网流量不通过代理</string>
     <string name="tunnel_mode_title">TUN 传输组件</string>
-    <string name="tunnel_mode_summary">选择负责从 Android VPN 接口转发流量的组件</string>
     <string name="tunnel_mode_xray_tun">Xray TUN</string>
     <string name="tunnel_mode_xray_tun_summary">使用 Xray 原生 TUN 入站直接处理 VPN 数据包</string>
     <string name="tunnel_mode_hev_socks5">Hev SOCKS5 Tunnel</string>
@@ -42,7 +41,6 @@
     <string name="loglevel_title">日志级别</string>
     <string name="loglevel_summary">Auto 跟随配置；选择其他级别可覆盖配置（修改后需重启内核）</string>
     <string name="theme_title">主题</string>
-    <string name="theme_summary">选择浅色、深色或跟随系统</string>
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>
     <string name="auto">自动</string>
@@ -94,7 +92,6 @@
     <string name="rule_file_restore_geoip_success">geoip.dat 已恢复为默认</string>
     <string name="rule_file_restore_geosite_success">geosite.dat 已恢复为默认</string>
 
-    <string name="app_icon_summary">选择桌面图标风格</string>
     <string name="icon_flat">Flat</string>
     <string name="icon_lineal">Lineal</string>
     <string name="icon_lineal_color">Lineal Color</string>
@@ -130,11 +127,9 @@
 
     <!-- 关于与版本更新 -->
     <string name="privacy_disclaimer_title">隐私政策与免责声明</string>
-    <string name="privacy_disclaimer_summary">查看开源隐私政策与免责声明</string>
     <string name="version">应用版本</string>
     <string name="kernel">内核版本</string>
     <string name="source">源代码</string>
-    <string name="open_source">打开源代码库</string>
     <string name="check_for_updates">检查更新</string>
     <string name="no_new_version_available">没有新版本可用</string>
     <string name="failed_to_check_for_updates">检查更新失败</string>
@@ -175,7 +170,6 @@
     <string name="file_imported">已导入 %1$s</string>
     <string name="file_deleted">已删除 %1$s</string>
     <string name="hide_from_recents_title">从最近任务中隐藏</string>
-    <string name="hide_from_recents_summary">从 Android 最近任务中隐藏本应用</string>
     <string name="rule_file_validation_failed">规则文件校验失败或已损坏</string>
     <string name="geo_update_interval_title">自动更新间隔</string>
     <string name="geo_update_interval_summary">规则文件自动更新间隔（小时），设为 0 可关闭自动更新。有效值：0 或 1–168</string>
