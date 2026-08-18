@@ -48,10 +48,7 @@ class Preferences(context: Context) {
         val uri = PrefsContract.PrefsEntry.CONTENT_URI.buildUpon().appendPath(key).build()
         try {
             contentResolver.query(
-                uri, arrayOf(
-                    PrefsContract.PrefsEntry.COLUMN_PREF_VALUE,
-                    PrefsContract.PrefsEntry.COLUMN_PREF_TYPE
-                ), null, null, null
+                uri, null, null, null, null
             )?.use { cursor ->
                 if (cursor.moveToFirst()) {
                     val valueColumnIndex =
@@ -73,8 +70,11 @@ class Preferences(context: Context) {
 
     private fun getBooleanPref(key: String, default: Boolean): Boolean {
         val (value, type) = getPrefData(key)
-        if (value != null && "Boolean" == type) {
-            return value.toBoolean()
+        if (value != null) {
+            if ("Boolean".equals(type, ignoreCase = true)) {
+                return value.toBoolean()
+            }
+            return value.toBooleanStrictOrNull() ?: default
         }
         return default
     }

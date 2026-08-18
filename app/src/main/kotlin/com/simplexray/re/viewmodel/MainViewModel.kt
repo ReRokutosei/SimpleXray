@@ -263,6 +263,7 @@ class MainViewModel(application: Application) :
                 ipv6Enabled = prefs.ipv6,
                 useTemplateEnabled = prefs.useTemplate,
                 hideFromRecents = prefs.hideFromRecents,
+                keepAwake = prefs.keepAwake,
                 httpProxyEnabled = prefs.httpProxyEnabled,
                 bypassLanEnabled = prefs.bypassLan,
                 disableVpn = prefs.disableVpn,
