@@ -108,7 +108,7 @@ class PrefsProvider : ContentProvider() {
         if (match == PREFS_WITH_KEY) {
             val key = uri.lastPathSegment
             if (key != null && values != null && values.containsKey(PrefsContract.PrefsEntry.COLUMN_PREF_VALUE)) {
-                prefs.edit {
+                prefs.edit(commit = true) {
                     when (val value = values[PrefsContract.PrefsEntry.COLUMN_PREF_VALUE]) {
                         is String -> {
                             putString(key, value)
