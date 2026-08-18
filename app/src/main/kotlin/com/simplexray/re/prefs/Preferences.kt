@@ -224,7 +224,6 @@ class Preferences(context: Context) {
 
     var selectedConfigPath: String? by nullableStringPref(SELECTED_CONFIG_PATH)
     var bypassLan: Boolean by booleanPref(BYPASS_LAN, true)
-    var useTemplate: Boolean by booleanPref(USE_TEMPLATE, true)
     var hideFromRecents: Boolean by booleanPref(HIDE_FROM_RECENTS, true)
     var geoUpdateIntervalHours: Int by intPref(GEO_UPDATE_INTERVAL_HOURS, 0)
     var lastGeoUpdateTime: Long by longPref(LAST_GEO_UPDATE_TIME, 0L)
@@ -301,7 +300,6 @@ class Preferences(context: Context) {
         const val ENABLE: String = "Enable"
         const val SELECTED_CONFIG_PATH: String = "SelectedConfigPath"
         const val BYPASS_LAN: String = "BypassLan"
-        const val USE_TEMPLATE: String = "UseTemplate"
         const val HTTP_PROXY_ENABLED: String = "HttpProxyEnabled"
         const val CUSTOM_GEOIP_IMPORTED: String = "CustomGeoipImported"
         const val CUSTOM_GEOSITE_IMPORTED: String = "CustomGeositeImported"

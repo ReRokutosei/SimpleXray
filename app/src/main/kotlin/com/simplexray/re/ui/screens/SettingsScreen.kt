@@ -289,13 +289,6 @@ fun SettingsScreen(
             item {
             SmallTitle(text = stringResource(R.string.general))
             Card(modifier = Modifier.fillMaxWidth()) {
-                SwitchPreference(
-                    title = stringResource(R.string.use_template_title),
-                    summary = stringResource(R.string.use_template_summary),
-                    checked = settingsState.switches.useTemplateEnabled,
-                    onCheckedChange = { mainViewModel.setUseTemplateEnabled(it) }
-                )
-
                 OverlayDropdownPreference(
                     title = stringResource(R.string.theme_title),
                     summary = stringResource(R.string.theme_summary),
