@@ -26,7 +26,8 @@ fun rememberMainScreenCallbacks(
     mainViewModel: MainViewModel,
     logViewModel: LogViewModel,
     launchers: MainScreenLaunchers,
-    applicationContext: Context
+    applicationContext: Context,
+    onRequestNotificationPermission: (() -> Unit)? = null
 ): MainScreenCallbacks {
     val scope = rememberCoroutineScope()
     val onCreateNewConfigFileAndEdit: () -> Unit = {
@@ -88,11 +89,23 @@ fun rememberMainScreenCallbacks(
         }
     }
 
-    val onSwitchVpnService: () -> Unit = {
+    val onSwitchVpnService: () -> Unit = onSwitchVpnService@{
         if (mainViewModel.isServiceEnabled.value) {
             mainViewModel.setServiceEnabled(false)
             mainViewModel.stopTProxyService()
         } else {
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                val hasNotificationPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                    applicationContext,
+                    android.Manifest.permission.POST_NOTIFICATIONS
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                if (!hasNotificationPermission && !mainViewModel.prefs.notificationPrompted) {
+                    onRequestNotificationPermission?.invoke()
+                    return@onSwitchVpnService
+                }
+            }
+
             mainViewModel.setControlMenuClickable(false)
             if (mainViewModel.settingsState.value.switches.disableVpn) {
                 mainViewModel.startTProxyService(TProxyService.ACTION_START)

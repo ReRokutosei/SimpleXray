@@ -15,12 +15,16 @@ import kotlinx.coroutines.launch
 
 data class MainScreenLaunchers(
     val vpnPrepareLauncher: ActivityResultLauncher<Intent>,
+    val notificationPermissionLauncher: ActivityResultLauncher<String>,
     val geoipFilePickerLauncher: ActivityResultLauncher<Array<String>>,
     val geositeFilePickerLauncher: ActivityResultLauncher<Array<String>>
 )
 
 @Composable
-fun rememberMainScreenLaunchers(mainViewModel: MainViewModel): MainScreenLaunchers {
+fun rememberMainScreenLaunchers(
+    mainViewModel: MainViewModel,
+    onNotificationPermissionResult: ((Boolean) -> Unit)? = null
+): MainScreenLaunchers {
     val scope = rememberCoroutineScope()
 
     val vpnPrepareLauncher = rememberLauncherForActivityResult(
@@ -34,6 +38,11 @@ fun rememberMainScreenLaunchers(mainViewModel: MainViewModel): MainScreenLaunche
             mainViewModel.setControlMenuClickable(true)
         }
     }
+
+    val notificationPermissionLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            onNotificationPermissionResult?.invoke(isGranted)
+        }
 
     val geoipFilePickerLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
@@ -59,6 +68,7 @@ fun rememberMainScreenLaunchers(mainViewModel: MainViewModel): MainScreenLaunche
 
     return MainScreenLaunchers(
         vpnPrepareLauncher = vpnPrepareLauncher,
+        notificationPermissionLauncher = notificationPermissionLauncher,
         geoipFilePickerLauncher = geoipFilePickerLauncher,
         geositeFilePickerLauncher = geositeFilePickerLauncher
     )
