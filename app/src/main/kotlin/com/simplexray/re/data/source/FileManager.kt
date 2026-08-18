@@ -477,7 +477,7 @@ class FileManager(private val application: Application, private val prefs: Prefe
     suspend fun importDatFileFromUri(context: Context, uri: Uri): String? {
         return withContext(Dispatchers.IO) {
             try {
-                val fileName = getDatFileNameFromUri(context, uri)
+                val fileName = getDatFileNameFromUri(context, uri) ?: return@withContext null
                 // Defense: standard GEO file names (case-insensitive) must not be
                 // imported through the third-party dat path.
                 if (FileManager.isStandardGeoDat(fileName)) {
@@ -506,18 +506,16 @@ class FileManager(private val application: Application, private val prefs: Prefe
     }
 
     /**
-     * Resolve the target file name (with .dat suffix) for a dat file picked from URI.
-     * Exposed so the ViewModel can run the standard-GEO defense before importing.
+     * Resolve the target file name for a dat file picked from URI.
+     * Returns null if the selected file does not have a .dat extension.
      * Sanitizes the display name so a malicious provider cannot inject path
      * separators or relative segments.
      */
-    fun getDatFileNameFromUri(context: Context, uri: Uri): String {
-        var fileName = sanitizeFileName(
-            getFileNameFromUri(context, uri) ?: "custom.dat",
-            fallback = "custom.dat"
-        )
+    fun getDatFileNameFromUri(context: Context, uri: Uri): String? {
+        val originalName = getFileNameFromUri(context, uri) ?: return null
+        val fileName = sanitizeFileName(originalName, fallback = "")
         if (!fileName.lowercase().endsWith(".dat")) {
-            fileName += ".dat"
+            return null
         }
         return fileName
     }

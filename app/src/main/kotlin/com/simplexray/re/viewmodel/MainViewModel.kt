@@ -942,6 +942,12 @@ class MainViewModel(application: Application) :
                 } else {
                     updateSelectedConfigFile(File(path))
                 }
+            } else {
+                _uiEvent.trySend(
+                    MainViewUiEvent.ShowSnackbar(
+                        application.getString(R.string.unsupported_config_format)
+                    )
+                )
             }
         }
     }
@@ -1263,8 +1269,12 @@ class MainViewModel(application: Application) :
 
     fun importCustomDatFile(uri: android.net.Uri) {
         viewModelScope.launch(Dispatchers.IO) {
-            // Defense: reject standard GEO file names (case-insensitive) before importing.
             val candidateName = fileManager.getDatFileNameFromUri(application, uri)
+            if (candidateName == null) {
+                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.unsupported_dat_format)))
+                return@launch
+            }
+            // Defense: reject standard GEO file names (case-insensitive) before importing.
             if (FileManager.isStandardGeoDat(candidateName)) {
                 _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.standard_geo_file_rejected)))
                 return@launch
