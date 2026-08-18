@@ -761,7 +761,7 @@ fun SettingsScreen(
                     summary = stringResource(R.string.version),
                     endActions = {
                         TextButton(
-                            text = if (isCheckingForUpdates) "检查中..." else stringResource(R.string.check_for_updates),
+                            text = if (isCheckingForUpdates) stringResource(R.string.checking_for_updates) else stringResource(R.string.check_for_updates),
                             onClick = { mainViewModel.checkForUpdates() },
                             enabled = !isCheckingForUpdates
                         )
