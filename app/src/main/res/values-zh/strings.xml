@@ -185,4 +185,7 @@
     <string name="notification_permission_summary">为了保证 VPN 服务在后台持续稳定运行并防止系统误杀，建议授予通知权限。</string>
     <string name="keep_awake_title">保持唤醒锁定</string>
     <string name="keep_awake_summary">在 VPN 连接时保持部分唤醒锁。HyperOS 或遇到熄屏断连的设备可开启；在原生/Pixel/三星设备上建议保持关闭以节省电量</string>
+    <string name="inbound_settings">本地入站代理</string>
+    <string name="network_settings">其他</string>
+    <string name="tunnel_mode_restart_notice">TUN 传输组件已切换，请重启内核以生效</string>
 </resources>
