@@ -53,30 +53,39 @@ fun MainScreen(
     val bottomNavController = rememberNavController()
     val scope = rememberCoroutineScope()
 
-    val launchers = rememberMainScreenLaunchers(mainViewModel)
+    var showNotificationRationale by remember { mutableStateOf(false) }
+    var pendingVpnStartAfterPermission by remember { mutableStateOf(false) }
+
+    lateinit var callbacks: com.simplexray.re.common.MainScreenCallbacks
+
+    val launchers = rememberMainScreenLaunchers(
+        mainViewModel = mainViewModel,
+        onNotificationPermissionResult = { _ ->
+            if (pendingVpnStartAfterPermission) {
+                pendingVpnStartAfterPermission = false
+                callbacks.onSwitchVpnService()
+            }
+        }
+    )
 
     val logViewModel: LogViewModel = viewModel(
         factory = LogViewModelFactory(mainViewModel.application)
     )
 
-    val callbacks = rememberMainScreenCallbacks(
+    callbacks = rememberMainScreenCallbacks(
         mainViewModel = mainViewModel,
         logViewModel = logViewModel,
         launchers = launchers,
-        applicationContext = mainViewModel.application
+        applicationContext = mainViewModel.application,
+        onRequestNotificationPermission = {
+            pendingVpnStartAfterPermission = true
+            showNotificationRationale = true
+        }
     )
 
     val shareLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) {}
-
-    var showNotificationRationale by remember { mutableStateOf(false) }
-
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.RequestPermission()
-    ) {
-        // No explicit handling needed whether granted or denied
-    }
 
     LaunchedEffect(Unit) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -142,6 +151,32 @@ fun MainScreen(
 
     val mainScreenRoutes = listOf(ROUTE_STATS, ROUTE_CONFIG, ROUTE_LOG, ROUTE_SETTINGS)
 
+    val notificationRationaleDialog: @Composable () -> Unit = {
+        if (showNotificationRationale) {
+            ConfirmOverlayDialog(
+                title = stringResource(R.string.notification_permission_title),
+                summary = stringResource(R.string.notification_permission_summary),
+                confirmText = stringResource(R.string.confirm),
+                cancelText = stringResource(R.string.cancel),
+                onConfirm = {
+                    showNotificationRationale = false
+                    mainViewModel.prefs.notificationPrompted = true
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        launchers.notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                },
+                onDismiss = {
+                    showNotificationRationale = false
+                    mainViewModel.prefs.notificationPrompted = true
+                    if (pendingVpnStartAfterPermission) {
+                        pendingVpnStartAfterPermission = false
+                        callbacks.onSwitchVpnService()
+                    }
+                }
+            )
+        }
+    }
+
     if (currentRoute in mainScreenRoutes) {
         AppScaffold(
             navController = bottomNavController,
@@ -171,6 +206,7 @@ fun MainScreen(
                 settingsScrollState = settingsScrollState,
                 onSwitchVpnService = callbacks.onSwitchVpnService
             )
+            notificationRationaleDialog()
         }
     } else {
         BottomNavHost(
@@ -188,25 +224,6 @@ fun MainScreen(
             settingsScrollState = settingsScrollState,
             onSwitchVpnService = callbacks.onSwitchVpnService
         )
-    }
-
-    if (showNotificationRationale) {
-        ConfirmOverlayDialog(
-            title = stringResource(R.string.notification_permission_title),
-            summary = stringResource(R.string.notification_permission_summary),
-            confirmText = stringResource(R.string.confirm),
-            cancelText = stringResource(R.string.cancel),
-            onConfirm = {
-                showNotificationRationale = false
-                mainViewModel.prefs.notificationPrompted = true
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            },
-            onDismiss = {
-                showNotificationRationale = false
-                mainViewModel.prefs.notificationPrompted = true
-            }
-        )
+        notificationRationaleDialog()
     }
 }

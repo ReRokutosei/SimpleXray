@@ -102,7 +102,7 @@
     <string name="icon_lineal_color">Lineal Color</string>
 
     <!-- 仪表盘与统计 -->
-    <string name="core_stats_title">仪表面板</string>
+    <string name="core_stats_title">面板</string>
     <string name="traffic_info">流量信息</string>
     <string name="outbound_nodes">出站节点</string>
     <string name="refresh_latency">重新测试延迟</string>
