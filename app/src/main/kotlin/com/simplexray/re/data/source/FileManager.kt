@@ -80,16 +80,11 @@ class FileManager(private val application: Application, private val prefs: Prefe
             val filename = System.currentTimeMillis().toString() + ".json"
             val newFile = File(application.filesDir, filename)
             try {
-                val fileContent: String
-                if (prefs.useTemplate) {
-                    assets.open("template").use { assetInputStream ->
-                        val size = assetInputStream.available()
-                        val buffer = ByteArray(size)
-                        assetInputStream.read(buffer)
-                        fileContent = String(buffer, StandardCharsets.UTF_8)
-                    }
-                } else {
-                    fileContent = "{}"
+                val fileContent: String = assets.open("template").use { assetInputStream ->
+                    val size = assetInputStream.available()
+                    val buffer = ByteArray(size)
+                    assetInputStream.read(buffer)
+                    String(buffer, StandardCharsets.UTF_8)
                 }
                 FileOutputStream(newFile).use { fileOutputStream ->
                     fileOutputStream.write(fileContent.toByteArray())

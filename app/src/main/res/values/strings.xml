@@ -45,8 +45,6 @@
     <string name="general">General</string>
     <string name="settings">Settings</string>
     <string name="core_control">Core Control</string>
-    <string name="use_template_title">Create New Configuration from Template</string>
-    <string name="use_template_summary">When enabled, new configurations will be pre-filled with template content.</string>
     <string name="loglevel_title">Log Level</string>
     <string name="loglevel_summary">Auto follows the configuration. Select a level to override it. Restart the core to apply changes.</string>
     <string name="theme_title">Theme</string>

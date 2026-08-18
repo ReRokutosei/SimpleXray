@@ -39,8 +39,6 @@
     <string name="general">通用</string>
     <string name="settings">设置</string>
     <string name="core_control">内核控制</string>
-    <string name="use_template_title">使用模板创建新配置</string>
-    <string name="use_template_summary">启用时，创建新配置会预填充模板内容</string>
     <string name="loglevel_title">日志级别</string>
     <string name="loglevel_summary">Auto 跟随配置；选择其他级别可覆盖配置（修改后需重启内核）</string>
     <string name="theme_title">主题</string>
