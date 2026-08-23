@@ -7,7 +7,7 @@
 
   "ignorePaths": [
     "**/third_party/**",
-    "**/app/src/main/jni/**"
+    "**/app/src/main/cpp/**"
   ],
 
   "packageRules": [
