@@ -165,7 +165,9 @@ fun BottomNavHost(
                 logViewModel = logViewModel,
                 listState = logListState,
                 paddingValues = paddingValues,
-                logLevel = settingsState.switches.logLevel
+                logLevel = settingsState.switches.logLevel,
+                accessLog = settingsState.switches.accessLog,
+                dnsLog = settingsState.switches.dnsLog
             )
         }
 

@@ -44,8 +44,10 @@
     <string name="general">General</string>
     <string name="settings">Settings</string>
     <string name="core_control">Core Control</string>
-    <string name="loglevel_title">Log Level</string>
-    <string name="loglevel_summary">Auto follows the configuration. Select a level to override it. Restart the core to apply changes.</string>
+    <string name="access_log_title">Access Log</string>
+    <string name="error_log_title">Error Log</string>
+    <string name="dns_log_title">DNS Log</string>
+    <string name="loglevel_summary">Auto follows configuration. xray-core manages three distinct log channels:\nI. Access Log: Controls inbound traffic auditing, set to None to disable;\nII. Error Log: Controls core diagnostics and error print (Debug / Info / Warning / Error / None);\nIII. DNS Log: Controls DNS resolution details and RTT metrics.\n(Restart core to apply changes)</string>
     <string name="theme_title">Theme</string>
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>

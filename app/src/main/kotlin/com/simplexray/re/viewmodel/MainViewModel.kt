@@ -116,7 +116,9 @@ class MainViewModel(application: Application) :
                 disableVpn = prefs.disableVpn,
                 tunnelMode = prefs.tunnelMode,
                 themeMode = prefs.theme,
-                logLevel = prefs.logLevel
+                logLevel = prefs.logLevel,
+                accessLog = prefs.accessLog,
+                dnsLog = prefs.dnsLog
             ),
             info = InfoStates(
                 appVersion = BuildConfig.VERSION_NAME,
@@ -273,7 +275,9 @@ class MainViewModel(application: Application) :
                 disableVpn = prefs.disableVpn,
                 tunnelMode = prefs.tunnelMode,
                 themeMode = prefs.theme,
-                logLevel = prefs.logLevel
+                logLevel = prefs.logLevel,
+                accessLog = prefs.accessLog,
+                dnsLog = prefs.dnsLog
             ),
             info = _settingsState.value.info.copy(
                 appVersion = BuildConfig.VERSION_NAME,
@@ -776,6 +780,20 @@ class MainViewModel(application: Application) :
         prefs.logLevel = logLevel
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(logLevel = logLevel)
+        )
+    }
+
+    fun setAccessLog(enabled: Boolean) {
+        prefs.accessLog = enabled
+        _settingsState.value = _settingsState.value.copy(
+            switches = _settingsState.value.switches.copy(accessLog = enabled)
+        )
+    }
+
+    fun setDnsLog(enabled: Boolean) {
+        prefs.dnsLog = enabled
+        _settingsState.value = _settingsState.value.copy(
+            switches = _settingsState.value.switches.copy(dnsLog = enabled)
         )
     }
 

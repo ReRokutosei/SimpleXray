@@ -21,3 +21,4 @@ app/.cxx/*
 .cxx_tmp2/*
 docs/logs/
 tools/bin/
+todo.md

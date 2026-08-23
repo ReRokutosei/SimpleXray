@@ -38,8 +38,10 @@
     <string name="general">通用</string>
     <string name="settings">设置</string>
     <string name="core_control">内核控制</string>
-    <string name="loglevel_title">日志级别</string>
-    <string name="loglevel_summary">Auto 跟随配置；选择其他级别可覆盖配置（修改后需重启内核）</string>
+    <string name="access_log_title">Access 日志</string>
+    <string name="error_log_title">Error 日志</string>
+    <string name="dns_log_title">DNS 日志</string>
+    <string name="loglevel_summary">Auto 表示跟随配置。xray-core 有三类独立的日志管道，分别是：\n① Access Log：控制入站连接审计，设为 None 可关闭该类日志；\n② Error Log：控制内核诊断与错误打印（Debug / Info / Warning / Error / None）；\n③ DNS Log：控制是否打印域名解析与 RTT 耗时结果。\n（修改后需重启内核生效）</string>
     <string name="theme_title">主题</string>
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>

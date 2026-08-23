@@ -60,7 +60,6 @@ object ConfigUtils {
 
         // 1. Process and sanitize log block
         val logObj = rootJson.optJSONObject("log") ?: JSONObject().also { rootJson.put("log", it) }
-        logObj.remove("access")
         logObj.remove("error")
 
         // Remove geodata block: xray's built-in geodata cron updater is not safe on Android
@@ -70,10 +69,27 @@ object ConfigUtils {
             Log.d(TAG, "Removed geodata block: GUI manages geo rule updates with sandbox validation.")
         }
 
-        if (prefs != null && prefs.logLevel != LogLevel.Auto) {
-            logObj.put("loglevel", prefs.logLevel.value)
-            Log.d(TAG, "Override loglevel to ${prefs.logLevel.value} from Preferences.")
+        if (prefs != null) {
+            if (!prefs.accessLog) {
+                logObj.put("access", "none")
+                Log.d(TAG, "Override access to none from Preferences.")
+            } else {
+                logObj.remove("access")
+            }
+
+            logObj.put("dnsLog", prefs.dnsLog)
+            Log.d(TAG, "Override dnsLog to ${prefs.dnsLog} from Preferences.")
+
+            if (prefs.logLevel != LogLevel.Auto) {
+                logObj.put("loglevel", prefs.logLevel.value)
+                Log.d(TAG, "Override loglevel to ${prefs.logLevel.value} from Preferences.")
+            } else {
+                if (!logObj.has("loglevel") || logObj.optString("loglevel").isEmpty()) {
+                    logObj.put("loglevel", "warning")
+                }
+            }
         } else {
+            logObj.remove("access")
             if (!logObj.has("loglevel") || logObj.optString("loglevel").isEmpty()) {
                 logObj.put("loglevel", "warning")
             }

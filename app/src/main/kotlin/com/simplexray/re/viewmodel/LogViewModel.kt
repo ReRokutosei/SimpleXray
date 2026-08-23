@@ -31,7 +31,7 @@ import java.io.File
 import java.util.Collections
 
 private const val TAG = "LogViewModel"
-private const val MAX_LOG_ENTRIES = 500
+private const val MAX_LOG_ENTRIES = 300
 
 @OptIn(FlowPreview::class)
 class LogViewModel(application: Application) :

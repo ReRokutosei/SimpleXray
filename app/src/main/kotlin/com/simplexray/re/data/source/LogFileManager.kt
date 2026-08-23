@@ -155,8 +155,8 @@ class LogFileManager(context: Context) {
     companion object {
         private const val TAG = "LogFileManager"
         private const val LOG_FILE_NAME = "app_log.txt"
-        private const val MAX_LOG_SIZE_BYTES = (10 * 1024 * 1024).toLong()
-        private const val TRUNCATE_SIZE_BYTES = (5 * 1024 * 1024).toLong()
+        private const val MAX_LOG_SIZE_BYTES = (5 * 1024 * 1024).toLong()
+        private const val TRUNCATE_SIZE_BYTES = (2560 * 1024).toLong()
         private const val READ_TAIL_BYTES = (1 * 1024 * 1024).toLong()
     }
 }
