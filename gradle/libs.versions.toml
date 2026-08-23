@@ -19,6 +19,7 @@ reorderable = "3.1.0"
 okhttp = "5.4.0"
 junit = "4.13.2"
 orgJson = "20231013"
+work = "2.10.0"
 
 [libraries]
 # Plugins for buildscript
@@ -39,6 +40,7 @@ grpc-kotlin-stub = { module = "io.grpc:grpc-kotlin-stub", version.ref = "grpcKot
 material = { module = "com.google.android.material:material", version.ref = "material" }
 androidx-datastore-preferences = { module = "androidx.datastore:datastore-preferences", version.ref = "datastorePreferences" }
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 
 # Compose
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }

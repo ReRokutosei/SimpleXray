@@ -49,6 +49,12 @@ class MainActivity : ComponentActivity() {
         Log.d(TAG, "MainActivity onCreate called.")
     }
 
+    override fun onResume() {
+        super.onResume()
+        mainViewModel.updateSettingsState()
+        mainViewModel.refreshCustomDatFiles()
+    }
+
     /**
      * Renders the currently selected adaptive icon into a Bitmap and applies it
      * to the recents card via TaskDescription. The launcher icon itself is

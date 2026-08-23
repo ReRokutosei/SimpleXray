@@ -1,68 +1,79 @@
 package com.simplexray.re.service
 
-import android.app.AlarmManager
 import android.app.NotificationChannel
 import android.app.NotificationManager
-import android.app.PendingIntent
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import androidx.work.Constraints
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
 import com.simplexray.re.R
 import com.simplexray.re.data.source.FileManager
 import com.simplexray.re.prefs.Preferences
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.FileOutputStream
 import java.net.InetSocketAddress
 import java.net.Proxy
+import java.net.Socket
 import java.util.concurrent.TimeUnit
 
 /**
- * BroadcastReceiver triggered by AlarmManager or Boot for automatic geo rule file updates.
- * Downloads standard and third-party rule files, validates, and atomically replaces.
+ * Jetpack WorkManager CoroutineWorker for reliable periodic geo rule file auto-updates.
+ * Executes in background under network connectivity constraints, with Doze mode wake-up support.
  */
-class GeoUpdateReceiver : BroadcastReceiver() {
+class GeoUpdateWorker(
+    private val context: Context,
+    workerParams: WorkerParameters
+) : CoroutineWorker(context, workerParams) {
 
-    override fun onReceive(context: Context, intent: Intent) {
-        val action = intent.action ?: return
-        Log.d(TAG, "GeoUpdateReceiver received action: $action")
-
-        val prefs = Preferences(context)
-        if (action == Intent.ACTION_BOOT_COMPLETED || action == Intent.ACTION_MY_PACKAGE_REPLACED) {
-            // Re-register alarm on reboot / update
-            if (prefs.geoUpdateIntervalHours > 0) {
-                schedule(context, prefs.geoUpdateIntervalHours)
-            }
-            return
-        }
-
-        if (action == ACTION_GEO_UPDATE) {
-            performUpdate(context)
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        Log.d(TAG, "GeoUpdateWorker started execution.")
+        val success = performUpdate(context)
+        if (success) {
+            Log.d(TAG, "GeoUpdateWorker completed successfully.")
+            Result.success()
+        } else {
+            Log.w(TAG, "GeoUpdateWorker completed with failures or was skipped.")
+            Result.retry()
         }
     }
 
     companion object {
-        const val ACTION_GEO_UPDATE = "com.simplexray.re.action.GEO_UPDATE"
-        private const val TAG = "GeoUpdateReceiver"
-        private const val REQUEST_CODE = 0x6E30
+        private const val TAG = "GeoUpdateWorker"
+        const val UNIQUE_WORK_NAME = "GeoRuleFilesAutoUpdate"
         private const val NOTIFICATION_ID_GEO_UPDATE = 0x6E31
         private const val CHANNEL_ID_GEO_UPDATE = "geo_update_channel"
 
-        private val receiverScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+        /**
+         * Checks whether the local SOCKS proxy port is active and accepting connections.
+         * Bypasses Android process isolation limits to detect if Xray core is running.
+         */
+        private fun isProxyAvailable(socksPort: Int): Boolean {
+            return try {
+                Socket().use { socket ->
+                    socket.connect(InetSocketAddress("127.0.0.1", socksPort), 300)
+                    true
+                }
+            } catch (_: Exception) {
+                false
+            }
+        }
 
         /**
          * Checks whether the rule update has timed out based on lastGeoUpdateTime and geoUpdateIntervalHours.
-         * If timed out and interval > 0, triggers a silent background update.
+         * Triggered only when Xray core is connected or periodically while active.
          */
-        fun checkAndTriggerCatchUp(context: Context) {
+        suspend fun checkAndTriggerCatchUp(context: Context) {
             val prefs = Preferences(context)
             val intervalHours = prefs.geoUpdateIntervalHours
             if (intervalHours <= 0) return
@@ -79,21 +90,20 @@ class GeoUpdateReceiver : BroadcastReceiver() {
 
         /**
          * Performs the rule files update in background.
+         * Returns true if any rule file was successfully updated, or false if errors occurred.
          */
-        fun performUpdate(context: Context, onComplete: ((Boolean) -> Unit)? = null) {
-            receiverScope.launch {
+        suspend fun performUpdate(context: Context, onComplete: ((Boolean) -> Unit)? = null): Boolean {
+            return withContext(Dispatchers.IO) {
                 val prefs = Preferences(context)
-                val fileManager = FileManager(context.applicationContext as android.app.Application, prefs)
+                val app = context.applicationContext as? android.app.Application ?: return@withContext false
+                val fileManager = FileManager(app, prefs)
 
-                val isServiceRunning = TProxyService::class.java.let { cls ->
-                    val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as? android.app.ActivityManager
-                    @Suppress("DEPRECATION")
-                    manager?.getRunningServices(Int.MAX_VALUE)?.any { it.service.className == cls.name } == true
-                }
-
-                val proxy = if (isServiceRunning)
+                val proxyAvailable = isProxyAvailable(prefs.socksPort)
+                val proxy = if (proxyAvailable)
                     Proxy(Proxy.Type.SOCKS, InetSocketAddress("127.0.0.1", prefs.socksPort))
                 else Proxy.NO_PROXY
+
+                Log.d(TAG, "performUpdate running: proxyAvailable=$proxyAvailable, socksPort=${prefs.socksPort}")
 
                 val client = OkHttpClient.Builder()
                     .proxy(proxy)
@@ -144,12 +154,13 @@ class GeoUpdateReceiver : BroadcastReceiver() {
                     prefs.lastGeoUpdateTime = System.currentTimeMillis()
                 }
 
-                // If all targets failed and we had valid targets, post a low-priority dismissible notification
-                if (!anySuccess && hasFailure && allTargets.any { it.first.isNotBlank() }) {
+                // Only post failure notification if proxy was active or if targets genuinely failed while reachable
+                if (!anySuccess && hasFailure && proxyAvailable && allTargets.any { it.first.isNotBlank() }) {
                     showFailureNotification(context)
                 }
 
                 onComplete?.invoke(anySuccess)
+                anySuccess
             }
         }
 
@@ -181,19 +192,14 @@ class GeoUpdateReceiver : BroadcastReceiver() {
             }
         }
 
-        fun schedule(context: Context, intervalHours: Int) {
-            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-            val intent = Intent(context, GeoUpdateReceiver::class.java).apply {
-                action = ACTION_GEO_UPDATE
-            }
-            val pendingIntent = PendingIntent.getBroadcast(
-                context, REQUEST_CODE, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            alarmManager.cancel(pendingIntent)
-
+        /**
+         * Schedules periodic rule updates via Jetpack WorkManager without immediately firing on registration.
+         */
+        fun schedule(context: Context, intervalHours: Int, forceUpdate: Boolean = false) {
+            val workManager = WorkManager.getInstance(context)
             if (intervalHours <= 0) {
-                Log.d(TAG, "Geo auto-update disabled (interval=0).")
+                workManager.cancelUniqueWork(UNIQUE_WORK_NAME)
+                Log.d(TAG, "Geo auto-update cancelled via WorkManager.")
                 return
             }
 
@@ -203,15 +209,26 @@ class GeoUpdateReceiver : BroadcastReceiver() {
             val lastUpdate = prefs.lastGeoUpdateTime
             val elapsed = if (lastUpdate > 0L && now >= lastUpdate) now - lastUpdate else 0L
             val initialDelayMs = if (elapsed >= intervalMs) 0L else (intervalMs - elapsed)
-            val triggerAtMs = now + initialDelayMs
 
-            alarmManager.setInexactRepeating(
-                AlarmManager.RTC_WAKEUP,
-                triggerAtMs,
-                intervalMs,
-                pendingIntent
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            val workRequest = PeriodicWorkRequestBuilder<GeoUpdateWorker>(
+                intervalHours.toLong(),
+                TimeUnit.HOURS
             )
-            Log.d(TAG, "Geo auto-update scheduled: every $intervalHours hr(s), first in ${initialDelayMs / 1000 / 60} min(s).")
+                .setInitialDelay(initialDelayMs, TimeUnit.MILLISECONDS)
+                .setConstraints(constraints)
+                .build()
+
+            val policy = if (forceUpdate) ExistingPeriodicWorkPolicy.UPDATE else ExistingPeriodicWorkPolicy.KEEP
+            workManager.enqueueUniquePeriodicWork(
+                UNIQUE_WORK_NAME,
+                policy,
+                workRequest
+            )
+            Log.d(TAG, "Geo auto-update scheduled via WorkManager: every $intervalHours hr(s), first in ${initialDelayMs / 1000 / 60} min(s).")
         }
 
         fun cancel(context: Context) {

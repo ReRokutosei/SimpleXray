@@ -246,7 +246,7 @@ class MainViewModel(application: Application) :
                 launch { ensureAppIconSelected() }
                 launch {
                     if (prefs.geoUpdateIntervalHours > 0) {
-                        com.simplexray.re.service.GeoUpdateReceiver.schedule(application, prefs.geoUpdateIntervalHours)
+                        com.simplexray.re.service.GeoUpdateWorker.schedule(application, prefs.geoUpdateIntervalHours)
                     }
                 }
                 launch {
@@ -695,7 +695,7 @@ class MainViewModel(application: Application) :
             }
             hours == 0 -> {
                 prefs.geoUpdateIntervalHours = 0
-                com.simplexray.re.service.GeoUpdateReceiver.cancel(application)
+                com.simplexray.re.service.GeoUpdateWorker.cancel(application)
                 _settingsState.value = _settingsState.value.copy(
                     geoUpdateIntervalHours = InputFieldState("0")
                 )
@@ -703,7 +703,7 @@ class MainViewModel(application: Application) :
             }
             hours in 1..168 -> {
                 prefs.geoUpdateIntervalHours = hours
-                com.simplexray.re.service.GeoUpdateReceiver.schedule(application, hours)
+                com.simplexray.re.service.GeoUpdateWorker.schedule(application, hours, forceUpdate = true)
                 _settingsState.value = _settingsState.value.copy(
                     geoUpdateIntervalHours = InputFieldState(hours.toString())
                 )

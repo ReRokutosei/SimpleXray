@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -83,6 +84,12 @@ fun SettingsScreen(
     val customDatProgress by mainViewModel.customDatDownloadProgress.collectAsStateWithLifecycle()
     val isCheckingForUpdates by mainViewModel.isCheckingForUpdates.collectAsStateWithLifecycle()
     val newVersionTag by mainViewModel.newVersionAvailable.collectAsStateWithLifecycle()
+
+    DisposableEffect(Unit) {
+        mainViewModel.updateSettingsState()
+        mainViewModel.refreshCustomDatFiles()
+        onDispose { }
+    }
 
     val vpnDisabled = settingsState.switches.disableVpn
 
