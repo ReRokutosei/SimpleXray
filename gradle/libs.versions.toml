@@ -19,7 +19,7 @@ reorderable = "3.1.0"
 okhttp = "5.4.0"
 junit = "4.13.2"
 orgJson = "20231013"
-work = "2.10.0"
+work = "2.11.2"
 
 [libraries]
 # Plugins for buildscript
