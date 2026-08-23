@@ -50,6 +50,7 @@ fun LogScreen(
 ) {
     val context = LocalContext.current
     val filteredEntries by logViewModel.filteredEntries.collectAsStateWithLifecycle()
+    val searchQuery by logViewModel.searchQuery.collectAsStateWithLifecycle()
     val isInitialLoad = remember { mutableStateOf(true) }
     val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
 
@@ -62,9 +63,13 @@ fun LogScreen(
     }
 
     LaunchedEffect(filteredEntries) {
-        if (filteredEntries.isNotEmpty() && isInitialLoad.value) {
-            listState.animateScrollToItem(0)
-            isInitialLoad.value = false
+        if (filteredEntries.isNotEmpty()) {
+            if (isInitialLoad.value) {
+                listState.scrollToItem(0)
+                isInitialLoad.value = false
+            } else if (searchQuery.isNotBlank()) {
+                listState.animateScrollToItem(0)
+            }
         }
     }
 
@@ -117,7 +122,7 @@ fun LogScreen(
                         reverseLayout = true
                     ) {
                         items(filteredEntries) { logEntry ->
-                            LogEntryItem(logEntry = logEntry)
+                            LogEntryItem(logEntry = logEntry, searchQuery = searchQuery)
                         }
                     }
                     VerticalScrollBar(
@@ -131,11 +136,13 @@ fun LogScreen(
 }
 
 @Composable
-fun LogEntryItem(logEntry: String) {
+fun LogEntryItem(logEntry: String, searchQuery: String = "") {
     val colorOnSurface = MiuixTheme.colorScheme.onSurface
     val timestampColor = MiuixTheme.colorScheme.primary
+    val highlightColor = MiuixTheme.colorScheme.primary.copy(alpha = 0.35f)
+    val highlightTextColor = MiuixTheme.colorScheme.primary
 
-    val annotatedString = remember(logEntry) {
+    val annotatedString = remember(logEntry, searchQuery) {
         buildAnnotatedString {
             var endIndex = 0
             while (endIndex < logEntry.length) {
@@ -162,6 +169,28 @@ fun LogEntryItem(logEntry: String) {
                 }
             } else {
                 append(logEntry)
+            }
+
+            if (searchQuery.isNotBlank()) {
+                val query = searchQuery.trim()
+                if (query.isNotEmpty()) {
+                    val fullText = this.toAnnotatedString().text
+                    var startIdx = 0
+                    while (startIdx < fullText.length) {
+                        val idx = fullText.indexOf(query, startIdx, ignoreCase = true)
+                        if (idx < 0) break
+                        addStyle(
+                            SpanStyle(
+                                background = highlightColor,
+                                color = highlightTextColor,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                            ),
+                            idx,
+                            idx + query.length
+                        )
+                        startIdx = idx + query.length
+                    }
+                }
             }
         }
     }

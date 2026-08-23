@@ -258,7 +258,7 @@ class MainViewModel(application: Application) :
         }
     }
 
-    private fun updateSettingsState() {
+    fun updateSettingsState() {
         _settingsState.value = _settingsState.value.copy(
             socksAddress = InputFieldState(prefs.socksAddress),
             socksPort = InputFieldState(prefs.socksPort.toString()),
