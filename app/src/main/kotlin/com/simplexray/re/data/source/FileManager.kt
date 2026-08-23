@@ -298,7 +298,7 @@ class FileManager(private val application: Application, private val prefs: Prefe
 
     /**
      * Validate a pre-downloaded temp dat file with sandbox, then atomically rename to target.
-     * Used by [com.simplexray.re.service.GeoUpdateReceiver] for background auto-updates.
+     * Used by [com.simplexray.re.service.GeoUpdateWorker] for background auto-updates.
      */
     suspend fun saveRuleFileFromTemp(tempFile: java.io.File, filename: String): Boolean {
         return withContext(Dispatchers.IO) {

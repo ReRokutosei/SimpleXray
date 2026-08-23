@@ -31,9 +31,11 @@ import com.simplexray.re.data.source.LogFileManager
 import com.simplexray.re.prefs.Preferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.File
@@ -101,6 +103,19 @@ class TProxyService : VpnService() {
 
     @Volatile
     private var reloadingRequested = false
+
+    private var periodicGeoUpdateJob: Job? = null
+
+    private fun startPeriodicGeoUpdateCheck() {
+        periodicGeoUpdateJob?.cancel()
+        periodicGeoUpdateJob = serviceScope.launch {
+            while (isActive) {
+                GeoUpdateWorker.checkAndTriggerCatchUp(applicationContext)
+                // Check periodically every hour while VPN is running
+                delay(1 * 60 * 60 * 1000L)
+            }
+        }
+    }
 
     private val isStartingLock = java.util.concurrent.atomic.AtomicBoolean(false)
 
@@ -323,7 +338,7 @@ class TProxyService : VpnService() {
                             val successIntent = Intent(ACTION_START)
                             successIntent.setPackage(application.packageName)
                             sendBroadcast(successIntent)
-                            GeoUpdateReceiver.checkAndTriggerCatchUp(applicationContext)
+                            startPeriodicGeoUpdateCheck()
                             break
                         }
                         delay(STARTUP_PROBE_INTERVAL_MS)
@@ -440,6 +455,8 @@ class TProxyService : VpnService() {
     private fun stopXray() {
         isStopping = true
         Log.d(TAG, "stopXray called with keepExecutorAlive=" + false)
+        periodicGeoUpdateJob?.cancel()
+        periodicGeoUpdateJob = null
         serviceScope.cancel()
         Log.d(TAG, "CoroutineScope cancelled.")
 
