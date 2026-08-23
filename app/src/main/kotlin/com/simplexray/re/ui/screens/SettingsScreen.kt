@@ -680,7 +680,7 @@ fun SettingsScreen(
                     enabled = !vpnDisabled
                 )
 
-                val loglevelTitle = stringResource(R.string.loglevel_title)
+                val errorLogTitle = stringResource(R.string.error_log_title)
                 val loglevelSummary = stringResource(R.string.loglevel_summary)
                 var isLogLevelDropdownExpanded by remember { mutableStateOf(false) }
                 val currentLogLevelName = logLevelNames.getOrNull(currentLogLevelIndex) ?: ""
@@ -689,19 +689,19 @@ fun SettingsScreen(
                     startAction = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = loglevelTitle,
+                                text = errorLogTitle,
                                 fontSize = MiuixTheme.textStyles.headline1.fontSize,
                                 fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
                                 color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             IconButton(
-                                onClick = { activeHelpDialog = loglevelTitle to loglevelSummary },
+                                onClick = { activeHelpDialog = errorLogTitle to loglevelSummary },
                                 modifier = Modifier.size(28.dp)
                             ) {
                                 Icon(
                                     imageVector = MiuixIcons.Help,
-                                    contentDescription = loglevelTitle,
+                                    contentDescription = errorLogTitle,
                                     tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -748,6 +748,20 @@ fun SettingsScreen(
                             isLogLevelDropdownExpanded = !isLogLevelDropdownExpanded
                         }
                     },
+                    enabled = !vpnDisabled
+                )
+
+                SwitchPreference(
+                    title = stringResource(R.string.access_log_title),
+                    checked = settingsState.switches.accessLog,
+                    onCheckedChange = { mainViewModel.setAccessLog(it) },
+                    enabled = !vpnDisabled
+                )
+
+                SwitchPreference(
+                    title = stringResource(R.string.dns_log_title),
+                    checked = settingsState.switches.dnsLog,
+                    onCheckedChange = { mainViewModel.setDnsLog(it) },
                     enabled = !vpnDisabled
                 )
             }

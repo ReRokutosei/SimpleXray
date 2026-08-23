@@ -20,7 +20,9 @@ data class SwitchStates(
     val disableVpn: Boolean,
     val tunnelMode: TunnelMode,
     val themeMode: ThemeMode,
-    val logLevel: LogLevel = LogLevel.Auto
+    val logLevel: LogLevel = LogLevel.Auto,
+    val accessLog: Boolean = true,
+    val dnsLog: Boolean = false
 )
 
 data class InfoStates(

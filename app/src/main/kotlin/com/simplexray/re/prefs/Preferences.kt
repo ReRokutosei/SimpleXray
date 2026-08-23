@@ -26,6 +26,7 @@ enum class LogLevel(val value: String) {
     }
 }
 
+
 enum class TunnelMode(val value: String) {
     XrayTun("xray_tun"),
     HevSocks5Tunnel("hev_socks5_tunnel");
@@ -283,8 +284,22 @@ class Preferences(context: Context) {
             setValueInProvider(LOG_LEVEL, level.value)
         }
 
+    var accessLog: Boolean
+        get() = getPrefData(ACCESS_LOG).first?.toBooleanStrictOrNull() ?: true
+        set(value) {
+            setValueInProvider(ACCESS_LOG, value.toString())
+        }
+
+    var dnsLog: Boolean
+        get() = getPrefData(DNS_LOG).first?.toBooleanStrictOrNull() ?: false
+        set(value) {
+            setValueInProvider(DNS_LOG, value.toString())
+        }
+
     companion object {
         const val LOG_LEVEL: String = "LogLevel"
+        const val ACCESS_LOG: String = "AccessLog"
+        const val DNS_LOG: String = "DnsLog"
         const val SOCKS_ADDR: String = "SocksAddr"
         const val SOCKS_PORT: String = "SocksPort"
         const val HTTP_PORT: String = "HttpPort"
