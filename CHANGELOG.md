@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/ReRokutosei/SimpleXray/compare/v1.4.0...v1.5.0) (2026-08-26)
+
+
+### Features
+
+* **editor,log:** auto-scroll to match in config editor and highlight matches with scroll reset in logs ([32ee94b](https://github.com/ReRokutosei/SimpleXray/commit/32ee94b8268e8bd61bf9dc61534013d364d958e5))
+* **log:** decouple log control into Error Log, Access Log, and DNS Log, adjust log buffer limits and align help dialog text ([d22ac97](https://github.com/ReRokutosei/SimpleXray/commit/d22ac972ecedb4a9b35bdc025e41ac87f6afac5f))
+
+
+### Bug Fixes
+
+* **deps:** update dependency androidx.work:work-runtime-ktx to v2.11.2 ([#23](https://github.com/ReRokutosei/SimpleXray/issues/23)) ([b89bf03](https://github.com/ReRokutosei/SimpleXray/commit/b89bf03bc8966ba8bc7b03c949aae3ad9402c63f))
+* **deps:** update dependency com.squareup.okhttp3:okhttp to v5.5.0 ([#20](https://github.com/ReRokutosei/SimpleXray/issues/20)) ([e3fb3c9](https://github.com/ReRokutosei/SimpleXray/commit/e3fb3c9d5154ff98745356608fe983435ca2128e))
+* **deps:** update protobuf monorepo to v4.36.0 ([#22](https://github.com/ReRokutosei/SimpleXray/issues/22)) ([dc10c2a](https://github.com/ReRokutosei/SimpleXray/commit/dc10c2a6c6f58410f7ad394f49f5ffc678505118))
+
 ## [1.4.0](https://github.com/ReRokutosei/SimpleXray/compare/v1.3.0...v1.4.0) (2026-08-18)
 
 
