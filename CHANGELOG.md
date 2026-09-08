@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.5.1](https://github.com/ReRokutosei/SimpleXray/compare/v1.5.0...v1.5.1) (2026-09-08)
+
+
+### Bug Fixes
+
+* **deps:** update dependency androidx.navigation:navigation-compose-android to v2.10.0 ([#26](https://github.com/ReRokutosei/SimpleXray/issues/26)) ([9eb376f](https://github.com/ReRokutosei/SimpleXray/commit/9eb376f0005e5c3e1927697149fc1d5811dcdd8c))
+* **deps:** update dependency org.yaml:snakeyaml to v2.7 ([#28](https://github.com/ReRokutosei/SimpleXray/issues/28)) ([d7bf251](https://github.com/ReRokutosei/SimpleXray/commit/d7bf251c6c612f824bea0d90733493cd7d368db3))
+* **deps:** update grpc-java monorepo to v1.84.0 ([#31](https://github.com/ReRokutosei/SimpleXray/issues/31)) ([edf5dae](https://github.com/ReRokutosei/SimpleXray/commit/edf5dae515065d857eb38a849e72273065a03dfd))
+* **deps:** update kotlin monorepo to v2.4.20 ([#33](https://github.com/ReRokutosei/SimpleXray/issues/33)) ([de7b977](https://github.com/ReRokutosei/SimpleXray/commit/de7b97780927e8ffad6e6691d517c16b0e4a16cf))
+* **deps:** update protobuf monorepo to v4.36.1 ([#29](https://github.com/ReRokutosei/SimpleXray/issues/29)) ([3163f9c](https://github.com/ReRokutosei/SimpleXray/commit/3163f9c20c902cd6f0b09a0ef5aa38528a779a38))
+
 ## [1.5.0](https://github.com/ReRokutosei/SimpleXray/compare/v1.4.0...v1.5.0) (2026-08-26)
 
 
