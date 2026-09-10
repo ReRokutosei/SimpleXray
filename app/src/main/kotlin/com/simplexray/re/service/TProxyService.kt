@@ -515,22 +515,18 @@ class TProxyService : VpnService() {
 
         setMetered(false)
 
-        if (prefs.bypassLan) {
-            addRoute("10.0.0.0", 8)
-            addRoute("100.64.0.0", 10)
-            addRoute("169.254.0.0", 16)
-            addRoute("172.16.0.0", 12)
-            addRoute("192.0.0.0", 24)
-            addRoute("192.0.2.0", 24)
-            addRoute("192.88.99.0", 24)
-            addRoute("192.168.0.0", 16)
-            addRoute("198.18.0.0", 15)
-            addRoute("198.51.100.0", 24)
-            addRoute("203.0.113.0", 24)
-            if (prefs.ipv6) {
-                addRoute("fc00::", 7)
-                addRoute("fe80::", 10)
-            }
+        if (prefs.bypassLan && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            runCatching {
+                excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("10.0.0.0"), 8))
+                excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("100.64.0.0"), 10))
+                excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("169.254.0.0"), 16))
+                excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("172.16.0.0"), 12))
+                excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("192.168.0.0"), 16))
+                if (prefs.ipv6) {
+                    excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("fc00::"), 7))
+                    excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("fe80::"), 10))
+                }
+            }.onFailure { Log.w(TAG, "Failed to exclude LAN routes on API 33+", it) }
         }
         if (prefs.httpProxyEnabled) {
             setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", prefs.httpPort))
