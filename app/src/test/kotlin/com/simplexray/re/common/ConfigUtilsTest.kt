@@ -171,4 +171,101 @@ class ConfigUtilsTest {
             }
         }
     }
+
+    @Test
+    fun testRulePruningRetainsValidFields() {
+        val rawConfig = """
+        {
+          "routing": {
+            "rules": [
+              {
+                "sourceIP": ["192.168.1.100"],
+                "outboundTag": "direct"
+              },
+              {
+                "sourcePort": "1000-2000",
+                "outboundTag": "direct"
+              },
+              {
+                "localIP": ["10.0.0.1"],
+                "outboundTag": "direct"
+              }
+            ]
+          }
+        }
+        """.trimIndent()
+
+        val sanitized = ConfigUtils.sanitizeConfig(rawConfig, null)
+        val json = JSONObject(sanitized)
+        val rules = json.getJSONObject("routing").getJSONArray("rules")
+        assertEquals(3, rules.length())
+    }
+
+    @Test
+    fun testRuleMigrationOfLegacyGeositeAndGeoip() {
+        val rawConfig = """
+        {
+          "routing": {
+            "rules": [
+              {
+                "geosite": ["google", "geosite:cn"],
+                "outboundTag": "proxy"
+              },
+              {
+                "geoip": ["cn"],
+                "outboundTag": "direct"
+              }
+            ]
+          }
+        }
+        """.trimIndent()
+
+        val sanitized = ConfigUtils.sanitizeConfig(rawConfig, null)
+        val json = JSONObject(sanitized)
+        val rules = json.getJSONObject("routing").getJSONArray("rules")
+        assertEquals(2, rules.length())
+
+        val rule0 = rules.getJSONObject(0)
+        assertFalse(rule0.has("geosite"))
+        assertTrue(rule0.has("domain"))
+        val domainArr = rule0.getJSONArray("domain")
+        assertEquals(2, domainArr.length())
+        assertEquals("geosite:google", domainArr.getString(0))
+        assertEquals("geosite:cn", domainArr.getString(1))
+
+        val rule1 = rules.getJSONObject(1)
+        assertFalse(rule1.has("geoip"))
+        assertTrue(rule1.has("ip"))
+        val ipArr = rule1.getJSONArray("ip")
+        assertEquals(1, ipArr.length())
+        assertEquals("geoip:cn", ipArr.getString(0))
+    }
+
+    @Test
+    fun testRulePruningRemovesEmptyOrInvalidRules() {
+        val rawConfig = """
+        {
+          "routing": {
+            "rules": [
+              {
+                "outboundTag": "direct"
+              },
+              {
+                "unknownField": ["something"],
+                "outboundTag": "direct"
+              },
+              {
+                "geosite": [],
+                "outboundTag": "direct"
+              }
+            ]
+          }
+        }
+        """.trimIndent()
+
+        val sanitized = ConfigUtils.sanitizeConfig(rawConfig, null)
+        val json = JSONObject(sanitized)
+        val rules = json.getJSONObject("routing").getJSONArray("rules")
+        assertEquals(0, rules.length())
+    }
 }

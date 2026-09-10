@@ -26,7 +26,9 @@ object ConfigUtils {
     private const val TAG = "ConfigUtils"
 
     private val EFFECTIVE_MATCH_KEYS = setOf(
-        "domain", "ip", "port", "network", "process", "geosite", "geoip", "inboundtag", "protocol", "user", "attrs"
+        "domain", "domains", "ip", "port", "network", "sourceip", "source", "sourceport",
+        "user", "vlessroute", "inboundtag", "protocol", "attrs", "localip", "localport",
+        "process", "localos", "webhook"
     )
 
     private val EXCLUDED_OUTBOUND_PROTOCOLS = setOf("freedom", "blackhole", "dns")
@@ -221,6 +223,34 @@ object ConfigUtils {
                 for (i in rules.length() - 1 downTo 0) {
                     val rule = rules.optJSONObject(i) ?: continue
 
+                    // Auto-migrate legacy top-level "geosite" into "domain"
+                    val geositeArr = rule.optJSONArray("geosite")
+                    if (geositeArr != null && geositeArr.length() > 0) {
+                        val domainArr = rule.optJSONArray("domain") ?: JSONArray().also { rule.put("domain", it) }
+                        for (idx in 0 until geositeArr.length()) {
+                            val entry = geositeArr.optString(idx)
+                            if (entry.isNotEmpty()) {
+                                val formatted = if (entry.startsWith("geosite:", ignoreCase = true)) entry else "geosite:$entry"
+                                domainArr.put(formatted)
+                            }
+                        }
+                    }
+                    rule.remove("geosite")
+
+                    // Auto-migrate legacy top-level "geoip" into "ip"
+                    val geoipArr = rule.optJSONArray("geoip")
+                    if (geoipArr != null && geoipArr.length() > 0) {
+                        val ipArr = rule.optJSONArray("ip") ?: JSONArray().also { rule.put("ip", it) }
+                        for (idx in 0 until geoipArr.length()) {
+                            val entry = geoipArr.optString(idx)
+                            if (entry.isNotEmpty()) {
+                                val formatted = if (entry.startsWith("geoip:", ignoreCase = true)) entry else "geoip:$entry"
+                                ipArr.put(formatted)
+                            }
+                        }
+                    }
+                    rule.remove("geoip")
+
                     // Process process array
                     val processArr = rule.optJSONArray("process")
                     if (processArr != null) {
@@ -242,16 +272,17 @@ object ConfigUtils {
                     var hasEffectiveField = false
                     val keys = rule.keys()
                     while (keys.hasNext()) {
-                        val k = keys.next().lowercase()
+                        val rawKey = keys.next()
+                        val k = rawKey.lowercase()
                         if (EFFECTIVE_MATCH_KEYS.contains(k)) {
-                            val v = rule.opt(k)
+                            val v = rule.opt(rawKey)
                             if (v is JSONArray && v.length() > 0) {
                                 hasEffectiveField = true
                                 break
                             } else if (v is String && v.isNotEmpty()) {
                                 hasEffectiveField = true
                                 break
-                            } else if (v !is JSONArray && v !is String) {
+                            } else if (v != null && v !is JSONArray && v !is String && v != JSONObject.NULL) {
                                 hasEffectiveField = true
                                 break
                             }
