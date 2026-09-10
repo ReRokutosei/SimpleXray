@@ -131,4 +131,19 @@ class ConfigUtilsTest {
         assertEquals("ok", outbounds[0].tag)
         assertEquals("trojan", outbounds[0].protocol)
     }
+
+    @Test
+    fun testCreateDefaultSniffingObject() {
+        val sniffing = ConfigUtils.createDefaultSniffingObject()
+        assertTrue(sniffing.getBoolean("enabled"))
+        assertFalse(sniffing.getBoolean("metadataOnly"))
+        assertFalse(sniffing.getBoolean("routeOnly"))
+
+        val destOverride = sniffing.getJSONArray("destOverride")
+        val overrides = (0 until destOverride.length()).map { destOverride.getString(it) }.toSet()
+        assertTrue(overrides.contains("http"))
+        assertTrue(overrides.contains("tls"))
+        assertTrue(overrides.contains("quic"))
+        assertTrue(overrides.contains("fakedns"))
+    }
 }
