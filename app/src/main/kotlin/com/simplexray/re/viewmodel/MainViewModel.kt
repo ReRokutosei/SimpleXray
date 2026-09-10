@@ -93,8 +93,6 @@ class MainViewModel(application: Application) :
 
     private val fileManager: FileManager = FileManager(application, prefs)
 
-    var reloadView: (() -> Unit)? = null
-
     var configEditViewModel: ConfigEditViewModel? = null
 
     private val _settingsState = MutableStateFlow(
@@ -828,7 +826,6 @@ class MainViewModel(application: Application) :
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(themeMode = mode)
         )
-        reloadView?.invoke()
     }
 
     fun importRuleFile(uri: Uri, fileName: String) {
