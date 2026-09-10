@@ -177,10 +177,12 @@ android {
     sourceSets {
         getByName("main") {
             java {
-                srcDirs("src/main/java", "build/generated/source/proto/main/java")
+                directories.add("src/main/java")
+                directories.add("build/generated/source/proto/main/java")
             }
             kotlin {
-                srcDirs("src/main/kotlin", "build/generated/source/proto/main/grpckt")
+                directories.add("src/main/kotlin")
+                directories.add("build/generated/source/proto/main/grpckt")
             }
         }
     }
