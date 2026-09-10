@@ -174,9 +174,10 @@ The following environment is required to build the project:
 
 * Android 10 (API level 29) or later.
 * Android SDK with Build Tools and Platform SDK for the configured target SDK (`36`).
-* Android NDK.
-* CMake.
+* Android NDK (see `version.properties` for the recommended `NDK_VERSION`).
+* CMake 3.22.1 or higher.
 * JDK 21.
+* Go (for cross-compiling Xray-core, see `version.properties` for the recommended `GO_VERSION`).
 * Git with submodule support.
 
 The project uses Gradle Wrapper, so the required Gradle version is obtained automatically from the repository's Gradle Wrapper configuration.
@@ -185,6 +186,8 @@ The project uses Gradle Wrapper, so the required Gradle version is obtained auto
 
 ## Building from Source
 
+### 1. Clone Repository and Submodules
+
 Clone the repository and its submodules:
 
 ```bash
@@ -192,23 +195,94 @@ git clone --recursive https://github.com/ReRokutosei/SimpleXray.git
 cd SimpleXray
 ```
 
-Build the release APK:
+If the repository has already been cloned without its submodules, initialize them with:
+
+```bash
+git submodule update --init --recursive
+```
+
+### 2. Prepare Required Resource Files
+
+To keep the repository lightweight, binary rule files and the Xray-core dynamic library are not tracked by Git and must be prepared before local compilation.
+
+#### Obtain Geo Rule Files
+
+Place the latest `geoip.dat` and `geosite.dat` into the `app/src/main/assets/` directory:
+
+```bash
+mkdir -p ./app/src/main/assets/
+wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat -O ./app/src/main/assets/geoip.dat
+wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O ./app/src/main/assets/geosite.dat
+```
+
+#### Cross-Compile Xray-core
+
+Use Go and the Android NDK to compile the `arm64-v8a` core executable, placing it into the JNI libraries directory (ensure the tag matches `XRAY_CORE_VERSION` in `version.properties`):
+
+```bash
+git clone --depth=1 --branch v26.9.9 https://github.com/XTLS/Xray-core.git
+cd Xray-core
+COMMID=$(git rev-parse HEAD | cut -c 1-7)
+
+export GOOS=android
+export CGO_ENABLED=1
+export GOARCH=arm64
+export CC=$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
+
+go build -o xray -trimpath -buildvcs=false -ldflags="-X github.com/xtls/xray-core/core.build=${COMMID} -s -w -buildid= -checklinkname=0" -v ./main
+mkdir -p ../app/src/main/jniLibs/arm64-v8a
+mv xray ../app/src/main/jniLibs/arm64-v8a/libxray.so
+```
+
+### 3. Local Build and Signing Configuration
+
+#### Debug Build
+
+Run the Gradle task directly to produce a debug APK:
+
+```bash
+./gradlew assembleDebug
+```
+
+The output APK is located at:
+```text
+app/build/outputs/apk/debug/simplexray-arm64-v8a.apk
+```
+
+#### Release Build and Keystore Setup
+
+The release variant enables resource shrinking and minification, requiring valid V3/V4 APK signing. Create a `store.properties` file in the project root directory (Alternatively, set the environment variables `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD`):
+
+```properties
+storeFile=/path/to/your/release.jks
+storePassword=your_keystore_password
+keyAlias=your_key_alias
+keyPassword=your_key_password
+```
+
+Then build the release APK:
 
 ```bash
 ./gradlew assembleRelease
 ```
 
 The generated APK is located at:
-
 ```text
 app/build/outputs/apk/release/simplexray-arm64-v8a.apk
 ```
 
-If the repository has already been cloned without its submodules, initialize them with:
+---
 
-```bash
-git submodule update --init --recursive
-```
+### 4. GitHub Actions CI Considerations
+
+If forking this repository and using GitHub Actions CI for automated builds and releases, note the following requirements:
+
+1. **Tag Naming Convention**: The release workflow (`.github/workflows/release.yml`) only triggers on pushing semver tags matching `v*` (e.g. `v1.5.2`). Pushing branches or tags not matching `^v[0-9]+\.[0-9]+\.[0-9]+` will either not trigger the workflow or fail during tag validation.
+2. **Repository Secrets Configuration**: You must configure the following Repository Secrets (**Settings -> Secrets and variables -> Actions**); missing signing credentials will cause the release build step to fail:
+   * `SIGNING_KEY`: Base64-encoded string of the JKS keystore file (generate via `base64 -w 0 release.jks`).
+   * `KEY_STORE_PASSWORD`: Keystore password.
+   * `KEY_ALIAS`: Key alias.
+   * `KEY_PASSWORD`: Private key password.
 
 ---
 

@@ -202,9 +202,10 @@ SimpleXray 可以直接导入完整的 Xray-core 配置文件。配置启动前�
 * Android 10 或更高版本，对应 API Level 29。
 * Android SDK，包括项目所需的 Build Tools 和 Android Platform SDK。
 * Target SDK 36。
-* Android NDK。
-* CMake。
+* Android NDK（推荐版本请参考 `version.properties` 中的 `NDK_VERSION`）。
+* CMake 3.22.1 或更高版本。
 * JDK 21。
+* Go（用于交叉编译 Xray-core 内核，推荐版本请参考 `version.properties` 中的 `GO_VERSION`）。
 * 支持子模块操作的 Git。
 
 项目使用 Gradle Wrapper，因此构建时会根据仓库中的 Wrapper 配置使用指定的 Gradle 版本。
@@ -213,6 +214,8 @@ SimpleXray 可以直接导入完整的 Xray-core 配置文件。配置启动前�
 
 ## 从源码构建
 
+### 1. 准备源码与子模块
+
 首先克隆仓库及其子模块。
 
 ```bash
@@ -220,23 +223,94 @@ git clone --recursive https://github.com/ReRokutosei/SimpleXray.git
 cd SimpleXray
 ```
 
-执行以下命令构建 Release APK。
-
-```bash
-./gradlew assembleRelease
-```
-
-构建完成后，APK 位于以下路径。
-
-```text
-app/build/outputs/apk/release/simplexray-arm64-v8a.apk
-```
-
 如果仓库在克隆时没有初始化子模块，可以执行以下命令。
 
 ```bash
 git submodule update --init --recursive
 ```
+
+### 2. 准备依赖资源文件
+
+为避免 Git 仓库臃肿，二进制规则文件及 Xray 核心动态库未纳入版本控制，本地编译前需手动准备。
+
+#### 获取 Geo 规则文件
+
+将最新的 `geoip.dat` 与 `geosite.dat` 放置于 `app/src/main/assets/` 目录：
+
+```bash
+mkdir -p ./app/src/main/assets/
+wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat -O ./app/src/main/assets/geoip.dat
+wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O ./app/src/main/assets/geosite.dat
+```
+
+#### 交叉编译 Xray-core 内核
+
+使用 Go 配合 Android NDK 编译目标架构（`arm64-v8a`）的内核可执行文件，并作为动态库放置于 JNI 目录（内核版本请参考 `version.properties` 中的 `XRAY_CORE_VERSION`）：
+
+```bash
+git clone --depth=1 --branch v26.9.9 https://github.com/XTLS/Xray-core.git
+cd Xray-core
+COMMID=$(git rev-parse HEAD | cut -c 1-7)
+
+export GOOS=android
+export CGO_ENABLED=1
+export GOARCH=arm64
+export CC=$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
+
+go build -o xray -trimpath -buildvcs=false -ldflags="-X github.com/xtls/xray-core/core.build=${COMMID} -s -w -buildid= -checklinkname=0" -v ./main
+mkdir -p ../app/src/main/jniLibs/arm64-v8a
+mv xray ../app/src/main/jniLibs/arm64-v8a/libxray.so
+```
+
+### 3. 本地构建与签名配置
+
+#### Debug 构建
+
+直接执行 Gradle 任务生成调试包：
+
+```bash
+./gradlew assembleDebug
+```
+
+构建完成后，APK 位于以下路径：
+```text
+app/build/outputs/apk/debug/simplexray-arm64-v8a.apk
+```
+
+#### Release 构建与密钥准备
+
+Release 变体默认启用了资源混淆与压缩，并要求完整的 V3/V4 签名。需在项目根目录下创建 `store.properties` 文件（或通过设置环境变量 `KEYSTORE_PATH`、`KEYSTORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD` 传递密钥信息）：
+
+```properties
+storeFile=/path/to/your/release.jks
+storePassword=your_keystore_password
+keyAlias=your_key_alias
+keyPassword=your_key_password
+```
+
+配置完成后执行：
+
+```bash
+./gradlew assembleRelease
+```
+
+构建完成后，APK 位于以下路径：
+```text
+app/build/outputs/apk/release/simplexray-arm64-v8a.apk
+```
+
+---
+
+### 4. GitHub Actions CI 构建注意事项
+
+若 Fork 本仓库后使用 GitHub Actions CI 构建与自动发版，需注意以下配置约束：
+
+1. **Tag 命名要求**：CI 发布工作流（`.github/workflows/release.yml`）仅在推送符合语义化版本规范的 Tag（匹配 `v*`，如 `v1.5.2`）时触发；直接推送分支或 Tag 命名不符合 `^v[0-9]+\.[0-9]+\.[0-9]+` 将导致工作流无法触发或在版本校验步骤报错中断。
+2. **Repository Secrets 密钥配置**：CI 构建必须在仓库的 **Settings -> Secrets and variables -> Actions** 中配置以下 Secrets，否则 Release 签名步骤将直接报错退出：
+   * `SIGNING_KEY`：JKS 密钥库文件的 Base64 编码字符串（可通过 `base64 -w 0 release.jks` 生成）。
+   * `KEY_STORE_PASSWORD`：密钥库密码。
+   * `KEY_ALIAS`：密钥别名。
+   * `KEY_PASSWORD`：私钥密码。
 
 ---
 
