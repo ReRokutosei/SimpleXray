@@ -11,8 +11,8 @@ This file provides the necessary context and constraints for AI agents interacti
 - **Language**: Kotlin (for Android app) and C/C++ (for JNI / native tunnels).
 - **UI Framework**: Jetpack Compose using the `miuix` component library.
 - **Architecture**: MVVM with Android ViewModels.
-- **Data Persistence**: ContentProvider-backed Android `SharedPreferences`.
-- **Communication/RPC**: gRPC with Protocol Buffers (protobuf) to query Xray core status and traffic statistics through a dynamically allocated `127.0.0.1` TCP port. The current branch does not use UDS for this channel.
+- **Data Persistence**: Direct Android `SharedPreferences`.
+- **Communication/RPC**: gRPC with Protocol Buffers (protobuf) to query Xray core status and traffic statistics through a dynamically allocated `127.0.0.1` TCP port. Service status and process logs are communicated reactively via in-memory `VpnStateHub` (`StateFlow` and `SharedFlow`).
 - **Native Components**: Uses CMake to build `hev-socks5-tunnel` and dependencies (`yaml`, `lwip`, `hev-task-system`) as native JNI libraries. In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. Hev mode passes the VPN file descriptor to `hev-socks5-tunnel`.
 
 ## Project Structure
@@ -43,6 +43,7 @@ This file provides the necessary context and constraints for AI agents interacti
 ## Key Constraints
 - NEVER break the `VpnService` transparent proxy behavior. Testing native traffic routing is critical.
 - Keep the UI responsive and aesthetic, prioritizing the `miuix` design system.
+- **Rule File Background Updates**: Rule files (geoip/geosite) default to GitHub URLs. In mainland network environments, downloading from GitHub requires an active proxy; additionally, Chinese OEM ROMs (e.g. HyperOS/MIUI) restrict background WorkManager execution. Retain the in-service periodic check coroutine (`startPeriodicGeoUpdateCheck`) in `TProxyService`—it executes while the VPN is active as a foreground service with guaranteed local proxy availability.
 
 ## Device Testing and Commits
 - For Android/VPN/TUN or other device-dependent changes, do not create a commit until the user confirms that the change has passed real-device testing.
