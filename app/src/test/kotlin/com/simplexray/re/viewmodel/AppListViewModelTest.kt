@@ -69,4 +69,13 @@ class AppListViewModelTest {
         )
         assertEquals(listOf("B", "A", "C"), result.map { it.label })
     }
+
+    @Test
+    fun `package immutability and copy produces new instance`() {
+        val original = pkg("TestApp")
+        val selected = original.copy(selected = true)
+        assertEquals(false, original.selected)
+        assertEquals(true, selected.selected)
+        assertEquals(original.packageName, selected.packageName)
+    }
 }

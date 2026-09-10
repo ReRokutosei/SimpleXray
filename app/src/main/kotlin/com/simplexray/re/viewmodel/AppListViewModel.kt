@@ -33,7 +33,7 @@ sealed class AppListViewUiEvent {
 }
 
 data class Package(
-    var selected: Boolean,
+    val selected: Boolean,
     val label: String,
     val packageName: String,
     val isSystemApp: Boolean,
