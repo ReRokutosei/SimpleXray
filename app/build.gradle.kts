@@ -62,7 +62,7 @@ android {
         versionCode = appVersionCode
         versionName = appVersionName
         targetSdk = 36
-        minSdk = 29
+        minSdk = 34
 
         externalNativeBuild {
             cmake {

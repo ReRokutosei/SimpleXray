@@ -2,7 +2,6 @@ package com.simplexray.re.ui.screens
 
 import android.Manifest
 import android.content.pm.PackageManager
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -88,14 +87,12 @@ fun MainScreen(
     ) {}
 
     LaunchedEffect(Unit) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val hasPermission = ContextCompat.checkSelfPermission(
-                context,
-                Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
-            if (!hasPermission && !mainViewModel.prefs.notificationPrompted) {
-                showNotificationRationale = true
-            }
+        val hasPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!hasPermission && !mainViewModel.prefs.notificationPrompted) {
+            showNotificationRationale = true
         }
     }
 
@@ -157,9 +154,7 @@ fun MainScreen(
                 onConfirm = {
                     showNotificationRationale = false
                     mainViewModel.prefs.notificationPrompted = true
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        launchers.notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    }
+                    launchers.notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 },
                 onDismiss = {
                     showNotificationRationale = false

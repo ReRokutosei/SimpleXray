@@ -4,16 +4,12 @@ import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -29,7 +25,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.core.graphics.createBitmap
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
@@ -51,7 +46,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val context = LocalContext.current
-            val dynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+            val dynamicColor = true
             val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
             val themeMode = settingsState.switches.themeMode
             val systemInDarkTheme = isSystemInDarkTheme()
@@ -130,31 +125,15 @@ class MainActivity : ComponentActivity() {
      * Updates the recents-card icon and label. The launcher icon itself is
      * switched through activity-alias; recents/notifications read the app icon
      * statically, so this keeps them in sync at runtime.
-     *
-     * On API 33+, TaskDescription.Builder with resource ID is used directly.
-     * On API 29-32, falls back to the two-arg constructor with a rendered Bitmap.
      */
     private fun updateTaskDescription() {
         val iconRes = appIconRes(mainViewModel.prefs.appIcon)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            setTaskDescription(
-                ActivityManager.TaskDescription.Builder()
-                    .setLabel(getString(R.string.app_name))
-                    .setIcon(iconRes)
-                    .build()
-            )
-        } else {
-            val drawable = AppCompatResources.getDrawable(this, iconRes) ?: return
-            val sizePx = (108 * resources.displayMetrics.density).toInt()
-            val bitmap = createBitmap(sizePx, sizePx)
-            val canvas = Canvas(bitmap)
-            drawable.setBounds(0, 0, sizePx, sizePx)
-            drawable.draw(canvas)
-            @Suppress("DEPRECATION")
-            setTaskDescription(
-                ActivityManager.TaskDescription(getString(R.string.app_name), bitmap)
-            )
-        }
+        setTaskDescription(
+            ActivityManager.TaskDescription.Builder()
+                .setLabel(getString(R.string.app_name))
+                .setIcon(iconRes)
+                .build()
+        )
     }
 
     private fun appIconRes(key: String?): Int = when (key) {

@@ -178,7 +178,7 @@ The native build system has been migrated from the legacy Android NDK build syst
 
 The following environment is required to build the project:
 
-* Android 10 (API level 29) or later.
+* Android 14 (API level 34) or later.
 * Android SDK with Build Tools and Platform SDK for the configured target SDK (`36`).
 * Android NDK (see `version.properties` for the recommended `NDK_VERSION`).
 * CMake 3.22.1 or higher.
