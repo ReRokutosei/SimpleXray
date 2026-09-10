@@ -39,7 +39,7 @@ fun bracketMatcherTransformation(textFieldValue: TextFieldValue): VisualTransfor
     }
 }
 
-private fun findMatchingBrackets(text: String, cursor: Int): Pair<Int, Int>? {
+internal fun findMatchingBrackets(text: String, cursor: Int): Pair<Int, Int>? {
     val charIndex = (cursor - 1).takeIf { it >= 0 && text[it] in ALL_BRACKETS }
         ?: cursor.takeIf { it < text.length && text[it] in ALL_BRACKETS }
         ?: return null
@@ -51,25 +51,30 @@ private fun findMatchingBrackets(text: String, cursor: Int): Pair<Int, Int>? {
     }
 }
 
-private fun findClosingBracket(text: String, startIndex: Int, openChar: Char): Int? {
+internal fun findClosingBracket(text: String, startIndex: Int, openChar: Char): Int? {
+    val targetCloseChar = BRACKET_PAIRS[openChar] ?: return null
     if (isInsideString(text, startIndex)) return null
 
-    val closeChar = BRACKET_PAIRS[openChar] ?: return null
-    var balance = 1
+    val stack = ArrayDeque<Char>()
+    stack.addLast(openChar)
     var inString = false
     var i = startIndex + 1
 
     while (i < text.length) {
         when {
-            text[i] == '\\' -> {
-                i++
-            }
-
+            text[i] == '\\' -> i++
             text[i] == '"' -> inString = !inString
-            !inString && text[i] == openChar -> balance++
-            !inString && text[i] == closeChar -> {
-                balance--
-                if (balance == 0) return i
+            !inString && text[i] in OPEN_BRACKETS -> stack.addLast(text[i])
+            !inString && text[i] in CLOSE_BRACKETS -> {
+                if (stack.isNotEmpty()) {
+                    val expectedOpen = BRACKET_PAIRS.entries.find { it.value == text[i] }?.key
+                    if (stack.last() == expectedOpen) {
+                        stack.removeLast()
+                        if (stack.isEmpty() && text[i] == targetCloseChar) {
+                            return i
+                        }
+                    }
+                }
             }
         }
         i++
@@ -77,30 +82,33 @@ private fun findClosingBracket(text: String, startIndex: Int, openChar: Char): I
     return null
 }
 
-private fun findOpeningBracket(text: String, startIndex: Int, closeChar: Char): Int? {
-    if (isInsideString(text, startIndex)) return null
+internal fun findOpeningBracket(text: String, closeIndex: Int, closeChar: Char): Int? {
+    val targetOpenChar = BRACKET_PAIRS.entries.find { it.value == closeChar }?.key ?: return null
 
-    val openChar = BRACKET_PAIRS.entries.find { it.value == closeChar }?.key ?: return null
-    var balance = 1
-    var i = startIndex - 1
+    val stack = ArrayDeque<Pair<Char, Int>>()
+    var inString = false
+    var i = 0
 
-    while (i >= 0) {
-        if (!isInsideString(text, i)) {
-            when (text[i]) {
-                openChar -> {
-                    balance--
-                    if (balance == 0) return i
+    while (i < closeIndex) {
+        when {
+            text[i] == '\\' -> i++
+            text[i] == '"' -> inString = !inString
+            !inString && text[i] in OPEN_BRACKETS -> stack.addLast(text[i] to i)
+            !inString && text[i] in CLOSE_BRACKETS -> {
+                val matchingOpen = BRACKET_PAIRS.entries.find { it.value == text[i] }?.key
+                if (stack.isNotEmpty() && stack.last().first == matchingOpen) {
+                    stack.removeLast()
                 }
-
-                closeChar -> balance++
             }
         }
-        i--
+        i++
     }
-    return null
+
+    if (inString) return null
+    return if (stack.isNotEmpty() && stack.last().first == targetOpenChar) stack.last().second else null
 }
 
-private fun isInsideString(text: String, index: Int): Boolean {
+internal fun isInsideString(text: String, index: Int): Boolean {
     var inString = false
     var i = 0
     while (i < index) {
