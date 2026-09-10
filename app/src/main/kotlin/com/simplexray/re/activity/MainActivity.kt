@@ -127,28 +127,34 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Renders the currently selected adaptive icon into a Bitmap and applies it
-     * to the recents card via TaskDescription. The launcher icon itself is
+     * Updates the recents-card icon and label. The launcher icon itself is
      * switched through activity-alias; recents/notifications read the app icon
      * statically, so this keeps them in sync at runtime.
      *
-     * Uses the two-arg ctor on purpose: colorPrimary stays 0 (unset), which
-     * skips TaskDescription's "primary color should be opaque" check (a theme-
-     * resolved color crashes on dynamic-color devices). TaskDescription.Builder
-     * is not portable either — its setIcon() only exists from API 37.
+     * On API 33+, TaskDescription.Builder with resource ID is used directly.
+     * On API 29-32, falls back to the two-arg constructor with a rendered Bitmap.
      */
-    @Suppress("DEPRECATION")
     private fun updateTaskDescription() {
         val iconRes = appIconRes(mainViewModel.prefs.appIcon)
-        val drawable = AppCompatResources.getDrawable(this, iconRes) ?: return
-        val sizePx = (108 * resources.displayMetrics.density).toInt()
-        val bitmap = createBitmap(sizePx, sizePx)
-        val canvas = Canvas(bitmap)
-        drawable.setBounds(0, 0, sizePx, sizePx)
-        drawable.draw(canvas)
-        setTaskDescription(
-            ActivityManager.TaskDescription(getString(R.string.app_name), bitmap)
-        )
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            setTaskDescription(
+                ActivityManager.TaskDescription.Builder()
+                    .setLabel(getString(R.string.app_name))
+                    .setIcon(iconRes)
+                    .build()
+            )
+        } else {
+            val drawable = AppCompatResources.getDrawable(this, iconRes) ?: return
+            val sizePx = (108 * resources.displayMetrics.density).toInt()
+            val bitmap = createBitmap(sizePx, sizePx)
+            val canvas = Canvas(bitmap)
+            drawable.setBounds(0, 0, sizePx, sizePx)
+            drawable.draw(canvas)
+            @Suppress("DEPRECATION")
+            setTaskDescription(
+                ActivityManager.TaskDescription(getString(R.string.app_name), bitmap)
+            )
+        }
     }
 
     private fun appIconRes(key: String?): Int = when (key) {
