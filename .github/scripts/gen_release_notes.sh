@@ -146,15 +146,20 @@ count_lines() {
   printf "%s" "$content" | awk 'END { print NR }'
 }
 
+breaking_changes=""
 features=""
 performance=""
 bug_fixes=""
 dependencies=""
 maintenance=""
 
+breaking_title_regex="^[a-zA-Z]+(\([^)]+\))?![[:space:]]*:"
+breaking_body_regex="BREAKING[- ]CHANGE:"
+
 shopt -s nocasematch
 for sha in $(git rev-list --reverse "$range"); do
   subject="$(git show -s --format='%s' "$sha")"
+  body="$(git show -s --format='%b' "$sha")"
   short_sha="$(git show -s --format='%h' "$sha")"
   author_email="$(git show -s --format='%ae' "$sha")"
   contributors="$(contributors_for_commit "$sha")"
@@ -165,7 +170,11 @@ for sha in $(git rev-list --reverse "$range"); do
     is_renovate=true
   fi
 
-  if $is_renovate || [[ "$subject" =~ ^(fix|chore)\(deps\): ]]; then
+  if [[ "$subject" =~ ^chore\(release\): ]] || [[ "$subject" =~ ^Revert[[:space:]]+\"chore\(release\): ]]; then
+    continue
+  elif [[ "$subject" =~ $breaking_title_regex ]] || [[ "$body" =~ $breaking_body_regex ]]; then
+    append_line breaking_changes "$line"
+  elif $is_renovate || [[ "$subject" =~ ^(fix|chore)\(deps\): ]]; then
     append_line dependencies "$line"
   elif [[ "$subject" =~ ^(feat|ui)(\(.+\))?: ]]; then
     append_line features "$line"
@@ -178,8 +187,6 @@ for sha in $(git rev-list --reverse "$range"); do
     else
       append_line bug_fixes "$line"
     fi
-  elif [[ "$subject" =~ ^chore\(release\): ]]; then
-    continue
   elif [[ "$subject" =~ ^(refactor|docs|test|ci|build|chore|style)(\(.+\))?: ]]; then
     append_line maintenance "$line"
   fi
@@ -187,6 +194,7 @@ done
 shopt -u nocasematch
 
 {
+  emit_section "Breaking Changes" "$breaking_changes"
   emit_section "Features & Improvements" "$features"
   emit_section "Performance" "$performance"
   emit_section "Bug Fixes" "$bug_fixes"
