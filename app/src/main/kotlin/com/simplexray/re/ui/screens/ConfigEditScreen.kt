@@ -50,7 +50,7 @@ import com.simplexray.re.R
 import com.simplexray.re.ui.util.bracketMatcherTransformation
 import com.simplexray.re.viewmodel.ConfigEditUiEvent
 import com.simplexray.re.viewmodel.ConfigEditViewModel
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
@@ -101,14 +101,16 @@ fun ConfigEditPane(
     val focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
-        viewModel.uiEvent.collectLatest { event ->
+        viewModel.uiEvent.collect { event ->
             when (event) {
                 is ConfigEditUiEvent.NavigateBack -> {
                     onBackClick()
                 }
 
                 is ConfigEditUiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(event.message)
+                    launch {
+                        snackbarHostState.showSnackbar(event.message)
+                    }
                 }
             }
         }
