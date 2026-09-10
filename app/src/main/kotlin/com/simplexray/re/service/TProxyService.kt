@@ -8,6 +8,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.net.ProxyInfo
 import android.net.VpnService
 import android.os.Build
@@ -102,6 +105,54 @@ class TProxyService : VpnService() {
         }
     }
 
+    private var connectivityManager: ConnectivityManager? = null
+    private var defaultNetworkCallback: ConnectivityManager.NetworkCallback? = null
+
+    private fun registerNetworkCallback() {
+        if (defaultNetworkCallback != null) return
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
+        connectivityManager = cm
+
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                Log.d(TAG, "Underlying network available: $network")
+                setUnderlyingNetworks(arrayOf(network))
+            }
+
+            override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                Log.d(TAG, "Underlying network capabilities changed: $network")
+                setUnderlyingNetworks(arrayOf(network))
+            }
+
+            override fun onLost(network: Network) {
+                Log.d(TAG, "Underlying network lost: $network")
+                setUnderlyingNetworks(null)
+            }
+        }
+        defaultNetworkCallback = callback
+        runCatching {
+            cm.registerDefaultNetworkCallback(callback)
+            cm.activeNetwork?.let { activeNet ->
+                setUnderlyingNetworks(arrayOf(activeNet))
+            }
+        }.onFailure {
+            Log.w(TAG, "Failed to register default network callback", it)
+        }
+    }
+
+    private fun unregisterNetworkCallback() {
+        val cm = connectivityManager
+        val callback = defaultNetworkCallback
+        defaultNetworkCallback = null
+        if (cm != null && callback != null) {
+            runCatching {
+                cm.unregisterNetworkCallback(callback)
+            }.onFailure {
+                Log.w(TAG, "Failed to unregister default network callback", it)
+            }
+        }
+    }
+
     private val isStartingLock = java.util.concurrent.atomic.AtomicBoolean(false)
 
     override fun onCreate() {
@@ -173,6 +224,7 @@ class TProxyService : VpnService() {
     override fun onDestroy() {
         super.onDestroy()
         isStartingLock.set(false)
+        unregisterNetworkCallback()
         periodicGeoUpdateJob?.cancel()
         periodicGeoUpdateJob = null
         serviceScope.cancel()
@@ -492,6 +544,7 @@ class TProxyService : VpnService() {
             stopXray()
             return
         }
+        registerNetworkCallback()
 
         if (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn) {
             Log.d(TAG, "Using Xray Native TUN mode, skipping hev-socks5-tunnel.")
@@ -585,6 +638,7 @@ class TProxyService : VpnService() {
 
     private fun stopService() {
         isStartingLock.set(false)
+        unregisterNetworkCallback()
         tunFd?.let {
             try {
                 it.close()
