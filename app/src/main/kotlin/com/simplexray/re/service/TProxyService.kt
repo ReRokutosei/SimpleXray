@@ -73,6 +73,7 @@ class TProxyService : VpnService() {
     @Volatile
     private var xrayProcess: Process? = null
     private var xrayPid: Int = -1
+    private var xrayJob: Job? = null
     private var isStopping = false
     @Volatile
     private var xrayStarted = false
@@ -82,6 +83,11 @@ class TProxyService : VpnService() {
 
     @Volatile
     private var reloadingRequested = false
+
+    private fun launchXrayProcess() {
+        xrayJob?.cancel()
+        xrayJob = serviceScope.launch { runXrayProcess() }
+    }
 
     private var periodicGeoUpdateJob: Job? = null
 
@@ -119,7 +125,7 @@ class TProxyService : VpnService() {
                     Log.d(TAG, "Received RELOAD_CONFIG action (core-only mode)")
                     reloadingRequested = true
                     killXrayProcess()
-                    serviceScope.launch { runXrayProcess() }
+                    launchXrayProcess()
                     return START_NOT_STICKY
                 }
                 if (tunFd == null) {
@@ -129,7 +135,7 @@ class TProxyService : VpnService() {
                 Log.d(TAG, "Received RELOAD_CONFIG action.")
                 reloadingRequested = true
                 killXrayProcess()
-                serviceScope.launch { runXrayProcess() }
+                launchXrayProcess()
                 return START_NOT_STICKY
             }
 
@@ -141,7 +147,7 @@ class TProxyService : VpnService() {
                     }
                     VpnStateHub.updateState(VpnRunningState.Connecting)
                     logFileManager.clearLogs()
-                    serviceScope.launch { runXrayProcess() }
+                    launchXrayProcess()
 
                     @Suppress("SameParameterValue") val channelName = "nosocks"
                     initNotificationChannel(channelName)
@@ -210,7 +216,7 @@ class TProxyService : VpnService() {
         }
         logFileManager.clearLogs()
         startService()
-        serviceScope.launch { runXrayProcess() }
+        launchXrayProcess()
     }
 
     /**
@@ -403,7 +409,7 @@ class TProxyService : VpnService() {
         if (xrayStartAttempt < MAX_START_ATTEMPTS) {
             xrayStartAttempt++
             Log.w(TAG, "Xray failed to start, retrying (attempt $xrayStartAttempt/$MAX_START_ATTEMPTS).")
-            serviceScope.launch { runXrayProcess() }
+            launchXrayProcess()
         } else {
             Log.e(TAG, "Xray failed to start after $MAX_START_ATTEMPTS attempts, stopping service.")
             VpnStateHub.updateState(
@@ -453,8 +459,9 @@ class TProxyService : VpnService() {
         Log.d(TAG, "stopXray called with keepExecutorAlive=" + false)
         periodicGeoUpdateJob?.cancel()
         periodicGeoUpdateJob = null
-        serviceScope.cancel()
-        Log.d(TAG, "CoroutineScope cancelled.")
+        xrayJob?.cancel()
+        xrayJob = null
+        Log.d(TAG, "xrayJob cancelled.")
 
         killXrayProcess()
         Log.d(TAG, "xrayProcess reference nulled and killed.")
