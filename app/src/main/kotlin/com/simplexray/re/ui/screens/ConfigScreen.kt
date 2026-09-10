@@ -39,6 +39,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -324,6 +325,18 @@ private fun ConfigListPane(
         if (from.index > 0 && to.index > 0) {
             mainViewModel.moveConfigFile(from.index - 1, to.index - 1)
             hapticFeedback.performHapticFeedback(HapticFeedbackType.SegmentFrequentTick)
+        }
+    }
+
+    LaunchedEffect(reorderableLazyListState) {
+        var hadDragged = false
+        snapshotFlow { reorderableLazyListState.isAnyItemDragging }.collect { isDragging ->
+            if (isDragging) {
+                hadDragged = true
+            } else if (hadDragged) {
+                hadDragged = false
+                mainViewModel.persistConfigFilesOrder()
+            }
         }
     }
 
