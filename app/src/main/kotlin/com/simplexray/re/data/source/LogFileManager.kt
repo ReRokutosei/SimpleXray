@@ -19,9 +19,8 @@ class LogFileManager(context: Context) {
 
     private var linesWrittenSinceCheck = 0
 
-    @Synchronized
-    fun appendLog(logEntry: String?) {
-        if (logEntry == null) return
+    fun appendLog(logEntry: String?) = synchronized(FILE_LOCK) {
+        if (logEntry == null) return@synchronized
         try {
             FileWriter(logFile, true).use { fileWriter ->
                 fileWriter.append(logEntry).append('\n')
@@ -36,9 +35,8 @@ class LogFileManager(context: Context) {
         }
     }
 
-    @Synchronized
-    fun appendLogs(logEntries: Collection<String>) {
-        if (logEntries.isEmpty()) return
+    fun appendLogs(logEntries: Collection<String>) = synchronized(FILE_LOCK) {
+        if (logEntries.isEmpty()) return@synchronized
         try {
             FileWriter(logFile, true).use { fileWriter ->
                 for (entry in logEntries) {
@@ -55,19 +53,19 @@ class LogFileManager(context: Context) {
         }
     }
 
-    fun readLogs(): String? {
+    fun readLogs(): String? = synchronized(FILE_LOCK) {
         if (!logFile.exists()) {
             Log.d(TAG, "Log file does not exist.")
-            return ""
+            return@synchronized ""
         }
-        return try {
+        return@synchronized try {
             // Read only the tail of the file: the file can grow up to
             // MAX_LOG_SIZE_BYTES and the UI only ever shows the last
             // MAX_LOG_ENTRIES, so reading everything would waste memory/CPU.
             RandomAccessFile(logFile, "r").use { raf ->
                 val fileSize = raf.length()
                 if (fileSize == 0L) {
-                    return ""
+                    return@use ""
                 }
                 val readStart = (fileSize - READ_TAIL_BYTES).coerceAtLeast(0L)
                 raf.seek(readStart)
@@ -89,8 +87,7 @@ class LogFileManager(context: Context) {
         }
     }
 
-    @Synchronized
-    fun clearLogs() {
+    fun clearLogs() = synchronized(FILE_LOCK) {
         linesWrittenSinceCheck = 0
         if (logFile.exists()) {
             try {
@@ -106,15 +103,14 @@ class LogFileManager(context: Context) {
         }
     }
 
-    @Synchronized
-    private fun checkAndTruncateLogFile() {
+    private fun checkAndTruncateLogFile() = synchronized(FILE_LOCK) {
         if (!logFile.exists()) {
             Log.d(TAG, "Log file does not exist for truncation check.")
-            return
+            return@synchronized
         }
         val currentSize = logFile.length()
         if (currentSize <= MAX_LOG_SIZE_BYTES) {
-            return
+            return@synchronized
         }
         Log.d(
             TAG,
@@ -134,7 +130,7 @@ class LogFileManager(context: Context) {
                         "Could not read line from calculated start position for truncation. Clearing file as a fallback."
                     )
                     clearLogs()
-                    return
+                    return@synchronized
                 }
                 raf.channel.use { sourceChannel ->
                     val tempLogFile = File(logFile.parentFile, "$LOG_FILE_NAME.tmp")
@@ -174,6 +170,7 @@ class LogFileManager(context: Context) {
     }
 
     companion object {
+        val FILE_LOCK = Any()
         private const val TAG = "LogFileManager"
         private const val LOG_FILE_NAME = "app_log.txt"
         private const val MAX_LOG_SIZE_BYTES = (5 * 1024 * 1024).toLong()
