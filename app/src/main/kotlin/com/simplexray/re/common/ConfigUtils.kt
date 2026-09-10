@@ -34,7 +34,7 @@ object ConfigUtils {
     private val EXCLUDED_OUTBOUND_PROTOCOLS = setOf("freedom", "blackhole", "dns")
 
     // UDP-only protocols that cannot be latency-tested via TCP connect.
-    private val UDP_ONLY_OUTBOUND_PROTOCOLS = setOf("wireguard", "hysteria2")
+    private val UDP_ONLY_OUTBOUND_PROTOCOLS = setOf("wireguard", "hysteria", "hysteria2")
 
     data class OutboundInfo(val tag: String, val protocol: String)
 
@@ -109,6 +109,17 @@ object ConfigUtils {
         val targetPort = prefs?.socksPort ?: 10808
         val targetListen = prefs?.socksAddress.takeIf { !it.isNullOrEmpty() } ?: "127.0.0.1"
 
+        var primarySocksInbound: JSONObject? = null
+        for (i in 0 until inbounds.length()) {
+            val inbound = inbounds.optJSONObject(i) ?: continue
+            if (inbound.optString("protocol").lowercase() == "socks") {
+                if (inbound.optString("tag") == "socks-in" || primarySocksInbound == null) {
+                    primarySocksInbound = inbound
+                    if (inbound.optString("tag") == "socks-in") break
+                }
+            }
+        }
+
         for (i in inbounds.length() - 1 downTo 0) {
             val inbound = inbounds.optJSONObject(i) ?: continue
             val protocol = inbound.optString("protocol").lowercase()
@@ -147,20 +158,28 @@ object ConfigUtils {
             }
             if (protocol == "socks") {
                 hasSocksInbound = true
-                inbound.put("port", targetPort)
-                inbound.put("listen", targetListen)
-                if (prefs != null && prefs.socksUsername.isNotEmpty() && prefs.socksPassword.isNotEmpty()) {
-                    val settings = inbound.optJSONObject("settings") ?: JSONObject().also { inbound.put("settings", it) }
-                    val accounts = JSONArray().apply {
-                        put(JSONObject().apply {
-                            put("user", prefs.socksUsername)
-                            put("pass", prefs.socksPassword)
-                        })
+                if (inbound === primarySocksInbound) {
+                    inbound.put("port", targetPort)
+                    inbound.put("listen", targetListen)
+                    if (prefs != null && prefs.socksUsername.isNotEmpty() && prefs.socksPassword.isNotEmpty()) {
+                        val settings = inbound.optJSONObject("settings") ?: JSONObject().also { inbound.put("settings", it) }
+                        val accounts = JSONArray().apply {
+                            put(JSONObject().apply {
+                                put("user", prefs.socksUsername)
+                                put("pass", prefs.socksPassword)
+                            })
+                        }
+                        settings.put("auth", "password")
+                        settings.put("accounts", accounts)
                     }
-                    settings.put("auth", "password")
-                    settings.put("accounts", accounts)
+                    Log.d(TAG, "Synchronized primary SOCKS inbound port to $targetPort and listen to $targetListen.")
+                } else {
+                    val listen = inbound.optString("listen")
+                    if (listen == "::" || listen == "0.0.0.0") {
+                        inbound.put("listen", "127.0.0.1")
+                        Log.d(TAG, "Converted secondary SOCKS bind address from $listen to 127.0.0.1.")
+                    }
                 }
-                Log.d(TAG, "Synchronized SOCKS inbound port to $targetPort and listen to $targetListen.")
             } else {
                 val listen = inbound.optString("listen")
                 if (listen == "::" || listen == "0.0.0.0") {
@@ -611,13 +630,17 @@ object ConfigUtils {
 
     private fun extractServerEndpoint(ob: JSONObject, protocol: String): Pair<String, Int>? {
         val settings = ob.optJSONObject("settings") ?: return null
-        val server = when (protocol) {
+        val nestedServer = when (protocol) {
             "vless", "vmess" -> settings.optJSONArray("vnext")?.optJSONObject(0)
             "trojan", "shadowsocks", "http", "socks" -> settings.optJSONArray("servers")?.optJSONObject(0)
             else -> null
-        } ?: return null
-        val host = server.optString("address").takeIf { it.isNotBlank() } ?: return null
-        val port = server.optInt("port").takeIf { it > 0 && it <= 65535 } ?: return null
+        }
+        val host = nestedServer?.optString("address")?.takeIf { it.isNotBlank() }
+            ?: settings.optString("address").takeIf { it.isNotBlank() }
+            ?: return null
+        val port = nestedServer?.optInt("port")?.takeIf { it in 1..65535 }
+            ?: settings.optInt("port").takeIf { it in 1..65535 }
+            ?: return null
         return host to port
     }
 

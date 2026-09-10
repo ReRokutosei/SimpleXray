@@ -268,4 +268,112 @@ class ConfigUtilsTest {
         val rules = json.getJSONObject("routing").getJSONArray("rules")
         assertEquals(0, rules.length())
     }
+
+    @Test
+    fun testMultipleSocksInboundsPreservesSecondaryPort() {
+        val rawConfig = """
+        {
+          "inbounds": [
+            {
+              "tag": "socks-in",
+              "port": 1080,
+              "protocol": "socks"
+            },
+            {
+              "tag": "socks-secondary",
+              "port": 10809,
+              "protocol": "socks",
+              "listen": "0.0.0.0"
+            }
+          ]
+        }
+        """.trimIndent()
+
+        val sanitized = ConfigUtils.sanitizeConfig(rawConfig, null)
+        val json = JSONObject(sanitized)
+        val inbounds = json.getJSONArray("inbounds")
+        assertEquals(2, inbounds.length())
+
+        val primary = inbounds.getJSONObject(0)
+        assertEquals("socks-in", primary.getString("tag"))
+        assertEquals(10808, primary.getInt("port"))
+        assertEquals("127.0.0.1", primary.getString("listen"))
+
+        val secondary = inbounds.getJSONObject(1)
+        assertEquals("socks-secondary", secondary.getString("tag"))
+        assertEquals(10809, secondary.getInt("port"))
+        assertEquals("127.0.0.1", secondary.getString("listen"))
+    }
+
+    @Test
+    fun testExtractOutboundEndpointsSupportsFlatSettings() {
+        val rawConfig = """
+        {
+          "outbounds": [
+            {
+              "tag": "nested-vless",
+              "protocol": "vless",
+              "settings": {
+                "vnext": [{ "address": "example.com", "port": 443 }]
+              }
+            },
+            {
+              "tag": "flat-node",
+              "protocol": "trojan",
+              "settings": {
+                "address": "trojan.example.org",
+                "port": 8443
+              }
+            }
+          ]
+        }
+        """.trimIndent()
+
+        val endpoints = ConfigUtils.extractOutboundEndpoints(rawConfig)
+        assertEquals(2, endpoints.size)
+
+        assertEquals("nested-vless", endpoints[0].tag)
+        assertEquals("example.com", endpoints[0].host)
+        assertEquals(443, endpoints[0].port)
+
+        assertEquals("flat-node", endpoints[1].tag)
+        assertEquals("trojan.example.org", endpoints[1].host)
+        assertEquals(8443, endpoints[1].port)
+    }
+
+    @Test
+    fun testExtractOutboundEndpointsExcludesHysteriaProtocols() {
+        val rawConfig = """
+        {
+          "outbounds": [
+            {
+              "tag": "hy1-node",
+              "protocol": "hysteria",
+              "settings": { "address": "hy.example.com", "port": 443 }
+            },
+            {
+              "tag": "hy2-node",
+              "protocol": "hysteria2",
+              "settings": { "address": "hy2.example.com", "port": 443 }
+            },
+            {
+              "tag": "wg-node",
+              "protocol": "wireguard",
+              "settings": { "address": "wg.example.com", "port": 51820 }
+            },
+            {
+              "tag": "vless-node",
+              "protocol": "vless",
+              "settings": {
+                "vnext": [{ "address": "vless.example.com", "port": 443 }]
+              }
+            }
+          ]
+        }
+        """.trimIndent()
+
+        val endpoints = ConfigUtils.extractOutboundEndpoints(rawConfig)
+        assertEquals(1, endpoints.size)
+        assertEquals("vless-node", endpoints[0].tag)
+    }
 }
