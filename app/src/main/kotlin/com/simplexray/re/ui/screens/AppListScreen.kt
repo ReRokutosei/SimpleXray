@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.Drawable
+import android.util.LruCache
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -313,14 +314,22 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
     }
 }
 
+private val iconCache = LruCache<String, ImageBitmap>(200)
+
 @Composable
 fun AppItem(pkg: Package, onCheckedChange: (Boolean) -> Unit) {
     val context = LocalContext.current
-    val iconBitmap by produceState<ImageBitmap?>(initialValue = null, key1 = pkg.packageName) {
+    val cached = remember(pkg.packageName) { iconCache.get(pkg.packageName) }
+    val iconBitmap by produceState<ImageBitmap?>(initialValue = cached, key1 = pkg.packageName) {
+        if (value != null) return@produceState
         value = withContext(Dispatchers.IO) {
             runCatching {
                 val drawable = context.packageManager.getApplicationIcon(pkg.packageName)
-                drawableToBitmap(drawable)?.asImageBitmap()
+                val bitmap = drawableToBitmap(drawable)?.asImageBitmap()
+                if (bitmap != null) {
+                    iconCache.put(pkg.packageName, bitmap)
+                }
+                bitmap
             }.getOrNull()
         }
     }
