@@ -29,6 +29,7 @@
 #include <string.h>
 #include <sys/prctl.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <unistd.h>
 
 #define LOG_TAG    "XrayExec"
@@ -116,8 +117,6 @@ Java_com_simplexray_re_service_TProxyService_nativeSpawnXray(
 
     if (pid == 0) {
         /* child */
-        prctl(PR_SET_PDEATHSIG, SIGKILL);  /* die with parent */
-
         dup2(stdin_pipe[0],  STDIN_FILENO);
         dup2(stdout_pipe[1], STDOUT_FILENO);
         dup2(stdout_pipe[1], STDERR_FILENO);
@@ -158,4 +157,20 @@ Java_com_simplexray_re_service_TProxyService_nativeSpawnXray(
     jint arr[3] = { (jint)pid, (jint)stdout_pipe[0], (jint)stdin_pipe[1] };
     (*env)->SetIntArrayRegion(env, result, 0, 3, arr);
     return result;
+}
+
+JNIEXPORT void JNICALL
+Java_com_simplexray_re_service_TProxyService_nativeReapChild(
+        JNIEnv *env, jclass clazz, jint pid)
+{
+    if (pid <= 0) return;
+    int status;
+    /* Try non-blocking waitpid to reap the defunct child */
+    for (int i = 0; i < 5; i++) {
+        pid_t ret = waitpid((pid_t)pid, &status, WNOHANG);
+        if (ret == (pid_t)pid || ret == -1) {
+            break;
+        }
+        usleep(10000); /* 10ms */
+    }
 }
