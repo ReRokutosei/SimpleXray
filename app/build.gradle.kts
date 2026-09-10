@@ -30,7 +30,8 @@ protobuf {
 }
 
 fun computeVersionCode(versionName: String): Int {
-    val parts = versionName.split("-")[0].split(".")
+    val clean = versionName.trim().removePrefix("v").removePrefix("V")
+    val parts = clean.split("-")[0].split(".")
     val major = parts.getOrNull(0)?.toIntOrNull() ?: 1
     val minor = parts.getOrNull(1)?.toIntOrNull() ?: 0
     val patch = parts.getOrNull(2)?.toIntOrNull() ?: 0
@@ -42,7 +43,7 @@ val versionProps = Properties().apply {
 }
 
 val appVersionName = if (project.hasProperty("appVerName")) {
-    project.property("appVerName").toString()
+    project.property("appVerName").toString().trim().removePrefix("v").removePrefix("V")
 } else {
     "1.0.0"
 }
