@@ -44,6 +44,10 @@
   "outbounds": [
     {
       "protocol": "freedom",
+      "tag": "proxy"
+    },
+    {
+      "protocol": "freedom",
       "tag": "direct"
     },
     {
