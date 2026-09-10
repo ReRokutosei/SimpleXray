@@ -12,6 +12,8 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.NavHost
@@ -74,22 +76,24 @@ fun AppNavHost(
             popEnterTransition = { EnterTransition.None },
             popExitTransition = { popExitTransition() }
         ) {
-            val configEditViewModel = mainViewModel.configEditViewModel
-                ?: remember {
-                    val path = mainViewModel.prefs.selectedConfigPath
-                    if (!path.isNullOrEmpty() && File(path).exists()) {
-                        ConfigEditViewModel(
-                            application = mainViewModel.getApplication(),
-                            initialFilePath = path,
-                            prefs = mainViewModel.prefs
-                        ).also { mainViewModel.configEditViewModel = it }
-                    } else null
-                }
-
-            if (configEditViewModel != null) {
+            val path = mainViewModel.editingFilePath ?: mainViewModel.prefs.selectedConfigPath
+            if (!path.isNullOrEmpty() && File(path).exists()) {
+                val configEditViewModel: ConfigEditViewModel = viewModel(
+                    key = path,
+                    factory = object : ViewModelProvider.Factory {
+                        @Suppress("UNCHECKED_CAST")
+                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                            return ConfigEditViewModel(
+                                application = mainViewModel.getApplication(),
+                                initialFilePath = path,
+                                prefs = mainViewModel.prefs
+                            ) as T
+                        }
+                    }
+                )
                 ConfigEditScreen(
                     onBackClick = {
-                        mainViewModel.configEditViewModel = null
+                        mainViewModel.editingFilePath = null
                         navController.popBackStack()
                     },
                     snackbarHostState = remember { SnackbarHostState() },
