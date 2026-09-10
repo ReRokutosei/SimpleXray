@@ -49,7 +49,7 @@ class CoreStatsClient(private val channel: ManagedChannel) : Closeable {
     }
 
     override fun close() {
-        channel.shutdown().awaitTermination(5, TimeUnit.SECONDS)
+        runCatching { channel.shutdownNow() }
     }
 
     companion object {
