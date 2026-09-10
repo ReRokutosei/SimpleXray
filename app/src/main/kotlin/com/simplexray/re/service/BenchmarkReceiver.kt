@@ -96,7 +96,7 @@ class BenchmarkReceiver : BroadcastReceiver() {
                 val stopIntent = Intent(context, TProxyService::class.java).apply {
                     this.action = TProxyService.ACTION_DISCONNECT
                 }
-                ContextCompat.startForegroundService(context, stopIntent)
+                context.startService(stopIntent)
                 Log.d(TAG, "Sent stop request to TProxyService.")
             }
         }
