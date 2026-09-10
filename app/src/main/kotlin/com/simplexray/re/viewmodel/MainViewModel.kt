@@ -95,8 +95,7 @@ class MainViewModel(application: Application) :
 
     var reloadView: (() -> Unit)? = null
 
-    lateinit var appListViewModel: AppListViewModel
-    lateinit var configEditViewModel: ConfigEditViewModel
+    var configEditViewModel: ConfigEditViewModel? = null
 
     private val _settingsState = MutableStateFlow(
         SettingsState(
@@ -939,7 +938,6 @@ class MainViewModel(application: Application) :
 
     fun navigateToAppList() {
         viewModelScope.launch {
-            appListViewModel = AppListViewModel(application)
             _uiEvent.trySend(MainViewUiEvent.Navigate(ROUTE_APP_LIST))
         }
     }

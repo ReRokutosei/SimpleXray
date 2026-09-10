@@ -10,7 +10,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,8 +23,11 @@ import com.simplexray.re.common.ROUTE_MAIN
 import com.simplexray.re.ui.screens.AppListScreen
 import com.simplexray.re.ui.screens.ConfigEditScreen
 import com.simplexray.re.ui.screens.MainScreen
+import com.simplexray.re.viewmodel.AppListViewModel
+import com.simplexray.re.viewmodel.ConfigEditViewModel
 import com.simplexray.re.viewmodel.MainViewModel
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
+import java.io.File
 
 @Composable
 fun AppNavHost(
@@ -55,8 +60,9 @@ fun AppNavHost(
             popEnterTransition = { EnterTransition.None },
             popExitTransition = { popExitTransition() }
         ) {
+            val appListViewModel: AppListViewModel = viewModel()
             AppListScreen(
-                viewModel = mainViewModel.appListViewModel,
+                viewModel = appListViewModel,
                 onBackClick = { navController.popBackStack() }
             )
         }
@@ -68,11 +74,32 @@ fun AppNavHost(
             popEnterTransition = { EnterTransition.None },
             popExitTransition = { popExitTransition() }
         ) {
-            ConfigEditScreen(
-                onBackClick = { navController.popBackStack() },
-                snackbarHostState = remember { SnackbarHostState() },
-                viewModel = mainViewModel.configEditViewModel
-            )
+            val configEditViewModel = mainViewModel.configEditViewModel
+                ?: remember {
+                    val path = mainViewModel.prefs.selectedConfigPath
+                    if (!path.isNullOrEmpty() && File(path).exists()) {
+                        ConfigEditViewModel(
+                            application = mainViewModel.getApplication(),
+                            initialFilePath = path,
+                            prefs = mainViewModel.prefs
+                        ).also { mainViewModel.configEditViewModel = it }
+                    } else null
+                }
+
+            if (configEditViewModel != null) {
+                ConfigEditScreen(
+                    onBackClick = {
+                        mainViewModel.configEditViewModel = null
+                        navController.popBackStack()
+                    },
+                    snackbarHostState = remember { SnackbarHostState() },
+                    viewModel = configEditViewModel
+                )
+            } else {
+                LaunchedEffect(Unit) {
+                    navController.popBackStack()
+                }
+            }
         }
     }
 }
