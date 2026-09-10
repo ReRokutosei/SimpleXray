@@ -37,9 +37,9 @@ enum class TunnelMode(val value: String) {
 }
 
 class Preferences(context: Context) {
-    private val context1: Context = context.applicationContext
+    private val appContext: Context = context.applicationContext
     private val sp: SharedPreferences =
-        context1.getSharedPreferences("${context1.packageName}_preferences", Context.MODE_PRIVATE)
+        appContext.getSharedPreferences("${appContext.packageName}_preferences", Context.MODE_PRIVATE)
 
     private fun safeGetBoolean(key: String, default: Boolean): Boolean {
         return try {
@@ -121,11 +121,14 @@ class Preferences(context: Context) {
     var dnsIpv4: String by stringPref(DNS_IPV4) { "8.8.8.8" }
     var dnsIpv6: String by stringPref(DNS_IPV6) { "2001:4860:4860::8888" }
 
+    // Retained for legacy hev-socks5-tunnel config compatibility; currently unexposed in UI
     val udpInTcp: Boolean
         get() = safeGetBoolean(UDP_IN_TCP, false)
 
     var ipv4: Boolean by booleanPref(IPV4, true)
     var ipv6: Boolean by booleanPref(IPV6, false)
+
+    // Retained for legacy schema compatibility; benchmark receiver sets this for direct testing
     var global: Boolean by booleanPref(GLOBAL, false)
 
     var apps: Set<String?>?
@@ -155,11 +158,11 @@ class Preferences(context: Context) {
         }
 
     var tunnelMtu: Int by intPref(TUNNEL_MTU, 1500)
-    val tunnelIpv4Address: String get() = "198.18.0.1"
-    val tunnelIpv4Prefix: Int get() = 32
-    val tunnelIpv6Address: String get() = "fc00::1"
-    val tunnelIpv6Prefix: Int get() = 128
-    val taskStackSize: Int get() = 81920
+    val tunnelIpv4Address: String get() = TUNNEL_IPV4_ADDRESS
+    val tunnelIpv4Prefix: Int get() = TUNNEL_IPV4_PREFIX
+    val tunnelIpv6Address: String get() = TUNNEL_IPV6_ADDRESS
+    val tunnelIpv6Prefix: Int get() = TUNNEL_IPV6_PREFIX
+    val taskStackSize: Int get() = TASK_STACK_SIZE
 
     var selectedConfigPath: String? by nullableStringPref(SELECTED_CONFIG_PATH)
     var bypassLan: Boolean by booleanPref(BYPASS_LAN, true)
@@ -189,8 +192,8 @@ class Preferences(context: Context) {
             sp.edit { putString(CONFIG_FILES_ORDER, jsonList) }
         }
 
-    var geoipUrl: String by stringPref(GEOIP_URL) { context1.getString(R.string.geoip_url) }
-    var geositeUrl: String by stringPref(GEOSITE_URL) { context1.getString(R.string.geosite_url) }
+    var geoipUrl: String by stringPref(GEOIP_URL) { appContext.getString(R.string.geoip_url) }
+    var geositeUrl: String by stringPref(GEOSITE_URL) { appContext.getString(R.string.geosite_url) }
     var apiAddress: String by stringPref(API_ADDRESS) { "127.0.0.1" }
     var appIcon: String? by nullableStringPref(APP_ICON)
     var apiPort: Int by intPref(API_PORT, 0)
@@ -273,6 +276,11 @@ class Preferences(context: Context) {
         const val GEO_UPDATE_INTERVAL_HOURS: String = "GeoUpdateIntervalHours"
         const val LAST_GEO_UPDATE_TIME: String = "LastGeoUpdateTime"
         const val CUSTOM_DAT_URLS: String = "CustomDatUrls"
+        const val TUNNEL_IPV4_ADDRESS: String = "198.18.0.1"
+        const val TUNNEL_IPV4_PREFIX: Int = 32
+        const val TUNNEL_IPV6_ADDRESS: String = "fc00::1"
+        const val TUNNEL_IPV6_PREFIX: Int = 128
+        const val TASK_STACK_SIZE: Int = 81920
         private const val TAG = "Preferences"
     }
 }
