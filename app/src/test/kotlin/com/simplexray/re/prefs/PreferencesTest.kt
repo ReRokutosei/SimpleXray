@@ -121,6 +121,7 @@ class FakeSharedPreferences : SharedPreferences {
     }
 }
 
+@Suppress("DEPRECATION")
 class FakeResources : Resources(null, null, null) {
     override fun getString(id: Int): String {
         return when (id) {
