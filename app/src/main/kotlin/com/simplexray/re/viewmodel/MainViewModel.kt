@@ -944,7 +944,10 @@ class MainViewModel(application: Application) :
         val movedItem = currentList.removeAt(fromIndex)
         currentList.add(toIndex, movedItem)
         _configFiles.value = currentList
-        prefs.configFilesOrder = currentList.map { it.name }
+    }
+
+    fun persistConfigFilesOrder() {
+        prefs.configFilesOrder = _configFiles.value.map { it.name }
     }
 
 
