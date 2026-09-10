@@ -39,7 +39,7 @@ import com.simplexray.re.viewmodel.LogViewModelFactory
 import com.simplexray.re.viewmodel.MainViewModel
 import com.simplexray.re.viewmodel.MainViewUiEvent
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 
@@ -107,10 +107,12 @@ fun MainScreen(
             mainViewModel.extractAssetsIfNeeded()
         }
 
-        mainViewModel.uiEvent.collectLatest { event ->
+        mainViewModel.uiEvent.collect { event ->
             when (event) {
                 is MainViewUiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(event.message)
+                    launch {
+                        snackbarHostState.showSnackbar(event.message)
+                    }
                 }
 
                 is MainViewUiEvent.ShareLauncher -> {

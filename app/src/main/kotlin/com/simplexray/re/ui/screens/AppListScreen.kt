@@ -61,7 +61,8 @@ import com.simplexray.re.viewmodel.AppListViewModel
 import com.simplexray.re.viewmodel.AppListViewUiEvent
 import com.simplexray.re.viewmodel.Package
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
@@ -119,10 +120,12 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
     }
 
     LaunchedEffect(Unit) {
-        viewModel.uiEvent.collectLatest { event ->
+        viewModel.uiEvent.collect { event ->
             when (event) {
                 is AppListViewUiEvent.ShowSnackbar -> {
-                    snackbarHostState.showSnackbar(event.message)
+                    launch {
+                        snackbarHostState.showSnackbar(event.message)
+                    }
                 }
             }
         }
