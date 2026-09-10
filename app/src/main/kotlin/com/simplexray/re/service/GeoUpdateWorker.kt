@@ -42,9 +42,12 @@ class GeoUpdateWorker(
         if (success) {
             Log.d(TAG, "GeoUpdateWorker completed successfully.")
             Result.success()
-        } else {
-            Log.w(TAG, "GeoUpdateWorker completed with failures or was skipped.")
+        } else if (runAttemptCount < 3) {
+            Log.w(TAG, "GeoUpdateWorker failed (attempt ${runAttemptCount + 1}), will retry.")
             Result.retry()
+        } else {
+            Log.w(TAG, "GeoUpdateWorker failed after max retries ($runAttemptCount), aborting this cycle.")
+            Result.failure()
         }
     }
 
