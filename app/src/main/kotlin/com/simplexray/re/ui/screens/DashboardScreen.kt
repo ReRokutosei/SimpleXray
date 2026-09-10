@@ -40,6 +40,7 @@ import com.simplexray.re.viewmodel.MainViewModel
 import com.simplexray.re.viewmodel.OutboundLatency
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
@@ -69,10 +70,14 @@ fun DashboardScreen(
     LaunchedEffect(Unit) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             mainViewModel.refreshOutboundNodes()
-            mainViewModel.testOutboundLatency()
-            while (isActive) {
-                mainViewModel.updateCoreStats()
-                delay(1000)
+            launch {
+                mainViewModel.testOutboundLatency()
+            }
+            launch {
+                while (isActive) {
+                    mainViewModel.updateCoreStats()
+                    delay(1000)
+                }
             }
         }
     }
