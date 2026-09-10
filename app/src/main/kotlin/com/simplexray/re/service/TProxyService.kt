@@ -13,7 +13,6 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.ProxyInfo
 import android.net.VpnService
-import android.os.Build
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import android.system.ErrnoException
@@ -582,7 +581,7 @@ class TProxyService : VpnService() {
 
         setMetered(false)
 
-        if (prefs.bypassLan && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        if (prefs.bypassLan) {
             runCatching {
                 excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("10.0.0.0"), 8))
                 excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("100.64.0.0"), 10))
@@ -593,7 +592,7 @@ class TProxyService : VpnService() {
                     excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("fc00::"), 7))
                     excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("fe80::"), 10))
                 }
-            }.onFailure { Log.w(TAG, "Failed to exclude LAN routes on API 33+", it) }
+            }.onFailure { Log.w(TAG, "Failed to exclude LAN routes", it) }
         }
         if (prefs.httpProxyEnabled) {
             setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", prefs.httpPort))
@@ -669,11 +668,7 @@ class TProxyService : VpnService() {
         val notification = NotificationCompat.Builder(this, channelName)
         val notify = notification.setContentTitle(getString(R.string.app_name))
             .setSmallIcon(R.drawable.ic_stat_lineal).setContentIntent(pi).build()
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(1, notify)
-        } else {
-            startForeground(1, notify, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-        }
+        startForeground(1, notify, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
     }
 
     private fun exit() {

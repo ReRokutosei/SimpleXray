@@ -94,16 +94,14 @@ fun rememberMainScreenCallbacks(
             mainViewModel.setServiceEnabled(false)
             mainViewModel.stopTProxyService()
         } else {
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                val hasNotificationPermission = androidx.core.content.ContextCompat.checkSelfPermission(
-                    applicationContext,
-                    android.Manifest.permission.POST_NOTIFICATIONS
-                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            val hasNotificationPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                applicationContext,
+                android.Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
-                if (!hasNotificationPermission && !mainViewModel.prefs.notificationPrompted) {
-                    onRequestNotificationPermission?.invoke()
-                    return@onSwitchVpnService
-                }
+            if (!hasNotificationPermission && !mainViewModel.prefs.notificationPrompted) {
+                onRequestNotificationPermission?.invoke()
+                return@onSwitchVpnService
             }
 
             mainViewModel.setControlMenuClickable(false)

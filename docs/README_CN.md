@@ -205,7 +205,7 @@ SimpleXray 可以直接导入完整的 Xray-core 配置文件。配置启动前�
 
 构建本项目需要以下环境。
 
-* Android 10 或更高版本，对应 API Level 29。
+* Android 14 或更高版本，对应 API Level 34。
 * Android SDK，包括项目所需的 Build Tools 和 Android Platform SDK。
 * Target SDK 36。
 * Android NDK（推荐版本请参考 `version.properties` 中的 `NDK_VERSION`）。

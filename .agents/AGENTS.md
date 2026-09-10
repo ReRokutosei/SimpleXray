@@ -7,7 +7,7 @@ description: General instructions and context for developing the SimpleXray proj
 This file provides the necessary context and constraints for AI agents interacting with the SimpleXray project. SimpleXray is an Android application acting as a VPN client/proxy tool using Xray core and hev-socks5-tunnel.
 
 ## Tech Stack
-- **OS Target**: Android (minSdk 29, targetSdk 36, compileSdk 37)
+- **OS Target**: Android (minSdk 34, targetSdk 36, compileSdk 37)
 - **Language**: Kotlin (for Android app) and C/C++ (for JNI / native tunnels).
 - **UI Framework**: Jetpack Compose using the `miuix` component library.
 - **Architecture**: MVVM with Android ViewModels.
