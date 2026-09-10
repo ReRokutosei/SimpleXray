@@ -8,13 +8,6 @@ plugins {
     alias(libs.plugins.versions)
 }
 
-allprojects {
-    repositories {
-        google()
-        mavenCentral()
-        maven { url = uri("https://jitpack.io") }
-    }
-}
 
 tasks.named<DependencyUpdatesTask>("dependencyUpdates").configure {
     checkForGradleUpdate = false
