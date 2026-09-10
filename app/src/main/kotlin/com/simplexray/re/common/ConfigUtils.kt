@@ -263,6 +263,50 @@ object ConfigUtils {
                         Log.d(TAG, "Pruned empty/invalid rule block at index $i.")
                     }
                 }
+
+                if (prefs != null) {
+                    if (prefs.bypassLan) {
+                        val hasPrivateIpRule = (0 until rules.length()).any { idx ->
+                            val r = rules.optJSONObject(idx) ?: return@any false
+                            val ipArr = r.optJSONArray("ip") ?: return@any false
+                            (0 until ipArr.length()).any { ipArr.optString(it).equals("geoip:private", ignoreCase = true) }
+                        }
+                        if (!hasPrivateIpRule) {
+                            val privateRule = JSONObject().apply {
+                                put("ip", JSONArray().apply { put("geoip:private") })
+                                put("outboundTag", "direct")
+                            }
+                            val newRules = JSONArray().apply {
+                                put(privateRule)
+                                for (idx in 0 until rules.length()) {
+                                    put(rules.get(idx))
+                                }
+                            }
+                            routing.put("rules", newRules)
+                            Log.d(TAG, "Injected top-priority geoip:private -> direct rule for bypassLan.")
+                        }
+                    } else {
+                        for (i in rules.length() - 1 downTo 0) {
+                            val rule = rules.optJSONObject(i) ?: continue
+                            if (rule.optString("outboundTag").equals("direct", ignoreCase = true)) {
+                                val ipArr = rule.optJSONArray("ip") ?: continue
+                                val newIpArr = JSONArray()
+                                for (j in 0 until ipArr.length()) {
+                                    val item = ipArr.optString(j)
+                                    if (!item.equals("geoip:private", ignoreCase = true)) {
+                                        newIpArr.put(item)
+                                    }
+                                }
+                                if (newIpArr.length() > 0) {
+                                    rule.put("ip", newIpArr)
+                                } else {
+                                    rule.remove("ip")
+                                }
+                            }
+                        }
+                        Log.d(TAG, "Removed geoip:private direct routing because bypassLan is disabled.")
+                    }
+                }
             }
         }
 
