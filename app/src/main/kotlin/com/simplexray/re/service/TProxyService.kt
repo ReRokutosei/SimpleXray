@@ -377,10 +377,16 @@ class TProxyService : VpnService() {
             if (xrayPid > 0 && xrayPid == currentPid) {
                 xrayPid = -1
             }
+            if (currentPid > 0) {
+                runCatching { nativeReapChild(currentPid) }
+            }
         }
     }
 
     private fun onXrayExited(process: Process?, pid: Int) {
+        if (pid > 0) {
+            runCatching { nativeReapChild(pid) }
+        }
         if (isStopping) {
             Log.d(TAG, "Xray process exited after intentional stop, ignoring.")
             return
@@ -438,6 +444,7 @@ class TProxyService : VpnService() {
             } catch (e: ErrnoException) {
                 Log.w(TAG, "Failed to kill xray pid $pid: ${e.message}")
             }
+            runCatching { nativeReapChild(pid) }
         }
     }
 
@@ -653,6 +660,9 @@ class TProxyService : VpnService() {
 
         @JvmStatic
         private external fun nativeSpawnXray(xrayPath: String, assetDir: String, vpnFd: Int): IntArray?
+
+        @JvmStatic
+        private external fun nativeReapChild(pid: Int)
 
         fun getNativeLibraryDir(context: Context?): String? {
             if (context == null) {
