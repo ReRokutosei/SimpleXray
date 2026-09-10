@@ -124,7 +124,19 @@ object ConfigUtils {
                     }
                     settings.remove("autoSystemRoutingTable")
                     settings.remove("autoOutboundsInterface")
-                    Log.d(TAG, "Sanitized existing tun inbound for Android VpnService (removed auto-routing).")
+                    val sniffing = inbound.optJSONObject("sniffing")
+                    if (sniffing == null) {
+                        inbound.put("sniffing", createDefaultSniffingObject())
+                        Log.d(TAG, "Injected missing sniffing block into existing tun inbound.")
+                    } else {
+                        if (!sniffing.has("enabled")) sniffing.put("enabled", true)
+                        val destOverride = sniffing.optJSONArray("destOverride") ?: JSONArray().also { sniffing.put("destOverride", it) }
+                        val overrides = (0 until destOverride.length()).map { destOverride.optString(it).lowercase() }.toSet()
+                        if (!overrides.contains("fakedns")) {
+                            destOverride.put("fakedns")
+                        }
+                    }
+                    Log.d(TAG, "Sanitized existing tun inbound for Android VpnService (removed auto-routing, ensured sniffing).")
                 } else {
                     inbounds.remove(i)
                     Log.d(TAG, "Removed desktop-only tun inbound at index $i to prevent Android permission denied.")
@@ -164,9 +176,10 @@ object ConfigUtils {
                     put("name", "tun-inbound")
                     put("network", "tcp,udp")
                 })
+                put("sniffing", createDefaultSniffingObject())
             }
             inbounds.put(newTunInbound)
-            Log.d(TAG, "Injected default Android-compatible tun inbound.")
+            Log.d(TAG, "Injected default Android-compatible tun inbound with sniffing.")
         }
 
         if (!hasSocksInbound && prefs != null) {
@@ -574,5 +587,17 @@ object ConfigUtils {
                 }
             }
         }
+    }
+
+    internal fun createDefaultSniffingObject(): JSONObject = JSONObject().apply {
+        put("enabled", true)
+        put("destOverride", JSONArray().apply {
+            put("http")
+            put("tls")
+            put("quic")
+            put("fakedns")
+        })
+        put("metadataOnly", false)
+        put("routeOnly", false)
     }
 }
