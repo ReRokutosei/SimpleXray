@@ -71,21 +71,19 @@ class TProxyService : VpnService() {
     }
 
     private fun findAvailablePort(excludedPorts: Set<Int>): Int? {
-        (10000..65535)
-            .shuffled()
-            .forEach { port ->
-                if (port in excludedPorts) return@forEach
-                runCatching {
-                    ServerSocket(port).use { socket ->
-                        socket.reuseAddress = true
-                    }
-                    port
-                }.onFailure {
-                    Log.d(TAG, "Port $port unavailable: ${it.message}")
-                }.onSuccess {
-                    return port
+        repeat(5) {
+            val port = runCatching {
+                ServerSocket(0).use { socket ->
+                    socket.reuseAddress = true
+                    socket.localPort
                 }
+            }.onFailure {
+                Log.d(TAG, "Ephemeral port allocation failed: ${it.message}")
+            }.getOrNull()
+            if (port != null && port !in excludedPorts) {
+                return port
             }
+        }
         return null
     }
 
