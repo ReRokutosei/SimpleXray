@@ -14,6 +14,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -21,7 +22,11 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.graphics.createBitmap
@@ -42,9 +47,75 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         window.isNavigationBarContrastEnforced = false
 
-        mainViewModel.reloadView = { initView() }
-        initView()
         updateTaskDescription()
+
+        setContent {
+            val context = LocalContext.current
+            val dynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+            val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
+            val themeMode = settingsState.switches.themeMode
+            val systemInDarkTheme = isSystemInDarkTheme()
+
+            val isDark = when (themeMode) {
+                ThemeMode.Light -> false
+                ThemeMode.Dark -> true
+                ThemeMode.Auto -> systemInDarkTheme
+            }
+
+            SideEffect {
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                insetsController.isAppearanceLightStatusBars = !isDark
+            }
+
+            LaunchedEffect(settingsState.switches.hideFromRecents) {
+                val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+                activityManager?.appTasks?.firstOrNull()?.setExcludeFromRecents(settingsState.switches.hideFromRecents)
+            }
+
+            val currentIcon by mainViewModel.appIcon.collectAsStateWithLifecycle()
+            LaunchedEffect(currentIcon) {
+                // Keep the recents-card icon in sync with the chosen launcher icon
+                // (launcher icon itself is switched via activity-alias).
+                updateTaskDescription()
+            }
+
+            val colorScheme = when {
+                dynamicColor && isDark -> dynamicDarkColorScheme(context)
+                dynamicColor && !isDark -> dynamicLightColorScheme(context)
+                isDark -> darkColorScheme()
+                else -> lightColorScheme()
+            }
+
+            val colorSchemeMode = when (themeMode) {
+                ThemeMode.Light -> if (dynamicColor) top.yukonga.miuix.kmp.theme.ColorSchemeMode.MonetLight else top.yukonga.miuix.kmp.theme.ColorSchemeMode.Light
+                ThemeMode.Dark -> if (dynamicColor) top.yukonga.miuix.kmp.theme.ColorSchemeMode.MonetDark else top.yukonga.miuix.kmp.theme.ColorSchemeMode.Dark
+                ThemeMode.Auto -> if (dynamicColor) top.yukonga.miuix.kmp.theme.ColorSchemeMode.MonetSystem else top.yukonga.miuix.kmp.theme.ColorSchemeMode.System
+            }
+
+            val themeController = remember(colorSchemeMode, isDark) {
+                top.yukonga.miuix.kmp.theme.ThemeController(
+                    colorSchemeMode = colorSchemeMode,
+                    isDark = isDark
+                )
+            }
+
+            val dispatcherOwner = androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner(parent = null)
+            top.yukonga.miuix.kmp.theme.MiuixTheme(controller = themeController) {
+                CompositionLocalProvider(
+                    androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner provides dispatcherOwner,
+                    top.yukonga.miuix.kmp.squircle.LocalSquircleEnabled provides true
+                ) {
+                    MaterialTheme(colorScheme = colorScheme) {
+                        Surface(
+                            modifier = Modifier.fillMaxSize(),
+                            color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.background
+                        ) {
+                            AppNavHost(mainViewModel)
+                        }
+                    }
+                }
+            }
+        }
 
         Log.d(TAG, "MainActivity onCreate called.")
     }
@@ -86,73 +157,6 @@ class MainActivity : ComponentActivity() {
         else -> R.mipmap.ic_launcher_lineal_color
     }
 
-    private fun initView() {
-        val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        val currentNightMode =
-            resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        val isDark = when (mainViewModel.prefs.theme) {
-            ThemeMode.Light -> false
-            ThemeMode.Dark -> true
-            ThemeMode.Auto -> currentNightMode == Configuration.UI_MODE_NIGHT_YES
-        }
-        insetsController.isAppearanceLightStatusBars = !isDark
-
-        setContent {
-            val context = LocalContext.current
-            val dynamicColor = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-            val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
-
-            androidx.compose.runtime.LaunchedEffect(settingsState.switches.hideFromRecents) {
-                val activityManager = getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
-                activityManager?.appTasks?.firstOrNull()?.setExcludeFromRecents(settingsState.switches.hideFromRecents)
-            }
-
-            val currentIcon by mainViewModel.appIcon.collectAsStateWithLifecycle()
-            androidx.compose.runtime.LaunchedEffect(currentIcon) {
-                // Keep the recents-card icon in sync with the chosen launcher icon
-                // (launcher icon itself is switched via activity-alias).
-                updateTaskDescription()
-            }
-
-            val colorScheme = when {
-                dynamicColor && isDark -> dynamicDarkColorScheme(context)
-                dynamicColor && !isDark -> dynamicLightColorScheme(context)
-                isDark -> darkColorScheme()
-                else -> lightColorScheme()
-            }
-
-            val colorSchemeMode = when (mainViewModel.prefs.theme) {
-                ThemeMode.Light -> if (dynamicColor) top.yukonga.miuix.kmp.theme.ColorSchemeMode.MonetLight else top.yukonga.miuix.kmp.theme.ColorSchemeMode.Light
-                ThemeMode.Dark -> if (dynamicColor) top.yukonga.miuix.kmp.theme.ColorSchemeMode.MonetDark else top.yukonga.miuix.kmp.theme.ColorSchemeMode.Dark
-                ThemeMode.Auto -> if (dynamicColor) top.yukonga.miuix.kmp.theme.ColorSchemeMode.MonetSystem else top.yukonga.miuix.kmp.theme.ColorSchemeMode.System
-            }
-
-            val themeController = androidx.compose.runtime.remember(colorSchemeMode, isDark) {
-                top.yukonga.miuix.kmp.theme.ThemeController(
-                    colorSchemeMode = colorSchemeMode,
-                    isDark = isDark
-                )
-            }
-
-            val dispatcherOwner = androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner(parent = null)
-            top.yukonga.miuix.kmp.theme.MiuixTheme(controller = themeController) {
-                androidx.compose.runtime.CompositionLocalProvider(
-                    androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner provides dispatcherOwner,
-                    top.yukonga.miuix.kmp.squircle.LocalSquircleEnabled provides true
-                ) {
-                    MaterialTheme(colorScheme = colorScheme) {
-                        Surface(
-                            modifier = Modifier.fillMaxSize(),
-                            color = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme.background
-                        ) {
-                            AppNavHost(mainViewModel)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
@@ -160,21 +164,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        mainViewModel.reloadView = null
-        Log.d(TAG, "MainActivity destroyed and reloadView reference cleared.")
-    }
-
-    override fun onConfigurationChanged(newConfig: Configuration) {
-        super.onConfigurationChanged(newConfig)
-        val currentNightMode = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        val isDark = when (mainViewModel.prefs.theme) {
-            ThemeMode.Light -> false
-            ThemeMode.Dark -> true
-            ThemeMode.Auto -> currentNightMode == Configuration.UI_MODE_NIGHT_YES
-        }
-        val insetsController = WindowCompat.getInsetsController(window, window.decorView)
-        insetsController.isAppearanceLightStatusBars = !isDark
-        Log.d(TAG, "MainActivity onConfigurationChanged called.")
+        Log.d(TAG, "MainActivity destroyed.")
     }
 
     companion object {
