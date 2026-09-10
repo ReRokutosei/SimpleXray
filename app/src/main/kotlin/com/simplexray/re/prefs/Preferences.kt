@@ -1,9 +1,9 @@
 package com.simplexray.re.prefs
 
-import android.content.ContentResolver
-import android.content.ContentValues
 import android.content.Context
+import android.content.SharedPreferences
 import android.util.Log
+import androidx.core.content.edit
 import com.simplexray.re.R
 import com.simplexray.re.common.ThemeMode
 import kotlin.properties.ReadWriteProperty
@@ -26,7 +26,6 @@ enum class LogLevel(val value: String) {
     }
 }
 
-
 enum class TunnelMode(val value: String) {
     XrayTun("xray_tun"),
     HevSocks5Tunnel("hev_socks5_tunnel");
@@ -38,153 +37,92 @@ enum class TunnelMode(val value: String) {
 }
 
 class Preferences(context: Context) {
-    private val contentResolver: ContentResolver
     private val context1: Context = context.applicationContext
+    private val sp: SharedPreferences =
+        context1.getSharedPreferences("${context1.packageName}_preferences", Context.MODE_PRIVATE)
 
-    init {
-        this.contentResolver = context1.contentResolver
-    }
-
-    private fun getPrefData(key: String): Pair<String?, String?> {
-        val uri = PrefsContract.PrefsEntry.CONTENT_URI.buildUpon().appendPath(key).build()
-        try {
-            contentResolver.query(
-                uri, null, null, null, null
-            )?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val valueColumnIndex =
-                        cursor.getColumnIndex(PrefsContract.PrefsEntry.COLUMN_PREF_VALUE)
-                    val typeColumnIndex =
-                        cursor.getColumnIndex(PrefsContract.PrefsEntry.COLUMN_PREF_TYPE)
-                    val value =
-                        if (valueColumnIndex != -1) cursor.getString(valueColumnIndex) else null
-                    val type =
-                        if (typeColumnIndex != -1) cursor.getString(typeColumnIndex) else null
-                    return Pair(value, type)
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error reading preference data for key: $key", e)
-        }
-        return Pair(null, null)
-    }
-
-    private fun getBooleanPref(key: String, default: Boolean): Boolean {
-        val (value, type) = getPrefData(key)
-        if (value != null) {
-            if ("Boolean".equals(type, ignoreCase = true)) {
-                return value.toBoolean()
-            }
-            return value.toBooleanStrictOrNull() ?: default
-        }
-        return default
-    }
-
-    private fun setValueInProvider(key: String, value: Any?) {
-        val uri = PrefsContract.PrefsEntry.CONTENT_URI.buildUpon().appendPath(key).build()
-        val values = ContentValues()
-        when (value) {
-            is String -> {
-                values.put(PrefsContract.PrefsEntry.COLUMN_PREF_VALUE, value)
-            }
-
-            is Int -> {
-                values.put(PrefsContract.PrefsEntry.COLUMN_PREF_VALUE, value)
-            }
-
-            is Boolean -> {
-                values.put(PrefsContract.PrefsEntry.COLUMN_PREF_VALUE, value)
-            }
-
-            is Long -> {
-                values.put(PrefsContract.PrefsEntry.COLUMN_PREF_VALUE, value)
-            }
-
-            is Float -> {
-                values.put(PrefsContract.PrefsEntry.COLUMN_PREF_VALUE, value)
-            }
-
-            else -> {
-                if (value != null) {
-                    Log.e(TAG, "Unsupported type for key: $key with value: $value")
-                    return
-                }
-                values.putNull(PrefsContract.PrefsEntry.COLUMN_PREF_VALUE)
-            }
-        }
-        try {
-            val rows = contentResolver.update(uri, values, null, null)
-            if (rows == 0) {
-                Log.w(TAG, "Update failed or key not found for: $key")
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error setting preference for key: $key", e)
+    private fun safeGetBoolean(key: String, default: Boolean): Boolean {
+        return try {
+            sp.getBoolean(key, default)
+        } catch (e: ClassCastException) {
+            sp.getString(key, null)?.toBooleanStrictOrNull() ?: default
         }
     }
 
-    // --- Provider-backed property delegates (collapse the repetitive get/set boilerplate) ---
+    private fun safeGetInt(key: String, default: Int): Int {
+        return try {
+            sp.getInt(key, default)
+        } catch (e: ClassCastException) {
+            sp.getString(key, null)?.toIntOrNull() ?: default
+        }
+    }
+
+    private fun safeGetLong(key: String, default: Long): Long {
+        return try {
+            sp.getLong(key, default)
+        } catch (e: ClassCastException) {
+            sp.getString(key, null)?.toLongOrNull() ?: default
+        }
+    }
+
+    // --- SharedPreferences property delegates ---
 
     private fun stringPref(key: String, default: () -> String = { "" }): ReadWriteProperty<Any?, String> =
         object : ReadWriteProperty<Any?, String> {
             override fun getValue(thisRef: Any?, property: KProperty<*>): String =
-                getPrefData(key).first ?: default()
-            override fun setValue(thisRef: Any?, property: KProperty<*>, value: String) =
-                setValueInProvider(key, value)
+                sp.getString(key, null) ?: default()
+            override fun setValue(thisRef: Any?, property: KProperty<*>, value: String) {
+                sp.edit { putString(key, value) }
+            }
         }
 
     private fun nullableStringPref(key: String): ReadWriteProperty<Any?, String?> =
         object : ReadWriteProperty<Any?, String?> {
             override fun getValue(thisRef: Any?, property: KProperty<*>): String? =
-                getPrefData(key).first
-            override fun setValue(thisRef: Any?, property: KProperty<*>, value: String?) =
-                setValueInProvider(key, value)
+                sp.getString(key, null)
+            override fun setValue(thisRef: Any?, property: KProperty<*>, value: String?) {
+                sp.edit {
+                    if (value == null) remove(key) else putString(key, value)
+                }
+            }
         }
 
     private fun booleanPref(key: String, default: Boolean): ReadWriteProperty<Any?, Boolean> =
         object : ReadWriteProperty<Any?, Boolean> {
             override fun getValue(thisRef: Any?, property: KProperty<*>): Boolean =
-                getBooleanPref(key, default)
-            override fun setValue(thisRef: Any?, property: KProperty<*>, value: Boolean) =
-                setValueInProvider(key, value)
+                safeGetBoolean(key, default)
+            override fun setValue(thisRef: Any?, property: KProperty<*>, value: Boolean) {
+                sp.edit { putBoolean(key, value) }
+            }
         }
 
-    private fun intPref(key: String, default: Int, logTag: String? = null): ReadWriteProperty<Any?, Int> =
+    private fun intPref(key: String, default: Int): ReadWriteProperty<Any?, Int> =
         object : ReadWriteProperty<Any?, Int> {
-            override fun getValue(thisRef: Any?, property: KProperty<*>): Int {
-                val value = getPrefData(key).first
-                val intValue = value?.toIntOrNull()
-                if (value != null && intValue == null) {
-                    logTag?.let { Log.e(TAG, "Failed to parse $it as Integer: $value") }
-                }
-                return intValue ?: default
+            override fun getValue(thisRef: Any?, property: KProperty<*>): Int =
+                safeGetInt(key, default)
+            override fun setValue(thisRef: Any?, property: KProperty<*>, value: Int) {
+                sp.edit { putInt(key, value) }
             }
-            override fun setValue(thisRef: Any?, property: KProperty<*>, value: Int) =
-                setValueInProvider(key, value)
         }
 
-    private fun longPref(key: String, default: Long, logTag: String? = null): ReadWriteProperty<Any?, Long> =
+    private fun longPref(key: String, default: Long): ReadWriteProperty<Any?, Long> =
         object : ReadWriteProperty<Any?, Long> {
-            override fun getValue(thisRef: Any?, property: KProperty<*>): Long {
-                val value = getPrefData(key).first
-                val longValue = value?.toLongOrNull()
-                if (value != null && longValue == null) {
-                    logTag?.let { Log.e(TAG, "Failed to parse $it as Long: $value") }
-                }
-                return longValue ?: default
+            override fun getValue(thisRef: Any?, property: KProperty<*>): Long =
+                safeGetLong(key, default)
+            override fun setValue(thisRef: Any?, property: KProperty<*>, value: Long) {
+                sp.edit { putLong(key, value) }
             }
-            override fun setValue(thisRef: Any?, property: KProperty<*>, value: Long) =
-                setValueInProvider(key, value)
         }
 
     var socksAddress: String by stringPref(SOCKS_ADDR) { "127.0.0.1" }
-    var socksPort: Int by intPref(SOCKS_PORT, 10808, "SocksPort")
+    var socksPort: Int by intPref(SOCKS_PORT, 10808)
     var socksUsername: String by stringPref(SOCKS_USER)
     var socksPassword: String by stringPref(SOCKS_PASS)
     var dnsIpv4: String by stringPref(DNS_IPV4) { "8.8.8.8" }
     var dnsIpv6: String by stringPref(DNS_IPV6) { "2001:4860:4860::8888" }
 
     val udpInTcp: Boolean
-        get() = getBooleanPref(UDP_IN_TCP, false)
+        get() = safeGetBoolean(UDP_IN_TCP, false)
 
     var ipv4: Boolean by booleanPref(IPV4, true)
     var ipv6: Boolean by booleanPref(IPV6, false)
@@ -192,7 +130,7 @@ class Preferences(context: Context) {
 
     var apps: Set<String?>?
         get() {
-            val jsonSet = getPrefData(APPS).first
+            val jsonSet = sp.getString(APPS, null)
             return jsonSet?.let {
                 try {
                     Json.decodeFromString<Set<String>>(it)
@@ -205,15 +143,15 @@ class Preferences(context: Context) {
         set(apps) {
             val validSet = apps?.filterNotNull()?.toSet() ?: emptySet()
             val jsonSet = Json.encodeToString(validSet)
-            setValueInProvider(APPS, jsonSet)
+            sp.edit { putString(APPS, jsonSet) }
         }
 
     var enable: Boolean by booleanPref(ENABLE, false)
     var disableVpn: Boolean by booleanPref(DISABLE_VPN, false)
     var tunnelMode: TunnelMode
-        get() = getPrefData(TUNNEL_MODE).first?.let { TunnelMode.fromString(it) } ?: TunnelMode.XrayTun
+        get() = sp.getString(TUNNEL_MODE, null)?.let { TunnelMode.fromString(it) } ?: TunnelMode.XrayTun
         set(value) {
-            setValueInProvider(TUNNEL_MODE, value.value)
+            sp.edit { putString(TUNNEL_MODE, value.value) }
         }
 
     var tunnelMtu: Int by intPref(TUNNEL_MTU, 1500)
@@ -229,14 +167,14 @@ class Preferences(context: Context) {
     var geoUpdateIntervalHours: Int by intPref(GEO_UPDATE_INTERVAL_HOURS, 0)
     var lastGeoUpdateTime: Long by longPref(LAST_GEO_UPDATE_TIME, 0L)
     var httpProxyEnabled: Boolean by booleanPref(HTTP_PROXY_ENABLED, false)
-    var httpPort: Int by intPref(HTTP_PORT, 10809, "HttpPort")
+    var httpPort: Int by intPref(HTTP_PORT, 10809)
     var customGeoipImported: Boolean by booleanPref(CUSTOM_GEOIP_IMPORTED, false)
     var customGeositeImported: Boolean by booleanPref(CUSTOM_GEOSITE_IMPORTED, false)
     var keepAwake: Boolean by booleanPref(KEEP_AWAKE, false)
 
     var configFilesOrder: List<String>
         get() {
-            val jsonList = getPrefData(CONFIG_FILES_ORDER).first
+            val jsonList = sp.getString(CONFIG_FILES_ORDER, null)
             return jsonList?.let {
                 try {
                     Json.decodeFromString<List<String>>(it)
@@ -248,7 +186,7 @@ class Preferences(context: Context) {
         }
         set(order) {
             val jsonList = Json.encodeToString(order)
-            setValueInProvider(CONFIG_FILES_ORDER, jsonList)
+            sp.edit { putString(CONFIG_FILES_ORDER, jsonList) }
         }
 
     var geoipUrl: String by stringPref(GEOIP_URL) { context1.getString(R.string.geoip_url) }
@@ -259,41 +197,41 @@ class Preferences(context: Context) {
     var bypassSelectedApps: Boolean by booleanPref(BYPASS_SELECTED_APPS, false)
 
     var theme: ThemeMode
-        get() = getPrefData(THEME).first?.let { ThemeMode.fromString(it) } ?: ThemeMode.Auto
+        get() = sp.getString(THEME, null)?.let { ThemeMode.fromString(it) } ?: ThemeMode.Auto
         set(value) {
-            setValueInProvider(THEME, value.value)
+            sp.edit { putString(THEME, value.value) }
         }
 
     var notificationPrompted: Boolean by booleanPref(NOTIFICATION_PROMPTED, false)
 
     var customDatUrls: Map<String, String>
         get() {
-            val json = getPrefData(CUSTOM_DAT_URLS).first
+            val json = sp.getString(CUSTOM_DAT_URLS, null)
             return if (!json.isNullOrEmpty()) {
                 runCatching { Json.decodeFromString<Map<String, String>>(json) }.getOrDefault(emptyMap())
             } else emptyMap()
         }
         set(value) {
             val json = Json.encodeToString(value)
-            setValueInProvider(CUSTOM_DAT_URLS, json)
+            sp.edit { putString(CUSTOM_DAT_URLS, json) }
         }
 
     var logLevel: LogLevel
-        get() = getPrefData(LOG_LEVEL).first?.let { LogLevel.fromString(it) } ?: LogLevel.Auto
+        get() = sp.getString(LOG_LEVEL, null)?.let { LogLevel.fromString(it) } ?: LogLevel.Auto
         set(level) {
-            setValueInProvider(LOG_LEVEL, level.value)
+            sp.edit { putString(LOG_LEVEL, level.value) }
         }
 
     var accessLog: Boolean
-        get() = getPrefData(ACCESS_LOG).first?.toBooleanStrictOrNull() ?: true
+        get() = safeGetBoolean(ACCESS_LOG, true)
         set(value) {
-            setValueInProvider(ACCESS_LOG, value.toString())
+            sp.edit { putBoolean(ACCESS_LOG, value) }
         }
 
     var dnsLog: Boolean
-        get() = getPrefData(DNS_LOG).first?.toBooleanStrictOrNull() ?: false
+        get() = safeGetBoolean(DNS_LOG, false)
         set(value) {
-            setValueInProvider(DNS_LOG, value.toString())
+            sp.edit { putBoolean(DNS_LOG, value) }
         }
 
     companion object {

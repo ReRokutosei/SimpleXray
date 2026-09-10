@@ -19,7 +19,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -48,18 +47,14 @@ fun LogScreen(
     accessLog: Boolean = true,
     dnsLog: Boolean = false
 ) {
-    val context = LocalContext.current
     val filteredEntries by logViewModel.filteredEntries.collectAsStateWithLifecycle()
     val searchQuery by logViewModel.searchQuery.collectAsStateWithLifecycle()
     val isInitialLoad = remember { mutableStateOf(true) }
     val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
 
     DisposableEffect(key1 = Unit) {
-        logViewModel.registerLogReceiver(context)
         logViewModel.loadLogs()
-        onDispose {
-            logViewModel.unregisterLogReceiver(context)
-        }
+        onDispose {}
     }
 
     LaunchedEffect(filteredEntries) {

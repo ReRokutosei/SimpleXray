@@ -51,14 +51,14 @@ SimpleXray 主要负责在 Android 上运行和管理 Xray-core。应用接受�
 
 | 项目 | 上游版本（4c78901） | 本仓库 |
 |-|-|-|
-| **进程与配置传递**  | 使用独立子进程运行 Xray，并通过标准输入传递配置 | 使用独立子进程运行 Xray，并通过标准输入传递配置。Xray 原生 TUN 模式通过 JNI 启动器启动子进程，Hev 模式使用 `ProcessBuilder`。APK 仅打包 `arm64-v8a` |
+| **进程与配置传递**  | 使用独立子进程运行 Xray，并通过标准输入传递配置 | Android 应用层（UI 与 VpnService）采用单进程架构，通过标准输入向独立子进程传递配置。Xray 原生 TUN 模式通过 JNI 启动器启动子进程，Hev 模式使用 `ProcessBuilder`。APK 仅打包 `arm64-v8a` |
 | **流量与进程间通信** | 由 `hev-socks5-tunnel` 读取 Android VPN 文件描述符，并通过本地 SOCKS5 入站将流量转发至 Xray。状态统计使用动态分配的本机回环 TCP gRPC 端口 | 数据面由设置页选择的 TUN 后端决定。Xray 原生 TUN 模式通过 JNI 启动器接收 VPN 文件描述符，Hev 模式通过本地 SOCKS5 入站转发流量。内核状态和流量统计使用动态分配的 `127.0.0.1` TCP gRPC 端口 |
 | **配置导入**     | 支持 JSON 配置、`vless://` 链接和 `simplexray://config/` 链接 | 仅支持通过 Android Storage Access Framework 或剪贴板导入完整 JSON、YAML 配置，不支持节点分享链接 |
 | **规则文件**     | 内置 `geoip.dat` 和 `geosite.dat`，并支持本地替换及这两个文件的 URL 更新 | 保留标准规则文件管理，并增加任意自定义 `.dat` 文件、`ext:` 文件引用、独立更新地址、文件校验和后台更新 |
 | **配置处理**     | 对 JSON 进行格式化，并删除 `log.access` 和 `log.error` | 使用 SnakeYAML 解析配置，并通过单向 Android 兼容处理流程调整入站、路由规则、DNS 引导主机、日志及部分出站配置 |
 | **构建系统**     | 使用 `ndkBuild` 和 `Android.mk`，配合标准 Gradle 配置 | 使用 CMake 和 `CMakeLists.txt`；原生隧道目标包含 Android 16 KB 内存页对齐链接选项，并使用 Gradle Wrapper `9.7.0`、Android Gradle Plugin `9.3.1`、Version Catalog 和 Plugins DSL |
 | **界面与布局**    | 使用标准 Material 3 界面                                   | 使用 `compose-miuix-ui` 实现 Xiaomi HyperOS / MIUI 风格的界面，并针对手机和平板提供自适应布局                                                           |
-| **数据存储与序列化** | 使用 ContentProvider 封装的 `SharedPreferences` 和 `Gson` | 使用 ContentProvider 封装的 `SharedPreferences`，使用 `kotlinx.serialization` 处理结构化数据，并通过 Compose `StateFlow` 管理界面状态 |
+| **数据存储与通信架构** | 使用 ContentProvider 封装的 `SharedPreferences` 和 `Gson` | 直接使用轻量级原生 `SharedPreferences` 与 `kotlinx.serialization`；UI 与后台服务通过内存级 `StateFlow` / `SharedFlow` 实现零拷贝响应式通信 |
 | **核心组件**     | Xray-core `v26.3.27` 和 `hev-socks5-tunnel` `v2.14.3` | Xray-core `v26.9.9` 和 `hev-socks5-tunnel` `v2.17.0`                                   |
 | **ABI 打包**     | 提供 `arm64-v8a` 和 `x86_64` 分包 APK，以及通用 APK | 仅提供 `arm64-v8a` APK |
 | **TUN 后端设置** | 不提供 Xray TUN 后端设置 | 可选 `Xray TUN` 和 `Hev Socks5 Tunnel`，默认值为 `Xray TUN` |
@@ -120,10 +120,11 @@ SimpleXray 保留内置的 `geoip.dat` 和 `geosite.dat` 规则文件，并增�
 
 SimpleXray 根据配置传递、VPN 流量、内核日志和状态统计查询的不同用途，分别采用相应的通信通道。
 
-* **配置传递**：生成的 JSON 配置直接写入 Xray-core 的标准输入，无需生成中间配置文件。
+* **单进程应用架构**：Android 应用层（UI 与后台 `TProxyService`）运行于同一进程内，消除了多进程间的 IPC 开销；服务生命周期状态与日志流直接通过内存级 `StateFlow` / `SharedFlow` 响应式传递，配置读写回归轻量级 `SharedPreferences`。
+* **内核子进程管理**：Xray-core 可执行文件作为独立的系统子进程运行，便于解耦与后续独立升级内核；通过标准输入直接写入生成的 JSON 配置，无需落盘生成中间配置文件。
 * **原生 TUN 模式**：JNI 启动器将 Android `VpnService` 提供的文件描述符传递给 Xray 子进程，再接入 Xray 的 TUN 入站。
-* **内核日志**：通过管道读取 Xray 的标准输出和标准错误。
-* **状态统计**：通过动态分配的 `127.0.0.1` TCP 端口提供明文 gRPC，用于查询内核状态和流量统计。
+* **内核日志**：通过管道读取 Xray 的标准输出和标准错误，经内存流实时广播至 UI 并按需记录。
+* **状态统计**：通过动态分配的 `127.0.0.1` TCP 瞬态端口提供明文 gRPC，用于查询内核状态和流量统计。
 * **Hev 隧道模式**：选中该模式时，由 `hev-socks5-tunnel` 读取 Android VPN 文件描述符中的流量，再通过本地 SOCKS5 入站转发给 Xray。
 
 > 实测数据请参阅 [Android TUN 性能基准测试报告](./benchmark/android-tun-benchmark.md)。

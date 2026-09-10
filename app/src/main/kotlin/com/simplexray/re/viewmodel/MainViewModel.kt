@@ -1,17 +1,13 @@
 package com.simplexray.re.viewmodel
 
-import android.app.ActivityManager
 import android.app.Application
-import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.content.ComponentName
 import android.content.pm.PackageManager
 import android.net.Uri
 import androidx.core.net.toUri
 import android.net.VpnService
-import android.os.Build
 import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.lifecycle.AndroidViewModel
@@ -32,6 +28,8 @@ import com.simplexray.re.data.source.FileManager
 import com.simplexray.re.prefs.LogLevel
 import com.simplexray.re.prefs.Preferences
 import com.simplexray.re.service.TProxyService
+import com.simplexray.re.service.VpnRunningState
+import com.simplexray.re.service.VpnStateHub
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -195,38 +193,44 @@ class MainViewModel(application: Application) :
     private val _newVersionAvailable = MutableStateFlow<String?>(null)
     val newVersionAvailable: StateFlow<String?> = _newVersionAvailable.asStateFlow()
 
-    private val startReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            Log.d(TAG, "Service started")
-            setServiceEnabled(true)
-            setControlMenuClickable(true)
-        }
-    }
-
-    private val stopReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            Log.d(TAG, "Service stopped")
-            setServiceEnabled(false)
-            setControlMenuClickable(true)
-            _coreStatsState.value = CoreStatsState()
-            coreStatsClient?.close()
-            coreStatsClient = null
-        }
-    }
-
-    private val startFailedReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            Log.d(TAG, "Xray start failed")
-            _uiEvent.trySend(
-                MainViewUiEvent.ShowSnackbar(application.getString(R.string.core_start_failed))
-            )
-        }
-    }
-
     init {
         Log.d(TAG, "MainViewModel initialized.")
 
         setupGlobalSocksAuthenticator()
+
+        viewModelScope.launch {
+            VpnStateHub.state.collect { state ->
+                when (state) {
+                    is VpnRunningState.Connected -> {
+                        Log.d(TAG, "VPN state: Connected")
+                        setServiceEnabled(true)
+                        setControlMenuClickable(true)
+                    }
+                    is VpnRunningState.Connecting -> {
+                        Log.d(TAG, "VPN state: Connecting")
+                        setControlMenuClickable(false)
+                    }
+                    is VpnRunningState.Disconnected -> {
+                        Log.d(TAG, "VPN state: Disconnected")
+                        setServiceEnabled(false)
+                        setControlMenuClickable(true)
+                        _coreStatsState.value = CoreStatsState()
+                        coreStatsClient?.close()
+                        coreStatsClient = null
+                    }
+                    is VpnRunningState.Failed -> {
+                        Log.d(TAG, "VPN state: Failed (${state.message})")
+                        setServiceEnabled(false)
+                        setControlMenuClickable(true)
+                        _coreStatsState.value = CoreStatsState()
+                        coreStatsClient?.close()
+                        coreStatsClient = null
+                        val msg = state.message ?: application.getString(R.string.core_start_failed)
+                        _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(msg))
+                    }
+                }
+            }
+        }
 
         viewModelScope.launch(Dispatchers.IO) {
             val legacyExtraApi = File(application.filesDir, "extra_api.json")
@@ -241,7 +245,7 @@ class MainViewModel(application: Application) :
             // drop fields); the rest are independent.
             coroutineScope {
                 launch {
-                    _isServiceEnabled.value = isServiceRunning(application, TProxyService::class.java)
+                    _isServiceEnabled.value = VpnStateHub.state.value is VpnRunningState.Connected
                 }
                 launch { ensureAppIconSelected() }
                 launch {
@@ -1021,53 +1025,11 @@ class MainViewModel(application: Application) :
         prefs.selectedConfigPath = file?.absolutePath
     }
 
-    fun registerTProxyServiceReceivers() {
-        val application = application
-        val startSuccessFilter = IntentFilter(TProxyService.ACTION_START)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            application.registerReceiver(
-                startReceiver,
-                startSuccessFilter,
-                Context.RECEIVER_NOT_EXPORTED
-            )
-        } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            application.registerReceiver(startReceiver, startSuccessFilter)
-        }
+    @Deprecated("No-op; service state is now observed via VpnStateHub.state")
+    fun registerTProxyServiceReceivers() {}
 
-        val stopSuccessFilter = IntentFilter(TProxyService.ACTION_STOP)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            application.registerReceiver(
-                stopReceiver,
-                stopSuccessFilter,
-                Context.RECEIVER_NOT_EXPORTED
-            )
-        } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            application.registerReceiver(stopReceiver, stopSuccessFilter)
-        }
-
-        val startFailedFilter = IntentFilter(TProxyService.ACTION_START_FAILED)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            application.registerReceiver(
-                startFailedReceiver,
-                startFailedFilter,
-                Context.RECEIVER_NOT_EXPORTED
-            )
-        } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            application.registerReceiver(startFailedReceiver, startFailedFilter)
-        }
-        Log.d(TAG, "TProxyService receivers registered.")
-    }
-
-    fun unregisterTProxyServiceReceivers() {
-        val application = application
-        application.unregisterReceiver(startReceiver)
-        application.unregisterReceiver(stopReceiver)
-        application.unregisterReceiver(startFailedReceiver)
-        Log.d(TAG, "TProxyService receivers unregistered.")
-    }
+    @Deprecated("No-op; service state is now observed via VpnStateHub.state")
+    fun unregisterTProxyServiceReceivers() {}
 
     fun restoreDefaultGeoip(callback: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
@@ -1475,15 +1437,6 @@ class MainViewModel(application: Application) :
         private const val IPV6_REGEX =
             "^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80::(fe80(:[0-9a-fA-F]{0,4})?){0,4}%[0-9a-zA-Z]+|::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?\\d)?\\d)\\.){3}(25[0-5]|(2[0-4]|1?\\d)?\\d)|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?\\d)?\\d)\\.){3}(25[0-5]|(2[0-4]|1?\\d)?\\d))$"
         private val IPV6_PATTERN: Pattern = Pattern.compile(IPV6_REGEX)
-
-        @Suppress("DEPRECATION")
-        fun isServiceRunning(context: Context, serviceClass: Class<*>): Boolean {
-            val activityManager =
-                context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-            return activityManager.getRunningServices(Int.MAX_VALUE).any { service ->
-                serviceClass.name == service.service.className
-            }
-        }
     }
 }
 

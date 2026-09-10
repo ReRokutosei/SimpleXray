@@ -11,9 +11,7 @@ import android.content.pm.ServiceInfo
 import android.net.ProxyInfo
 import android.net.VpnService
 import android.os.Build
-import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.system.ErrnoException
 import android.system.Os
@@ -49,26 +47,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import kotlin.concurrent.Volatile
-import kotlin.system.exitProcess
 
 class TProxyService : VpnService() {
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private val handler = Handler(Looper.getMainLooper())
-    private val logBroadcastBuffer: MutableList<String> = mutableListOf()
-    private val broadcastLogsRunnable = Runnable {
-        synchronized(logBroadcastBuffer) {
-            if (logBroadcastBuffer.isNotEmpty()) {
-                val logUpdateIntent = Intent(ACTION_LOG_UPDATE)
-                logUpdateIntent.setPackage(application.packageName)
-                logUpdateIntent.putStringArrayListExtra(
-                    EXTRA_LOG_DATA, ArrayList(logBroadcastBuffer)
-                )
-                sendBroadcast(logUpdateIntent)
-                logBroadcastBuffer.clear()
-                Log.d(TAG, "Broadcasted a batch of logs.")
-            }
-        }
-    }
 
     private fun findAvailablePort(excludedPorts: Set<Int>): Int? {
         repeat(5) {
@@ -127,6 +108,7 @@ class TProxyService : VpnService() {
         val action = intent.action
         when (action) {
             ACTION_DISCONNECT -> {
+                VpnStateHub.updateState(VpnRunningState.Disconnected)
                 stopXray()
                 return START_NOT_STICKY
             }
@@ -157,11 +139,9 @@ class TProxyService : VpnService() {
                     if (!acquireStart("ACTION_START")) {
                         return START_NOT_STICKY
                     }
+                    VpnStateHub.updateState(VpnRunningState.Connecting)
                     logFileManager.clearLogs()
                     serviceScope.launch { runXrayProcess() }
-                    val successIntent = Intent(ACTION_START)
-                    successIntent.setPackage(application.packageName)
-                    sendBroadcast(successIntent)
 
                     @Suppress("SameParameterValue") val channelName = "nosocks"
                     initNotificationChannel(channelName)
@@ -187,16 +167,14 @@ class TProxyService : VpnService() {
     override fun onDestroy() {
         super.onDestroy()
         isStartingLock.set(false)
-        handler.removeCallbacks(broadcastLogsRunnable)
-        broadcastLogsRunnable.run()
         serviceScope.cancel()
         tunFd?.let {
             runCatching { it.close() }
             tunFd = null
         }
         stopForeground(Service.STOP_FOREGROUND_REMOVE)
+        VpnStateHub.updateState(VpnRunningState.Disconnected)
         Log.d(TAG, "TProxyService destroyed.")
-        exitProcess(0)
     }
 
     override fun onRevoke() {
@@ -206,6 +184,7 @@ class TProxyService : VpnService() {
 
     private fun startXray() {
         if (!acquireStart("startXray")) return
+        VpnStateHub.updateState(VpnRunningState.Connecting)
         val prefs = Preferences(this)
         if (prefs.keepAwake && wakeLock == null) {
             val powerManager = getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
@@ -332,10 +311,8 @@ class TProxyService : VpnService() {
                         if (client.getSystemStats() != null) {
                             xrayStarted = true
                             xrayStartAttempt = 0
-                            Log.d(TAG, "Xray core ready (gRPC API reachable), broadcasting ACTION_START.")
-                            val successIntent = Intent(ACTION_START)
-                            successIntent.setPackage(application.packageName)
-                            sendBroadcast(successIntent)
+                            Log.d(TAG, "Xray core ready (gRPC API reachable), updating VpnStateHub.")
+                            VpnStateHub.updateState(VpnRunningState.Connected)
                             startPeriodicGeoUpdateCheck()
                             break
                         }
@@ -356,12 +333,7 @@ class TProxyService : VpnService() {
                 // which stamp logs on the app side).
                 val stampedLine = stampLogLine(line)
                 logFileManager.appendLog(stampedLine)
-                synchronized(logBroadcastBuffer) {
-                    logBroadcastBuffer.add(stampedLine)
-                    if (!handler.hasCallbacks(broadcastLogsRunnable)) {
-                        handler.postDelayed(broadcastLogsRunnable, BROADCAST_DELAY_MS)
-                    }
-                }
+                VpnStateHub.emitLog(stampedLine)
                 line = reader.readLine()
             }
             Log.d(TAG, "Native Xray process log stream finished.")
@@ -409,9 +381,9 @@ class TProxyService : VpnService() {
             serviceScope.launch { runXrayProcess() }
         } else {
             Log.e(TAG, "Xray failed to start after $MAX_START_ATTEMPTS attempts, stopping service.")
-            val failIntent = Intent(ACTION_START_FAILED)
-            failIntent.setPackage(application.packageName)
-            sendBroadcast(failIntent)
+            VpnStateHub.updateState(
+                VpnRunningState.Failed(applicationContext.getString(R.string.core_start_failed))
+            )
             exit()
         }
     }
@@ -622,9 +594,7 @@ class TProxyService : VpnService() {
     }
 
     private fun exit() {
-        val stopIntent = Intent(ACTION_STOP)
-        stopIntent.setPackage(application.packageName)
-        sendBroadcast(stopIntent)
+        VpnStateHub.updateState(VpnRunningState.Disconnected)
         stopSelf()
     }
 

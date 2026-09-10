@@ -1,18 +1,14 @@
 package com.simplexray.re.viewmodel
 
 import android.app.Application
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
-import android.os.Build
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.simplexray.re.data.source.LogFileManager
-import com.simplexray.re.service.TProxyService
+import com.simplexray.re.service.VpnStateHub
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -65,20 +61,11 @@ class LogViewModel(application: Application) :
     private val logMutex = Mutex()
     private var pendingBatchJob: kotlinx.coroutines.Job? = null
 
-    private var logUpdateReceiver: BroadcastReceiver
-
     init {
         Log.d(TAG, "LogViewModel initialized.")
-        logUpdateReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context, intent: Intent) {
-                if (TProxyService.ACTION_LOG_UPDATE == intent.action) {
-                    val newLogs = intent.getStringArrayListExtra(TProxyService.EXTRA_LOG_DATA)
-                    if (!newLogs.isNullOrEmpty()) {
-                        viewModelScope.launch {
-                            processNewLogs(newLogs)
-                        }
-                    }
-                }
+        viewModelScope.launch {
+            VpnStateHub.logFlow.collect { line ->
+                processNewLogs(listOf(line))
             }
         }
         viewModelScope.launch {
@@ -88,25 +75,11 @@ class LogViewModel(application: Application) :
         }
     }
 
-    fun registerLogReceiver(context: Context) {
-        val filter = IntentFilter(TProxyService.ACTION_LOG_UPDATE)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            context.registerReceiver(logUpdateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            context.registerReceiver(logUpdateReceiver, filter)
-        }
-        Log.d(TAG, "Log receiver registered.")
-    }
+    @Deprecated("No-op; log stream is now handled via VpnStateHub.logFlow")
+    fun registerLogReceiver(context: Context) {}
 
-    fun unregisterLogReceiver(context: Context) {
-        try {
-            context.unregisterReceiver(logUpdateReceiver)
-        } catch (e: Exception) {
-            Log.w(TAG, "Receiver not registered: ${e.message}")
-        }
-        Log.d(TAG, "Log receiver unregistered.")
-    }
+    @Deprecated("No-op; log stream is now handled via VpnStateHub.logFlow")
+    fun unregisterLogReceiver(context: Context) {}
 
     fun loadLogs() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -133,7 +106,7 @@ class LogViewModel(application: Application) :
         Log.d(TAG, "Processed initial logs: ${_logEntries.value.size} entries.")
     }
 
-    private suspend fun processNewLogs(newLogs: ArrayList<String>) {
+    private suspend fun processNewLogs(newLogs: List<String>) {
         logMutex.withLock {
             for (line in newLogs) {
                 if (line.trim().isNotEmpty()) {
