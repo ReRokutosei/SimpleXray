@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.OkHttpClient
@@ -475,7 +476,10 @@ class MainViewModel(application: Application) :
         val results = coroutineScope {
             endpoints.map { ep ->
                 async(io) {
-                    ep.tag to TcpPing.pingBlocking(ep.host, ep.port)
+                    val delay = withTimeoutOrNull(4000L) {
+                        TcpPing.pingBlocking(ep.host, ep.port)
+                    } ?: -1L
+                    ep.tag to delay
                 }
             }.awaitAll()
         }
