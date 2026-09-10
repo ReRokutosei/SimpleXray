@@ -7,21 +7,16 @@ import android.content.Context
 import android.content.res.AssetManager
 import android.net.Uri
 import android.util.Log
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.*
 import com.simplexray.re.R
 import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.isConfigFile
-import com.simplexray.re.common.FilenameValidator
 import com.simplexray.re.prefs.Preferences
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.security.MessageDigest
@@ -29,11 +24,7 @@ import java.security.NoSuchAlgorithmException
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Base64
 import java.util.Locale
-import java.util.zip.DataFormatException
-import java.util.zip.Deflater
-import java.util.zip.Inflater
 import kotlin.math.log10
 import kotlin.math.pow
 

@@ -51,8 +51,6 @@
                 android:value="VPN service" />
         </service>
 
-
-
         <activity
             android:name="com.simplexray.re.activity.MainActivity"
             android:configChanges="orientation|screenSize|screenLayout"

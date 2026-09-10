@@ -231,11 +231,6 @@ class MainViewModel(application: Application) :
         }
 
         viewModelScope.launch(Dispatchers.IO) {
-            val legacyExtraApi = File(application.filesDir, "extra_api.json")
-            if (legacyExtraApi.exists()) {
-                runCatching { legacyExtraApi.delete() }
-            }
-
             // Independent initializations run concurrently to reduce first-launch
             // latency; coroutineScope waits for all of them before init finishes.
             // updateSettingsState and loadKernelVersion both read-modify-write
