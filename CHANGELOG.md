@@ -2,45 +2,6 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-## [2.0.0](https://github.com/ReRokutosei/SimpleXray/compare/v1.5.2...v2.0.0) (2026-09-10)
-
-
-### ⚠ BREAKING CHANGES
-
-* **build:** Minimum supported Android version is now Android 14 (API 34). Devices running Android 10-13 (API 29-33) are no longer supported.
-
-### Features
-
-* **vpn:** update underlying networks via NetworkCallback during network handover ([6a72815](https://github.com/ReRokutosei/SimpleXray/commit/6a7281506ea6d4f0dd7db3b72e5d19e45710b067))
-
-
-### Bug Fixes
-
-* **arch:** decouple child ViewModels from MainViewModel to prevent restoration crash ([59b6589](https://github.com/ReRokutosei/SimpleXray/commit/59b6589427c03b6eea0b8f0694798c0c9ee88486))
-* **config:** add placeholder proxy outbound to template to match routing rules ([9eb547a](https://github.com/ReRokutosei/SimpleXray/commit/9eb547a21c683d8c6de03ee26d11f65779f8078f))
-* **config:** align EFFECTIVE_MATCH_KEYS with Xray RawFieldRule and migrate legacy geosite/geoip ([a074b6b](https://github.com/ReRokutosei/SimpleXray/commit/a074b6b6ec1a8d0a8370c20ba4b88c187646ebc8))
-* **config:** support flat outbound endpoints, hysteria naming, and primary socks inbound targeting ([5b144fa](https://github.com/ReRokutosei/SimpleXray/commit/5b144fadbecdcc1596abd5f1c69bd3119c7b810f))
-* **core:** inject sniffing block into TUN inbound to restore FakeDNS and domain routing ([67f436c](https://github.com/ReRokutosei/SimpleXray/commit/67f436cc5ed0ae3ded03a756449d9cbcfcd88f64))
-* **core:** remove PR_SET_PDEATHSIG and reap native child processes via waitpid ([430bf1d](https://github.com/ReRokutosei/SimpleXray/commit/430bf1dc332ae867b4e2133286fc5b5d5c68266c))
-* **deps:** update dependency androidx.compose:compose-bom to v2026.09.00 ([#35](https://github.com/ReRokutosei/SimpleXray/issues/35)) ([ece17d0](https://github.com/ReRokutosei/SimpleXray/commit/ece17d0888d17ed4a6620144fb6d2a3a60c0fffd))
-* **deps:** update dependency androidx.navigation:navigation-compose-android to v2.10.1 ([#34](https://github.com/ReRokutosei/SimpleXray/issues/34)) ([c46b4b5](https://github.com/ReRokutosei/SimpleXray/commit/c46b4b5eacb1059f4e7f5ef8795ff902e935a75d))
-* **io:** prevent OkHttp response leak in GeoUpdateWorker and avoid fragile available() in FileManager ([759d166](https://github.com/ReRokutosei/SimpleXray/commit/759d1666da3fab4325b406e96fb1a2197e738222))
-* **lifecycle:** cancel only xrayJob in stopXray to prevent serviceScope invalidation on reconnect ([b33d181](https://github.com/ReRokutosei/SimpleXray/commit/b33d1814731e32dfa3badc2dc141dd579b8ead0f))
-* **lifecycle:** prevent activity leak in MainActivity and ensure full resource cleanup in TProxyService.onDestroy ([aaf1588](https://github.com/ReRokutosei/SimpleXray/commit/aaf1588dcfaa7b00e5dd2f7771a1b69d9e41c6d9))
-* **log:** synchronize LogFileManager operations across instances via shared FILE_LOCK ([a795b3a](https://github.com/ReRokutosei/SimpleXray/commit/a795b3a3fb0c47e5a82d81f01a90fa3a4a628055))
-* **memory:** decouple SOCKS Authenticator from MainViewModel to prevent static leak ([38f76bd](https://github.com/ReRokutosei/SimpleXray/commit/38f76bde7cb504137d03e4d2edd8e70d9f3a6238))
-* **net:** add DNS resolution timeout protection to TcpPing and guard outbound latency probes ([1501e7d](https://github.com/ReRokutosei/SimpleXray/commit/1501e7dc3c947a5bdbb8a02e8a98cf1380dcccab))
-* **net:** correct inverted bypassLan routing and link with geoip:private direct rule ([808dd1c](https://github.com/ReRokutosei/SimpleXray/commit/808dd1cff83111f54dea6ec0c23a82574b65e2dc))
-* **perf:** defer config file order persistence until drag gesture completion ([835aac8](https://github.com/ReRokutosei/SimpleXray/commit/835aac890429ae24d0dcae421a8a5c057e786191))
-* **perf:** offload app list package loading to IO dispatcher and serialize save operations ([16eec02](https://github.com/ReRokutosei/SimpleXray/commit/16eec02a06cbc8962edb43d0c1aacc6d23cfdbf0))
-* **release:** strip leading v in versionCode parsing and add Breaking Changes section to release notes ([8d200a4](https://github.com/ReRokutosei/SimpleXray/commit/8d200a48c0ad6fd9b165ca90f210795602d172fc))
-* **service:** use startService instead of startForegroundService on ACTION_DISCONNECT in BenchmarkReceiver ([fa675e6](https://github.com/ReRokutosei/SimpleXray/commit/fa675e635c00e51b9926e933b479c1346d898c8f))
-* **ui:** use collect instead of collectLatest for UI event channels and launch snackbars asynchronously ([cf25e5d](https://github.com/ReRokutosei/SimpleXray/commit/cf25e5dc427b67b81e07a3d10f135eaa6abaee1a))
-* **worker:** bound GeoUpdateWorker retries to prevent infinite retry loops ([bc7b1a0](https://github.com/ReRokutosei/SimpleXray/commit/bc7b1a0a627a7b60099333382685e7cd0919187d))
-
-
-* **build:** bump minSdk to 34 (Android 14) and eliminate legacy compatibility code ([3492228](https://github.com/ReRokutosei/SimpleXray/commit/3492228ffddcec4a672433e13270c52cfef91728))
-
 ### [1.5.2](https://github.com/ReRokutosei/SimpleXray/compare/v1.5.1...v1.5.2) (2026-09-09)
 
 ### [1.5.1](https://github.com/ReRokutosei/SimpleXray/compare/v1.5.0...v1.5.1) (2026-09-08)
