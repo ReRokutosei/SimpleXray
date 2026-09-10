@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.simplexray.re.BuildConfig
 import com.simplexray.re.prefs.Preferences
 import com.simplexray.re.prefs.TunnelMode
 import java.io.File
@@ -12,6 +13,7 @@ import java.io.File
 class BenchmarkReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context, intent: Intent) {
+        if (!BuildConfig.DEBUG) return
         val action = intent.action
         if (action != ACTION_BENCHMARK) return
 
