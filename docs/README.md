@@ -22,6 +22,11 @@ Imported configurations may be processed before execution to accommodate Android
 
 This repository is a personal fork based on the upstream [SimpleXray](https://github.com/lhear/SimpleXray) project.
 
+> [!NOTE]
+> This repository is a personal fork maintained strictly for personal use and experimentation.
+> Public Issues and Pull Requests are not accepted, and no support or maintenance is provided.
+> If you wish to use the app or track newer kernel updates, feel free to fork this project and build it via CI.
+
 ## UI Preview
 
 ### Mobile
@@ -284,6 +289,9 @@ If forking this repository and using GitHub Actions CI for automated builds and 
    * `KEY_STORE_PASSWORD`: Keystore password.
    * `KEY_ALIAS`: Key alias.
    * `KEY_PASSWORD`: Private key password.
+3. **Automated Kernel Upgrades**:
+   * The repository features a fully automated source-build pipeline. To upgrade to a newer upstream Xray-core release, you do not need to manually compile or fetch Go binaries: simply edit `XRAY_CORE_VERSION` in the root [`version.properties`](../version.properties).
+   * Commit the change and push a valid semver tag ( `X.Y.Z` ). GitHub Actions will automatically check out the matching Xray-core source code, cross-compile the binary, sign the release APK, and publish the GitHub Release.
 
 ---
 
