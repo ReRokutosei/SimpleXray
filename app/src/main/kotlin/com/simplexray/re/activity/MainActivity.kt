@@ -160,7 +160,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "Activity Coroutine Scope cancelled.")
+        mainViewModel.reloadView = null
+        Log.d(TAG, "MainActivity destroyed and reloadView reference cleared.")
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
