@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.util.Locale
 
@@ -77,7 +79,9 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     private val _bypassSelectedApps = MutableStateFlow(prefs.bypassSelectedApps)
     val bypassSelectedApps: StateFlow<Boolean> = _bypassSelectedApps.asStateFlow()
 
+    @Volatile
     private var isChanged = false
+    private val saveMutex = Mutex()
 
     private val _uiEvent = Channel<AppListViewUiEvent>(Channel.BUFFERED)
     val uiEvent = _uiEvent.receiveAsFlow()
@@ -97,12 +101,12 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
 
     private fun loadAppList() {
         _isLoading.value = true
-        val pm = getApplication<Application>().packageManager
-        val appPackageName = getApplication<Application>().packageName
-        val apps = prefs.apps ?: emptySet()
-        var loadedPackages = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
-        val startTime = System.currentTimeMillis()
         viewModelScope.launch(Dispatchers.IO) {
+            val pm = getApplication<Application>().packageManager
+            val appPackageName = getApplication<Application>().packageName
+            val apps = prefs.apps ?: emptySet()
+            var loadedPackages = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS)
+            val startTime = System.currentTimeMillis()
             while ((loadedPackages.isEmpty() || loadedPackages.size == 1)
                 && System.currentTimeMillis() - startTime < 10000
             ) {
@@ -221,14 +225,16 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     }
 
     private fun saveChanges() {
-        if (isChanged) {
-            viewModelScope.launch(Dispatchers.IO) {
-                val apps: MutableSet<String> = HashSet()
-                _packageList.value.forEach { pkg ->
-                    if (pkg.selected) apps.add(pkg.packageName)
-                }
-                prefs.apps = apps
+        viewModelScope.launch(Dispatchers.IO) {
+            saveMutex.withLock {
+                if (!isChanged) return@withLock
                 isChanged = false
+                val apps = _packageList.value
+                    .asSequence()
+                    .filter { it.selected }
+                    .map { it.packageName }
+                    .toSet()
+                prefs.apps = apps
             }
         }
     }
