@@ -1025,12 +1025,6 @@ class MainViewModel(application: Application) :
         prefs.selectedConfigPath = file?.absolutePath
     }
 
-    @Deprecated("No-op; service state is now observed via VpnStateHub.state")
-    fun registerTProxyServiceReceivers() {}
-
-    @Deprecated("No-op; service state is now observed via VpnStateHub.state")
-    fun unregisterTProxyServiceReceivers() {}
-
     fun restoreDefaultGeoip(callback: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             fileManager.restoreDefaultGeoip()
