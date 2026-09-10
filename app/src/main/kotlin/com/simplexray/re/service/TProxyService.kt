@@ -167,7 +167,18 @@ class TProxyService : VpnService() {
     override fun onDestroy() {
         super.onDestroy()
         isStartingLock.set(false)
+        periodicGeoUpdateJob?.cancel()
+        periodicGeoUpdateJob = null
         serviceScope.cancel()
+        killXrayProcess()
+        runCatching { TProxyStopService() }
+        wakeLock?.let {
+            if (it.isHeld) {
+                it.release()
+                Log.d(TAG, "Partial wake lock released in onDestroy.")
+            }
+            wakeLock = null
+        }
         tunFd?.let {
             runCatching { it.close() }
             tunFd = null
