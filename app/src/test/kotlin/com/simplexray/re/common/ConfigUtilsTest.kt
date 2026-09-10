@@ -146,4 +146,29 @@ class ConfigUtilsTest {
         assertTrue(overrides.contains("quic"))
         assertTrue(overrides.contains("fakedns"))
     }
+
+    @Test
+    fun testTemplateIntegrity() {
+        val templateFile = java.io.File("src/main/assets/template").takeIf { it.exists() }
+            ?: java.io.File("app/src/main/assets/template")
+        assertTrue("Template file should exist", templateFile.exists())
+        val content = templateFile.readText()
+        val json = JSONObject(content)
+
+        val outbounds = json.getJSONArray("outbounds")
+        val tags = (0 until outbounds.length()).map { outbounds.getJSONObject(it).getString("tag") }.toSet()
+        assertTrue("Template must contain proxy tag", tags.contains("proxy"))
+        assertTrue("Template must contain direct tag", tags.contains("direct"))
+        assertTrue("Template must contain block tag", tags.contains("block"))
+
+        val routing = json.getJSONObject("routing")
+        val rules = routing.getJSONArray("rules")
+        for (i in 0 until rules.length()) {
+            val rule = rules.getJSONObject(i)
+            if (rule.has("outboundTag")) {
+                val tag = rule.getString("outboundTag")
+                assertTrue("Outbound tag '$tag' used in rule $i must exist in outbounds $tags", tags.contains(tag))
+            }
+        }
+    }
 }
