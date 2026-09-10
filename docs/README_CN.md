@@ -22,6 +22,11 @@ SimpleXray 主要负责在 Android 上运行和管理 Xray-core。应用接受�
 
 本仓库是基于上游 [SimpleXray](https://github.com/lhear/SimpleXray) 开发的个人分支。
 
+> [!NOTE]
+> 本项目仅供个人自用。
+> 仓库不接受公共 Issue 与 PR，也不提供外部支持与功能维护。
+> 如需使用或跟进内核更新，欢迎自由 Fork 本项目并通过 CI 自动发版。
+
 ## 界面预览
 
 ### 手机端
@@ -312,6 +317,9 @@ app/build/outputs/apk/release/simplexray-arm64-v8a.apk
    * `KEY_STORE_PASSWORD`：密钥库密码。
    * `KEY_ALIAS`：密钥别名。
    * `KEY_PASSWORD`：私钥密码。
+3. **自动化跟随 Xray-core 内核更新**：
+   * 仓库已有全自动构建流。若需升级内核，无需手动下载或编译 Go 二进制，只需在根目录的 [`version.properties`](../version.properties) 中修改 `XRAY_CORE_VERSION`；
+   * 提交修改并推送符合规范的版本 Tag（ `X.Y.Z` ），GitHub Actions 将全自动拉取对应版本的 Xray-core 源码、交叉编译并签名打包发布 Release。
 
 ---
 
