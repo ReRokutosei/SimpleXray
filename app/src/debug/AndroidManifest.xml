@@ -4,5 +4,12 @@
         <activity
             android:name="androidx.activity.ComponentActivity"
             android:exported="true" />
+        <receiver
+            android:name="com.simplexray.re.service.BenchmarkReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.simplexray.re.action.BENCHMARK" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>
