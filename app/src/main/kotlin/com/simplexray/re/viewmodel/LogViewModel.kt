@@ -1,7 +1,6 @@
 package com.simplexray.re.viewmodel
 
 import android.app.Application
-import android.content.Context
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
@@ -74,12 +73,6 @@ class LogViewModel(application: Application) :
             }
         }
     }
-
-    @Deprecated("No-op; log stream is now handled via VpnStateHub.logFlow")
-    fun registerLogReceiver(context: Context) {}
-
-    @Deprecated("No-op; log stream is now handled via VpnStateHub.logFlow")
-    fun unregisterLogReceiver(context: Context) {}
 
     fun loadLogs() {
         viewModelScope.launch(Dispatchers.IO) {

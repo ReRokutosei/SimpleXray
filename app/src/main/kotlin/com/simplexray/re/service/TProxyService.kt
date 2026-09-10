@@ -623,13 +623,8 @@ class TProxyService : VpnService() {
         const val ACTION_CONNECT: String = "com.simplexray.re.CONNECT"
         const val ACTION_DISCONNECT: String = "com.simplexray.re.DISCONNECT"
         const val ACTION_START: String = "com.simplexray.re.START"
-        const val ACTION_STOP: String = "com.simplexray.re.STOP"
-        const val ACTION_START_FAILED: String = "com.simplexray.re.START_FAILED"
-        const val ACTION_LOG_UPDATE: String = "com.simplexray.re.LOG_UPDATE"
         const val ACTION_RELOAD_CONFIG: String = "com.simplexray.re.RELOAD_CONFIG"
-        const val EXTRA_LOG_DATA: String = "log_data"
         private const val TAG = "TProxyService"
-        private const val BROADCAST_DELAY_MS: Long = 3000
         private const val MAX_START_ATTEMPTS = 2
         private const val STARTUP_PROBE_TIMEOUT_MS: Long = 15000
         private const val STARTUP_PROBE_INTERVAL_MS: Long = 500
