@@ -93,7 +93,7 @@ class MainViewModel(application: Application) :
 
     private val fileManager: FileManager = FileManager(application, prefs)
 
-    var configEditViewModel: ConfigEditViewModel? = null
+    var editingFilePath: String? = null
 
     private val _settingsState = MutableStateFlow(
         SettingsState(
@@ -869,7 +869,7 @@ class MainViewModel(application: Application) :
 
     fun editConfig(filePath: String) {
         viewModelScope.launch {
-            configEditViewModel = ConfigEditViewModel(application, filePath, prefs)
+            editingFilePath = filePath
             _uiEvent.trySend(MainViewUiEvent.Navigate(ROUTE_CONFIG_EDIT))
         }
     }
