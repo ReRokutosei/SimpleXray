@@ -321,18 +321,7 @@ class MainViewModel(application: Application) :
     }
 
     private fun setupGlobalSocksAuthenticator() {
-        java.net.Authenticator.setDefault(object : java.net.Authenticator() {
-            override fun getPasswordAuthentication(): java.net.PasswordAuthentication? {
-                val user = prefs.socksUsername
-                val pass = prefs.socksPassword
-
-                return if (user.isNotEmpty() || pass.isNotEmpty()) {
-                    java.net.PasswordAuthentication(user, pass.toCharArray())
-                } else {
-                    null
-                }
-            }
-        })
+        installSocksAuthenticator(application)
     }
 
     fun setControlMenuClickable(isClickable: Boolean) {
@@ -1433,6 +1422,38 @@ class MainViewModel(application: Application) :
         private const val IPV6_REGEX =
             "^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80::(fe80(:[0-9a-fA-F]{0,4})?){0,4}%[0-9a-zA-Z]+|::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?\\d)?\\d)\\.){3}(25[0-5]|(2[0-4]|1?\\d)?\\d)|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?\\d)?\\d)\\.){3}(25[0-5]|(2[0-4]|1?\\d)?\\d))$"
         private val IPV6_PATTERN: Pattern = Pattern.compile(IPV6_REGEX)
+
+        private val isAuthenticatorInstalled = java.util.concurrent.atomic.AtomicBoolean(false)
+
+        fun installSocksAuthenticator(context: Context) {
+            if (isAuthenticatorInstalled.compareAndSet(false, true)) {
+                java.net.Authenticator.setDefault(AppSocksAuthenticator(context.applicationContext))
+            }
+        }
+    }
+}
+
+private class AppSocksAuthenticator(private val appContext: Context) : java.net.Authenticator() {
+    override fun getPasswordAuthentication(): java.net.PasswordAuthentication? {
+        val prefs = Preferences(appContext)
+        val user = prefs.socksUsername
+        val pass = prefs.socksPassword
+
+        if (user.isEmpty() && pass.isEmpty()) {
+            return null
+        }
+
+        val isProxy = requestorType == RequestorType.PROXY
+        val isMatchingHost = requestingHost.isNullOrEmpty() ||
+            requestingHost.equals(prefs.socksAddress, ignoreCase = true) ||
+            requestingHost == "127.0.0.1" || requestingHost == "localhost"
+        val isMatchingPort = requestingPort == -1 || requestingPort == prefs.socksPort
+
+        return if (isProxy || (isMatchingHost && isMatchingPort)) {
+            java.net.PasswordAuthentication(user, pass.toCharArray())
+        } else {
+            null
+        }
     }
 }
 
