@@ -127,22 +127,23 @@ class GeoUpdateWorker(
                     if (url.isBlank()) return@forEach
                     try {
                         val request = Request.Builder().url(url).build()
-                        val response = client.newCall(request).execute()
-                        if (!response.isSuccessful) {
-                            Log.w(TAG, "Auto-update failed for $fileName: HTTP ${response.code}")
-                            hasFailure = true
-                            return@forEach
-                        }
-                        val body = response.body
-                        val tempFile = File(context.filesDir, "$fileName.autoupdate.tmp")
-                        FileOutputStream(tempFile).use { body.byteStream().copyTo(it) }
-                        val success = fileManager.saveRuleFileFromTemp(tempFile, fileName)
-                        if (success) {
-                            anySuccess = true
-                            Log.d(TAG, "Auto-update $fileName: SUCCESS")
-                        } else {
-                            hasFailure = true
-                            Log.w(TAG, "Auto-update $fileName: FAILED (validation)")
+                        client.newCall(request).execute().use { response ->
+                            if (!response.isSuccessful) {
+                                Log.w(TAG, "Auto-update failed for $fileName: HTTP ${response.code}")
+                                hasFailure = true
+                                return@forEach
+                            }
+                            val body = response.body
+                            val tempFile = File(context.filesDir, "$fileName.autoupdate.tmp")
+                            FileOutputStream(tempFile).use { body.byteStream().copyTo(it) }
+                            val success = fileManager.saveRuleFileFromTemp(tempFile, fileName)
+                            if (success) {
+                                anySuccess = true
+                                Log.d(TAG, "Auto-update $fileName: SUCCESS")
+                            } else {
+                                hasFailure = true
+                                Log.w(TAG, "Auto-update $fileName: FAILED (validation)")
+                            }
                         }
                     } catch (e: Exception) {
                         hasFailure = true
