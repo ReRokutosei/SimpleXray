@@ -326,14 +326,22 @@ class TProxyService : VpnService() {
             Log.d(TAG, "Reading native Xray process log stream.")
             var line = reader.readLine()
             while (line != null) {
-                Log.d(TAG, "XrayLog: $line")
-                // xray (Go log) prepends "2006/01/02 15:04:05.xxxxxx " whose clock
-                // may be UTC on Android. Replace it with the device-local time so
-                // the log view is consistent (same approach as v2rayNG/MikuRay,
-                // which stamp logs on the app side).
+                val batch = mutableListOf<String>()
                 val stampedLine = stampLogLine(line)
-                logFileManager.appendLog(stampedLine)
+                Log.d(TAG, "XrayLog: $stampedLine")
+                batch.add(stampedLine)
                 VpnStateHub.emitLog(stampedLine)
+
+                // Drain any additional log lines buffered in the stream (up to 50 at a time)
+                while (reader.ready() && batch.size < 50) {
+                    val nextLine = reader.readLine() ?: break
+                    val stampedNext = stampLogLine(nextLine)
+                    Log.d(TAG, "XrayLog: $stampedNext")
+                    batch.add(stampedNext)
+                    VpnStateHub.emitLog(stampedNext)
+                }
+
+                logFileManager.appendLogs(batch)
                 line = reader.readLine()
             }
             Log.d(TAG, "Native Xray process log stream finished.")

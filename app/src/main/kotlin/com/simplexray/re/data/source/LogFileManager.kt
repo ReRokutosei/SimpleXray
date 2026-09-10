@@ -6,7 +6,6 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.FileWriter
 import java.io.IOException
-import java.io.PrintWriter
 import java.io.RandomAccessFile
 
 class LogFileManager(context: Context) {
@@ -18,20 +17,41 @@ class LogFileManager(context: Context) {
         Log.d(TAG, "Log file path: " + logFile.absolutePath)
     }
 
+    private var linesWrittenSinceCheck = 0
+
     @Synchronized
     fun appendLog(logEntry: String?) {
+        if (logEntry == null) return
         try {
             FileWriter(logFile, true).use { fileWriter ->
-                PrintWriter(fileWriter).use { printWriter ->
-                    if (logEntry != null) {
-                        printWriter.println(logEntry)
-                    }
-                }
+                fileWriter.append(logEntry).append('\n')
+            }
+            linesWrittenSinceCheck++
+            if (linesWrittenSinceCheck >= TRUNCATE_CHECK_INTERVAL_LINES) {
+                linesWrittenSinceCheck = 0
+                checkAndTruncateLogFile()
             }
         } catch (e: IOException) {
             Log.e(TAG, "Error appending log to file", e)
-        } finally {
-            checkAndTruncateLogFile()
+        }
+    }
+
+    @Synchronized
+    fun appendLogs(logEntries: Collection<String>) {
+        if (logEntries.isEmpty()) return
+        try {
+            FileWriter(logFile, true).use { fileWriter ->
+                for (entry in logEntries) {
+                    fileWriter.append(entry).append('\n')
+                }
+            }
+            linesWrittenSinceCheck += logEntries.size
+            if (linesWrittenSinceCheck >= TRUNCATE_CHECK_INTERVAL_LINES) {
+                linesWrittenSinceCheck = 0
+                checkAndTruncateLogFile()
+            }
+        } catch (e: IOException) {
+            Log.e(TAG, "Error appending logs to file", e)
         }
     }
 
@@ -71,6 +91,7 @@ class LogFileManager(context: Context) {
 
     @Synchronized
     fun clearLogs() {
+        linesWrittenSinceCheck = 0
         if (logFile.exists()) {
             try {
                 FileWriter(logFile, false).use { fileWriter ->
@@ -158,5 +179,6 @@ class LogFileManager(context: Context) {
         private const val MAX_LOG_SIZE_BYTES = (5 * 1024 * 1024).toLong()
         private const val TRUNCATE_SIZE_BYTES = (2560 * 1024).toLong()
         private const val READ_TAIL_BYTES = (1 * 1024 * 1024).toLong()
+        private const val TRUNCATE_CHECK_INTERVAL_LINES = 100
     }
 }
