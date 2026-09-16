@@ -229,6 +229,7 @@ class TProxyService : VpnService() {
         serviceScope.cancel()
         killXrayProcess()
         runCatching { TProxyStopService() }
+        runCatching { SingTunStopService() }
         wakeLock?.let {
             if (it.isHeld) {
                 it.release()
@@ -546,7 +547,29 @@ class TProxyService : VpnService() {
         registerNetworkCallback()
 
         if (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn) {
-            Log.d(TAG, "Using Xray Native TUN mode, skipping hev-socks5-tunnel.")
+            Log.d(TAG, "Using Xray Native TUN mode, skipping external tunnel.")
+        } else if (prefs.tunnelMode == TunnelMode.SingTun && !prefs.disableVpn) {
+            val fd = tunFd?.fd
+            if (fd == null) {
+                Log.e(TAG, "tunFd is null after establish()")
+                stopXray()
+                return
+            }
+            Log.d(TAG, "Starting SingTUN backend on fd=$fd")
+            val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
+            val ok = SingTunStartService(
+                tunFd = fd,
+                socksHost = host,
+                socksPort = prefs.socksPort,
+                mtu = tunMtu,
+                username = prefs.socksUsername,
+                password = prefs.socksPassword
+            )
+            if (!ok) {
+                Log.e(TAG, "SingTunStartService failed")
+                stopXray()
+                return
+            }
         } else {
             val tproxyFile = File(cacheDir, "tproxy.conf")
             try {
@@ -647,6 +670,7 @@ class TProxyService : VpnService() {
             }
             stopForeground(Service.STOP_FOREGROUND_REMOVE)
             runCatching { TProxyStopService() }
+            runCatching { SingTunStopService() }
         }
         stopSelf()
         wakeLock?.let {
@@ -689,6 +713,18 @@ class TProxyService : VpnService() {
     private external fun TProxyIsRunning(): Boolean
     private external fun TProxyGetStats(): LongArray?
 
+    private external fun SingTunStartService(
+        tunFd: Int,
+        socksHost: String,
+        socksPort: Int,
+        mtu: Int,
+        username: String,
+        password: String
+    ): Boolean
+    private external fun SingTunStopService(): Boolean
+    private external fun SingTunIsRunning(): Boolean
+    private external fun SingTunGetStats(): LongArray?
+
     companion object {
         const val ACTION_CONNECT: String = "com.simplexray.re.CONNECT"
         const val ACTION_DISCONNECT: String = "com.simplexray.re.DISCONNECT"
@@ -706,6 +742,11 @@ class TProxyService : VpnService() {
                 System.loadLibrary("hev-socks5-tunnel")
             } catch (e: Throwable) {
                 Log.e(TAG, "Failed to load hev-socks5-tunnel library", e)
+            }
+            try {
+                System.loadLibrary("singtun")
+            } catch (e: Throwable) {
+                Log.e(TAG, "Failed to load singtun library", e)
             }
             try {
                 System.loadLibrary("xray-exec")

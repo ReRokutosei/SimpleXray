@@ -142,6 +142,12 @@ fun SettingsScreen(
                     summary = stringResource(R.string.tunnel_mode_hev_socks5_summary),
                     selected = settingsState.switches.tunnelMode == TunnelMode.HevSocks5Tunnel,
                     onClick = { mainViewModel.setTunnelMode(TunnelMode.HevSocks5Tunnel) }
+                ),
+                DropdownItem(
+                    text = stringResource(R.string.tunnel_mode_sing_tun),
+                    summary = stringResource(R.string.tunnel_mode_sing_tun_summary),
+                    selected = settingsState.switches.tunnelMode == TunnelMode.SingTun,
+                    onClick = { mainViewModel.setTunnelMode(TunnelMode.SingTun) }
                 )
             )
         )
@@ -440,7 +446,7 @@ fun SettingsScreen(
                     onValueConfirmed = { newValue -> mainViewModel.updateSocksAddress(newValue) },
                     label = stringResource(R.string.socks_address),
                     supportingText = stringResource(
-                        if (settingsState.switches.tunnelMode == TunnelMode.HevSocks5Tunnel) {
+                        if (settingsState.switches.tunnelMode != TunnelMode.XrayTun) {
                             R.string.socks_address_summary_socks_tunnel
                         } else {
                             R.string.socks_address_summary
@@ -456,7 +462,7 @@ fun SettingsScreen(
                     onValueConfirmed = { newValue -> mainViewModel.updateSocksPort(newValue) },
                     label = stringResource(R.string.socks_port),
                     supportingText = stringResource(
-                        if (settingsState.switches.tunnelMode == TunnelMode.HevSocks5Tunnel) {
+                        if (settingsState.switches.tunnelMode != TunnelMode.XrayTun) {
                             R.string.socks_port_summary_socks_tunnel
                         } else {
                             R.string.socks_port_summary

@@ -1,0 +1,173 @@
+package main
+
+/*
+#include <stdint.h>
+*/
+import "C"
+
+import (
+	"context"
+	"sync"
+	"sync/atomic"
+	"time"
+
+	tun "github.com/sagernet/sing-tun"
+	M "github.com/sagernet/sing/common/metadata"
+	N "github.com/sagernet/sing/common/network"
+	"github.com/sagernet/sing/protocol/socks"
+)
+
+type stats struct {
+	txPackets atomic.Uint64
+	txBytes   atomic.Uint64
+	rxPackets atomic.Uint64
+	rxBytes   atomic.Uint64
+}
+
+var (
+	mu          sync.Mutex
+	running     atomic.Bool
+	cancelFunc  context.CancelFunc
+	activeTun   tun.Tun
+	activeStack tun.Stack
+	globalStats stats
+)
+
+//export singTunStart
+func singTunStart(
+	tunFd C.int,
+	socksHost *C.char,
+	socksPort C.int,
+	mtu C.int,
+	username *C.char,
+	password *C.char,
+) C.int {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if running.Load() {
+		return 0
+	}
+
+	host := C.GoString(socksHost)
+	port := uint16(socksPort)
+	user := C.GoString(username)
+	pass := C.GoString(password)
+
+	effectiveMtu := uint32(mtu)
+	if effectiveMtu == 0 {
+		effectiveMtu = 1500
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	socksServerAddr := M.ParseSocksaddrHostPort(host, port)
+	socksClient := socks.NewClient(N.SystemDialer, socksServerAddr, socks.Version5, user, pass)
+
+	tunOptions := tun.Options{
+		FileDescriptor:            int(tunFd),
+		MTU:                       effectiveMtu,
+		AutoRoute:                 false,
+		StrictRoute:               false,
+		EXP_ExternalConfiguration: true,
+	}
+
+	tunDev, err := tun.New(tunOptions)
+	if err != nil {
+		cancel()
+		return -1
+	}
+
+	h := newSingTunHandler(socksClient, &globalStats)
+
+	stackOptions := tun.StackOptions{
+		Context:     ctx,
+		Tun:         tunDev,
+		TunOptions:  tunOptions,
+		UDPTimeout:  30 * time.Second,
+		ICMPTimeout: 10 * time.Second,
+		Handler:     h,
+	}
+
+	stack, err := tun.NewStack("go", stackOptions)
+	if err != nil {
+		_ = tunDev.Close()
+		cancel()
+		return -2
+	}
+
+	if err = stack.Start(); err != nil {
+		_ = stack.Close()
+		_ = tunDev.Close()
+		cancel()
+		return -3
+	}
+
+	if err = tunDev.Start(); err != nil {
+		_ = stack.Close()
+		_ = tunDev.Close()
+		cancel()
+		return -4
+	}
+
+	cancelFunc = cancel
+	activeTun = tunDev
+	activeStack = stack
+	running.Store(true)
+
+	return 0
+}
+
+//export singTunStop
+func singTunStop() C.int {
+	mu.Lock()
+	defer mu.Unlock()
+
+	if !running.Load() {
+		return 0
+	}
+
+	if cancelFunc != nil {
+		cancelFunc()
+		cancelFunc = nil
+	}
+
+	if activeStack != nil {
+		_ = activeStack.Close()
+		activeStack = nil
+	}
+
+	if activeTun != nil {
+		_ = activeTun.Close()
+		activeTun = nil
+	}
+
+	running.Store(false)
+	return 0
+}
+
+//export singTunIsRunning
+func singTunIsRunning() C.int {
+	if running.Load() {
+		return 1
+	}
+	return 0
+}
+
+//export singTunGetStats
+func singTunGetStats(txPkts *C.uint64_t, txBytes *C.uint64_t, rxPkts *C.uint64_t, rxBytes *C.uint64_t) {
+	if txPkts != nil {
+		*txPkts = C.uint64_t(globalStats.txPackets.Load())
+	}
+	if txBytes != nil {
+		*txBytes = C.uint64_t(globalStats.txBytes.Load())
+	}
+	if rxPkts != nil {
+		*rxPkts = C.uint64_t(globalStats.rxPackets.Load())
+	}
+	if rxBytes != nil {
+		*rxBytes = C.uint64_t(globalStats.rxBytes.Load())
+	}
+}
+
+func main() {}
