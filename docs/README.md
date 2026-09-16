@@ -10,7 +10,7 @@
 
 </div>
 
-SimpleXray is an Android proxy client built on [Xray-core](https://github.com/XTLS/Xray-core), Android `VpnService`, and `hev-socks5-tunnel`. The packaged Xray-core executable, `libxray.so`, runs as a separate child process. In Hev mode, Xray is started with `ProcessBuilder`; native Xray TUN mode uses a small JNI launcher to pass the VPN file descriptor to the child process.
+SimpleXray is an Android proxy client built on [Xray-core](https://github.com/XTLS/Xray-core), Android `VpnService`, `sing-tun`, and `hev-socks5-tunnel`. The packaged Xray-core executable, `libxray.so`, runs as a separate child process. In SingTUN and Hev modes, Xray is started with `ProcessBuilder`; native Xray TUN mode uses a small JNI launcher to pass the VPN file descriptor to the child process.
 
 ## Scope
 
@@ -55,18 +55,18 @@ This repository is a personal fork based on the upstream [SimpleXray](https://gi
 <summary><b>Click to expand / collapse: Differences from Upstream</b></summary>
 
 | Area | Upstream (4c78901) | Personal Fork |
-|-|-|-|
-| **Process & Execution**         | Runs Xray in a separate child process and sends the configuration through stdin | The Android application layer (UI and VpnService) operates as a single unified process, passing configurations via stdin to the independent Xray child process. Native Xray TUN mode starts the child through the JNI launcher; Hev mode uses `ProcessBuilder`. APK packaging includes `arm64-v8a` only |
-| **Traffic & IPC**               | `hev-socks5-tunnel` reads the Android VPN file descriptor and forwards traffic to Xray through its local SOCKS5 inbound. Statistics use a dynamically allocated loopback TCP gRPC port | The selected TUN backend determines the data path. Native Xray TUN mode receives the VPN file descriptor through the JNI launcher; Hev mode forwards traffic through the local SOCKS5 inbound. Core status and traffic statistics use a dynamically allocated `127.0.0.1` TCP gRPC port |
+| |-|-|-|
+| **Process & Execution**         | Runs Xray in a separate child process and sends the configuration through stdin | The Android application layer (UI and VpnService) operates as a single unified process, passing configurations via stdin to the independent Xray child process. Native Xray TUN mode starts the child through the JNI launcher; SingTUN and Hev modes use `ProcessBuilder`. APK packaging includes `arm64-v8a` only |
+| **Traffic & IPC**               | `hev-socks5-tunnel` reads the Android VPN file descriptor and forwards traffic to Xray through its local SOCKS5 inbound. Statistics use a dynamically allocated loopback TCP gRPC port | The selected TUN backend determines the data path. Native Xray TUN mode receives the VPN file descriptor through the JNI launcher; SingTUN and Hev modes forward traffic through the local SOCKS5 inbound. Core status and traffic statistics use a dynamically allocated `127.0.0.1` TCP gRPC port |
 | **Configuration Import**        | JSON configurations, `vless://` links, and `simplexray://config/` links | Full JSON and YAML configurations imported through the Storage Access Framework (SAF) or clipboard; share links are not supported |
 | **Rule Files**                  | Embedded `geoip.dat` and `geosite.dat` files, with local replacement and URL updates for these two files | Retains the standard rule-file management and adds arbitrary custom `.dat` files, `ext:` file references, per-file update URLs, validation, and background updates |
 | **Configuration Sanitization**  | JSON formatting with removal of `log.access` and `log.error` | SnakeYAML-based parsing with a one-way Android compatibility pipeline that modifies inbounds, routing rules, DNS bootstrap hosts, logging, and selected outbound settings |
 | **Build System**                | Legacy `ndkBuild` (`Android.mk`) and standard Gradle configuration                | CMake (`CMakeLists.txt`); the native tunnel target includes Android 16 KB page-alignment linker options. Gradle Wrapper `9.7.0`, Android Gradle Plugin `9.3.1`, Version Catalogs, and Plugins DSL |
 | **UI & Layout**                 | Standard Material 3 UI                                                            | Xiaomi HyperOS / MIUI-inspired UI implemented with `compose-miuix-ui`, with adaptive layouts for phones and large screens, NavigationRail support, and Android 12+ dynamic colors |
 | **Persistence & Communication** | ContentProvider-backed `SharedPreferences` and `Gson`                             | Direct lightweight `SharedPreferences` with `kotlinx.serialization`; UI and background service communicate reactively via in-memory `StateFlow` and `SharedFlow` |
-| **Core Components**             | Xray-core `v26.3.27` and `hev-socks5-tunnel` `v2.14.3`                            | Xray-core `v26.9.9` and `hev-socks5-tunnel` `v2.17.0`, including updated `hev-socks5-core`, `hev-task-system`, and `lwip` components                                              |
+| **Core Components**             | Xray-core `v26.3.27` and `hev-socks5-tunnel` `v2.14.3`                            | Xray-core `v26.9.9`, `sing-tun` (Go stack), and `hev-socks5-tunnel` `v2.17.0`, including updated `hev-socks5-core`, `hev-task-system`, and `lwip` components                                              |
 | **ABI Packaging**               | `arm64-v8a` and `x86_64` split APKs, plus a universal APK                                | `arm64-v8a` APK only                                                                                                                                                |
-| **TUN Backend Setting**         | No Xray TUN backend setting                                      | `Xray TUN` and `Hev Socks5 Tunnel` selector, defaulting to `Xray TUN`                                                                                              |
+| **TUN Backend Setting**         | No Xray TUN backend setting                                      | `Xray TUN`, `SingTUN`, and `Hev Socks5 Tunnel` selector, defaulting to `Xray TUN`                                                                                              |
 
 </details>
 
@@ -121,6 +121,7 @@ SimpleXray uses separate channels for configuration, VPN traffic, process logs, 
 * **Native TUN mode**: The JNI launcher passes the Android `VpnService` file descriptor to the Xray child process, which attaches it to the TUN inbound.
 * **Process logs**: Xray stdout and stderr are collected through pipes and broadcast directly to the UI via memory flows.
 * **Statistics**: Core status and traffic statistics are queried through plaintext gRPC on a dynamically allocated `127.0.0.1` ephemeral TCP port.
+* **SingTUN mode**: Powered by `sing-tun`'s new self-developed pure Go user-space network stack (Zero-Alloc slab pools, hierarchical timing wheel, and userspace zero-copy pipelines), reads the Android VPN file descriptor and streams traffic to Xray's local SOCKS5 inbound.
 * **Hev tunnel mode**: When selected, `hev-socks5-tunnel` reads the Android VPN file descriptor and forwards traffic to Xray through its local SOCKS5 inbound.
 * **Benchmark & Profiling**: For detailed throughput benchmarks and resource profiling results on Android devices, see [Android TUN Benchmark Report](./benchmark/android-tun-benchmark.md).
 
@@ -303,6 +304,7 @@ SimpleXray incorporates or builds upon the following open-source projects:
 * [**`Xray-core`**](https://github.com/XTLS/Xray-core) — The proxy and network core used by SimpleXray.
 * [**`SimpleXray`**](https://github.com/lhear/SimpleXray) — The upstream Android client on which this fork is based.
 * [**`hev-socks5-tunnel`**](https://github.com/heiher/hev-socks5-tunnel) — A SOCKS5 VPN tunnel implementation used for handling Android network traffic.
+* [**`sing-tun`**](https://github.com/SagerNet/sing-tun) — High-performance lightweight user-space network stack and TUN driver implementation for sing-box.
 
 ### Acknowledgements
 

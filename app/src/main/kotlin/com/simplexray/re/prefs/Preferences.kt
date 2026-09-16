@@ -28,7 +28,8 @@ enum class LogLevel(val value: String) {
 
 enum class TunnelMode(val value: String) {
     XrayTun("xray_tun"),
-    HevSocks5Tunnel("hev_socks5_tunnel");
+    HevSocks5Tunnel("hev_socks5_tunnel"),
+    SingTun("sing_tun");
 
     companion object {
         fun fromString(value: String): TunnelMode =
