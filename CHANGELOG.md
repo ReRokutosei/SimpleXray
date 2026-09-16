@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.1.0](https://github.com/ReRokutosei/SimpleXray/compare/v2.0.1...v2.1.0) (2026-09-16)
+
+
+### Features
+
+* **tun:** add SingTUN backend powered by sing-tun Go stack ([8a2dcba](https://github.com/ReRokutosei/SimpleXray/commit/8a2dcbaa5f231dec16727b3c087b1cb3189200a8))
+
 ### [2.0.1](https://github.com/ReRokutosei/SimpleXray/compare/v1.5.2...v2.0.1) (2026-09-10)
 
 
