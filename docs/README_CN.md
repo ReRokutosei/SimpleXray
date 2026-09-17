@@ -55,7 +55,7 @@ SimpleXray 主要负责在 Android 上运行和管理 Xray-core。应用接受�
 <summary><b>点击展开 / 折叠：与上游版本的主要区别</b></summary>
 
 | 项目 | 上游版本（4c78901） | 本仓库 |
-| |-|-|-|
+|-|-|-|
 | **进程与配置传递**  | 使用独立子进程运行 Xray，并通过标准输入传递配置 | Android 应用层（UI 与 VpnService）采用单进程架构，通过标准输入向独立子进程传递配置。Xray 原生 TUN 模式通过 JNI 启动器启动子进程，SingTUN 与 Hev 模式使用 `ProcessBuilder`。APK 仅打包 `arm64-v8a` |
 | **流量与进程间通信** | 由 `hev-socks5-tunnel` 读取 Android VPN 文件描述符，并通过本地 SOCKS5 入站将流量转发至 Xray。状态统计使用动态分配的本机回环 TCP gRPC 端口 | 数据面由设置页选择的 TUN 后端决定。Xray 原生 TUN 模式通过 JNI 启动器接收 VPN 文件描述符，SingTUN 与 Hev 模式通过本地 SOCKS5 入站转发流量。内核状态和流量统计使用动态分配的 `127.0.0.1` TCP gRPC 端口 |
 | **配置导入**     | 支持 JSON 配置、`vless://` 链接和 `simplexray://config/` 链接 | 仅支持通过 Android Storage Access Framework 或剪贴板导入完整 JSON、YAML 配置，不支持节点分享链接 |
