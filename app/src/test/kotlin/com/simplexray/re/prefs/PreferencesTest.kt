@@ -169,7 +169,7 @@ class PreferencesTest {
         assertFalse(prefs.udpInTcp)
         assertFalse(prefs.enable)
         assertFalse(prefs.disableVpn)
-        assertEquals(TunnelMode.XrayTun, prefs.tunnelMode)
+        assertEquals(TunnelMode.HevSocks5Tunnel, prefs.tunnelMode)
         assertEquals(1500, prefs.tunnelMtu)
         assertEquals("198.18.0.1", prefs.tunnelIpv4Address)
         assertEquals(32, prefs.tunnelIpv4Prefix)
