@@ -33,7 +33,9 @@ enum class TunnelMode(val value: String) {
 
     companion object {
         fun fromString(value: String): TunnelMode =
-            entries.find { it.value.equals(value, ignoreCase = true) } ?: XrayTun
+            // Default to HevSocks5Tunnel for optimal throughput and power efficiency;
+            // switch to SingTun once production stability matures.
+            entries.find { it.value.equals(value, ignoreCase = true) } ?: HevSocks5Tunnel
     }
 }
 
@@ -153,7 +155,9 @@ class Preferences(context: Context) {
     var enable: Boolean by booleanPref(ENABLE, false)
     var disableVpn: Boolean by booleanPref(DISABLE_VPN, false)
     var tunnelMode: TunnelMode
-        get() = sp.getString(TUNNEL_MODE, null)?.let { TunnelMode.fromString(it) } ?: TunnelMode.XrayTun
+        // Default to HevSocks5Tunnel for optimal throughput and power efficiency;
+        // switch to SingTun once production stability matures.
+        get() = sp.getString(TUNNEL_MODE, null)?.let { TunnelMode.fromString(it) } ?: TunnelMode.HevSocks5Tunnel
         set(value) {
             sp.edit { putString(TUNNEL_MODE, value.value) }
         }

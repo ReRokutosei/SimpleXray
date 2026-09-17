@@ -4,7 +4,7 @@ description: General instructions and context for developing the SimpleXray proj
 
 # SimpleXray Project Context
 
-This file provides the necessary context and constraints for AI agents interacting with the SimpleXray project. SimpleXray is an Android application acting as a VPN client/proxy tool using Xray core and hev-socks5-tunnel.
+This file provides the necessary context and constraints for AI agents interacting with the SimpleXray project. SimpleXray is an Android application acting as a VPN client/proxy tool using Xray core, sing-tun, and hev-socks5-tunnel.
 
 ## Tech Stack
 - **OS Target**: Android (minSdk 34, targetSdk 36, compileSdk 37)
@@ -13,7 +13,7 @@ This file provides the necessary context and constraints for AI agents interacti
 - **Architecture**: MVVM with Android ViewModels.
 - **Data Persistence**: Direct Android `SharedPreferences`.
 - **Communication/RPC**: gRPC with Protocol Buffers (protobuf) to query Xray core status and traffic statistics through a dynamically allocated `127.0.0.1` TCP port. Service status and process logs are communicated reactively via in-memory `VpnStateHub` (`StateFlow` and `SharedFlow`).
-- **Native Components**: Uses CMake to build `hev-socks5-tunnel` and dependencies (`yaml`, `lwip`, `hev-task-system`) as native JNI libraries. In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. Hev mode passes the VPN file descriptor to `hev-socks5-tunnel`.
+- **Native Components & TUN Backends**: Uses CMake to build `hev-socks5-tunnel` (C/lwIP) and dependencies as native JNI libraries, and integrates `sing-tun` (Go stack). Supports 3 TUN backends: Hev (default, C/lwIP for optimal throughput and low power consumption), SingTUN (Go/sing-box), and native Xray TUN (Go/gVisor). In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. In Hev and SingTUN modes, the tunnel forwards traffic to Xray through its local SOCKS5 inbound.
 
 ## Project Structure
 - `app/src/main/kotlin/com/simplexray/re/`:

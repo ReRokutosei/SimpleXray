@@ -66,7 +66,7 @@ This repository is a personal fork based on the upstream [SimpleXray](https://gi
 | **Persistence & Communication** | ContentProvider-backed `SharedPreferences` and `Gson`                             | Direct lightweight `SharedPreferences` with `kotlinx.serialization`; UI and background service communicate reactively via in-memory `StateFlow` and `SharedFlow` |
 | **Core Components**             | Xray-core `v26.3.27` and `hev-socks5-tunnel` `v2.14.3`                            | Xray-core `v26.9.9`, `sing-tun` (Go stack), and `hev-socks5-tunnel` `v2.17.0`, including updated `hev-socks5-core`, `hev-task-system`, and `lwip` components                                              |
 | **ABI Packaging**               | `arm64-v8a` and `x86_64` split APKs, plus a universal APK                                | `arm64-v8a` APK only                                                                                                                                                |
-| **TUN Backend Setting**         | No Xray TUN backend setting                                      | `Xray TUN`, `SingTUN`, and `Hev Socks5 Tunnel` selector, defaulting to `Xray TUN`                                                                                              |
+| **TUN Backend Setting**         | No Xray TUN backend setting                                      | `Xray TUN`, `SingTUN`, and `Hev Socks5 Tunnel` selector, defaulting to `Hev Socks5 Tunnel` (SingTUN will become default once long-term production stability matures) |
 
 </details>
 

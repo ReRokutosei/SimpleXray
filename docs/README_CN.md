@@ -66,7 +66,7 @@ SimpleXray 主要负责在 Android 上运行和管理 Xray-core。应用接受�
 | **数据存储与通信架构** | 使用 ContentProvider 封装的 `SharedPreferences` 和 `Gson` | 直接使用轻量级原生 `SharedPreferences` 与 `kotlinx.serialization`；UI 与后台服务通过内存级 `StateFlow` / `SharedFlow` 实现零拷贝响应式通信 |
 | **核心组件**     | Xray-core `v26.3.27` 和 `hev-socks5-tunnel` `v2.14.3` | Xray-core `v26.9.9`、`sing-tun`（Go 栈）和 `hev-socks5-tunnel` `v2.17.0`                                   |
 | **ABI 打包**     | 提供 `arm64-v8a` 和 `x86_64` 分包 APK，以及通用 APK | 仅提供 `arm64-v8a` APK |
-| **TUN 后端设置** | 不提供 Xray TUN 后端设置 | 可选 `Xray TUN`、`SingTUN` 和 `Hev Socks5 Tunnel`，默认值为 `Xray TUN` |
+| **TUN 后端设置** | 不提供 Xray TUN 后端设置 | 可选 `Xray TUN`、`SingTUN` 和 `Hev Socks5 Tunnel`，默认值为 `Hev Socks5 Tunnel`（待 SingTUN 长期生产稳定性成熟后将切换为 SingTUN） |
 
 </details>
 
