@@ -22,3 +22,5 @@ app/.cxx/*
 docs/logs/
 tools/bin/
 todo.md
+__pycache__/
+*.pyc

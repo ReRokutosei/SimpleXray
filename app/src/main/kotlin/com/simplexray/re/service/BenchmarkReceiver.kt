@@ -36,6 +36,9 @@ class BenchmarkReceiver : BroadcastReceiver() {
                         "sing", "sing_tun", "singtun" -> prefs.tunnelMode = TunnelMode.SingTun
                     }
                 }
+                if (mtu > 0) {
+                    prefs.tunnelMtu = mtu
+                }
                 prefs.disableVpn = false
                 prefs.bypassLan = false // Important: Route LAN traffic through TUN to test LAN speed to PC
                 prefs.global = true
