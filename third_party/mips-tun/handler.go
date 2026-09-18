@@ -75,7 +75,7 @@ func handleUDP(ctx context.Context, client *socks.Client, conn net.Conn, destina
 	logDebug(fmt.Sprintf("handleUDP: starting flow to %s", destStr))
 
 	socksAddr := M.SocksaddrFromNetIP(destination)
-	remotePacketConn, err := client.ListenPacket(ctx, socksAddr)
+	remotePacketConn, err := client.ListenPacket(ctx, M.Socksaddr{})
 	if err != nil {
 		logError(fmt.Sprintf("handleUDP: ListenPacket failed for %s: %v", destStr, err))
 		return

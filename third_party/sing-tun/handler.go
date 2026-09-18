@@ -94,7 +94,7 @@ func (h *singTunHandler) NewPacketConnectionEx(ctx context.Context, conn N.Packe
 			}
 		}()
 
-		remotePacketConn, err := h.client.ListenPacket(ctx, destination)
+		remotePacketConn, err := h.client.ListenPacket(ctx, M.Socksaddr{})
 		if err != nil {
 			conn.Close()
 			return

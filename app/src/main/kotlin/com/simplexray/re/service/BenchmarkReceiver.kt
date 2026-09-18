@@ -71,7 +71,8 @@ class BenchmarkReceiver : BroadcastReceiver() {
       "port": ${prefs.socksPort},
       "settings": {
         "auth": "noauth",
-        "udp": true
+        "udp": true,
+        "ip": "127.0.0.1"
       }
     }
   ],
@@ -89,11 +90,24 @@ class BenchmarkReceiver : BroadcastReceiver() {
                 prefs.selectedConfigPath = configFile.absolutePath
 
                 if (cmd == "start") {
+                    try {
+                        val activityIntent = Intent(context, com.simplexray.re.activity.MainActivity::class.java).apply {
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                        }
+                        context.startActivity(activityIntent)
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Failed to start MainActivity for foreground assurance", e)
+                    }
+
                     val startIntent = Intent(context, TProxyService::class.java).apply {
                         this.action = TProxyService.ACTION_CONNECT
                     }
-                    ContextCompat.startForegroundService(context, startIntent)
-                    Log.d(TAG, "Started TProxyService in ${prefs.tunnelMode.value} mode with config: ${configFile.absolutePath}")
+                    try {
+                        ContextCompat.startForegroundService(context, startIntent)
+                        Log.d(TAG, "Started TProxyService in ${prefs.tunnelMode.value} mode with config: ${configFile.absolutePath}")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to startForegroundService", e)
+                    }
                 }
             }
 
