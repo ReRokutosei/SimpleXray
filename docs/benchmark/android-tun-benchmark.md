@@ -1,6 +1,6 @@
 # SimpleXray Android TUN 性能基准测试报告
 
-本文档记录对 SimpleXray 支持的三种透明代理 TUN 协议栈实现 `hev-socks5-tunnel`、`Xray Native TUN` 与 `SingTUN`，在 **Speed**、**CPU usage** 以及 **Memory usage** 维度的对比分析。
+本文档记录对 SimpleXray 支持的三种透明代理 TUN 协议栈实现 `hev-socks5-tunnel`、`Xray Native TUN` 与 `SingTUN`(e842d006fa65)，在 **Speed**、**CPU usage** 以及 **Memory usage** 维度的对比分析。
 
 ---
 

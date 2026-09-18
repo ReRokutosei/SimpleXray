@@ -3,8 +3,8 @@ module github.com/simplexray/re/sing-tun
 go 1.25.0
 
 require (
-	github.com/sagernet/sing v0.9.4-0.20260912053229-7776850263cd
-	github.com/sagernet/sing-tun v0.9.4-0.20260916043548-e842d006fa65
+	github.com/sagernet/sing v0.9.5-0.20260917142815-f37989cadbf0
+	github.com/sagernet/sing-tun v0.9.4-0.20260917142847-fbc0c3dff312
 )
 
 require (
