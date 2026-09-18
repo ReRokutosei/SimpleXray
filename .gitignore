@@ -24,3 +24,5 @@ tools/bin/
 todo.md
 __pycache__/
 *.pyc
+tools/idle_bench/idle_bench_linux_amd64
+tools/idle_bench/idle_bench_linux_arm64
