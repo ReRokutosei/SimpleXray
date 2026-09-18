@@ -2,18 +2,6 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-### [2.1.1-alpha.0](https://github.com/ReRokutosei/SimpleXray/compare/v2.1.0...v2.1.1-alpha.0) (2026-09-18)
-
-
-### Features
-
-* **tun:** add MipsTUN backend powered by Mihomo mipstack ([8a9dfe9](https://github.com/ReRokutosei/SimpleXray/commit/8a9dfe94c2ec935dbbbbb716c937e515e12eabb7))
-
-
-### Bug Fixes
-
-* **deps:** update protobuf monorepo to v4.36.2 ([#38](https://github.com/ReRokutosei/SimpleXray/issues/38)) ([64163d8](https://github.com/ReRokutosei/SimpleXray/commit/64163d880c04f4406a29ec4746317ee87051b684))
-
 ## [2.1.0](https://github.com/ReRokutosei/SimpleXray/compare/v2.0.1...v2.1.0) (2026-09-16)
 
 
