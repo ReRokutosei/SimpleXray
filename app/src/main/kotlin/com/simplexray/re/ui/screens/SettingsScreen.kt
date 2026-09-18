@@ -148,6 +148,12 @@ fun SettingsScreen(
                     summary = stringResource(R.string.tunnel_mode_sing_tun_summary),
                     selected = settingsState.switches.tunnelMode == TunnelMode.SingTun,
                     onClick = { mainViewModel.setTunnelMode(TunnelMode.SingTun) }
+                ),
+                DropdownItem(
+                    text = stringResource(R.string.tunnel_mode_mips_tun),
+                    summary = stringResource(R.string.tunnel_mode_mips_tun_summary),
+                    selected = settingsState.switches.tunnelMode == TunnelMode.MipsTun,
+                    onClick = { mainViewModel.setTunnelMode(TunnelMode.MipsTun) }
                 )
             )
         )

@@ -230,6 +230,7 @@ class TProxyService : VpnService() {
         killXrayProcess()
         runCatching { TProxyStopService() }
         runCatching { SingTunStopService() }
+        runCatching { MipsTunStopService() }
         wakeLock?.let {
             if (it.isHeld) {
                 it.release()
@@ -570,6 +571,28 @@ class TProxyService : VpnService() {
                 stopXray()
                 return
             }
+        } else if (prefs.tunnelMode == TunnelMode.MipsTun && !prefs.disableVpn) {
+            val fd = tunFd?.fd
+            if (fd == null) {
+                Log.e(TAG, "tunFd is null after establish()")
+                stopXray()
+                return
+            }
+            Log.d(TAG, "Starting MipsTUN backend on fd=$fd")
+            val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
+            val ok = MipsTunStartService(
+                tunFd = fd,
+                socksHost = host,
+                socksPort = prefs.socksPort,
+                mtu = tunMtu,
+                username = prefs.socksUsername,
+                password = prefs.socksPassword
+            )
+            if (!ok) {
+                Log.e(TAG, "MipsTunStartService failed")
+                stopXray()
+                return
+            }
         } else {
             val tproxyFile = File(cacheDir, "tproxy.conf")
             try {
@@ -671,6 +694,7 @@ class TProxyService : VpnService() {
             stopForeground(Service.STOP_FOREGROUND_REMOVE)
             runCatching { TProxyStopService() }
             runCatching { SingTunStopService() }
+            runCatching { MipsTunStopService() }
         }
         stopSelf()
         wakeLock?.let {
@@ -725,6 +749,18 @@ class TProxyService : VpnService() {
     private external fun SingTunIsRunning(): Boolean
     private external fun SingTunGetStats(): LongArray?
 
+    private external fun MipsTunStartService(
+        tunFd: Int,
+        socksHost: String,
+        socksPort: Int,
+        mtu: Int,
+        username: String,
+        password: String
+    ): Boolean
+    private external fun MipsTunStopService(): Boolean
+    private external fun MipsTunIsRunning(): Boolean
+    private external fun MipsTunGetStats(): LongArray?
+
     companion object {
         const val ACTION_CONNECT: String = "com.simplexray.re.CONNECT"
         const val ACTION_DISCONNECT: String = "com.simplexray.re.DISCONNECT"
@@ -747,6 +783,11 @@ class TProxyService : VpnService() {
                 System.loadLibrary("singtun")
             } catch (e: Throwable) {
                 Log.e(TAG, "Failed to load singtun library", e)
+            }
+            try {
+                System.loadLibrary("mipstun")
+            } catch (e: Throwable) {
+                Log.e(TAG, "Failed to load mipstun library", e)
             }
             try {
                 System.loadLibrary("xray-exec")

@@ -34,6 +34,7 @@ class BenchmarkReceiver : BroadcastReceiver() {
                         "hev", "hev_socks5_tunnel" -> prefs.tunnelMode = TunnelMode.HevSocks5Tunnel
                         "xray", "xray_tun" -> prefs.tunnelMode = TunnelMode.XrayTun
                         "sing", "sing_tun", "singtun" -> prefs.tunnelMode = TunnelMode.SingTun
+                        "mips", "mips_tun", "mipstun" -> prefs.tunnelMode = TunnelMode.MipsTun
                     }
                 }
                 if (mtu > 0) {
