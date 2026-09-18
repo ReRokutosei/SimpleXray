@@ -16,6 +16,8 @@ import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
 APP_PKG = "com.simplexray.re.debug"
 ACTION_BENCHMARK = "com.simplexray.re.action.BENCHMARK"
 DEFAULT_DURATION = 10
@@ -206,10 +208,12 @@ class BenchmarkRunner:
         mtu: int,
         server_ip: str,
         parallel: int = 1,
-        medium: str = "Wi-Fi"
+        medium: str = "5GHz Wi-Fi",
+        network: str = "tcp"
     ) -> Dict[str, Any]:
         par_desc = f" [P={parallel}]" if parallel > 1 else " [Single Stream]"
-        full_name = f"{name}{par_desc}"
+        net_desc = f" [{network.upper()}]" if network != "tcp" else ""
+        full_name = f"{name}{net_desc}{par_desc}"
         
         print(f"\n{Colors.MAGENTA}======================================================={Colors.RESET}")
         log_info(f"Running: {full_name} ({medium}, Backend: {backend}, MTU: {mtu}, Target: {server_ip})")
@@ -226,51 +230,76 @@ class BenchmarkRunner:
             time.sleep(4)
 
         duration = self.args.duration
-        par_flags = f"-P {parallel} -l 64K" if parallel > 1 else ""
+        par_flags = f"-P {parallel} -l 64K" if (parallel > 1 and network == "tcp") else (f"-P {parallel}" if parallel > 1 else "")
+        if network == "udp":
+            bitrate = getattr(self.args, "udp_parallel_bitrate", "25M") if parallel > 1 else getattr(self.args, "udp_bitrate", "200M")
+            udp_flags = f"-u -b {bitrate} -l 1400"
+        else:
+            udp_flags = ""
 
         # 1. Upload Test (Android -> Host)
-        log_info(f">>> [1/2] Testing UPLOAD (Android -> Host, duration: {duration}s)...")
+        log_info(f">>> [1/2] Testing {network.upper()} UPLOAD (Android -> Host, duration: {duration}s)...")
         server_proc = self._start_host_server()
         profiler = CpuProfiler(self.adb, self.app_uid, duration)
         profiler.start()
 
-        up_cmd = f"/data/local/tmp/iperf3 -c {server_ip} -p {DEFAULT_PORT} -t {duration} {par_flags} -J"
+        up_cmd = f"/data/local/tmp/iperf3 -c {server_ip} -p {DEFAULT_PORT} {udp_flags} -t {duration} {par_flags} -J"
         rc, up_out, _ = self.adb.shell(up_cmd, timeout=duration + 15)
         up_avg_cpu, up_peak_cpu = profiler.stop()
         self._kill_host_server(server_proc)
 
         up_bps = 0.0
+        up_loss = 0.0
+        up_jitter = 0.0
         try:
             up_json = json.loads(up_out)
-            up_bps = float(up_json.get("end", {}).get("sum_received", {}).get("bits_per_second", 0))
+            end_data = up_json.get("end", {})
+            if network == "udp":
+                sum_data = end_data.get("sum_received") or end_data.get("sum") or {}
+                up_bps = float(sum_data.get("bits_per_second", 0))
+                up_loss = float(sum_data.get("lost_percent", 0.0))
+                up_jitter = float(sum_data.get("jitter_ms", 0.0))
+            else:
+                up_bps = float(end_data.get("sum_received", {}).get("bits_per_second", 0))
         except Exception:
-            log_warn("Failed to parse upload iperf3 JSON output.")
+            log_warn(f"Failed to parse upload iperf3 JSON output ({network}).")
         up_mbps = round(up_bps / 1_000_000.0, 2)
         up_mem_mb = self.adb.get_app_memory_mb()
-        log_success(f"Upload: {up_mbps} Mbps | CPU: {up_avg_cpu}% (Peak: {up_peak_cpu}%) | MEM: {up_mem_mb} MB")
+        loss_str = f" | Loss: {up_loss:.1f}% | Jitter: {up_jitter:.2f}ms" if network == "udp" else ""
+        log_success(f"Upload: {up_mbps} Mbps{loss_str} | CPU: {up_avg_cpu}% (Peak: {up_peak_cpu}%) | MEM: {up_mem_mb} MB")
 
         time.sleep(1.5)
 
         # 2. Download Test (Host -> Android, reverse mode)
-        log_info(f">>> [2/2] Testing DOWNLOAD (Host -> Android, duration: {duration}s)...")
+        log_info(f">>> [2/2] Testing {network.upper()} DOWNLOAD (Host -> Android, duration: {duration}s)...")
         server_proc = self._start_host_server()
         profiler = CpuProfiler(self.adb, self.app_uid, duration)
         profiler.start()
 
-        down_cmd = f"/data/local/tmp/iperf3 -c {server_ip} -p {DEFAULT_PORT} -R -t {duration} {par_flags} -J"
+        down_cmd = f"/data/local/tmp/iperf3 -c {server_ip} -p {DEFAULT_PORT} {udp_flags} -R -t {duration} {par_flags} -J"
         rc, down_out, _ = self.adb.shell(down_cmd, timeout=duration + 15)
         down_avg_cpu, down_peak_cpu = profiler.stop()
         self._kill_host_server(server_proc)
 
         down_bps = 0.0
+        down_loss = 0.0
+        down_jitter = 0.0
         try:
             down_json = json.loads(down_out)
-            down_bps = float(down_json.get("end", {}).get("sum_received", {}).get("bits_per_second", 0))
+            end_data = down_json.get("end", {})
+            if network == "udp":
+                sum_data = end_data.get("sum_received") or end_data.get("sum") or {}
+                down_bps = float(sum_data.get("bits_per_second", 0))
+                down_loss = float(sum_data.get("lost_percent", 0.0))
+                down_jitter = float(sum_data.get("jitter_ms", 0.0))
+            else:
+                down_bps = float(end_data.get("sum_received", {}).get("bits_per_second", 0))
         except Exception:
-            log_warn("Failed to parse download iperf3 JSON output.")
+            log_warn(f"Failed to parse download iperf3 JSON output ({network}).")
         down_mbps = round(down_bps / 1_000_000.0, 2)
         down_mem_mb = self.adb.get_app_memory_mb()
-        log_success(f"Download: {down_mbps} Mbps | CPU: {down_avg_cpu}% (Peak: {down_peak_cpu}%) | MEM: {down_mem_mb} MB")
+        loss_str = f" | Loss: {down_loss:.1f}% | Jitter: {down_jitter:.2f}ms" if network == "udp" else ""
+        log_success(f"Download: {down_mbps} Mbps{loss_str} | CPU: {down_avg_cpu}% (Peak: {down_peak_cpu}%) | MEM: {down_mem_mb} MB")
 
         # Cleanup VPN
         if backend != "direct_none":
@@ -280,11 +309,12 @@ class BenchmarkRunner:
         peak_cpu = max(up_peak_cpu, down_peak_cpu)
         peak_mem = max(up_mem_mb, down_mem_mb)
 
-        return {
+        res = {
             "name": full_name,
             "backend": backend,
             "mtu": mtu,
             "medium": medium,
+            "network": network,
             "parallel": parallel,
             "upload_mbps": up_mbps,
             "download_mbps": down_mbps,
@@ -294,6 +324,105 @@ class BenchmarkRunner:
             "download_cpu_peak": down_peak_cpu,
             "peak_cpu": peak_cpu,
             "peak_mem_mb": peak_mem
+        }
+        if network == "udp":
+            res["upload_loss_percent"] = up_loss
+            res["download_loss_percent"] = down_loss
+            res["upload_jitter_ms"] = up_jitter
+            res["download_jitter_ms"] = down_jitter
+
+        return res
+
+    def run_idle_flow_case(
+        self,
+        backend: str,
+        network: str,
+        server_ip: str,
+        port: int = 5301
+    ) -> Dict[str, Any]:
+        """
+        Tests retained connections (0 -> 1000) vs memory growth.
+        """
+        full_name = f"{backend.upper()} {network.upper()} Idle Flows (0-1000)"
+        print(f"\n{Colors.MAGENTA}======================================================={Colors.RESET}")
+        log_info(f"Running Idle Flow Benchmark: {full_name} on {backend} (Target: {server_ip}:{port})")
+        print(f"{Colors.MAGENTA}======================================================={Colors.RESET}")
+
+        # Ensure server probe is running on host
+        server_bin = os.path.join(SCRIPT_DIR, "idle_bench", "idle_bench_linux_amd64")
+        if not os.path.exists(server_bin):
+            raise RuntimeError(f"Server binary not found: {server_bin}")
+
+        server_proc = subprocess.Popen([server_bin, "server", "--port", str(port)],
+                                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        time.sleep(0.5)
+
+        # Stop previous VPN and start new
+        self.adb.set_app_state(backend, 1500, cmd="stop")
+        time.sleep(2)
+        if backend != "direct_none":
+            self.adb.set_app_state(backend, 1500, cmd="start")
+            log_info("Waiting 4s for VPN to initialize...")
+            time.sleep(4)
+
+        # Ensure client binary exists on phone
+        client_bin_host = os.path.join(SCRIPT_DIR, "idle_bench", "idle_bench_linux_arm64")
+        self.adb.exec(["push", client_bin_host, "/data/local/tmp/idle_bench"])
+        self.adb.shell("chmod 755 /data/local/tmp/idle_bench")
+
+        client_cmd = (f"/data/local/tmp/idle_bench client --server {server_ip}:{port} "
+                      f"--network {network} --steps 0,250,500,750,1000 --settle 1s --auto")
+
+        log_info(f"Executing idle probe on device: {client_cmd}")
+        p = subprocess.Popen(["adb", "-s", self.adb.device, "shell", client_cmd],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        flow_records = []
+        base_mem = 0.0
+
+        for line in iter(p.stdout.readline, ''):
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                data = json.loads(line)
+                if data.get("status") == "settled":
+                    step = data.get("step", 0)
+                    mem_mb = self.adb.get_app_memory_mb()
+                    if step == 0:
+                        base_mem = mem_mb
+                    delta = round(mem_mb - base_mem, 2)
+                    flow_records.append({"connections": step, "pss_mb": mem_mb, "delta_mb": delta})
+                    log_success(f"[Idle {network.upper()}] Conns: {step:4d} | PSS: {mem_mb:6.1f} MB (Delta: +{delta:5.2f} MB)")
+            except Exception:
+                pass
+
+        p.wait()
+        server_proc.terminate()
+        server_proc.wait()
+
+        # Stop VPN
+        if backend != "direct_none":
+            self.adb.set_app_state(backend, 1500, cmd="stop")
+            time.sleep(2)
+
+        # Calculate slope
+        slope_kib = 0.0
+        if len(flow_records) >= 2:
+            first = flow_records[0]
+            last = flow_records[-1]
+            if last["connections"] > first["connections"]:
+                slope_kib = round((last["pss_mb"] - first["pss_mb"]) * 1024.0 / (last["connections"] - first["connections"]), 3)
+
+        log_info(f"Idle flows complete. Slope: {slope_kib:.2f} KiB / connection")
+
+        return {
+            "name": full_name,
+            "backend": backend,
+            "network": network,
+            "type": "idle_memory",
+            "idle_flows": flow_records,
+            "slope_kib_per_conn": slope_kib
         }
 
     def run_loopback_case(
@@ -372,18 +501,19 @@ class BenchmarkRunner:
         modes = [m.strip() for m in self.args.mode.split(",")]
         wifi_ip = self.args.wifi_server_ip
         usb_ip = self.args.usb_server_ip
+        networks = ["tcp", "udp"] if self.args.network == "all" else [self.args.network]
         results: List[Dict[str, Any]] = []
 
-        # All available models to test: (Display Name, Backend, MTU)
+        # Standardized models (MTU 1500 and Standard Jumbo 9000)
         all_models = [
             ("Hev (MTU 1500)", "hev", 1500),
             ("Xray TUN (MTU 1500)", "xray", 1500),
             ("SingTUN (MTU 1500)", "sing", 1500),
             ("MipsTUN (MTU 1500)", "mips", 1500),
-            ("Hev (MTU 8500)", "hev", 8500),
-            ("Xray TUN (MTU 8500)", "xray", 8500),
-            ("SingTUN (MTU 8500)", "sing", 8500),
-            ("MipsTUN (MTU 8500)", "mips", 8500),
+            ("Hev (MTU 9000)", "hev", 9000),
+            ("Xray TUN (MTU 9000)", "xray", 9000),
+            ("SingTUN (MTU 9000)", "sing", 9000),
+            ("MipsTUN (MTU 9000)", "mips", 9000),
         ]
 
         if hasattr(self.args, "backends") and self.args.backends and self.args.backends != "all":
@@ -399,20 +529,22 @@ class BenchmarkRunner:
             print(f"\n{Colors.CYAN}{Colors.BOLD}=======================================================")
             print(f"       ROUND {round_num} - SUITE 1: 5GHz Wi-Fi BENCHMARK")
             print(f"======================================================={Colors.RESET}")
-            # Baseline
-            if not skip_baseline:
-                results.append(self.run_remote_case("Wi-Fi Baseline (No VPN)", "direct_none", 0, wifi_ip, parallel=1, medium="5GHz Wi-Fi"))
-                results.append(self.run_remote_case("Wi-Fi Baseline (No VPN)", "direct_none", 0, wifi_ip, parallel=8, medium="5GHz Wi-Fi"))
-            # Single Stream
-            for name, backend, mtu in models:
-                results.append(self.run_remote_case(name, backend, mtu, wifi_ip, parallel=1, medium="5GHz Wi-Fi"))
-            # Multi Stream
-            for name, backend, mtu in models:
-                results.append(self.run_remote_case(name, backend, mtu, wifi_ip, parallel=8, medium="5GHz Wi-Fi"))
+            for net in networks:
+                # Baseline
+                if not skip_baseline:
+                    results.append(self.run_remote_case("Wi-Fi Baseline (No VPN)", "direct_none", 0, wifi_ip, parallel=1, medium="5GHz Wi-Fi", network=net))
+                    results.append(self.run_remote_case("Wi-Fi Baseline (No VPN)", "direct_none", 0, wifi_ip, parallel=8, medium="5GHz Wi-Fi", network=net))
+                # If UDP, only test MTU 1500 (standard for UDP)
+                cur_models = [m for m in models if (net == "tcp" or m[2] == 1500)]
+                # Single Stream
+                for name, backend, mtu in cur_models:
+                    results.append(self.run_remote_case(name, backend, mtu, wifi_ip, parallel=1, medium="5GHz Wi-Fi", network=net))
+                # Multi Stream
+                for name, backend, mtu in cur_models:
+                    results.append(self.run_remote_case(name, backend, mtu, wifi_ip, parallel=8, medium="5GHz Wi-Fi", network=net))
 
         # 2. USB Tethering Suite
         if "usb" in modes or "all" in modes:
-            # Check if USB subnet is reachable
             rc, _, _ = run_cmd(["ping", "-c", "1", "-W", "1", usb_ip])
             if rc != 0:
                 log_warn(f"USB tethering host IP ({usb_ip}) is unreachable. Skipping USB benchmark suite.")
@@ -420,49 +552,62 @@ class BenchmarkRunner:
                 print(f"\n{Colors.CYAN}{Colors.BOLD}=======================================================")
                 print(f"       ROUND {round_num} - SUITE 2: USB TETHERING BENCHMARK")
                 print(f"======================================================={Colors.RESET}")
-                # Baseline
-                if not skip_baseline:
-                    results.append(self.run_remote_case("USB Baseline (No VPN)", "direct_none", 0, usb_ip, parallel=1, medium="USB 3.2 / 4.0"))
-                    results.append(self.run_remote_case("USB Baseline (No VPN)", "direct_none", 0, usb_ip, parallel=8, medium="USB 3.2 / 4.0"))
-                # Single Stream
-                for name, backend, mtu in models:
-                    results.append(self.run_remote_case(name, backend, mtu, usb_ip, parallel=1, medium="USB 3.2 / 4.0"))
-                # Multi Stream
-                for name, backend, mtu in models:
-                    results.append(self.run_remote_case(name, backend, mtu, usb_ip, parallel=8, medium="USB 3.2 / 4.0"))
+                for net in networks:
+                    if not skip_baseline:
+                        results.append(self.run_remote_case("USB Baseline (No VPN)", "direct_none", 0, usb_ip, parallel=1, medium="USB 3.2 / 4.0", network=net))
+                        results.append(self.run_remote_case("USB Baseline (No VPN)", "direct_none", 0, usb_ip, parallel=8, medium="USB 3.2 / 4.0", network=net))
+                    cur_models = [m for m in models if (net == "tcp" or m[2] == 1500)]
+                    for name, backend, mtu in cur_models:
+                        results.append(self.run_remote_case(name, backend, mtu, usb_ip, parallel=1, medium="USB 3.2 / 4.0", network=net))
+                    for name, backend, mtu in cur_models:
+                        results.append(self.run_remote_case(name, backend, mtu, usb_ip, parallel=8, medium="USB 3.2 / 4.0", network=net))
 
         # 3. On-Device Loopback Suite
         if "loopback" in modes or "all" in modes:
             print(f"\n{Colors.CYAN}{Colors.BOLD}=======================================================")
             print(f"       ROUND {round_num} - SUITE 3: ON-DEVICE LOOPBACK BENCHMARK")
             print(f"======================================================={Colors.RESET}")
-            # Baseline
             if not skip_baseline:
                 results.append(self.run_loopback_case("Loopback Baseline (No VPN)", "direct_none", 0, parallel=1))
                 results.append(self.run_loopback_case("Loopback Baseline (No VPN)", "direct_none", 0, parallel=8))
-            # Single Stream
-            for name, backend, mtu in models:
+            loop_models = [m for m in models if m[2] == 9000] if any(m[2] == 9000 for m in models) else models
+            for name, backend, mtu in loop_models:
                 results.append(self.run_loopback_case(name, backend, mtu, parallel=1))
-            # Multi Stream
-            for name, backend, mtu in models:
+            for name, backend, mtu in loop_models:
                 results.append(self.run_loopback_case(name, backend, mtu, parallel=8))
+
+        # 4. Idle Connections Suite
+        if "idle" in modes or getattr(self.args, "with_idle", False):
+            print(f"\n{Colors.CYAN}{Colors.BOLD}=======================================================")
+            print(f"       ROUND {round_num} - SUITE 4: IDLE FLOWS vs MEMORY GROWTH")
+            print(f"======================================================={Colors.RESET}")
+            active_backends = list(dict.fromkeys([m[1] for m in models if m[1] != "direct_none"]))
+            idle_networks = ["tcp", "udp"] if self.args.network == "all" else [self.args.network]
+            for b in active_backends:
+                for net in idle_networks:
+                    results.append(self.run_idle_flow_case(b, net, wifi_ip))
 
         return results
 
 
 def format_markdown_table(results: List[Dict[str, Any]], title: str = "Benchmark Results") -> str:
+    standard_results = [r for r in results if r.get("type") != "idle_memory"]
+    idle_results = [r for r in results if r.get("type") == "idle_memory"]
+
     lines = [
         f"### {title}\n",
         "| Test Case | Backend | MTU | Medium | Upload | Download | Up CPU | Down CPU | Peak CPU | Peak Memory |",
         "| :--- | :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |"
     ]
-    for r in results:
+    for r in standard_results:
         if r["medium"] == "On-Device Loopback":
             up_str = f"{r.get('speed_gbps', 0)} Gbps"
             down_str = f"{r.get('speed_gbps', 0)} Gbps"
         else:
-            up_str = f"{r['upload_mbps']} Mbps"
-            down_str = f"{r['download_mbps']} Mbps"
+            up_loss = f" ({r.get('upload_loss_percent', 0.0):.1f}% loss)" if r.get("network") == "udp" and r.get("upload_loss_percent", 0.0) >= 0.1 else ""
+            down_loss = f" ({r.get('download_loss_percent', 0.0):.1f}% loss)" if r.get("network") == "udp" and r.get("download_loss_percent", 0.0) >= 0.1 else ""
+            up_str = f"{r['upload_mbps']} Mbps{up_loss}"
+            down_str = f"{r['download_mbps']} Mbps{down_loss}"
 
         lines.append(
             f"| {r['name']} | {r['backend']} | {r['mtu']} | {r['medium']} | "
@@ -470,11 +615,27 @@ def format_markdown_table(results: List[Dict[str, Any]], title: str = "Benchmark
             f"{r['upload_cpu_avg']}% | {r['download_cpu_avg']}% | "
             f"{r['peak_cpu']}% | {r['peak_mem_mb']} MB |"
         )
+
+    if idle_results:
+        lines.append("\n#### Retained Connections vs Memory Growth (Idle Flows)\n")
+        lines.append("| Backend | Network | Conns Range | Baseline PSS | 1000 Conns PSS | Memory Slope |")
+        lines.append("| :--- | :---: | :---: | :---: | :---: | :---: |")
+        for ir in idle_results:
+            flows = ir.get("idle_flows", [])
+            base = flows[0]["pss_mb"] if flows else 0.0
+            last = flows[-1]["pss_mb"] if flows else 0.0
+            slope = ir.get("slope_kib_per_conn", 0.0)
+            lines.append(f"| {ir['backend'].upper()} | {ir['network'].upper()} | 0 -> 1000 | {base:.1f} MB | {last:.1f} MB | {slope:.2f} KiB/conn |")
+
     return "\n".join(lines) + "\n"
 
 
 def main():
     parser = argparse.ArgumentParser(description="SimpleXray Android TUN Automated Benchmark")
+    parser.add_argument("--network", default="all",
+                        help="Network protocols to benchmark ('tcp', 'udp', or 'all', default: all)")
+    parser.add_argument("--with-idle", action="store_true",
+                        help="Include idle flows vs memory growth (0-1000 connections) benchmark suite")
     parser.add_argument("--backends", default="all",
                         help="TUN backends to benchmark (comma-separated: hev,xray,sing,mips, or 'all', default: all)")
     parser.add_argument("--skip-baseline", action="store_true",
@@ -489,6 +650,8 @@ def main():
                         help="Duration in seconds per test direction (default: 10)")
     parser.add_argument("--device", default=None,
                         help="ADB device serial if multiple connected")
+    parser.add_argument("--device-name", default=None,
+                        help="Sanitized device name to record in output metadata (default: auto-masked serial)")
     parser.add_argument("--rounds", type=int, default=3,
                         help="Number of test rounds to execute (default: 3)")
     parser.add_argument("--output-json", default="docs/benchmark/benchmark_results.json",
@@ -518,6 +681,15 @@ def main():
         log_error(str(e))
         sys.exit(1)
 
+    def sanitize_device(raw_device: Optional[str], custom_name: Optional[str] = None) -> str:
+        if custom_name:
+            return custom_name
+        if not raw_device:
+            return "Android DUT (Snapdragon 778G)"
+        if len(raw_device) >= 8:
+            return f"{raw_device[:4]}****{raw_device[-3:]}"
+        return "****"
+
     all_rounds_data: Dict[str, Any] = {
         "metadata": {
             "timestamp": datetime.now().isoformat(),
@@ -525,7 +697,7 @@ def main():
             "duration": args.duration,
             "wifi_server_ip": args.wifi_server_ip,
             "usb_server_ip": args.usb_server_ip,
-            "device": runner.adb.device,
+            "device": sanitize_device(runner.adb.device, args.device_name),
             "rounds": args.rounds
         },
         "rounds": {}
@@ -566,6 +738,16 @@ def main():
     with open(md_path, "w", encoding="utf-8") as f:
         f.write("\n".join(markdown_reports))
     log_success(f"Markdown report saved to: {md_path}")
+
+    # Automatically generate modern dashboards
+    chart_gen = os.path.join(SCRIPT_DIR, "generate_charts.py")
+    if os.path.exists(chart_gen):
+        log_info("Automatically generating modern visualization dashboards...")
+        rc, out, err = run_cmd([sys.executable, chart_gen, "--json", json_path])
+        if rc == 0:
+            log_success("Visualization dashboards refreshed successfully.")
+        else:
+            log_warn(f"Failed to generate charts: {err}\n{out}")
 
     log_success("All benchmark rounds completed successfully!")
 
