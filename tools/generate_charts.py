@@ -2,7 +2,7 @@
 """
 SimpleXray Benchmark Chart Generator
 Generates high-resolution visualization charts (WebP/PNG) from benchmark results.
-Supports 3 TUN backends: Hev, Xray TUN, and SingTUN.
+Supports 4 TUN backends: Hev, Xray TUN, SingTUN, and MipsTUN.
 """
 
 import argparse
@@ -63,7 +63,8 @@ def render_horizontal_bar_chart(
     is_int: bool = True,
     unit: str = "",
     xticks: list = None,
-    legend_loc: str = 'lower right'
+    legend_loc: str = 'lower right',
+    fig_width: float = 9.5
 ):
     models_reversed = list(reversed(models))
     single_reversed = list(reversed(single_vals))
@@ -72,7 +73,7 @@ def render_horizontal_bar_chart(
     bar_height = 0.35
 
     fig_height = max(4.0, 0.7 * len(models) + 0.8)
-    fig, ax = plt.subplots(figsize=(9.5, fig_height), facecolor='#ffffff')
+    fig, ax = plt.subplots(figsize=(fig_width, fig_height), facecolor='#ffffff')
     
     rects_single = ax.barh(y_pos + bar_height/2, single_reversed, bar_height, label='Single', color=COLOR_SINGLE, edgecolor=EDGE_SINGLE, linewidth=1.0, zorder=3)
     rects_multi = ax.barh(y_pos - bar_height/2, multi_reversed, bar_height, label='Multi', color=COLOR_MULTI, edgecolor=EDGE_MULTI, linewidth=1.0, zorder=3)
@@ -134,12 +135,13 @@ def generate_round_charts(output_dir: str, prefix: str, models: list, data: dict
 
     # 2. USB Speeds
     if "usb_up_s" in data and "usb_up_m" in data:
-        max_usb_up = max(max(data["usb_up_s"] + data["usb_up_m"]), 500) * 1.15
+        max_usb_up = max(max(data["usb_up_s"] + data["usb_up_m"]), 500) * 1.28
         max_usb_down = max(max(data["usb_down_s"] + data["usb_down_m"]), 200) * 1.15
         render_horizontal_bar_chart(
             os.path.join(output_dir, f"{prefix}usb_speed_upload.webp"),
             "USB 3.2 / 4.0: Upload speed - Mbps", "Speed (Mbps)",
-            models, data["usb_up_s"], data["usb_up_m"], max_usb_up, legend_loc='lower right'
+            models, data["usb_up_s"], data["usb_up_m"], max_usb_up,
+            legend_loc='lower right', fig_width=10.5
         )
         render_horizontal_bar_chart(
             os.path.join(output_dir, f"{prefix}usb_speed_download.webp"),
@@ -236,9 +238,11 @@ def main():
         ('Hev (MTU 1500)', 'hev', 1500),
         ('Xray TUN (MTU 1500)', 'xray', 1500),
         ('SingTUN (MTU 1500)', 'sing', 1500),
+        ('MipsTUN (MTU 1500)', 'mips', 1500),
         ('Hev (MTU 8500)', 'hev', 8500),
         ('Xray TUN (MTU 8500)', 'xray', 8500),
         ('SingTUN (MTU 8500)', 'sing', 8500),
+        ('MipsTUN (MTU 8500)', 'mips', 8500),
     ]
 
     if os.path.exists(args.json):
@@ -263,10 +267,23 @@ def main():
                 "peak_cpu", "peak_mem_mb"
             ]
             avg_records = []
-            for i in range(len(first_round)):
-                rec = dict(first_round[i])
+            for rec_template in first_round:
+                rec = dict(rec_template)
+                medium = rec.get("medium")
+                backend = rec.get("backend")
+                mtu = rec.get("mtu")
+                parallel = rec.get("parallel")
                 for field in numeric_fields:
-                    vals = [rounds[r][i][field] for r in rounds if field in rounds[r][i]]
+                    vals = []
+                    for r_list in rounds.values():
+                        for match in r_list:
+                            if (match.get("medium") == medium and
+                                match.get("backend") == backend and
+                                match.get("mtu") == mtu and
+                                match.get("parallel") == parallel):
+                                if field in match:
+                                    vals.append(match[field])
+                                break
                     if vals:
                         rec[field] = round(sum(vals) / len(vals), 2)
                 avg_records.append(rec)

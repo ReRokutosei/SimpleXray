@@ -374,15 +374,25 @@ class BenchmarkRunner:
         usb_ip = self.args.usb_server_ip
         results: List[Dict[str, Any]] = []
 
-        # List of models to test: (Display Name, Backend, MTU)
-        models = [
+        # All available models to test: (Display Name, Backend, MTU)
+        all_models = [
             ("Hev (MTU 1500)", "hev", 1500),
             ("Xray TUN (MTU 1500)", "xray", 1500),
             ("SingTUN (MTU 1500)", "sing", 1500),
+            ("MipsTUN (MTU 1500)", "mips", 1500),
             ("Hev (MTU 8500)", "hev", 8500),
             ("Xray TUN (MTU 8500)", "xray", 8500),
             ("SingTUN (MTU 8500)", "sing", 8500),
+            ("MipsTUN (MTU 8500)", "mips", 8500),
         ]
+
+        if hasattr(self.args, "backends") and self.args.backends and self.args.backends != "all":
+            selected = [b.strip().lower() for b in self.args.backends.split(",")]
+            models = [m for m in all_models if m[1] in selected]
+        else:
+            models = all_models
+
+        skip_baseline = getattr(self.args, "skip_baseline", False)
 
         # 1. 5GHz Wi-Fi Benchmark Suite
         if "wifi" in modes or "all" in modes:
@@ -390,8 +400,9 @@ class BenchmarkRunner:
             print(f"       ROUND {round_num} - SUITE 1: 5GHz Wi-Fi BENCHMARK")
             print(f"======================================================={Colors.RESET}")
             # Baseline
-            results.append(self.run_remote_case("Wi-Fi Baseline (No VPN)", "direct_none", 0, wifi_ip, parallel=1, medium="5GHz Wi-Fi"))
-            results.append(self.run_remote_case("Wi-Fi Baseline (No VPN)", "direct_none", 0, wifi_ip, parallel=8, medium="5GHz Wi-Fi"))
+            if not skip_baseline:
+                results.append(self.run_remote_case("Wi-Fi Baseline (No VPN)", "direct_none", 0, wifi_ip, parallel=1, medium="5GHz Wi-Fi"))
+                results.append(self.run_remote_case("Wi-Fi Baseline (No VPN)", "direct_none", 0, wifi_ip, parallel=8, medium="5GHz Wi-Fi"))
             # Single Stream
             for name, backend, mtu in models:
                 results.append(self.run_remote_case(name, backend, mtu, wifi_ip, parallel=1, medium="5GHz Wi-Fi"))
@@ -410,8 +421,9 @@ class BenchmarkRunner:
                 print(f"       ROUND {round_num} - SUITE 2: USB TETHERING BENCHMARK")
                 print(f"======================================================={Colors.RESET}")
                 # Baseline
-                results.append(self.run_remote_case("USB Baseline (No VPN)", "direct_none", 0, usb_ip, parallel=1, medium="USB 3.2 / 4.0"))
-                results.append(self.run_remote_case("USB Baseline (No VPN)", "direct_none", 0, usb_ip, parallel=8, medium="USB 3.2 / 4.0"))
+                if not skip_baseline:
+                    results.append(self.run_remote_case("USB Baseline (No VPN)", "direct_none", 0, usb_ip, parallel=1, medium="USB 3.2 / 4.0"))
+                    results.append(self.run_remote_case("USB Baseline (No VPN)", "direct_none", 0, usb_ip, parallel=8, medium="USB 3.2 / 4.0"))
                 # Single Stream
                 for name, backend, mtu in models:
                     results.append(self.run_remote_case(name, backend, mtu, usb_ip, parallel=1, medium="USB 3.2 / 4.0"))
@@ -425,8 +437,9 @@ class BenchmarkRunner:
             print(f"       ROUND {round_num} - SUITE 3: ON-DEVICE LOOPBACK BENCHMARK")
             print(f"======================================================={Colors.RESET}")
             # Baseline
-            results.append(self.run_loopback_case("Loopback Baseline (No VPN)", "direct_none", 0, parallel=1))
-            results.append(self.run_loopback_case("Loopback Baseline (No VPN)", "direct_none", 0, parallel=8))
+            if not skip_baseline:
+                results.append(self.run_loopback_case("Loopback Baseline (No VPN)", "direct_none", 0, parallel=1))
+                results.append(self.run_loopback_case("Loopback Baseline (No VPN)", "direct_none", 0, parallel=8))
             # Single Stream
             for name, backend, mtu in models:
                 results.append(self.run_loopback_case(name, backend, mtu, parallel=1))
@@ -462,12 +475,16 @@ def format_markdown_table(results: List[Dict[str, Any]], title: str = "Benchmark
 
 def main():
     parser = argparse.ArgumentParser(description="SimpleXray Android TUN Automated Benchmark")
+    parser.add_argument("--backends", default="all",
+                        help="TUN backends to benchmark (comma-separated: hev,xray,sing,mips, or 'all', default: all)")
+    parser.add_argument("--skip-baseline", action="store_true",
+                        help="Skip running physical baseline (No VPN) tests")
     parser.add_argument("--mode", default="wifi,loopback",
                         help="Benchmark suite(s) to run (comma-separated: wifi,loopback,usb, or 'all', default: wifi,loopback)")
     parser.add_argument("--wifi-server-ip", default="10.189.231.200",
                         help="Host IP address in Wi-Fi subnet (default: 10.189.231.200)")
-    parser.add_argument("--usb-server-ip", default="192.168.232.59",
-                        help="Host IP address in USB tethering subnet (default: 192.168.232.59)")
+    parser.add_argument("--usb-server-ip", default="auto",
+                        help="Host IP address in USB tethering subnet (default: auto)")
     parser.add_argument("--duration", type=int, default=DEFAULT_DURATION,
                         help="Duration in seconds per test direction (default: 10)")
     parser.add_argument("--device", default=None,
@@ -479,6 +496,21 @@ def main():
     parser.add_argument("--output-md", default="docs/benchmark/benchmark_summary.md",
                         help="File path to save Markdown tables")
     args = parser.parse_args()
+
+    # Auto-detect USB host IP if set to auto
+    if args.usb_server_ip == "auto":
+        rc, out, _ = run_cmd(["ip", "-brief", "address"])
+        detected_ip = None
+        for line in out.splitlines():
+            parts = line.split()
+            if len(parts) >= 3 and any(parts[0].startswith(prefix) for prefix in ["enx", "rndis", "usb"]):
+                detected_ip = parts[2].split("/")[0]
+                break
+        if detected_ip:
+            log_info(f"Auto-detected USB tethering host IP: {detected_ip}")
+            args.usb_server_ip = detected_ip
+        else:
+            args.usb_server_ip = "192.168.232.59"
 
     try:
         runner = BenchmarkRunner(args)
