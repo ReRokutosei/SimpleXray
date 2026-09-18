@@ -13,7 +13,7 @@ This file provides the necessary context and constraints for AI agents interacti
 - **Architecture**: MVVM with Android ViewModels.
 - **Data Persistence**: Direct Android `SharedPreferences`.
 - **Communication/RPC**: gRPC with Protocol Buffers (protobuf) to query Xray core status and traffic statistics through a dynamically allocated `127.0.0.1` TCP port. Service status and process logs are communicated reactively via in-memory `VpnStateHub` (`StateFlow` and `SharedFlow`).
-- **Native Components & TUN Backends**: Uses CMake to build `hev-socks5-tunnel` (C/lwIP) and dependencies as native JNI libraries, and integrates `sing-tun` (Go stack). Supports 3 TUN backends: Hev (default, C/lwIP for optimal throughput and low power consumption), SingTUN (Go/sing-box), and native Xray TUN (Go/gVisor). In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. In Hev and SingTUN modes, the tunnel forwards traffic to Xray through its local SOCKS5 inbound.
+- **Native Components & TUN Backends**: Uses CMake to build `hev-socks5-tunnel` (C/lwIP) and dependencies as native JNI libraries, integrates `sing-tun` (Go stack), and integrates `mipstack` (Mihomo pure Go stack). Supports 4 TUN backends: Hev (default, C/lwIP for optimal throughput and low power consumption), SingTUN (Go/sing-box), MipsTUN (Go/mipstack with BBRv3), and native Xray TUN (Go/gVisor). In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. In Hev, SingTUN, and MipsTUN modes, the tunnel forwards traffic to Xray through its local SOCKS5 inbound.
 
 ## Project Structure
 - `app/src/main/kotlin/com/simplexray/re/`:

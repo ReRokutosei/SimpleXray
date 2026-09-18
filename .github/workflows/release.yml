@@ -89,6 +89,12 @@ jobs:
         env:
           ANDROID_NDK_HOME: ${{ env.NDK_HOME }}
 
+      - name: Build MipsTUN Bridge from Source
+        run: |
+          bash ./third_party/mips-tun/build.sh
+        env:
+          ANDROID_NDK_HOME: ${{ env.NDK_HOME }}
+
       - name: Set up signing keystore
         run: |
           [ -n "${{ secrets.SIGNING_KEY }}" ] || { echo "SIGNING_KEY secret is not set" >&2; exit 1; }
