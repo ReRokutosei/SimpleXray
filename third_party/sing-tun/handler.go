@@ -52,33 +52,34 @@ func (h *singTunHandler) NewConnectionEx(ctx context.Context, conn net.Conn, sou
 
 		h.stats.txPackets.Add(1)
 
-		var done atomic.Bool
 		var wg sync.WaitGroup
 		wg.Add(2)
 
 		// Upload: conn -> upstream
 		go func() {
 			defer wg.Done()
-			n, _ := bufio.Copy(upstream, conn)
-			if n > 0 {
+			n, err := bufio.Copy(upstream, conn)
+			if n > 0 && h.stats != nil {
 				h.stats.txBytes.Add(uint64(n))
 			}
-			if !done.Swap(true) {
-				conn.Close()
-				upstream.Close()
+			if err == nil {
+				_ = N.CloseWrite(upstream)
+			} else {
+				_ = upstream.Close()
 			}
 		}()
 
 		// Download: upstream -> conn
 		go func() {
 			defer wg.Done()
-			n, _ := bufio.Copy(conn, upstream)
-			if n > 0 {
+			n, err := bufio.Copy(conn, upstream)
+			if n > 0 && h.stats != nil {
 				h.stats.rxBytes.Add(uint64(n))
 			}
-			if !done.Swap(true) {
-				conn.Close()
-				upstream.Close()
+			if err == nil {
+				_ = N.CloseWrite(conn)
+			} else {
+				_ = conn.Close()
 			}
 		}()
 

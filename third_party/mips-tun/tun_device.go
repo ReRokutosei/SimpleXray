@@ -9,6 +9,7 @@ import (
 	"syscall"
 
 	"github.com/metacubex/mipstack"
+	"golang.org/x/sys/unix"
 )
 
 func runTunInbound(ctx context.Context, file *os.File, stack *mipstack.Stack, mtu int, stats *stats) {
@@ -50,6 +51,7 @@ func runTunInbound(ctx context.Context, file *os.File, stack *mipstack.Stack, mt
 
 func runTunOutbound(ctx context.Context, file *os.File, stack *mipstack.Stack, mtu int, stats *stats) {
 	logInfo("runTunOutbound: loop started")
+	fd := int(file.Fd())
 	const batchSize = 64
 	buffers := make([][]byte, batchSize)
 	for i := range buffers {
@@ -79,9 +81,9 @@ func runTunOutbound(ctx context.Context, file *os.File, stack *mipstack.Stack, m
 			if n <= 0 {
 				continue
 			}
-			_, werr := file.Write(buffers[i][:n])
+			_, werr := unix.Write(fd, buffers[i][:n])
 			if werr != nil {
-				if errors.Is(werr, os.ErrClosed) {
+				if errors.Is(werr, syscall.EBADF) || errors.Is(werr, os.ErrClosed) {
 					logInfo("runTunOutbound: file closed on write, exiting")
 					return
 				}

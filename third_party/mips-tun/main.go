@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -68,6 +69,9 @@ func mipsTunStart(
 		effectiveMtu = 1500
 	}
 
+	// Tune Go GC for Android mobile constraints
+	debug.SetGCPercent(50)
+
 	logInfo(fmt.Sprintf("mipsTunStart: tunFd=%d, socks=%s:%d, mtu=%d", int(tunFd), host, port, effectiveMtu))
 
 	dupFd, err := unix.Dup(int(tunFd))
@@ -106,7 +110,7 @@ func mipsTunStart(
 			logError(fmt.Sprintf("tcpForwarder: Accept failed for %s: %v", dest, acceptErr))
 			return
 		}
-		go handleTCP(ctx, socksClient, conn, dest)
+		go handleTCP(ctx, socksClient, conn, dest, &globalStats)
 	})
 	if err != nil {
 		logError(fmt.Sprintf("mipsTunStart: NewTCPForwarder failed: %v", err))
@@ -123,7 +127,7 @@ func mipsTunStart(
 			logError(fmt.Sprintf("udpForwarder: Accept failed for %s: %v", dest, acceptErr))
 			return
 		}
-		go handleUDP(ctx, socksClient, conn, dest)
+		go handleUDP(ctx, socksClient, conn, dest, &globalStats)
 	})
 	if err != nil {
 		logError(fmt.Sprintf("mipsTunStart: NewUDPForwarder failed: %v", err))
@@ -195,6 +199,7 @@ func mipsTunStop() C.int {
 	}
 
 	running.Store(false)
+	debug.FreeOSMemory()
 	logInfo("mipsTunStop: stopped successfully")
 	return 0
 }
@@ -274,7 +279,7 @@ func runCLI() {
 		if acceptErr != nil {
 			return
 		}
-		go handleTCP(ctx, socksClient, conn, dest)
+		go handleTCP(ctx, socksClient, conn, dest, &globalStats)
 	})
 	if err != nil {
 		log.Fatalf("NewTCPForwarder error: %v", err)
@@ -287,7 +292,7 @@ func runCLI() {
 		if acceptErr != nil {
 			return
 		}
-		go handleUDP(ctx, socksClient, conn, dest)
+		go handleUDP(ctx, socksClient, conn, dest, &globalStats)
 	})
 	if err != nil {
 		log.Fatalf("NewUDPForwarder error: %v", err)

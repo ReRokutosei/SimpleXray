@@ -6,19 +6,27 @@ import (
 	"net"
 	"net/netip"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/sagernet/sing/common/bufio"
 	M "github.com/sagernet/sing/common/metadata"
+	N "github.com/sagernet/sing/common/network"
 	"github.com/sagernet/sing/protocol/socks"
 )
 
 const (
-	udpIdleTimeout = 30 * time.Second
+	udpIdleTimeout    = 30 * time.Second
+	udpDnsIdleTimeout = 5 * time.Second
 )
 
-func handleTCP(ctx context.Context, client *socks.Client, conn net.Conn, destination netip.AddrPort) {
+var udpBufPool = sync.Pool{
+	New: func() any {
+		b := make([]byte, 65535)
+		return &b
+	},
+}
+
+func handleTCP(ctx context.Context, client *socks.Client, conn net.Conn, destination netip.AddrPort, stats *stats) {
 	defer conn.Close()
 
 	destStr := destination.String()
@@ -34,7 +42,6 @@ func handleTCP(ctx context.Context, client *socks.Client, conn net.Conn, destina
 
 	logDebug(fmt.Sprintf("handleTCP: connected to %s via SOCKS5", destStr))
 
-	var done atomic.Bool
 	var wg sync.WaitGroup
 	wg.Add(2)
 
@@ -42,11 +49,12 @@ func handleTCP(ctx context.Context, client *socks.Client, conn net.Conn, destina
 	go func() {
 		defer wg.Done()
 		n, err := bufio.Copy(upstream, conn)
-		if err != nil {
-			logDebug(fmt.Sprintf("handleTCP: upload copy ended for %s: %v (bytes=%d)", destStr, err, n))
+		if n > 0 && stats != nil {
+			stats.txBytes.Add(uint64(n))
 		}
-		if !done.Swap(true) {
-			_ = conn.Close()
+		if err == nil {
+			_ = N.CloseWrite(upstream)
+		} else {
 			_ = upstream.Close()
 		}
 	}()
@@ -55,20 +63,33 @@ func handleTCP(ctx context.Context, client *socks.Client, conn net.Conn, destina
 	go func() {
 		defer wg.Done()
 		n, err := bufio.Copy(conn, upstream)
-		if err != nil {
-			logDebug(fmt.Sprintf("handleTCP: download copy ended for %s: %v (bytes=%d)", destStr, err, n))
+		if n > 0 && stats != nil {
+			stats.rxBytes.Add(uint64(n))
 		}
-		if !done.Swap(true) {
+		if err == nil {
+			_ = N.CloseWrite(conn)
+		} else {
+			_ = conn.Close()
+		}
+	}()
+
+	// Monitor context cancellation
+	stopDone := make(chan struct{})
+	go func() {
+		select {
+		case <-ctx.Done():
 			_ = conn.Close()
 			_ = upstream.Close()
+		case <-stopDone:
 		}
 	}()
 
 	wg.Wait()
+	close(stopDone)
 	logDebug(fmt.Sprintf("handleTCP: closed connection to %s", destStr))
 }
 
-func handleUDP(ctx context.Context, client *socks.Client, conn net.Conn, destination netip.AddrPort) {
+func handleUDP(ctx context.Context, client *socks.Client, conn net.Conn, destination netip.AddrPort, stats *stats) {
 	defer conn.Close()
 
 	destStr := destination.String()
@@ -82,7 +103,12 @@ func handleUDP(ctx context.Context, client *socks.Client, conn net.Conn, destina
 	}
 	defer remotePacketConn.Close()
 
-	var done atomic.Bool
+	// Short timeout for ephemeral DNS lookups to avoid connection/memory bloat
+	idleTimeout := udpIdleTimeout
+	if destination.Port() == 53 {
+		idleTimeout = udpDnsIdleTimeout
+	}
+
 	var wg sync.WaitGroup
 	wg.Add(2)
 
@@ -91,9 +117,12 @@ func handleUDP(ctx context.Context, client *socks.Client, conn net.Conn, destina
 	// Upload: conn (from phone) -> remotePacketConn (to Xray SOCKS5 UDP)
 	go func() {
 		defer wg.Done()
-		buf := make([]byte, 65535)
+		bufPtr := udpBufPool.Get().(*[]byte)
+		defer udpBufPool.Put(bufPtr)
+		buf := *bufPtr
+
 		for {
-			_ = conn.SetReadDeadline(time.Now().Add(udpIdleTimeout))
+			_ = conn.SetReadDeadline(time.Now().Add(idleTimeout))
 			n, rerr := conn.Read(buf)
 			if rerr != nil {
 				break
@@ -104,20 +133,25 @@ func handleUDP(ctx context.Context, client *socks.Client, conn net.Conn, destina
 					logError(fmt.Sprintf("handleUDP: WriteTo failed for %s: %v", destStr, werr))
 					break
 				}
+				if stats != nil {
+					stats.txBytes.Add(uint64(n))
+					stats.txPackets.Add(1)
+				}
 			}
 		}
-		if !done.Swap(true) {
-			_ = conn.Close()
-			_ = remotePacketConn.Close()
-		}
+		_ = conn.Close()
+		_ = remotePacketConn.Close()
 	}()
 
 	// Download: remotePacketConn (from Xray SOCKS5 UDP) -> conn (to phone)
 	go func() {
 		defer wg.Done()
-		buf := make([]byte, 65535)
+		bufPtr := udpBufPool.Get().(*[]byte)
+		defer udpBufPool.Put(bufPtr)
+		buf := *bufPtr
+
 		for {
-			_ = remotePacketConn.SetReadDeadline(time.Now().Add(udpIdleTimeout))
+			_ = remotePacketConn.SetReadDeadline(time.Now().Add(idleTimeout))
 			n, _, rerr := remotePacketConn.ReadFrom(buf)
 			if rerr != nil {
 				break
@@ -128,14 +162,29 @@ func handleUDP(ctx context.Context, client *socks.Client, conn net.Conn, destina
 					logError(fmt.Sprintf("handleUDP: write back to client failed for %s: %v", destStr, werr))
 					break
 				}
+				if stats != nil {
+					stats.rxBytes.Add(uint64(n))
+					stats.rxPackets.Add(1)
+				}
 			}
 		}
-		if !done.Swap(true) {
+		_ = conn.Close()
+		_ = remotePacketConn.Close()
+	}()
+
+	// Monitor context cancellation
+	stopDone := make(chan struct{})
+	go func() {
+		select {
+		case <-ctx.Done():
 			_ = conn.Close()
 			_ = remotePacketConn.Close()
+		case <-stopDone:
 		}
 	}()
 
 	wg.Wait()
+	close(stopDone)
 	logDebug(fmt.Sprintf("handleUDP: closed flow to %s", destStr))
 }
+
