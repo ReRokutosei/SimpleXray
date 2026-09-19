@@ -387,8 +387,8 @@ class MainViewModel(application: Application) :
         return filePath
     }
 
-    suspend fun updateCoreStats() {
-        if (!_isServiceEnabled.value) return
+    suspend fun updateCoreStats() = withContext(Dispatchers.IO) {
+        if (!_isServiceEnabled.value) return@withContext
         if (coreStatsClient == null) {
             Log.d(TAG, "=== [DEBUG gRPC] Connecting CoreStatsClient to ${prefs.apiAddress}:${prefs.apiPort} ===")
             coreStatsClient = CoreStatsClient.create(prefs.apiAddress, prefs.apiPort)
@@ -402,7 +402,7 @@ class MainViewModel(application: Application) :
             Log.w(TAG, "=== [DEBUG gRPC FAILED] Both stats & traffic returned null, resetting client ===")
             coreStatsClient?.close()
             coreStatsClient = null
-            return
+            return@withContext
         }
 
         _coreStatsState.value = CoreStatsState(

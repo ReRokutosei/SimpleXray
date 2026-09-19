@@ -4,12 +4,13 @@
         <activity
             android:name="androidx.activity.ComponentActivity"
             android:exported="true" />
-        <receiver
-            android:name="com.simplexray.re.service.BenchmarkReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="com.simplexray.re.action.BENCHMARK" />
-            </intent-filter>
-        </receiver>
+        <service
+            android:name="com.simplexray.re.service.BenchmarkService"
+            android:exported="true"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Benchmark service" />
+        </service>
     </application>
 </manifest>

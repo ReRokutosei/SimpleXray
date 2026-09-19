@@ -4,7 +4,7 @@ description: General instructions and context for developing the SimpleXray proj
 
 # SimpleXray Project Context
 
-This file provides the necessary context and constraints for AI agents interacting with the SimpleXray project. SimpleXray is an Android application acting as a VPN client/proxy tool using Xray core, sing-tun, and hev-socks5-tunnel.
+This file provides the necessary context and constraints for AI agents interacting with the SimpleXray project. SimpleXray is an Android application acting as a VPN client/proxy tool using Xray-core, sing-tun, hev-socks5-tunnel, and Mihomo mipstack.
 
 ## Tech Stack
 - **OS Target**: Android (minSdk 34, targetSdk 36, compileSdk 37)
@@ -43,6 +43,8 @@ This file provides the necessary context and constraints for AI agents interacti
 ## Key Constraints
 - NEVER break the `VpnService` transparent proxy behavior. Testing native traffic routing is critical.
 - Keep the UI responsive and aesthetic, prioritizing the `miuix` design system.
+- **SOCKS5 UDP ASSOCIATE Protocol Compliance**: When integrating or modifying user-space TUN handlers in Go (`sing-tun`, `mips-tun`), `client.ListenPacket` must pass an unspecified bind address (`0.0.0.0:0` / `M.Socksaddr{}`) as `BND.ADDR`, NOT the remote target destination. Passing foreign destinations violates RFC 1928 and causes Xray's SOCKS5 inbound to drop client packets.
+- **Android 14+ Foreground Service Limits**: Calling `ContextCompat.startForegroundService()` from background components (such as `BroadcastReceiver`) will throw `ForegroundServiceStartNotAllowedException` on Android 14+ unless an activity is brought to the foreground first (e.g. `startActivity` with `FLAG_ACTIVITY_NEW_TASK`).
 - **Rule File Background Updates**: Rule files (geoip/geosite) default to GitHub URLs. In mainland network environments, downloading from GitHub requires an active proxy; additionally, Chinese OEM ROMs (e.g. HyperOS/MIUI) restrict background WorkManager execution. Retain the in-service periodic check coroutine (`startPeriodicGeoUpdateCheck`) in `TProxyService`—it executes while the VPN is active as a foreground service with guaranteed local proxy availability.
 
 ## Device Testing and Commits
