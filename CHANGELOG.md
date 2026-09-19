@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.1.1-alpha.3](https://github.com/ReRokutosei/SimpleXray/compare/v2.1.1-alpha.2...v2.1.1-alpha.3) (2026-09-19)
+
+
+### Features
+
+* **benchmark:** introduce headless BenchmarkService and asynchronous service teardown ([a8e7698](https://github.com/ReRokutosei/SimpleXray/commit/a8e7698e96658929ac67718344eb549f9c3924e8))
+
+
+### Bug Fixes
+
+* **sing-tun:** upgrade to upstream pure user-space Go stack and fix Android TUN subnet prefix ([957c2e3](https://github.com/ReRokutosei/SimpleXray/commit/957c2e3f9235c1b5c4ba04d96ff8bd3d852fbb81))
+
 ### [2.1.1-alpha.2](https://github.com/ReRokutosei/SimpleXray/compare/v2.1.1-alpha.1...v2.1.1-alpha.2) (2026-09-18)
 
 
