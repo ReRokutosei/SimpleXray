@@ -12,6 +12,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -21,6 +22,7 @@ import (
 	M "github.com/sagernet/sing/common/metadata"
 	N "github.com/sagernet/sing/common/network"
 	"github.com/sagernet/sing/protocol/socks"
+	"golang.org/x/sys/unix"
 )
 
 type stats struct {
@@ -55,6 +57,8 @@ func singTunStart(
 		return 0
 	}
 
+	debug.SetGCPercent(50)
+
 	host := C.GoString(socksHost)
 	port := uint16(socksPort)
 	user := C.GoString(username)
@@ -70,8 +74,14 @@ func singTunStart(
 	socksServerAddr := M.ParseSocksaddrHostPort(host, port)
 	socksClient := socks.NewClient(N.SystemDialer, socksServerAddr, socks.Version5, user, pass)
 
+	dupFd, err := unix.Dup(int(tunFd))
+	if err != nil {
+		cancel()
+		return -1
+	}
+
 	tunOptions := tun.Options{
-		FileDescriptor:            int(tunFd),
+		FileDescriptor:            dupFd,
 		MTU:                       effectiveMtu,
 		AutoRoute:                 false,
 		StrictRoute:               false,
@@ -80,6 +90,7 @@ func singTunStart(
 
 	tunDev, err := tun.New(tunOptions)
 	if err != nil {
+		_ = unix.Close(dupFd)
 		cancel()
 		return -1
 	}
@@ -149,6 +160,7 @@ func singTunStop() C.int {
 	}
 
 	running.Store(false)
+	debug.FreeOSMemory()
 	return 0
 }
 
