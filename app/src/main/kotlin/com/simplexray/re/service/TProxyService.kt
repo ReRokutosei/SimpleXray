@@ -701,12 +701,10 @@ class TProxyService : VpnService() {
         stopForeground(Service.STOP_FOREGROUND_REMOVE)
         val pfd = tunFd
         tunFd = null
-        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
-            runCatching { TProxyStopService() }
-            runCatching { SingTunStopService() }
-            runCatching { MipsTunStopService() }
-            pfd?.let { runCatching { it.close() } }
-        }
+        runCatching { TProxyStopService() }
+        runCatching { SingTunStopService() }
+        runCatching { MipsTunStopService() }
+        pfd?.let { runCatching { it.close() } }
         stopSelf()
         wakeLock?.let {
             if (it.isHeld) {

@@ -662,6 +662,10 @@ def main():
                         help="File path to save JSON results")
     parser.add_argument("--output-md", default="docs/benchmark/benchmark_summary.md",
                         help="File path to save Markdown tables")
+    parser.add_argument("--no-charts", action="store_true",
+                        help="Skip generating visualization charts in docs/images/")
+    parser.add_argument("--charts-dir", default=None,
+                        help="Output directory for generated charts (default: docs/images)")
     args = parser.parse_args()
 
     # Auto-detect USB host IP if set to auto
@@ -779,13 +783,20 @@ def main():
 
     # Automatically generate modern dashboards
     chart_gen = os.path.join(SCRIPT_DIR, "generate_charts.py")
-    if os.path.exists(chart_gen):
-        log_info("Automatically generating modern visualization dashboards...")
-        rc, out, err = run_cmd([sys.executable, chart_gen, "--json", json_path])
-        if rc == 0:
-            log_success("Visualization dashboards refreshed successfully.")
+    default_json = os.path.abspath("docs/benchmark/benchmark_results.json")
+    if os.path.exists(chart_gen) and not args.no_charts:
+        if json_path != default_json and not args.charts_dir:
+            log_info("Skipping chart generation for non-default JSON output (specify --charts-dir to force).")
         else:
-            log_warn(f"Failed to generate charts: {err}\n{out}")
+            log_info("Automatically generating modern visualization dashboards...")
+            chart_cmd = [sys.executable, chart_gen, "--json", json_path]
+            if args.charts_dir:
+                chart_cmd.extend(["--output-dir", args.charts_dir])
+            rc, out, err = run_cmd(chart_cmd)
+            if rc == 0:
+                log_success("Visualization dashboards refreshed successfully.")
+            else:
+                log_warn(f"Failed to generate charts: {err}\n{out}")
 
     log_success("All benchmark rounds completed successfully!")
 

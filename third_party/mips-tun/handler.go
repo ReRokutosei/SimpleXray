@@ -73,19 +73,7 @@ func handleTCP(ctx context.Context, client *socks.Client, conn net.Conn, destina
 		}
 	}()
 
-	// Monitor context cancellation
-	stopDone := make(chan struct{})
-	go func() {
-		select {
-		case <-ctx.Done():
-			_ = conn.Close()
-			_ = upstream.Close()
-		case <-stopDone:
-		}
-	}()
-
 	wg.Wait()
-	close(stopDone)
 	logDebug(fmt.Sprintf("handleTCP: closed connection to %s", destStr))
 }
 
@@ -172,19 +160,7 @@ func handleUDP(ctx context.Context, client *socks.Client, conn net.Conn, destina
 		_ = remotePacketConn.Close()
 	}()
 
-	// Monitor context cancellation
-	stopDone := make(chan struct{})
-	go func() {
-		select {
-		case <-ctx.Done():
-			_ = conn.Close()
-			_ = remotePacketConn.Close()
-		case <-stopDone:
-		}
-	}()
-
 	wg.Wait()
-	close(stopDone)
 	logDebug(fmt.Sprintf("handleUDP: closed flow to %s", destStr))
 }
 
