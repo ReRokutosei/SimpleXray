@@ -10,6 +10,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"net/netip"
 	"os"
 	"os/signal"
 	"runtime/debug"
@@ -76,6 +77,7 @@ func singTunStart(
 
 	dupFd, err := unix.Dup(int(tunFd))
 	if err != nil {
+		logError(fmt.Sprintf("singTunStart: unix.Dup failed: %v", err))
 		cancel()
 		return -1
 	}
@@ -86,34 +88,46 @@ func singTunStart(
 		AutoRoute:                 false,
 		StrictRoute:               false,
 		EXP_ExternalConfiguration: true,
+		Inet4Address:              []netip.Prefix{netip.MustParsePrefix("198.18.0.1/30")},
+		Inet6Address:              []netip.Prefix{netip.MustParsePrefix("fc00::1/126")},
 	}
 
 	tunDev, err := tun.New(tunOptions)
 	if err != nil {
+		logError(fmt.Sprintf("singTunStart: tun.New failed: %v", err))
 		_ = unix.Close(dupFd)
 		cancel()
 		return -1
 	}
 
+	tunName, _ := tunDev.Name()
+	if tunName == "" {
+		tunName = "tun0"
+	}
+	tunOptions.Name = tunName
+
 	h := newSingTunHandler(socksClient, &globalStats)
 
 	stackOptions := tun.StackOptions{
-		Context:     ctx,
-		Tun:         tunDev,
-		TunOptions:  tunOptions,
-		UDPTimeout:  30 * time.Second,
-		ICMPTimeout: 10 * time.Second,
+		Context:                ctx,
+		Tun:                    tunDev,
+		TunOptions:             tunOptions,
+		UDPTimeout:             30 * time.Second,
+		ICMPTimeout:            10 * time.Second,
 		Handler:     h,
+		Logger:      &singTunLogger{},
 	}
 
-	stack, err := tun.NewStack("go", stackOptions)
+	stack, err := tun.NewStack("", stackOptions)
 	if err != nil {
+		logError(fmt.Sprintf("singTunStart: tun.NewStack failed: %v", err))
 		_ = tunDev.Close()
 		cancel()
 		return -2
 	}
 
 	if err = stack.Start(); err != nil {
+		logError(fmt.Sprintf("singTunStart: stack.Start failed: %v", err))
 		_ = stack.Close()
 		_ = tunDev.Close()
 		cancel()
@@ -121,11 +135,14 @@ func singTunStart(
 	}
 
 	if err = tunDev.Start(); err != nil {
+		logError(fmt.Sprintf("singTunStart: tunDev.Start failed: %v", err))
 		_ = stack.Close()
 		_ = tunDev.Close()
 		cancel()
 		return -4
 	}
+
+	logInfo(fmt.Sprintf("singTunStart: started successfully on fd=%d (dup=%d), socks=%s:%d, mtu=%d", int(tunFd), dupFd, host, port, effectiveMtu))
 
 	cancelFunc = cancel
 	activeTun = tunDev
@@ -201,6 +218,8 @@ func runCLI() {
 		AutoRoute:                 false,
 		StrictRoute:               false,
 		EXP_ExternalConfiguration: true,
+		Inet4Address:              []netip.Prefix{netip.MustParsePrefix("198.18.0.1/30")},
+		Inet6Address:              []netip.Prefix{netip.MustParsePrefix("fc00::1/126")},
 	})
 	if err != nil {
 		log.Fatalf("tun.New error: %v", err)
@@ -215,10 +234,10 @@ func runCLI() {
 
 	h := newSingTunHandler(socksClient, &globalStats)
 
-	stack, err := tun.NewStack("go", tun.StackOptions{
+	stack, err := tun.NewStack("", tun.StackOptions{
 		Context:     ctx,
 		Tun:         tunDev,
-		TunOptions:  tun.Options{MTU: uint32(*mtu)},
+		TunOptions:  tun.Options{MTU: uint32(*mtu), Inet4Address: []netip.Prefix{netip.MustParsePrefix("198.18.0.1/30")}},
 		UDPTimeout:  30 * time.Second,
 		ICMPTimeout: 10 * time.Second,
 		Handler:     h,

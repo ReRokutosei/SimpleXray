@@ -26,10 +26,16 @@ github.com/sagernet/netlink v0.0.0-20260919000536-5d76abd97cf7 h1:rTZASvaLWld/a+
 github.com/sagernet/netlink v0.0.0-20260919000536-5d76abd97cf7/go.mod h1:xLnfdiJbSp8rNqYEdIW/6eDO4mVoogml14Bh2hSiFpM=
 github.com/sagernet/nftables v0.3.0-mod.4 h1:vnOtcDYeSXv2e5RoRuGH0lrpttQFJ8iC4ICS2nhlDSo=
 github.com/sagernet/nftables v0.3.0-mod.4/go.mod h1:8kslHG4VvYNihcco+i6uxIX7qbT8A56T0y5q7U44ZaQ=
+github.com/sagernet/sing v0.9.5-0.20260917142815-f37989cadbf0 h1:rn2MLe/qiqCxvRIHfT9WRc22eNLBTRCKlY39pZTWRdg=
+github.com/sagernet/sing v0.9.5-0.20260917142815-f37989cadbf0/go.mod h1:K3Owt3xPhHugvlnlPPxZJ/exXdaJfEPOTNorGk4AXjo=
 github.com/sagernet/sing v0.9.5 h1:BHaElRqhHhkH747xIkxgsqgRJxkIiuAlpnfwiJnu2aY=
 github.com/sagernet/sing v0.9.5/go.mod h1:K3Owt3xPhHugvlnlPPxZJ/exXdaJfEPOTNorGk4AXjo=
 github.com/sagernet/sing-tun v0.9.4 h1:cnZ3hSiFNEEKXkM5GxKg9fc0QYOf40FdMNEaH6Sw0Wc=
 github.com/sagernet/sing-tun v0.9.4/go.mod h1:3EgPst7agntRO7D6GOsiZ1l9FoqdLeuWmKT5TnWkmf0=
+github.com/sagernet/sing-tun v0.9.5 h1:Kzprh1wjR2WzS+nh0gAPa4xKSqEc6AYG+Wcz1gR4fCg=
+github.com/sagernet/sing-tun v0.9.5/go.mod h1:3EgPst7agntRO7D6GOsiZ1l9FoqdLeuWmKT5TnWkmf0=
+github.com/sagernet/sing-tun v0.9.6-0.20260919141142-a39eab51450b h1:zmKsY/49zuQl9ZdbGGwbs62fb3dHdKguH9RX6RcgO4g=
+github.com/sagernet/sing-tun v0.9.6-0.20260919141142-a39eab51450b/go.mod h1:liMb9HPIWcFWqF6VJ/ttIY8fTSRPdRltBeSeEcXt1Dk=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/vishvananda/netns v0.0.5 h1:DfiHV+j8bA32MFM7bfEunvT8IAqQ/NzSJHtcmW5zdEY=

@@ -750,9 +750,8 @@ def main():
                     for new_item in r_items:
                         matched = False
                         for idx, old_item in enumerate(existing_list):
-                            if (old_item.get("backend") == new_item.get("backend") and
-                                old_item.get("network") == new_item.get("network") and
-                                old_item.get("type") == new_item.get("type")):
+                            if (old_item.get("name") == new_item.get("name") and
+                                old_item.get("medium") == new_item.get("medium")):
                                 existing_list[idx] = new_item
                                 matched = True
                                 break

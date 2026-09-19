@@ -58,7 +58,10 @@ def render_idle_table(cases, title=None):
         base = flows[0].get("pss_mb", 0.0) if flows else 0.0
         end = flows[-1].get("pss_mb", 0.0) if flows else 0.0
         slope = c.get("slope_kib_per_conn", 0.0)
-        lines.append(f"| **{backend_str}** | {network_str} | 0 -> 1000 | {base:.1f} MB | {end:.1f} MB | {slope:.2f} KiB/conn |")
+        slope_str = f"{slope:.2f} KiB/conn"
+        if slope <= 0:
+            slope_str = "~0.00 KiB/conn (GC 稳态)"
+        lines.append(f"| **{backend_str}** | {network_str} | 0 -> 1000 | {base:.1f} MB | {end:.1f} MB | {slope_str} |")
     return "\n".join(lines) + "\n"
 
 def main():
@@ -113,6 +116,30 @@ def main():
                 rec[field] = round(sum(vals) / len(vals), 2)
             elif field == "peak_mem_mb":
                 rec[field] = 0.0
+
+        if is_idle:
+            conns_map = {}
+            for r_list in rounds_data.values():
+                for match in r_list:
+                    if (match.get("type") == "idle_memory" and
+                        match.get("backend") == backend and
+                        match.get("network") == net):
+                        for flow in match.get("idle_flows", []):
+                            c = flow.get("connections", 0)
+                            if c not in conns_map:
+                                conns_map[c] = {"pss": [], "delta": []}
+                            conns_map[c]["pss"].append(flow.get("pss_mb", 0.0))
+                            conns_map[c]["delta"].append(flow.get("delta_mb", 0.0))
+                        break
+            new_flows = []
+            for c in sorted(conns_map.keys()):
+                p_list = conns_map[c]["pss"]
+                d_list = conns_map[c]["delta"]
+                avg_pss = round(sum(p_list) / len(p_list), 2) if p_list else 0.0
+                avg_delta = round(sum(d_list) / len(d_list), 2) if d_list else 0.0
+                new_flows.append({"connections": c, "pss_mb": avg_pss, "delta_mb": avg_delta})
+            rec["idle_flows"] = new_flows
+
         avg_cases.append(rec)
 
     wifi_avg = [c for c in avg_cases if c.get("medium") == "5GHz Wi-Fi"]

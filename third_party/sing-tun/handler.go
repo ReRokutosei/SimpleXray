@@ -27,6 +27,7 @@ func newSingTunHandler(client *socks.Client, stats *stats) *singTunHandler {
 }
 
 func (h *singTunHandler) JudgeFlow(network uint8, source netip.AddrPort, destination netip.AddrPort, firstPacket []byte) tun.FlowVerdict {
+	logInfo("JudgeFlow called: net=" + string('0'+network) + " src=" + source.String() + " dst=" + destination.String())
 	return tun.FlowVerdict{Action: tun.ActionAccept}
 }
 
@@ -35,6 +36,7 @@ func (h *singTunHandler) NewDNSPacket(payload []byte, source M.Socksaddr, destin
 }
 
 func (h *singTunHandler) NewConnectionEx(ctx context.Context, conn net.Conn, source M.Socksaddr, destination M.Socksaddr, onClose N.CloseHandlerFunc) {
+	logInfo("NewConnectionEx called: src=" + source.String() + " dst=" + destination.String())
 	go func() {
 		defer func() {
 			if onClose != nil {
@@ -44,6 +46,7 @@ func (h *singTunHandler) NewConnectionEx(ctx context.Context, conn net.Conn, sou
 
 		upstream, err := h.client.DialContext(ctx, "tcp", destination)
 		if err != nil {
+			logError("NewConnectionEx: DialContext failed: " + err.Error())
 			conn.Close()
 			return
 		}
@@ -88,6 +91,7 @@ func (h *singTunHandler) NewConnectionEx(ctx context.Context, conn net.Conn, sou
 }
 
 func (h *singTunHandler) NewPacketConnectionEx(ctx context.Context, conn N.PacketConn, source M.Socksaddr, destination M.Socksaddr, onClose N.CloseHandlerFunc) {
+	logInfo("NewPacketConnectionEx called: src=" + source.String() + " dst=" + destination.String())
 	go func() {
 		defer func() {
 			if onClose != nil {
