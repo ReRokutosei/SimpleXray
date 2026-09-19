@@ -283,9 +283,9 @@ class Preferences(context: Context) {
         const val LAST_GEO_UPDATE_TIME: String = "LastGeoUpdateTime"
         const val CUSTOM_DAT_URLS: String = "CustomDatUrls"
         const val TUNNEL_IPV4_ADDRESS: String = "198.18.0.1"
-        const val TUNNEL_IPV4_PREFIX: Int = 32
+        const val TUNNEL_IPV4_PREFIX: Int = 30
         const val TUNNEL_IPV6_ADDRESS: String = "fc00::1"
-        const val TUNNEL_IPV6_PREFIX: Int = 128
+        const val TUNNEL_IPV6_PREFIX: Int = 126
         const val TASK_STACK_SIZE: Int = 81920
         private const val TAG = "Preferences"
     }

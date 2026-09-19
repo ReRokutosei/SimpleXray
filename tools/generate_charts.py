@@ -477,6 +477,7 @@ def render_idle_memory_dashboard(
         ax.set_ylabel("Memory Growth (MiB PSS above baseline)", fontsize=10, color='#64748b', fontproperties=prop_regular)
         ax.grid(True, zorder=0)
 
+        min_y = 0.0
         max_y = 5.0
         for b_key in BACKEND_ORDER:
             b_info = PALETTE[b_key]
@@ -485,6 +486,7 @@ def render_idle_memory_dashboard(
                 continue
             x_vals = [p[0] for p in points]
             y_vals = [p[1] for p in points]
+            min_y = min(min_y, min(y_vals) if y_vals else 0.0)
             max_y = max(max_y, max(y_vals) if y_vals else 5.0)
 
             line, = ax.plot(
@@ -500,15 +502,19 @@ def render_idle_memory_dashboard(
             # Annotate final slope
             if len(x_vals) >= 2 and x_vals[-1] > 0:
                 slope_kib = (y_vals[-1] - y_vals[0]) * 1024.0 / (x_vals[-1] - x_vals[0])
+                label_text = f"{b_info['name'].split()[0]}: {slope_kib:.2f} KiB/conn"
+                if slope_kib <= 0:
+                    label_text = f"{b_info['name'].split()[0]}: ~0.00 KiB/conn"
                 ax.text(
                     x_vals[-1] + 15, y_vals[-1],
-                    f"{b_info['name'].split()[0]}: {slope_kib:.2f} KiB/conn",
+                    label_text,
                     fontsize=8, fontweight='bold', color=b_info['edge'],
                     va='center', fontproperties=prop_bold
                 )
 
+        ax.axhline(0, color='#94a3b8', linestyle='--', linewidth=0.8, alpha=0.7, zorder=1)
         ax.set_xlim(-30, 1180)
-        ax.set_ylim(-0.5, max_y * 1.25)
+        ax.set_ylim(min(-1.5, min_y - 0.5), max_y * 1.25)
         ax.set_xticks([0, 250, 500, 750, 1000])
 
     draw_line_subplot(ax1, tcp_flows_data, "TCP Idle Connections vs Memory Growth (Lower is Better)")
@@ -638,8 +644,9 @@ def render_fullstack_attribution_dashboard(
                 color=c_pure, edgecolor=c_pure_edge, linewidth=0.8, zorder=3
             )
             # Bar 2: Android End-to-End
+            v_android_bar = max(0.0, v_android)
             ax.barh(
-                y_pos + android_offset, v_android, bar_height,
+                y_pos + android_offset, v_android_bar, bar_height,
                 color=c_android, edgecolor=c_android_edge, linewidth=0.8, zorder=3
             )
 
@@ -656,10 +663,12 @@ def render_fullstack_attribution_dashboard(
 
             # Android label
             txt_a = f"{v_android:.2f} KiB"
+            if v_android <= 0:
+                txt_a = "~0.00 KiB (GC steady)"
             if b == 'xray':
                 txt_a += " (Main Process Only *)"
             ax.text(
-                v_android + max_x * 0.015, y_pos + android_offset,
+                v_android_bar + max_x * 0.015, y_pos + android_offset,
                 txt_a,
                 ha='left', va='center',
                 fontsize=8.5, fontweight='bold', color='#0f766e' if b != 'xray' else '#d97706',
@@ -895,7 +904,7 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
             flows = r.get("idle_flows", [])
             if b in BACKEND_ORDER and flows:
                 base_mem = flows[0].get("pss_mb", 0.0)
-                pts = [(f.get("connections", 0), max(0.0, round(f.get("pss_mb", 0.0) - base_mem, 2))) for f in flows]
+                pts = [(f.get("connections", 0), round(f.get("pss_mb", 0.0) - base_mem, 2)) for f in flows]
                 if net == "udp":
                     udp_idle[b] = pts
                 else:
