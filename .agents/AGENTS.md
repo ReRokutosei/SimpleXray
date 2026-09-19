@@ -27,10 +27,18 @@ This file provides the necessary context and constraints for AI agents interacti
 - `app/src/main/jni/`: C/C++ source code for native tunnels built via CMake.
 - `app/src/main/proto/`: Protobuf definitions for gRPC.
 - `third_party/miuix/`: Submodule containing the Miuix UI component library used for the application's design system. See `third_party/miuix/AGENTS.md` for specific UI constraints.
+- `docs/benchmark/`: Benchmark whitepaper (`android-tun-benchmark.md`), raw JSON datasets, and statistical summaries.
+- `docs/images/`: Standardized 16:9 light-theme WebP dashboards and architectural diagrams.
+- `tools/`: Automated benchmarking tools:
+  - `benchmark.py`: Android end-to-end multi-stream and idle connection benchmark suite.
+  - `generate_charts.py`: Publication dashboard generator adhering to modern light theme (`#F8FAFC`).
+  - `idle_bench/`: Low-overhead Go connection retention and PSS memory sampling probe.
+  - `microbench/`: Standalone Linux user-namespace microbench harness (`unshare -r -n`) testing pure user-space TUN stacks in isolation.
 
 ## Build and Execution
 - **Build System**: Gradle with Kotlin DSL/Groovy.
 - **Native Build**: NDK via CMake (`externalNativeBuild`).
+- **Standalone TUN CLI**: Go stacks (`third_party/sing-tun`, `third_party/mips-tun`) support standalone CLI compilation via standard `go build` with `#if defined(__ANDROID__)` guards for dual host/Android compatibility.
 
 ## Coding Guidelines for AI Agents
 1. **Jetpack Compose**: Follow standard Compose best practices (state hoisting, `remember` for complex derived states, non-blocking composition).

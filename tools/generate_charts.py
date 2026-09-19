@@ -25,6 +25,8 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_DOCS_IMAGES = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "images"))
 DEFAULT_JSON_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "benchmark", "benchmark_results.json"))
 
+DEFAULT_MICROBENCH_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "benchmark", "microbench_results.json"))
+
 # Register JetBrains Mono fonts
 FONT_DIR = "/home/vanitas/.local/share/fonts/JetBrains"
 FONT_REGULAR = os.path.join(FONT_DIR, "JetBrainsMonoNerdFont-Regular.ttf")
@@ -53,43 +55,43 @@ if prop_regular:
     plt.rcParams['font.sans-serif'] = [prop_regular.get_name(), 'DejaVu Sans', 'Arial', 'sans-serif']
     plt.rcParams['font.family'] = 'sans-serif'
 
-# Global Theme Styling
-plt.rcParams['figure.facecolor'] = '#ffffff'
+# Global Theme Styling (Light Modern Aesthetic)
+plt.rcParams['figure.facecolor'] = '#f8fafc'
 plt.rcParams['axes.facecolor'] = '#ffffff'
-plt.rcParams['axes.edgecolor'] = '#e2e8f0'
-plt.rcParams['axes.labelcolor'] = '#475569'
-plt.rcParams['xtick.color'] = '#64748b'
-plt.rcParams['ytick.color'] = '#1e293b'
+plt.rcParams['axes.edgecolor'] = '#cbd5e1'
+plt.rcParams['axes.labelcolor'] = '#334155'
+plt.rcParams['xtick.color'] = '#475569'
+plt.rcParams['ytick.color'] = '#0f172a'
 plt.rcParams['grid.color'] = '#f1f5f9'
 plt.rcParams['grid.alpha'] = 1.0
 plt.rcParams['grid.linestyle'] = '-'
 
-# Backend Palette (Modern & Professional)
+# Backend Palette (Modern Light Theme, High Contrast)
 PALETTE = {
     'hev': {
         'name': 'Hev (C/lwIP)',
-        'fill': '#10b981',  # Emerald 500
-        'edge': '#059669',  # Emerald 600
+        'fill': '#0d9488',  # Teal 600
+        'edge': '#0f766e',  # Teal 700
     },
     'sing': {
         'name': 'SingTUN (Go/sing-box)',
-        'fill': '#f59e0b',  # Amber 500
-        'edge': '#d97706',  # Amber 600
+        'fill': '#2563eb',  # Blue 600
+        'edge': '#1d4ed8',  # Blue 700
     },
     'mips': {
         'name': 'MipsTUN (Go/BBRv3)',
-        'fill': '#8b5cf6',  # Violet 500
-        'edge': '#7c3aed',  # Violet 600
+        'fill': '#7c3aed',  # Violet 600
+        'edge': '#6d28d9',  # Violet 700
     },
     'xray': {
         'name': 'Xray TUN (gVisor)',
-        'fill': '#f43f5e',  # Rose 500
-        'edge': '#e11d48',  # Rose 600
+        'fill': '#e11d48',  # Rose 600
+        'edge': '#be123c',  # Rose 700
     },
     'direct_none': {
         'name': 'No VPN (Physical Baseline)',
         'fill': '#94a3b8',  # Slate 400
-        'edge': '#64748b',
+        'edge': '#64748b',  # Slate 500
     }
 }
 
@@ -244,14 +246,14 @@ def render_throughput_dashboard(
                     zorder=5
                 )
 
-    draw_subplot(ax1, single_data, single_baselines, single_losses, "Single Stream (P=1)", is_left=True)
-    draw_subplot(ax2, multi_data, multi_baselines, multi_losses, "Multi-Stream (P=8 Parallel)", is_left=False)
+    draw_subplot(ax1, single_data, single_baselines, single_losses, "Single Stream (P=1) (Higher is Better)", is_left=True)
+    draw_subplot(ax2, multi_data, multi_baselines, multi_losses, "Multi-Stream (P=8 Parallel) (Higher is Better)", is_left=False)
 
     # Legend at top
     create_top_legend(fig, legend_rects, legend_labels)
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    plt.savefig(output_path, dpi=200, facecolor='#ffffff', edgecolor='none')
+    plt.savefig(output_path, dpi=200, facecolor='#f8fafc', edgecolor='none')
     plt.close()
     print(f"[Dashboard] Saved: {output_path}")
 
@@ -335,13 +337,13 @@ def render_efficiency_dashboard(
                         zorder=5
                     )
 
-    draw_cost_subplot(ax1, single_costs, "Single Stream (P=1): Compute Cost per 100 Mbps (Lower is Better)", is_left=True)
-    draw_cost_subplot(ax2, multi_costs, "Multi-Stream (P=8): Compute Cost per 100 Mbps (Lower is Better)", is_left=False)
+    draw_cost_subplot(ax1, single_costs, "Single Stream (P=1) (Lower is Better)", is_left=True)
+    draw_cost_subplot(ax2, multi_costs, "Multi-Stream (P=8 Parallel) (Lower is Better)", is_left=False)
 
     create_top_legend(fig, legend_rects, legend_labels)
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    plt.savefig(output_path, dpi=200, facecolor='#ffffff', edgecolor='none')
+    plt.savefig(output_path, dpi=200, facecolor='#f8fafc', edgecolor='none')
     plt.close()
     print(f"[Dashboard] Saved: {output_path}")
 
@@ -377,7 +379,7 @@ def render_loopback_dashboard(
     legend_labels = []
 
     # Left: Speed (Gbps)
-    ax1.set_title("Loopback Processing Speed (Gbps)", fontsize=12, fontweight='bold', color='#1e293b',
+    ax1.set_title("Loopback Throughput (Gbps) (Higher is Better)", fontsize=12, fontweight='bold', color='#1e293b',
                   fontproperties=prop_bold, pad=12)
     ax1.set_yticks(y_indices)
     ax1.set_yticklabels(mode_labels, fontsize=10.5, fontproperties=prop_medium, color='#334155')
@@ -410,7 +412,7 @@ def render_loopback_dashboard(
                 )
 
     # Right: Peak CPU (%)
-    ax2.set_title("Loopback Peak CPU Usage (%)", fontsize=12, fontweight='bold', color='#1e293b',
+    ax2.set_title("Loopback Peak CPU Usage (Lower is Better)", fontsize=12, fontweight='bold', color='#1e293b',
                   fontproperties=prop_bold, pad=12)
     ax2.set_yticks(y_indices)
     ax2.set_yticklabels([])
@@ -442,7 +444,7 @@ def render_loopback_dashboard(
     create_top_legend(fig, legend_rects, legend_labels, y_pos=0.88)
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    plt.savefig(output_path, dpi=200, facecolor='#ffffff', edgecolor='none')
+    plt.savefig(output_path, dpi=200, facecolor='#f8fafc', edgecolor='none')
     plt.close()
     print(f"[Dashboard] Saved: {output_path}")
 
@@ -509,13 +511,178 @@ def render_idle_memory_dashboard(
         ax.set_ylim(-0.5, max_y * 1.25)
         ax.set_xticks([0, 250, 500, 750, 1000])
 
-    draw_line_subplot(ax1, tcp_flows_data, "TCP Idle Flows: Retained Connections vs Memory Growth")
-    draw_line_subplot(ax2, udp_flows_data, "UDP Idle Flows: Retained Connections vs Memory Growth")
+    draw_line_subplot(ax1, tcp_flows_data, "TCP Idle Connections vs Memory Growth (Lower is Better)")
+    draw_line_subplot(ax2, udp_flows_data, "UDP Idle Connections vs Memory Growth (Lower is Better)")
 
     create_top_legend(fig, legend_lines, legend_labels, y_pos=0.88)
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    plt.savefig(output_path, dpi=200, facecolor='#ffffff', edgecolor='none')
+    plt.savefig(output_path, dpi=200, facecolor='#f8fafc', edgecolor='none')
+    plt.close()
+    print(f"[Dashboard] Saved: {output_path}")
+
+
+def render_fullstack_attribution_dashboard(
+    output_path: str,
+    android_avg_records: List[Dict[str, Any]],
+    microbench_path: str
+):
+    """
+    Renders the Full-Stack Memory Attribution Dashboard (16:9).
+    Compares Standalone Pure Stack (Isolated Linux Kernel TUN Harness)
+    vs Android End-to-End (SimpleXray Main Process) connection slopes (KiB/conn).
+    Left Subplot: TCP Idle Connections
+    Right Subplot: UDP Idle Connections
+    Bottom: Layer Cost Decomposition & Architectural Insight Callout.
+    """
+    if not os.path.exists(microbench_path):
+        print(f"[Dashboard] Warning: {microbench_path} not found, skipping attribution dashboard.")
+        return
+
+    with open(microbench_path, "r", encoding="utf-8") as f:
+        mb_data = json.load(f)
+
+    # 1. Standalone slopes (3-round average)
+    mb_rounds = mb_data.get("rounds", {})
+    pure_tcp_slopes = {b: [] for b in BACKEND_ORDER}
+    pure_udp_slopes = {b: [] for b in BACKEND_ORDER}
+    for r_name, r_list in mb_rounds.items():
+        for rec in r_list:
+            b = rec.get("backend")
+            net = rec.get("network")
+            slope = rec.get("slope_kib_per_conn", 0.0)
+            if b in BACKEND_ORDER:
+                if net == "tcp":
+                    pure_tcp_slopes[b].append(slope)
+                elif net == "udp":
+                    pure_udp_slopes[b].append(slope)
+
+    pure_tcp_avg = {b: round(sum(pure_tcp_slopes[b]) / len(pure_tcp_slopes[b]), 2) if pure_tcp_slopes[b] else 0.0 for b in BACKEND_ORDER}
+    pure_udp_avg = {b: round(sum(pure_udp_slopes[b]) / len(pure_udp_slopes[b]), 2) if pure_udp_slopes[b] else 0.0 for b in BACKEND_ORDER}
+
+    # 2. Android slopes (from android_avg_records idle_flows)
+    android_tcp_avg = {b: 0.0 for b in BACKEND_ORDER}
+    android_udp_avg = {b: 0.0 for b in BACKEND_ORDER}
+    for rec in android_avg_records:
+        if rec.get("type") == "idle_memory":
+            b = rec.get("backend")
+            net = rec.get("network", "tcp").lower()
+            flows = rec.get("idle_flows", [])
+            if b in BACKEND_ORDER and len(flows) >= 2:
+                c0 = flows[0].get("connections", 0)
+                c1 = flows[-1].get("connections", 1000)
+                m0 = flows[0].get("pss_mb", 0.0)
+                m1 = flows[-1].get("pss_mb", 0.0)
+                slope = round((m1 - m0) * 1024.0 / (c1 - c0), 2) if c1 > c0 else 0.0
+                if net == "udp":
+                    android_udp_avg[b] = slope
+                else:
+                    android_tcp_avg[b] = slope
+
+    fig = plt.figure(figsize=(16, 9.5), dpi=200)
+    fig.patch.set_facecolor('#f8fafc')
+
+    add_dashboard_header(
+        fig,
+        "Full-Stack Memory Attribution: Pure Core Stack vs Android End-to-End",
+        "Connection Footprint (KiB/conn) & Layer Cost Attribution Across 4 TUN Backends (3-Round Mean)"
+    )
+
+    ax1 = fig.add_axes([0.16, 0.12, 0.37, 0.70])
+    ax2 = fig.add_axes([0.57, 0.12, 0.37, 0.70])
+
+    num_backends = len(BACKEND_ORDER)
+    y_indices = np.arange(num_backends)[::-1]
+    backend_labels = [PALETTE[b]['name'] for b in BACKEND_ORDER]
+
+    bar_height = 0.28
+    pure_offset = bar_height / 2 + 0.02
+    android_offset = -(bar_height / 2 + 0.02)
+
+    c_pure = '#4f46e5'    # Indigo 600
+    c_pure_edge = '#3730a3'
+    c_android = '#0d9488' # Teal 600
+    c_android_edge = '#0f766e'
+
+    max_x = max(
+        max(pure_tcp_avg.values()), max(android_tcp_avg.values()),
+        max(pure_udp_avg.values()), max(android_udp_avg.values())
+    ) * 1.35
+
+    def draw_attr_subplot(ax, pure_map, android_map, sub_title, is_left: bool = True):
+        ax.set_title(sub_title, fontsize=12, fontweight='bold', color='#1e293b',
+                     fontproperties=prop_bold, pad=12)
+        ax.set_yticks(y_indices)
+        if is_left:
+            ax.set_yticklabels(backend_labels, fontsize=10.5, fontproperties=prop_medium, color='#334155')
+        else:
+            ax.set_yticklabels([])
+            ax.tick_params(left=False)
+
+        ax.set_xlim(0, max_x)
+        ax.set_xlabel("Memory Cost per Connection (KiB/conn)", fontsize=10, color='#64748b', fontproperties=prop_regular)
+        ax.grid(True, axis='x', zorder=0)
+
+        for y in np.arange(num_backends):
+            if y < num_backends - 1:
+                ax.axhline(y + 0.5, color='#e2e8f0', linestyle='--', linewidth=0.8, zorder=1)
+
+        for idx, b in enumerate(BACKEND_ORDER):
+            y_pos = y_indices[idx]
+            v_pure = pure_map.get(b, 0.0)
+            v_android = android_map.get(b, 0.0)
+
+            # Bar 1: Pure Standalone
+            ax.barh(
+                y_pos + pure_offset, v_pure, bar_height,
+                color=c_pure, edgecolor=c_pure_edge, linewidth=0.8, zorder=3
+            )
+            # Bar 2: Android End-to-End
+            ax.barh(
+                y_pos + android_offset, v_android, bar_height,
+                color=c_android, edgecolor=c_android_edge, linewidth=0.8, zorder=3
+            )
+
+            # Pure label
+            ax.text(
+                v_pure + max_x * 0.015, y_pos + pure_offset,
+                f"{v_pure:.2f} KiB",
+                ha='left', va='center',
+                fontsize=8.5, fontweight='bold', color='#1e293b',
+                fontproperties=prop_bold,
+                bbox=dict(boxstyle='round,pad=0.15', facecolor='#ffffff', edgecolor='none', alpha=0.85),
+                zorder=5
+            )
+
+            # Android label
+            txt_a = f"{v_android:.2f} KiB"
+            if b == 'xray':
+                txt_a += " (Main Process Only *)"
+            ax.text(
+                v_android + max_x * 0.015, y_pos + android_offset,
+                txt_a,
+                ha='left', va='center',
+                fontsize=8.5, fontweight='bold', color='#0f766e' if b != 'xray' else '#d97706',
+                fontproperties=prop_bold,
+                bbox=dict(boxstyle='round,pad=0.15', facecolor='#ffffff', edgecolor='none', alpha=0.85),
+                zorder=5
+            )
+
+    draw_attr_subplot(ax1, pure_tcp_avg, android_tcp_avg, "TCP Connection Footprint (KiB/conn) (Lower is Better)", is_left=True)
+    draw_attr_subplot(ax2, pure_udp_avg, android_udp_avg, "UDP Connection Footprint (KiB/conn) (Lower is Better)", is_left=False)
+
+    legend_handles = [
+        plt.Rectangle((0, 0), 1, 1, facecolor=c_pure, edgecolor=c_pure_edge),
+        plt.Rectangle((0, 0), 1, 1, facecolor=c_android, edgecolor=c_android_edge),
+    ]
+    legend_labels = [
+        "Standalone Pure Stack (Isolated Linux Kernel TUN Harness)",
+        "Android End-to-End (SimpleXray Main Process Memory Footprint)"
+    ]
+    create_top_legend(fig, legend_handles, legend_labels, y_pos=0.895)
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    plt.savefig(output_path, dpi=200, facecolor='#f8fafc', edgecolor='none')
     plt.close()
     print(f"[Dashboard] Saved: {output_path}")
 
@@ -534,12 +701,10 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
                 return float(r.get(field, 0.0))
         return 0.0
 
-    # Auto-detect jumbo frame MTU present in data (9000 or 8500)
     mtus = {r.get("mtu", 0) for r in records}
     jumbo_mtu = 9000 if 9000 in mtus else (8500 if 8500 in mtus else 9000)
     jumbo_label = f"Jumbo {jumbo_mtu}"
 
-    # Workload categories for Throughput
     categories = [
         {"key": "tcp_down_1500", "label": "TCP Download (MTU 1500)"},
         {"key": "tcp_up_1500",   "label": "TCP Upload (MTU 1500)"},
@@ -547,7 +712,6 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
         {"key": f"tcp_up_{jumbo_mtu}",   "label": f"TCP Upload ({jumbo_label})"},
     ]
 
-    # Check if UDP exists in records
     has_udp = any(r.get("network") == "udp" or r.get("protocol") == "udp" for r in records)
     if has_udp:
         categories.insert(0, {"key": "udp_down_1500", "label": "UDP Download (MTU 1500)"})
@@ -583,7 +747,6 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
             wifi_loss_single[k][b] = get_val("5GHz Wi-Fi", b, mtu_val, 1, loss_field, network=net)
             wifi_loss_multi[k][b] = get_val("5GHz Wi-Fi", b, mtu_val, 8, loss_field, network=net)
 
-        # Baselines (mtu=0)
         wifi_base_single[k] = get_val("5GHz Wi-Fi", "direct_none", 0, 1, field, network=net)
         wifi_base_multi[k] = get_val("5GHz Wi-Fi", "direct_none", 0, 8, field, network=net)
 
@@ -598,7 +761,7 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
     render_throughput_dashboard(
         os.path.join(output_dir, f"{prefix}wifi_throughput_dashboard.webp"),
         "5GHz Wi-Fi Network Throughput (Mbps)",
-        "iPerf3 Client (DUT: Snapdragon 778G) -> AP (Snapdragon 8 Elite) -> iPerf3 Server (Linux 6.12)",
+        "iPerf3 Client (DUT: Snapdragon 778G) -> 5GHz Wi-Fi -> Linux 6.12 Server (iPerf3 UDP Target Limit: 200 Mbps)",
         categories, wifi_single, wifi_multi, wifi_base_single, wifi_base_multi, max_wifi,
         single_losses=wifi_loss_single, multi_losses=wifi_loss_multi
     )
@@ -642,7 +805,7 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
     render_throughput_dashboard(
         os.path.join(output_dir, f"{prefix}usb_throughput_dashboard.webp"),
         "USB 3.2 Gen1 / 4.0 Wired Throughput (Mbps)",
-        "iPerf3 Client (DUT: Snapdragon 778G) -> USB 3.2 RNDIS Ethernet -> iPerf3 Server (Linux 6.12)",
+        "iPerf3 Client (DUT: Snapdragon 778G) -> USB 3.2 RNDIS (1 Gbps) -> Linux 6.12 Server (UDP Target Limit: 200 Mbps)",
         categories, usb_single, usb_multi, usb_base_single, usb_base_multi, max_usb,
         single_losses=usb_loss_single, multi_losses=usb_loss_multi
     )
@@ -690,7 +853,7 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
     render_efficiency_dashboard(
         os.path.join(output_dir, f"{prefix}cpu_efficiency_dashboard.webp"),
         "Processor Efficiency & Compute Cost (Lower is Better)",
-        "Standardized Metric: CPU % consumed per 100 Mbps throughput",
+        "Standardized Metric: CPU % consumed per 100 Mbps (Multi-Core Cumulative: Snapdragon 778G 8-Core Max: 800%)",
         eff_cats, single_costs, multi_costs, max_c
     )
 
@@ -717,7 +880,7 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
     render_loopback_dashboard(
         os.path.join(output_dir, f"{prefix}loopback_dashboard.webp"),
         "On-Device Linux Loopback Processing Performance",
-        "Zero Physical PHY Bottleneck: Testing Pure Userspace Stack & Event-Loop Architecture",
+        "Zero Physical PHY Bottleneck: Testing Pure Userspace Stack & Event-Loop Architecture (CPU Max: 800%)",
         loop_speeds, loop_cpus, max_l_speed, max_l_cpu
     )
 
@@ -741,7 +904,7 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
         render_idle_memory_dashboard(
             os.path.join(output_dir, f"{prefix}idle_memory_dashboard.webp"),
             "Retained Idle Connections vs Process Memory Growth",
-            "Measuring userspace connection control block (PCB / context) allocation slopes",
+            "SimpleXray Process Memory Growth (PSS MiB above baseline) across 0 -> 1000 Idle Connections",
             tcp_idle, udp_idle
         )
 
@@ -749,6 +912,7 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
 def main():
     parser = argparse.ArgumentParser(description="Generate benchmark dashboards (v2)")
     parser.add_argument("--json", default=DEFAULT_JSON_PATH, help="Path to benchmark_results.json")
+    parser.add_argument("--microbench", default=DEFAULT_MICROBENCH_PATH, help="Path to microbench_results.json")
     parser.add_argument("--output-dir", default=DEFAULT_DOCS_IMAGES, help="Path to output directory")
     args = parser.parse_args()
 
@@ -786,6 +950,7 @@ def main():
             mtu = rec.get("mtu")
             parallel = rec.get("parallel")
             net = rec.get("network", "tcp")
+
             for field in numeric_fields:
                 vals = []
                 for r_list in rounds.values():
@@ -800,14 +965,47 @@ def main():
                             break
                 if vals:
                     rec[field] = round(sum(vals) / len(vals), 2)
+
+            # Average idle_flows across all rounds
+            if rec.get("type") == "idle_memory":
+                conns_map = {}
+                for r_list in rounds.values():
+                    for match in r_list:
+                        if (match.get("type") == "idle_memory" and
+                            match.get("backend") == backend and
+                            match.get("network", "tcp") == net):
+                            for flow in match.get("idle_flows", []):
+                                c = flow.get("connections", 0)
+                                if c not in conns_map:
+                                    conns_map[c] = {"pss": [], "delta": []}
+                                conns_map[c]["pss"].append(flow.get("pss_mb", 0.0))
+                                conns_map[c]["delta"].append(flow.get("delta_mb", 0.0))
+                            break
+                new_flows = []
+                for c in sorted(conns_map.keys()):
+                    p_list = conns_map[c]["pss"]
+                    d_list = conns_map[c]["delta"]
+                    avg_pss = round(sum(p_list) / len(p_list), 2) if p_list else 0.0
+                    avg_delta = round(sum(d_list) / len(d_list), 2) if d_list else 0.0
+                    new_flows.append({"connections": c, "pss_mb": avg_pss, "delta_mb": avg_delta})
+                rec["idle_flows"] = new_flows
+
             avg_records.append(rec)
 
         print("Generating unified dashboards for average across all rounds...")
         process_dataset_and_generate_dashboards(avg_records, args.output_dir, prefix="avg_")
         process_dataset_and_generate_dashboards(avg_records, args.output_dir, prefix="")
 
+        print("Generating Full-Stack Attribution Dashboard...")
+        render_fullstack_attribution_dashboard(
+            os.path.join(args.output_dir, "fullstack_attribution_dashboard.webp"),
+            avg_records,
+            args.microbench
+        )
+
     print("All dashboards generated successfully.")
 
 
 if __name__ == "__main__":
     main()
+
