@@ -17,14 +17,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 386.05,
-        "download_mbps": 380.8,
+        "upload_mbps": 225.46,
+        "download_mbps": 292.06,
         "upload_cpu_avg": 0.0,
         "upload_cpu_peak": 0.0,
         "download_cpu_avg": 0.0,
         "download_cpu_peak": 0.0,
         "peak_cpu": 0.0,
-        "peak_mem_mb": 99.5
+        "peak_mem_mb": 182.7
       },
       {
         "name": "Wi-Fi Baseline (No VPN) [P=8]",
@@ -33,14 +33,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 418.34,
-        "download_mbps": 425.36,
+        "upload_mbps": 287.19,
+        "download_mbps": 307.49,
         "upload_cpu_avg": 0.0,
         "upload_cpu_peak": 0.0,
         "download_cpu_avg": 0.0,
         "download_cpu_peak": 0.0,
         "peak_cpu": 0.0,
-        "peak_mem_mb": 99.4
+        "peak_mem_mb": 177.8
       },
       {
         "name": "Hev (MTU 1500) [Single Stream]",
@@ -49,14 +49,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 395.82,
-        "download_mbps": 304.79,
-        "upload_cpu_avg": 33.2,
-        "upload_cpu_peak": 78.0,
-        "download_cpu_avg": 45.2,
-        "download_cpu_peak": 67.0,
-        "peak_cpu": 78.0,
-        "peak_mem_mb": 100.7
+        "upload_mbps": 298.92,
+        "download_mbps": 257.47,
+        "upload_cpu_avg": 21.6,
+        "upload_cpu_peak": 57.0,
+        "download_cpu_avg": 49.1,
+        "download_cpu_peak": 71.0,
+        "peak_cpu": 71.0,
+        "peak_mem_mb": 97.9
       },
       {
         "name": "Xray TUN (MTU 1500) [Single Stream]",
@@ -81,14 +81,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 397.2,
-        "download_mbps": 167.23,
-        "upload_cpu_avg": 32.7,
-        "upload_cpu_peak": 103.0,
-        "download_cpu_avg": 82.3,
-        "download_cpu_peak": 141.0,
-        "peak_cpu": 141.0,
-        "peak_mem_mb": 109.1
+        "upload_mbps": 355.41,
+        "download_mbps": 173.38,
+        "upload_cpu_avg": 34.1,
+        "upload_cpu_peak": 125.0,
+        "download_cpu_avg": 83.7,
+        "download_cpu_peak": 139.0,
+        "peak_cpu": 139.0,
+        "peak_mem_mb": 179.1
       },
       {
         "name": "MipsTUN (MTU 1500) [Single Stream]",
@@ -97,14 +97,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 391.45,
-        "download_mbps": 247.86,
-        "upload_cpu_avg": 65.1,
+        "upload_mbps": 341.5,
+        "download_mbps": 231.26,
+        "upload_cpu_avg": 40.2,
         "upload_cpu_peak": 177.0,
-        "download_cpu_avg": 106.5,
-        "download_cpu_peak": 202.0,
-        "peak_cpu": 202.0,
-        "peak_mem_mb": 0.0
+        "download_cpu_avg": 67.2,
+        "download_cpu_peak": 186.0,
+        "peak_cpu": 186.0,
+        "peak_mem_mb": 110.8
       },
       {
         "name": "Hev (MTU 9000) [Single Stream]",
@@ -113,14 +113,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 393.12,
-        "download_mbps": 373.35,
-        "upload_cpu_avg": 17.7,
-        "upload_cpu_peak": 52.0,
-        "download_cpu_avg": 47.6,
-        "download_cpu_peak": 78.0,
-        "peak_cpu": 78.0,
-        "peak_mem_mb": 97.1
+        "upload_mbps": 328.51,
+        "download_mbps": 290.18,
+        "upload_cpu_avg": 14.4,
+        "upload_cpu_peak": 39.0,
+        "download_cpu_avg": 27.9,
+        "download_cpu_peak": 69.0,
+        "peak_cpu": 69.0,
+        "peak_mem_mb": 111.6
       },
       {
         "name": "Xray TUN (MTU 9000) [Single Stream]",
@@ -145,14 +145,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 394.03,
-        "download_mbps": 279.41,
-        "upload_cpu_avg": 27.8,
-        "upload_cpu_peak": 103.0,
-        "download_cpu_avg": 51.5,
-        "download_cpu_peak": 95.0,
-        "peak_cpu": 103.0,
-        "peak_mem_mb": 111.2
+        "upload_mbps": 329.74,
+        "download_mbps": 319.95,
+        "upload_cpu_avg": 28.8,
+        "upload_cpu_peak": 74.0,
+        "download_cpu_avg": 61.6,
+        "download_cpu_peak": 91.0,
+        "peak_cpu": 91.0,
+        "peak_mem_mb": 179.6
       },
       {
         "name": "MipsTUN (MTU 9000) [Single Stream]",
@@ -161,14 +161,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 397.32,
-        "download_mbps": 397.26,
-        "upload_cpu_avg": 35.6,
-        "upload_cpu_peak": 128.0,
-        "download_cpu_avg": 80.8,
-        "download_cpu_peak": 126.0,
-        "peak_cpu": 128.0,
-        "peak_mem_mb": 0.0
+        "upload_mbps": 206.48,
+        "download_mbps": 288.51,
+        "upload_cpu_avg": 14.6,
+        "upload_cpu_peak": 77.7,
+        "download_cpu_avg": 37.2,
+        "download_cpu_peak": 104.0,
+        "peak_cpu": 104.0,
+        "peak_mem_mb": 115.0
       },
       {
         "name": "Hev (MTU 1500) [P=8]",
@@ -177,14 +177,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 420.59,
-        "download_mbps": 300.59,
-        "upload_cpu_avg": 25.9,
-        "upload_cpu_peak": 97.0,
-        "download_cpu_avg": 50.2,
-        "download_cpu_peak": 73.0,
-        "peak_cpu": 97.0,
-        "peak_mem_mb": 98.5
+        "upload_mbps": 351.57,
+        "download_mbps": 259.99,
+        "upload_cpu_avg": 29.7,
+        "upload_cpu_peak": 92.0,
+        "download_cpu_avg": 51.6,
+        "download_cpu_peak": 75.0,
+        "peak_cpu": 92.0,
+        "peak_mem_mb": 98.4
       },
       {
         "name": "Xray TUN (MTU 1500) [P=8]",
@@ -209,14 +209,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 387.99,
-        "download_mbps": 453.56,
-        "upload_cpu_avg": 43.0,
-        "upload_cpu_peak": 137.0,
-        "download_cpu_avg": 132.1,
-        "download_cpu_peak": 232.0,
-        "peak_cpu": 232.0,
-        "peak_mem_mb": 0.0
+        "upload_mbps": 358.21,
+        "download_mbps": 366.61,
+        "upload_cpu_avg": 45.8,
+        "upload_cpu_peak": 107.0,
+        "download_cpu_avg": 119.8,
+        "download_cpu_peak": 212.0,
+        "peak_cpu": 212.0,
+        "peak_mem_mb": 180.0
       },
       {
         "name": "MipsTUN (MTU 1500) [P=8]",
@@ -225,14 +225,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 422.61,
-        "download_mbps": 138.55,
-        "upload_cpu_avg": 45.4,
-        "upload_cpu_peak": 174.0,
-        "download_cpu_avg": 90.9,
-        "download_cpu_peak": 157.0,
-        "peak_cpu": 174.0,
-        "peak_mem_mb": 152.6
+        "upload_mbps": 336.87,
+        "download_mbps": 159.56,
+        "upload_cpu_avg": 45.3,
+        "upload_cpu_peak": 210.0,
+        "download_cpu_avg": 65.5,
+        "download_cpu_peak": 160.0,
+        "peak_cpu": 210.0,
+        "peak_mem_mb": 125.5
       },
       {
         "name": "Hev (MTU 9000) [P=8]",
@@ -241,14 +241,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 424.31,
-        "download_mbps": 450.68,
-        "upload_cpu_avg": 17.5,
-        "upload_cpu_peak": 68.0,
-        "download_cpu_avg": 57.6,
-        "download_cpu_peak": 96.0,
-        "peak_cpu": 96.0,
-        "peak_mem_mb": 97.6
+        "upload_mbps": 376.8,
+        "download_mbps": 337.77,
+        "upload_cpu_avg": 17.6,
+        "upload_cpu_peak": 53.0,
+        "download_cpu_avg": 51.3,
+        "download_cpu_peak": 90.0,
+        "peak_cpu": 90.0,
+        "peak_mem_mb": 97.2
       },
       {
         "name": "Xray TUN (MTU 9000) [P=8]",
@@ -273,14 +273,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 422.73,
-        "download_mbps": 454.03,
-        "upload_cpu_avg": 27.2,
-        "upload_cpu_peak": 110.0,
-        "download_cpu_avg": 81.8,
-        "download_cpu_peak": 114.0,
-        "peak_cpu": 114.0,
-        "peak_mem_mb": 0.0
+        "upload_mbps": 302.61,
+        "download_mbps": 390.26,
+        "upload_cpu_avg": 37.0,
+        "upload_cpu_peak": 151.0,
+        "download_cpu_avg": 75.1,
+        "download_cpu_peak": 99.0,
+        "peak_cpu": 151.0,
+        "peak_mem_mb": 180.2
       },
       {
         "name": "MipsTUN (MTU 9000) [P=8]",
@@ -289,14 +289,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 419.63,
-        "download_mbps": 381.63,
-        "upload_cpu_avg": 41.6,
-        "upload_cpu_peak": 159.0,
-        "download_cpu_avg": 84.6,
-        "download_cpu_peak": 129.0,
-        "peak_cpu": 159.0,
-        "peak_mem_mb": 185.7
+        "upload_mbps": 319.13,
+        "download_mbps": 335.15,
+        "upload_cpu_avg": 36.7,
+        "upload_cpu_peak": 170.0,
+        "download_cpu_avg": 60.2,
+        "download_cpu_peak": 133.0,
+        "peak_cpu": 170.0,
+        "peak_mem_mb": 127.6
       },
       {
         "name": "Wi-Fi Baseline (No VPN) [UDP] [Single Stream]",
@@ -305,18 +305,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 196.28,
-        "download_mbps": 199.97,
-        "upload_cpu_avg": 0.9,
-        "upload_cpu_peak": 5.0,
+        "upload_mbps": 196.79,
+        "download_mbps": 200.14,
+        "upload_cpu_avg": 0.0,
+        "upload_cpu_peak": 0.0,
         "download_cpu_avg": 0.0,
         "download_cpu_peak": 0.0,
-        "peak_cpu": 5.0,
-        "peak_mem_mb": 92.6,
-        "upload_loss_percent": 1.715651964544686,
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 178.4,
+        "upload_loss_percent": 1.3873803258496165,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.18600029731453913,
-        "download_jitter_ms": 0.05237370428350691
+        "upload_jitter_ms": 0.0737906749439451,
+        "download_jitter_ms": 0.05050371889745552
       },
       {
         "name": "Wi-Fi Baseline (No VPN) [UDP] [P=8]",
@@ -325,18 +325,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.75,
-        "download_mbps": 200.02,
+        "upload_mbps": 199.52,
+        "download_mbps": 200.08,
         "upload_cpu_avg": 0.0,
         "upload_cpu_peak": 0.0,
-        "download_cpu_avg": 0.2,
-        "download_cpu_peak": 2.0,
-        "peak_cpu": 2.0,
-        "peak_mem_mb": 91.6,
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 178.3,
         "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.7501386923079826,
-        "download_jitter_ms": 0.4452996513518548
+        "upload_jitter_ms": 0.6872463911320967,
+        "download_jitter_ms": 0.4800788028229708
       },
       {
         "name": "Hev (MTU 1500) [UDP] [Single Stream]",
@@ -345,18 +345,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 151.46,
-        "download_mbps": 127.36,
-        "upload_cpu_avg": 155.3,
-        "upload_cpu_peak": 180.0,
-        "download_cpu_avg": 131.5,
-        "download_cpu_peak": 169.0,
-        "peak_cpu": 180.0,
-        "peak_mem_mb": 104.7,
-        "upload_loss_percent": 16.232017158249008,
-        "download_loss_percent": 28.41684822076979,
-        "upload_jitter_ms": 0.06878292533282834,
-        "download_jitter_ms": 0.0604983499995891
+        "upload_mbps": 149.93,
+        "download_mbps": 125.23,
+        "upload_cpu_avg": 135.3,
+        "upload_cpu_peak": 185.0,
+        "download_cpu_avg": 114.9,
+        "download_cpu_peak": 164.0,
+        "peak_cpu": 185.0,
+        "peak_mem_mb": 109.0,
+        "upload_loss_percent": 6.0,
+        "download_loss_percent": 19.8,
+        "upload_jitter_ms": 0.03,
+        "download_jitter_ms": 0.05
       },
       {
         "name": "Xray TUN (MTU 1500) [UDP] [Single Stream]",
@@ -385,18 +385,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 159.59,
-        "download_mbps": 122.41,
-        "upload_cpu_avg": 181.2,
-        "upload_cpu_peak": 222.0,
-        "download_cpu_avg": 152.7,
-        "download_cpu_peak": 185.0,
-        "peak_cpu": 222.0,
-        "peak_mem_mb": 117.2,
-        "upload_loss_percent": 9.765111005347293,
-        "download_loss_percent": 27.931736994864924,
-        "upload_jitter_ms": 0.05393466203257053,
-        "download_jitter_ms": 0.07184571773576166
+        "upload_mbps": 159.68,
+        "download_mbps": 119.56,
+        "upload_cpu_avg": 189.0,
+        "upload_cpu_peak": 248.0,
+        "download_cpu_avg": 164.0,
+        "download_cpu_peak": 206.0,
+        "peak_cpu": 248.0,
+        "peak_mem_mb": 184.5,
+        "upload_loss_percent": 1.8286469356446176,
+        "download_loss_percent": 22.40656030346982,
+        "upload_jitter_ms": 0.1919958506937665,
+        "download_jitter_ms": 0.0459801772835677
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [Single Stream]",
@@ -405,18 +405,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 144.88,
-        "download_mbps": 121.69,
-        "upload_cpu_avg": 187.4,
-        "upload_cpu_peak": 230.0,
-        "download_cpu_avg": 159.7,
-        "download_cpu_peak": 212.0,
-        "peak_cpu": 230.0,
-        "peak_mem_mb": 134.1,
-        "upload_loss_percent": 17.150635843814083,
-        "download_loss_percent": 28.134605711730845,
-        "upload_jitter_ms": 0.06321555121092418,
-        "download_jitter_ms": 0.1310974650913042
+        "upload_mbps": 146.31,
+        "download_mbps": 119.8,
+        "upload_cpu_avg": 120.9,
+        "upload_cpu_peak": 223.0,
+        "download_cpu_avg": 106.9,
+        "download_cpu_peak": 205.0,
+        "peak_cpu": 223.0,
+        "peak_mem_mb": 113.8,
+        "upload_loss_percent": 9.1,
+        "download_loss_percent": 23.2,
+        "upload_jitter_ms": 0.05,
+        "download_jitter_ms": 0.05
       },
       {
         "name": "Hev (MTU 1500) [UDP] [P=8]",
@@ -425,18 +425,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.69,
-        "download_mbps": 200.23,
-        "upload_cpu_avg": 128.8,
-        "upload_cpu_peak": 197.0,
-        "download_cpu_avg": 109.2,
-        "download_cpu_peak": 167.0,
-        "peak_cpu": 197.0,
-        "peak_mem_mb": 106.5,
+        "upload_mbps": 198.72,
+        "download_mbps": 199.95,
+        "upload_cpu_avg": 69.2,
+        "upload_cpu_peak": 226.0,
+        "download_cpu_avg": 33.8,
+        "download_cpu_peak": 262.0,
+        "peak_cpu": 262.0,
+        "peak_mem_mb": 119.5,
         "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.7037555698960315,
-        "download_jitter_ms": 0.6088980641601947
+        "upload_jitter_ms": 0.7,
+        "download_jitter_ms": 0.64
       },
       {
         "name": "Xray TUN (MTU 1500) [UDP] [P=8]",
@@ -465,18 +465,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.66,
-        "download_mbps": 200.03,
-        "upload_cpu_avg": 195.4,
-        "upload_cpu_peak": 238.0,
-        "download_cpu_avg": 144.5,
-        "download_cpu_peak": 210.0,
-        "peak_cpu": 238.0,
-        "peak_mem_mb": 115.1,
-        "upload_loss_percent": 0.0,
+        "upload_mbps": 159.4,
+        "download_mbps": 199.96,
+        "upload_cpu_avg": 175.6,
+        "upload_cpu_peak": 250.0,
+        "download_cpu_avg": 184.4,
+        "download_cpu_peak": 242.0,
+        "peak_cpu": 250.0,
+        "peak_mem_mb": 188.4,
+        "upload_loss_percent": 0.022395162644868707,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.6313757723450896,
-        "download_jitter_ms": 0.562941424636626
+        "upload_jitter_ms": 1.056297101763688,
+        "download_jitter_ms": 0.6038346406416643
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [P=8]",
@@ -485,18 +485,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 166.03,
-        "download_mbps": 199.83,
-        "upload_cpu_avg": 201.9,
-        "upload_cpu_peak": 228.0,
-        "download_cpu_avg": 188.2,
-        "download_cpu_peak": 230.0,
-        "peak_cpu": 230.0,
-        "peak_mem_mb": 130.1,
-        "upload_loss_percent": 0.050394758945069715,
-        "download_loss_percent": 0.2522515010006671,
-        "upload_jitter_ms": 1.1934001896826514,
-        "download_jitter_ms": 0.5607543852136705
+        "upload_mbps": 138.83,
+        "download_mbps": 170.79,
+        "upload_cpu_avg": 97.3,
+        "upload_cpu_peak": 301.0,
+        "download_cpu_avg": 120.4,
+        "download_cpu_peak": 336.0,
+        "peak_cpu": 336.0,
+        "peak_mem_mb": 124.1,
+        "upload_loss_percent": 13.0,
+        "download_loss_percent": 0.3,
+        "upload_jitter_ms": 1.13,
+        "download_jitter_ms": 0.51
       },
       {
         "name": "USB Baseline (No VPN) [Single Stream]",
@@ -505,14 +505,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 702.5,
-        "download_mbps": 381.32,
-        "upload_cpu_avg": 0.8,
-        "upload_cpu_peak": 4.0,
+        "upload_mbps": 710.53,
+        "download_mbps": 371.32,
+        "upload_cpu_avg": 0.0,
+        "upload_cpu_peak": 0.0,
         "download_cpu_avg": 0.0,
         "download_cpu_peak": 0.0,
-        "peak_cpu": 4.0,
-        "peak_mem_mb": 92.3
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 179.8
       },
       {
         "name": "USB Baseline (No VPN) [P=8]",
@@ -521,14 +521,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 768.2,
-        "download_mbps": 422.16,
+        "upload_mbps": 757.01,
+        "download_mbps": 441.76,
         "upload_cpu_avg": 0.0,
         "upload_cpu_peak": 0.0,
-        "download_cpu_avg": 0.3,
-        "download_cpu_peak": 3.0,
-        "peak_cpu": 3.0,
-        "peak_mem_mb": 91.8
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 179.2
       },
       {
         "name": "Hev (MTU 1500) [Single Stream]",
@@ -537,14 +537,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 642.11,
-        "download_mbps": 306.04,
-        "upload_cpu_avg": 48.2,
-        "upload_cpu_peak": 82.0,
-        "download_cpu_avg": 61.1,
-        "download_cpu_peak": 75.0,
-        "peak_cpu": 82.0,
-        "peak_mem_mb": 100.5
+        "upload_mbps": 648.05,
+        "download_mbps": 303.58,
+        "upload_cpu_avg": 46.0,
+        "upload_cpu_peak": 85.0,
+        "download_cpu_avg": 56.9,
+        "download_cpu_peak": 80.0,
+        "peak_cpu": 85.0,
+        "peak_mem_mb": 96.8
       },
       {
         "name": "Xray TUN (MTU 1500) [Single Stream]",
@@ -569,14 +569,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 654.91,
-        "download_mbps": 183.49,
-        "upload_cpu_avg": 55.0,
-        "upload_cpu_peak": 107.0,
-        "download_cpu_avg": 84.4,
-        "download_cpu_peak": 143.0,
-        "peak_cpu": 143.0,
-        "peak_mem_mb": 111.6
+        "upload_mbps": 619.41,
+        "download_mbps": 178.84,
+        "upload_cpu_avg": 58.7,
+        "upload_cpu_peak": 122.0,
+        "download_cpu_avg": 87.7,
+        "download_cpu_peak": 140.0,
+        "peak_cpu": 140.0,
+        "peak_mem_mb": 180.1
       },
       {
         "name": "MipsTUN (MTU 1500) [Single Stream]",
@@ -585,14 +585,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 621.59,
-        "download_mbps": 228.25,
-        "upload_cpu_avg": 110.6,
-        "upload_cpu_peak": 200.0,
-        "download_cpu_avg": 103.0,
-        "download_cpu_peak": 179.0,
-        "peak_cpu": 200.0,
-        "peak_mem_mb": 132.6
+        "upload_mbps": 423.69,
+        "download_mbps": 246.97,
+        "upload_cpu_avg": 66.2,
+        "upload_cpu_peak": 186.0,
+        "download_cpu_avg": 70.2,
+        "download_cpu_peak": 172.0,
+        "peak_cpu": 186.0,
+        "peak_mem_mb": 109.4
       },
       {
         "name": "Hev (MTU 9000) [Single Stream]",
@@ -601,14 +601,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 646.64,
-        "download_mbps": 359.29,
-        "upload_cpu_avg": 39.1,
-        "upload_cpu_peak": 66.0,
-        "download_cpu_avg": 54.3,
-        "download_cpu_peak": 70.0,
-        "peak_cpu": 70.0,
-        "peak_mem_mb": 97.4
+        "upload_mbps": 656.02,
+        "download_mbps": 351.8,
+        "upload_cpu_avg": 35.1,
+        "upload_cpu_peak": 63.0,
+        "download_cpu_avg": 49.2,
+        "download_cpu_peak": 69.0,
+        "peak_cpu": 69.0,
+        "peak_mem_mb": 96.6
       },
       {
         "name": "Xray TUN (MTU 9000) [Single Stream]",
@@ -633,14 +633,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 646.48,
-        "download_mbps": 367.48,
-        "upload_cpu_avg": 35.8,
-        "upload_cpu_peak": 66.6,
-        "download_cpu_avg": 85.8,
+        "upload_mbps": 617.76,
+        "download_mbps": 373.61,
+        "upload_cpu_avg": 38.4,
+        "upload_cpu_peak": 81.4,
+        "download_cpu_avg": 85.4,
         "download_cpu_peak": 118.0,
         "peak_cpu": 118.0,
-        "peak_mem_mb": 111.9
+        "peak_mem_mb": 179.7
       },
       {
         "name": "MipsTUN (MTU 9000) [Single Stream]",
@@ -649,14 +649,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 632.57,
-        "download_mbps": 362.13,
-        "upload_cpu_avg": 58.1,
-        "upload_cpu_peak": 114.0,
-        "download_cpu_avg": 101.5,
-        "download_cpu_peak": 150.0,
-        "peak_cpu": 150.0,
-        "peak_mem_mb": 127.8
+        "upload_mbps": 611.87,
+        "download_mbps": 364.8,
+        "upload_cpu_avg": 41.1,
+        "upload_cpu_peak": 107.0,
+        "download_cpu_avg": 68.9,
+        "download_cpu_peak": 149.0,
+        "peak_cpu": 149.0,
+        "peak_mem_mb": 107.8
       },
       {
         "name": "Hev (MTU 1500) [P=8]",
@@ -665,14 +665,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 703.66,
-        "download_mbps": 301.85,
-        "upload_cpu_avg": 48.6,
-        "upload_cpu_peak": 98.0,
-        "download_cpu_avg": 65.0,
-        "download_cpu_peak": 91.0,
-        "peak_cpu": 98.0,
-        "peak_mem_mb": 98.2
+        "upload_mbps": 552.68,
+        "download_mbps": 294.48,
+        "upload_cpu_avg": 36.3,
+        "upload_cpu_peak": 102.0,
+        "download_cpu_avg": 40.9,
+        "download_cpu_peak": 65.0,
+        "peak_cpu": 102.0,
+        "peak_mem_mb": 109.7
       },
       {
         "name": "Xray TUN (MTU 1500) [P=8]",
@@ -697,14 +697,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 218.33,
-        "download_mbps": 397.99,
-        "upload_cpu_avg": 65.9,
-        "upload_cpu_peak": 118.0,
-        "download_cpu_avg": 134.9,
-        "download_cpu_peak": 227.0,
-        "peak_cpu": 227.0,
-        "peak_mem_mb": 117.5
+        "upload_mbps": 275.39,
+        "download_mbps": 386.9,
+        "upload_cpu_avg": 73.0,
+        "upload_cpu_peak": 125.0,
+        "download_cpu_avg": 132.7,
+        "download_cpu_peak": 203.0,
+        "peak_cpu": 203.0,
+        "peak_mem_mb": 180.3
       },
       {
         "name": "MipsTUN (MTU 1500) [P=8]",
@@ -713,14 +713,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 663.89,
-        "download_mbps": 156.01,
-        "upload_cpu_avg": 119.8,
-        "upload_cpu_peak": 251.0,
-        "download_cpu_avg": 100.1,
-        "download_cpu_peak": 192.0,
-        "peak_cpu": 251.0,
-        "peak_mem_mb": 150.8
+        "upload_mbps": 666.66,
+        "download_mbps": 113.53,
+        "upload_cpu_avg": 62.3,
+        "upload_cpu_peak": 240.0,
+        "download_cpu_avg": 47.0,
+        "download_cpu_peak": 145.0,
+        "peak_cpu": 240.0,
+        "peak_mem_mb": 128.6
       },
       {
         "name": "Hev (MTU 9000) [P=8]",
@@ -729,14 +729,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 688.48,
-        "download_mbps": 364.76,
-        "upload_cpu_avg": 38.3,
-        "upload_cpu_peak": 74.0,
-        "download_cpu_avg": 61.4,
-        "download_cpu_peak": 90.0,
-        "peak_cpu": 90.0,
-        "peak_mem_mb": 98.8
+        "upload_mbps": 687.44,
+        "download_mbps": 379.15,
+        "upload_cpu_avg": 36.2,
+        "upload_cpu_peak": 70.0,
+        "download_cpu_avg": 57.5,
+        "download_cpu_peak": 87.0,
+        "peak_cpu": 87.0,
+        "peak_mem_mb": 97.2
       },
       {
         "name": "Xray TUN (MTU 9000) [P=8]",
@@ -761,14 +761,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 686.21,
-        "download_mbps": 372.31,
-        "upload_cpu_avg": 41.4,
-        "upload_cpu_peak": 96.2,
-        "download_cpu_avg": 93.7,
-        "download_cpu_peak": 122.0,
-        "peak_cpu": 122.0,
-        "peak_mem_mb": 156.4
+        "upload_mbps": 679.28,
+        "download_mbps": 407.48,
+        "upload_cpu_avg": 52.0,
+        "upload_cpu_peak": 129.0,
+        "download_cpu_avg": 100.0,
+        "download_cpu_peak": 137.0,
+        "peak_cpu": 137.0,
+        "peak_mem_mb": 182.6
       },
       {
         "name": "MipsTUN (MTU 9000) [P=8]",
@@ -777,14 +777,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 685.29,
-        "download_mbps": 393.28,
-        "upload_cpu_avg": 66.0,
-        "upload_cpu_peak": 164.0,
-        "download_cpu_avg": 113.1,
-        "download_cpu_peak": 165.0,
-        "peak_cpu": 165.0,
-        "peak_mem_mb": 198.8
+        "upload_mbps": 677.54,
+        "download_mbps": 386.73,
+        "upload_cpu_avg": 47.4,
+        "upload_cpu_peak": 200.0,
+        "download_cpu_avg": 81.0,
+        "download_cpu_peak": 177.0,
+        "peak_cpu": 200.0,
+        "peak_mem_mb": 125.9
       },
       {
         "name": "USB Baseline (No VPN) [UDP] [Single Stream]",
@@ -793,18 +793,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 199.81,
-        "download_mbps": 200.01,
-        "upload_cpu_avg": 0.8,
-        "upload_cpu_peak": 5.0,
+        "upload_mbps": 199.83,
+        "download_mbps": 199.97,
+        "upload_cpu_avg": 0.0,
+        "upload_cpu_peak": 0.0,
         "download_cpu_avg": 0.0,
         "download_cpu_peak": 0.0,
-        "peak_cpu": 5.0,
-        "peak_mem_mb": 92.0,
-        "upload_loss_percent": 0.07223208336366334,
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 181.9,
+        "upload_loss_percent": 0.057119177483844236,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.01067904168378114,
-        "download_jitter_ms": 0.06535478918202538
+        "upload_jitter_ms": 0.014121688565949137,
+        "download_jitter_ms": 0.0586830290432303
       },
       {
         "name": "USB Baseline (No VPN) [UDP] [P=8]",
@@ -813,18 +813,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.94,
-        "download_mbps": 199.99,
+        "upload_mbps": 199.66,
+        "download_mbps": 200.05,
         "upload_cpu_avg": 0.0,
         "upload_cpu_peak": 0.0,
-        "download_cpu_avg": 0.2,
-        "download_cpu_peak": 2.0,
-        "peak_cpu": 2.0,
-        "peak_mem_mb": 91.5,
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 181.6,
         "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.07664828986288845,
-        "download_jitter_ms": 0.5077786892993336
+        "upload_jitter_ms": 0.20824189652487482,
+        "download_jitter_ms": 0.4892514350987355
       },
       {
         "name": "Hev (MTU 1500) [UDP] [Single Stream]",
@@ -833,18 +833,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 199.74,
-        "download_mbps": 153.26,
-        "upload_cpu_avg": 158.9,
-        "upload_cpu_peak": 193.0,
-        "download_cpu_avg": 128.8,
-        "download_cpu_peak": 169.0,
-        "peak_cpu": 193.0,
-        "peak_mem_mb": 106.2,
-        "upload_loss_percent": 0.030247017308015458,
-        "download_loss_percent": 12.398921832884097,
-        "upload_jitter_ms": 0.06749562246803777,
-        "download_jitter_ms": 0.049301768479130564
+        "upload_mbps": 183.34,
+        "download_mbps": 85.97,
+        "upload_cpu_avg": 87.4,
+        "upload_cpu_peak": 184.0,
+        "download_cpu_avg": 70.7,
+        "download_cpu_peak": 159.0,
+        "peak_cpu": 184.0,
+        "peak_mem_mb": 134.1,
+        "upload_loss_percent": 0.3,
+        "download_loss_percent": 29.5,
+        "upload_jitter_ms": 0.04,
+        "download_jitter_ms": 0.05
       },
       {
         "name": "Xray TUN (MTU 1500) [UDP] [Single Stream]",
@@ -873,18 +873,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 198.09,
-        "download_mbps": 117.06,
-        "upload_cpu_avg": 190.2,
-        "upload_cpu_peak": 236.0,
-        "download_cpu_avg": 150.2,
-        "download_cpu_peak": 182.0,
-        "peak_cpu": 236.0,
-        "peak_mem_mb": 111.5,
-        "upload_loss_percent": 0.8923822055488676,
-        "download_loss_percent": 29.544040218994944,
-        "upload_jitter_ms": 0.05383274632765755,
-        "download_jitter_ms": 0.17059932920685092
+        "upload_mbps": 198.12,
+        "download_mbps": 112.71,
+        "upload_cpu_avg": 201.1,
+        "upload_cpu_peak": 254.0,
+        "download_cpu_avg": 163.9,
+        "download_cpu_peak": 208.0,
+        "peak_cpu": 254.0,
+        "peak_mem_mb": 189.1,
+        "upload_loss_percent": 0.6832437275985663,
+        "download_loss_percent": 23.03077783995523,
+        "upload_jitter_ms": 0.0686060261613544,
+        "download_jitter_ms": 0.10613686699314945
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [Single Stream]",
@@ -893,18 +893,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 148.51,
-        "download_mbps": 71.11,
-        "upload_cpu_avg": 189.4,
-        "upload_cpu_peak": 225.0,
-        "download_cpu_avg": 146.4,
-        "download_cpu_peak": 187.0,
-        "peak_cpu": 225.0,
-        "peak_mem_mb": 124.0,
-        "upload_loss_percent": 15.030200379341961,
-        "download_loss_percent": 42.437609227542815,
-        "upload_jitter_ms": 0.04372166877880712,
-        "download_jitter_ms": 0.11321979658251481
+        "upload_mbps": 197.35,
+        "download_mbps": 120.22,
+        "upload_cpu_avg": 195.3,
+        "upload_cpu_peak": 244.0,
+        "download_cpu_avg": 157.4,
+        "download_cpu_peak": 207.0,
+        "peak_cpu": 244.0,
+        "peak_mem_mb": 163.9,
+        "upload_loss_percent": 0.0,
+        "download_loss_percent": 24.6,
+        "upload_jitter_ms": 0.05,
+        "download_jitter_ms": 0.09
       },
       {
         "name": "Hev (MTU 1500) [UDP] [P=8]",
@@ -913,18 +913,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.88,
-        "download_mbps": 200.72,
-        "upload_cpu_avg": 135.5,
-        "upload_cpu_peak": 203.0,
-        "download_cpu_avg": 122.4,
-        "download_cpu_peak": 177.0,
-        "peak_cpu": 203.0,
-        "peak_mem_mb": 104.3,
+        "upload_mbps": 199.8,
+        "download_mbps": 200.1,
+        "upload_cpu_avg": 85.3,
+        "upload_cpu_peak": 194.0,
+        "download_cpu_avg": 76.6,
+        "download_cpu_peak": 171.0,
+        "peak_cpu": 194.0,
+        "peak_mem_mb": 120.6,
         "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.2536729826683984,
-        "download_jitter_ms": 0.45735580895383066
+        "upload_jitter_ms": 0.16,
+        "download_jitter_ms": 0.55
       },
       {
         "name": "Xray TUN (MTU 1500) [UDP] [P=8]",
@@ -953,18 +953,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.92,
-        "download_mbps": 200.5,
-        "upload_cpu_avg": 202.2,
-        "upload_cpu_peak": 237.0,
-        "download_cpu_avg": 192.5,
-        "download_cpu_peak": 238.0,
-        "peak_cpu": 238.0,
-        "peak_mem_mb": 111.7,
+        "upload_mbps": 199.85,
+        "download_mbps": 200.11,
+        "upload_cpu_avg": 206.5,
+        "upload_cpu_peak": 247.0,
+        "download_cpu_avg": 185.4,
+        "download_cpu_peak": 236.0,
+        "peak_cpu": 247.0,
+        "peak_mem_mb": 242.3,
         "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.29675617971649737,
-        "download_jitter_ms": 0.4210483699048263
+        "upload_jitter_ms": 0.28499843760921556,
+        "download_jitter_ms": 0.4481891314013159
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [P=8]",
@@ -973,18 +973,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 185.51,
-        "download_mbps": 199.29,
-        "upload_cpu_avg": 187.2,
-        "upload_cpu_peak": 224.0,
-        "download_cpu_avg": 195.6,
-        "download_cpu_peak": 227.0,
-        "peak_cpu": 227.0,
-        "peak_mem_mb": 128.0,
-        "upload_loss_percent": 6.98961986155149,
-        "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.5645953240018924,
-        "download_jitter_ms": 0.7979454317222302
+        "upload_mbps": 199.62,
+        "download_mbps": 194.46,
+        "upload_cpu_avg": 165.1,
+        "upload_cpu_peak": 272.0,
+        "download_cpu_avg": 164.9,
+        "download_cpu_peak": 303.0,
+        "peak_cpu": 303.0,
+        "peak_mem_mb": 117.3,
+        "upload_loss_percent": 0.0,
+        "download_loss_percent": 2.9,
+        "upload_jitter_ms": 0.43,
+        "download_jitter_ms": 0.53
       },
       {
         "name": "Loopback Baseline (No VPN) [Single Stream]",
@@ -1154,31 +1154,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 95.6,
+            "pss_mb": 98.8,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 104.5,
-            "delta_mb": 8.9
+            "pss_mb": 105.9,
+            "delta_mb": 7.1
           },
           {
             "connections": 500,
-            "pss_mb": 107.6,
-            "delta_mb": 12.0
+            "pss_mb": 109.0,
+            "delta_mb": 10.2
           },
           {
             "connections": 750,
-            "pss_mb": 110.8,
-            "delta_mb": 15.2
+            "pss_mb": 112.3,
+            "delta_mb": 13.5
           },
           {
             "connections": 1000,
-            "pss_mb": 113.7,
-            "delta_mb": 18.1
+            "pss_mb": 115.1,
+            "delta_mb": 16.3
           }
         ],
-        "slope_kib_per_conn": 18.534
+        "slope_kib_per_conn": 16.69
       },
       {
         "name": "HEV UDP Idle Flows (0-1000)",
@@ -1188,31 +1188,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 98.2,
+            "pss_mb": 100.6,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 103.0,
-            "delta_mb": 4.8
+            "pss_mb": 106.1,
+            "delta_mb": 5.5
           },
           {
             "connections": 500,
-            "pss_mb": 107.7,
-            "delta_mb": 9.5
+            "pss_mb": 110.2,
+            "delta_mb": 9.6
           },
           {
             "connections": 750,
-            "pss_mb": 111.0,
-            "delta_mb": 12.8
+            "pss_mb": 113.6,
+            "delta_mb": 13.0
           },
           {
             "connections": 1000,
-            "pss_mb": 115.5,
+            "pss_mb": 117.9,
             "delta_mb": 17.3
           }
         ],
-        "slope_kib_per_conn": 17.715
+        "slope_kib_per_conn": 17.71
       },
       {
         "name": "XRAY TCP Idle Flows (0-1000)",
@@ -1290,31 +1290,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 103.3,
+            "pss_mb": 241.3,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 118.8,
-            "delta_mb": 15.5
+            "pss_mb": 243.5,
+            "delta_mb": 2.2
           },
           {
             "connections": 500,
-            "pss_mb": 136.9,
-            "delta_mb": 33.6
+            "pss_mb": 242.6,
+            "delta_mb": 1.3
           },
           {
             "connections": 750,
-            "pss_mb": 153.4,
-            "delta_mb": 50.1
+            "pss_mb": 242.4,
+            "delta_mb": 1.1
           },
           {
             "connections": 1000,
-            "pss_mb": 149.3,
-            "delta_mb": 46.0
+            "pss_mb": 244.9,
+            "delta_mb": 3.6
           }
         ],
-        "slope_kib_per_conn": 47.104
+        "slope_kib_per_conn": 3.686
       },
       {
         "name": "SING UDP Idle Flows (0-1000)",
@@ -1324,31 +1324,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 121.4,
+            "pss_mb": 192.6,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 105.8,
-            "delta_mb": -15.6
+            "pss_mb": 201.5,
+            "delta_mb": 8.9
           },
           {
             "connections": 500,
-            "pss_mb": 114.2,
-            "delta_mb": -7.2
+            "pss_mb": 194.4,
+            "delta_mb": 1.8
           },
           {
             "connections": 750,
-            "pss_mb": 120.7,
-            "delta_mb": -0.7
+            "pss_mb": 194.3,
+            "delta_mb": 1.7
           },
           {
             "connections": 1000,
-            "pss_mb": 127.9,
-            "delta_mb": 6.5
+            "pss_mb": 194.1,
+            "delta_mb": 1.5
           }
         ],
-        "slope_kib_per_conn": 6.656
+        "slope_kib_per_conn": 1.536
       },
       {
         "name": "MIPS TCP Idle Flows (0-1000)",
@@ -1358,31 +1358,21 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 103.6,
+            "pss_mb": 104.7,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 116.9,
-            "delta_mb": 13.3
+            "pss_mb": 120.9,
+            "delta_mb": 16.2
           },
           {
             "connections": 500,
-            "pss_mb": 131.4,
-            "delta_mb": 27.8
-          },
-          {
-            "connections": 750,
-            "pss_mb": 143.3,
-            "delta_mb": 39.7
-          },
-          {
-            "connections": 1000,
-            "pss_mb": 155.5,
-            "delta_mb": 51.9
+            "pss_mb": 134.1,
+            "delta_mb": 29.4
           }
         ],
-        "slope_kib_per_conn": 53.146
+        "slope_kib_per_conn": -107.21
       },
       {
         "name": "MIPS UDP Idle Flows (0-1000)",
@@ -1392,31 +1382,26 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 99.9,
+            "pss_mb": 124.6,
             "delta_mb": 0.0
           },
           {
-            "connections": 250,
-            "pss_mb": 117.0,
-            "delta_mb": 17.1
-          },
-          {
             "connections": 500,
-            "pss_mb": 134.8,
-            "delta_mb": 34.9
+            "pss_mb": 130.5,
+            "delta_mb": 5.9
           },
           {
             "connections": 750,
-            "pss_mb": 147.7,
-            "delta_mb": 47.8
+            "pss_mb": 146.5,
+            "delta_mb": 21.9
           },
           {
             "connections": 1000,
-            "pss_mb": 163.9,
-            "delta_mb": 64.0
+            "pss_mb": 158.3,
+            "delta_mb": 33.7
           }
         ],
-        "slope_kib_per_conn": 65.536
+        "slope_kib_per_conn": 34.51
       }
     ],
     "round_2": [
@@ -1427,14 +1412,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 396.48,
-        "download_mbps": 312.23,
-        "upload_cpu_avg": 0.4,
-        "upload_cpu_peak": 4.0,
-        "download_cpu_avg": 0.3,
-        "download_cpu_peak": 3.0,
-        "peak_cpu": 4.0,
-        "peak_mem_mb": 100.7
+        "upload_mbps": 334.42,
+        "download_mbps": 206.93,
+        "upload_cpu_avg": 0.0,
+        "upload_cpu_peak": 0.0,
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 192.2
       },
       {
         "name": "Wi-Fi Baseline (No VPN) [P=8]",
@@ -1443,14 +1428,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 350.63,
-        "download_mbps": 365.86,
+        "upload_mbps": 351.71,
+        "download_mbps": 427.08,
         "upload_cpu_avg": 0.0,
         "upload_cpu_peak": 0.0,
         "download_cpu_avg": 0.0,
         "download_cpu_peak": 0.0,
         "peak_cpu": 0.0,
-        "peak_mem_mb": 100.6
+        "peak_mem_mb": 191.7
       },
       {
         "name": "Hev (MTU 1500) [Single Stream]",
@@ -1459,14 +1444,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 311.02,
-        "download_mbps": 249.64,
-        "upload_cpu_avg": 21.8,
+        "upload_mbps": 290.28,
+        "download_mbps": 261.66,
+        "upload_cpu_avg": 24.4,
         "upload_cpu_peak": 62.0,
-        "download_cpu_avg": 44.2,
-        "download_cpu_peak": 69.0,
-        "peak_cpu": 69.0,
-        "peak_mem_mb": 103.8
+        "download_cpu_avg": 43.6,
+        "download_cpu_peak": 70.0,
+        "peak_cpu": 70.0,
+        "peak_mem_mb": 156.9
       },
       {
         "name": "Xray TUN (MTU 1500) [Single Stream]",
@@ -1491,14 +1476,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 323.57,
-        "download_mbps": 173.51,
-        "upload_cpu_avg": 24.1,
-        "upload_cpu_peak": 103.0,
-        "download_cpu_avg": 82.6,
-        "download_cpu_peak": 144.0,
-        "peak_cpu": 144.0,
-        "peak_mem_mb": 109.4
+        "upload_mbps": 368.18,
+        "download_mbps": 157.67,
+        "upload_cpu_avg": 36.4,
+        "upload_cpu_peak": 114.0,
+        "download_cpu_avg": 80.6,
+        "download_cpu_peak": 139.0,
+        "peak_cpu": 139.0,
+        "peak_mem_mb": 193.0
       },
       {
         "name": "MipsTUN (MTU 1500) [Single Stream]",
@@ -1507,14 +1492,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 321.29,
-        "download_mbps": 235.9,
-        "upload_cpu_avg": 45.0,
-        "upload_cpu_peak": 200.0,
-        "download_cpu_avg": 101.4,
-        "download_cpu_peak": 187.0,
-        "peak_cpu": 200.0,
-        "peak_mem_mb": 136.6
+        "upload_mbps": 331.93,
+        "download_mbps": 229.79,
+        "upload_cpu_avg": 38.8,
+        "upload_cpu_peak": 189.0,
+        "download_cpu_avg": 67.6,
+        "download_cpu_peak": 184.0,
+        "peak_cpu": 189.0,
+        "peak_mem_mb": 109.5
       },
       {
         "name": "Hev (MTU 9000) [Single Stream]",
@@ -1523,14 +1508,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 350.53,
-        "download_mbps": 349.45,
-        "upload_cpu_avg": 16.9,
-        "upload_cpu_peak": 48.0,
-        "download_cpu_avg": 46.0,
-        "download_cpu_peak": 71.0,
-        "peak_cpu": 71.0,
-        "peak_mem_mb": 97.2
+        "upload_mbps": 359.29,
+        "download_mbps": 327.92,
+        "upload_cpu_avg": 0.5,
+        "upload_cpu_peak": 5.0,
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 5.0,
+        "peak_mem_mb": 95.6
       },
       {
         "name": "Xray TUN (MTU 9000) [Single Stream]",
@@ -1555,14 +1540,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 375.18,
-        "download_mbps": 275.65,
-        "upload_cpu_avg": 26.3,
-        "upload_cpu_peak": 92.5,
-        "download_cpu_avg": 58.9,
-        "download_cpu_peak": 88.0,
-        "peak_cpu": 92.5,
-        "peak_mem_mb": 110.8
+        "upload_mbps": 370.88,
+        "download_mbps": 359.15,
+        "upload_cpu_avg": 31.3,
+        "upload_cpu_peak": 70.3,
+        "download_cpu_avg": 66.8,
+        "download_cpu_peak": 89.0,
+        "peak_cpu": 89.0,
+        "peak_mem_mb": 193.2
       },
       {
         "name": "MipsTUN (MTU 9000) [Single Stream]",
@@ -1571,14 +1556,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 289.05,
-        "download_mbps": 309.92,
-        "upload_cpu_avg": 32.7,
-        "upload_cpu_peak": 122.0,
-        "download_cpu_avg": 71.5,
-        "download_cpu_peak": 112.0,
-        "peak_cpu": 122.0,
-        "peak_mem_mb": 126.5
+        "upload_mbps": 389.54,
+        "download_mbps": 369.01,
+        "upload_cpu_avg": 19.9,
+        "upload_cpu_peak": 139.0,
+        "download_cpu_avg": 38.1,
+        "download_cpu_peak": 125.0,
+        "peak_cpu": 139.0,
+        "peak_mem_mb": 107.9
       },
       {
         "name": "Hev (MTU 1500) [P=8]",
@@ -1587,14 +1572,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 311.54,
-        "download_mbps": 298.18,
-        "upload_cpu_avg": 21.8,
+        "upload_mbps": 415.63,
+        "download_mbps": 302.44,
+        "upload_cpu_avg": 15.1,
         "upload_cpu_peak": 91.0,
-        "download_cpu_avg": 53.8,
-        "download_cpu_peak": 74.0,
+        "download_cpu_avg": 30.4,
+        "download_cpu_peak": 66.0,
         "peak_cpu": 91.0,
-        "peak_mem_mb": 98.4
+        "peak_mem_mb": 109.4
       },
       {
         "name": "Xray TUN (MTU 1500) [P=8]",
@@ -1619,14 +1604,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 300.67,
-        "download_mbps": 405.02,
-        "upload_cpu_avg": 53.7,
-        "upload_cpu_peak": 129.0,
-        "download_cpu_avg": 123.6,
-        "download_cpu_peak": 220.0,
-        "peak_cpu": 220.0,
-        "peak_mem_mb": 155.3
+        "upload_mbps": 355.59,
+        "download_mbps": 435.58,
+        "upload_cpu_avg": 58.5,
+        "upload_cpu_peak": 121.0,
+        "download_cpu_avg": 131.0,
+        "download_cpu_peak": 229.0,
+        "peak_cpu": 229.0,
+        "peak_mem_mb": 197.3
       },
       {
         "name": "MipsTUN (MTU 1500) [P=8]",
@@ -1635,14 +1620,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 344.3,
-        "download_mbps": 144.33,
-        "upload_cpu_avg": 51.8,
-        "upload_cpu_peak": 185.0,
-        "download_cpu_avg": 95.6,
-        "download_cpu_peak": 163.0,
-        "peak_cpu": 185.0,
-        "peak_mem_mb": 190.0
+        "upload_mbps": 403.44,
+        "download_mbps": 153.19,
+        "upload_cpu_avg": 26.8,
+        "upload_cpu_peak": 214.0,
+        "download_cpu_avg": 39.4,
+        "download_cpu_peak": 168.0,
+        "peak_cpu": 214.0,
+        "peak_mem_mb": 130.1
       },
       {
         "name": "Hev (MTU 9000) [P=8]",
@@ -1651,14 +1636,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 331.39,
-        "download_mbps": 371.73,
-        "upload_cpu_avg": 14.5,
-        "upload_cpu_peak": 45.0,
-        "download_cpu_avg": 51.3,
-        "download_cpu_peak": 88.0,
-        "peak_cpu": 88.0,
-        "peak_mem_mb": 191.4
+        "upload_mbps": 368.38,
+        "download_mbps": 419.86,
+        "upload_cpu_avg": 19.1,
+        "upload_cpu_peak": 66.0,
+        "download_cpu_avg": 52.1,
+        "download_cpu_peak": 91.0,
+        "peak_cpu": 91.0,
+        "peak_mem_mb": 97.1
       },
       {
         "name": "Xray TUN (MTU 9000) [P=8]",
@@ -1683,14 +1668,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 270.95,
-        "download_mbps": 347.2,
-        "upload_cpu_avg": 24.6,
-        "upload_cpu_peak": 118.0,
-        "download_cpu_avg": 70.6,
-        "download_cpu_peak": 97.0,
-        "peak_cpu": 118.0,
-        "peak_mem_mb": 191.0
+        "upload_mbps": 391.93,
+        "download_mbps": 428.45,
+        "upload_cpu_avg": 39.1,
+        "upload_cpu_peak": 133.0,
+        "download_cpu_avg": 81.5,
+        "download_cpu_peak": 99.0,
+        "peak_cpu": 133.0,
+        "peak_mem_mb": 197.2
       },
       {
         "name": "MipsTUN (MTU 9000) [P=8]",
@@ -1699,14 +1684,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 277.31,
-        "download_mbps": 372.36,
-        "upload_cpu_avg": 30.0,
-        "upload_cpu_peak": 200.0,
-        "download_cpu_avg": 78.6,
-        "download_cpu_peak": 135.0,
-        "peak_cpu": 200.0,
-        "peak_mem_mb": 155.6
+        "upload_mbps": 410.92,
+        "download_mbps": 417.9,
+        "upload_cpu_avg": 32.9,
+        "upload_cpu_peak": 207.0,
+        "download_cpu_avg": 63.0,
+        "download_cpu_peak": 125.0,
+        "peak_cpu": 207.0,
+        "peak_mem_mb": 129.3
       },
       {
         "name": "Wi-Fi Baseline (No VPN) [UDP] [Single Stream]",
@@ -1715,18 +1700,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 194.86,
-        "download_mbps": 199.97,
-        "upload_cpu_avg": 0.8,
-        "upload_cpu_peak": 4.0,
-        "download_cpu_avg": 0.1,
-        "download_cpu_peak": 1.0,
-        "peak_cpu": 4.0,
-        "peak_mem_mb": 92.9,
-        "upload_loss_percent": 1.388409552529293,
+        "upload_mbps": 196.48,
+        "download_mbps": 199.89,
+        "upload_cpu_avg": 0.0,
+        "upload_cpu_peak": 0.0,
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 195.9,
+        "upload_loss_percent": 1.5105537203963944,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.14080206757809727,
-        "download_jitter_ms": 0.092673545462617
+        "upload_jitter_ms": 0.0553424967165857,
+        "download_jitter_ms": 0.0661658638344219
       },
       {
         "name": "Wi-Fi Baseline (No VPN) [UDP] [P=8]",
@@ -1735,18 +1720,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.17,
-        "download_mbps": 199.98,
+        "upload_mbps": 199.56,
+        "download_mbps": 200.09,
         "upload_cpu_avg": 0.0,
         "upload_cpu_peak": 0.0,
-        "download_cpu_avg": 0.3,
-        "download_cpu_peak": 3.0,
-        "peak_cpu": 3.0,
-        "peak_mem_mb": 91.8,
-        "upload_loss_percent": 0.0027998812850335147,
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 195.6,
+        "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.8315467208584986,
-        "download_jitter_ms": 0.5502379413985073
+        "upload_jitter_ms": 0.7107989419384305,
+        "download_jitter_ms": 0.396506131832576
       },
       {
         "name": "Hev (MTU 1500) [UDP] [Single Stream]",
@@ -1755,18 +1740,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 145.53,
-        "download_mbps": 120.15,
-        "upload_cpu_avg": 153.6,
-        "upload_cpu_peak": 185.0,
-        "download_cpu_avg": 130.9,
-        "download_cpu_peak": 169.0,
-        "peak_cpu": 185.0,
-        "peak_mem_mb": 105.8,
-        "upload_loss_percent": 19.187524497452266,
-        "download_loss_percent": 30.81133362405376,
-        "upload_jitter_ms": 0.0751171957090307,
-        "download_jitter_ms": 0.106495843690477
+        "upload_mbps": 157.7,
+        "download_mbps": 130.19,
+        "upload_cpu_avg": 135.4,
+        "upload_cpu_peak": 188.0,
+        "download_cpu_avg": 115.9,
+        "download_cpu_peak": 167.0,
+        "peak_cpu": 188.0,
+        "peak_mem_mb": 106.2,
+        "upload_loss_percent": 5.2,
+        "download_loss_percent": 21.3,
+        "upload_jitter_ms": 0.11,
+        "download_jitter_ms": 0.05
       },
       {
         "name": "Xray TUN (MTU 1500) [UDP] [Single Stream]",
@@ -1795,18 +1780,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 150.13,
-        "download_mbps": 124.79,
-        "upload_cpu_avg": 182.1,
-        "upload_cpu_peak": 226.0,
-        "download_cpu_avg": 152.2,
-        "download_cpu_peak": 186.0,
-        "peak_cpu": 226.0,
-        "peak_mem_mb": 117.7,
-        "upload_loss_percent": 15.274091494484574,
-        "download_loss_percent": 30.327937459196143,
-        "upload_jitter_ms": 0.0744298935065623,
-        "download_jitter_ms": 0.05446773291871127
+        "upload_mbps": 89.34,
+        "download_mbps": 108.5,
+        "upload_cpu_avg": 154.2,
+        "upload_cpu_peak": 250.0,
+        "download_cpu_avg": 162.5,
+        "download_cpu_peak": 209.0,
+        "peak_cpu": 250.0,
+        "peak_mem_mb": 205.4,
+        "upload_loss_percent": 32.3666088124965,
+        "download_loss_percent": 26.467571845807417,
+        "upload_jitter_ms": 0.15054427074063653,
+        "download_jitter_ms": 0.0869898087085509
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [Single Stream]",
@@ -1815,18 +1800,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 177.08,
-        "download_mbps": 128.22,
-        "upload_cpu_avg": 175.9,
-        "upload_cpu_peak": 227.0,
-        "download_cpu_avg": 161.4,
-        "download_cpu_peak": 216.0,
-        "peak_cpu": 227.0,
-        "peak_mem_mb": 0.0,
-        "upload_loss_percent": 2.732791255067984,
-        "download_loss_percent": 26.687183382577174,
-        "upload_jitter_ms": 0.285169448250492,
-        "download_jitter_ms": 0.10942000272450046
+        "upload_mbps": 117.59,
+        "download_mbps": 102.28,
+        "upload_cpu_avg": 122.1,
+        "upload_cpu_peak": 226.0,
+        "download_cpu_avg": 104.1,
+        "download_cpu_peak": 205.0,
+        "peak_cpu": 226.0,
+        "peak_mem_mb": 114.1,
+        "upload_loss_percent": 20.4,
+        "download_loss_percent": 28.7,
+        "upload_jitter_ms": 0.15,
+        "download_jitter_ms": 0.06
       },
       {
         "name": "Hev (MTU 1500) [UDP] [P=8]",
@@ -1835,18 +1820,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 174.09,
-        "download_mbps": 200.02,
-        "upload_cpu_avg": 135.2,
-        "upload_cpu_peak": 220.0,
-        "download_cpu_avg": 119.2,
-        "download_cpu_peak": 176.0,
-        "peak_cpu": 220.0,
-        "peak_mem_mb": 114.8,
-        "upload_loss_percent": 0.081756075708366,
-        "download_loss_percent": 0.0011158223610801161,
-        "upload_jitter_ms": 1.392670583216858,
-        "download_jitter_ms": 0.6414520403906352
+        "upload_mbps": 199.32,
+        "download_mbps": 199.67,
+        "upload_cpu_avg": 81.6,
+        "upload_cpu_peak": 192.0,
+        "download_cpu_avg": 66.4,
+        "download_cpu_peak": 168.0,
+        "peak_cpu": 192.0,
+        "peak_mem_mb": 103.4,
+        "upload_loss_percent": 0.0,
+        "download_loss_percent": 0.0,
+        "upload_jitter_ms": 0.68,
+        "download_jitter_ms": 0.52
       },
       {
         "name": "Xray TUN (MTU 1500) [UDP] [P=8]",
@@ -1875,18 +1860,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.43,
-        "download_mbps": 200.0,
-        "upload_cpu_avg": 192.9,
-        "upload_cpu_peak": 222.0,
-        "download_cpu_avg": 164.8,
-        "download_cpu_peak": 218.0,
-        "peak_cpu": 222.0,
-        "peak_mem_mb": 115.0,
-        "upload_loss_percent": 0.13999328032254452,
+        "upload_mbps": 163.1,
+        "download_mbps": 199.99,
+        "upload_cpu_avg": 206.2,
+        "upload_cpu_peak": 247.0,
+        "download_cpu_avg": 185.6,
+        "download_cpu_peak": 243.0,
+        "peak_cpu": 247.0,
+        "peak_mem_mb": 206.3,
+        "upload_loss_percent": 0.12094335819391251,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.6546716146024666,
-        "download_jitter_ms": 0.582607204340696
+        "upload_jitter_ms": 1.1909106614283693,
+        "download_jitter_ms": 0.605521381077182
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [P=8]",
@@ -1895,18 +1880,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.73,
-        "download_mbps": 197.75,
-        "upload_cpu_avg": 197.1,
-        "upload_cpu_peak": 228.0,
-        "download_cpu_avg": 162.6,
-        "download_cpu_peak": 219.0,
-        "peak_cpu": 228.0,
-        "peak_mem_mb": 0.0,
+        "upload_mbps": 169.7,
+        "download_mbps": 190.81,
+        "upload_cpu_avg": 157.0,
+        "upload_cpu_peak": 286.0,
+        "download_cpu_avg": 149.4,
+        "download_cpu_peak": 299.0,
+        "peak_cpu": 299.0,
+        "peak_mem_mb": 118.0,
         "upload_loss_percent": 0.0,
-        "download_loss_percent": 1.3559850374064837,
-        "upload_jitter_ms": 0.6371857974028516,
-        "download_jitter_ms": 0.5581049499852294
+        "download_loss_percent": 0.1,
+        "upload_jitter_ms": 0.83,
+        "download_jitter_ms": 0.62
       },
       {
         "name": "USB Baseline (No VPN) [Single Stream]",
@@ -1915,14 +1900,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 681.51,
-        "download_mbps": 381.64,
-        "upload_cpu_avg": 0.8,
-        "upload_cpu_peak": 4.0,
+        "upload_mbps": 659.85,
+        "download_mbps": 387.05,
+        "upload_cpu_avg": 0.0,
+        "upload_cpu_peak": 0.0,
         "download_cpu_avg": 0.0,
         "download_cpu_peak": 0.0,
-        "peak_cpu": 4.0,
-        "peak_mem_mb": 92.1
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 196.7
       },
       {
         "name": "USB Baseline (No VPN) [P=8]",
@@ -1931,14 +1916,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 748.75,
-        "download_mbps": 427.67,
+        "upload_mbps": 736.16,
+        "download_mbps": 442.06,
         "upload_cpu_avg": 0.0,
         "upload_cpu_peak": 0.0,
-        "download_cpu_avg": 0.2,
-        "download_cpu_peak": 2.0,
-        "peak_cpu": 2.0,
-        "peak_mem_mb": 91.5
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 196.6
       },
       {
         "name": "Hev (MTU 1500) [Single Stream]",
@@ -1947,14 +1932,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 634.67,
-        "download_mbps": 299.98,
-        "upload_cpu_avg": 48.7,
-        "upload_cpu_peak": 84.0,
-        "download_cpu_avg": 59.0,
-        "download_cpu_peak": 74.0,
-        "peak_cpu": 84.0,
-        "peak_mem_mb": 100.4
+        "upload_mbps": 632.62,
+        "download_mbps": 297.31,
+        "upload_cpu_avg": 46.4,
+        "upload_cpu_peak": 86.0,
+        "download_cpu_avg": 54.7,
+        "download_cpu_peak": 76.0,
+        "peak_cpu": 86.0,
+        "peak_mem_mb": 96.5
       },
       {
         "name": "Xray TUN (MTU 1500) [Single Stream]",
@@ -1979,14 +1964,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 632.86,
-        "download_mbps": 171.01,
-        "upload_cpu_avg": 54.2,
-        "upload_cpu_peak": 96.2,
-        "download_cpu_avg": 83.4,
-        "download_cpu_peak": 145.0,
-        "peak_cpu": 145.0,
-        "peak_mem_mb": 111.3
+        "upload_mbps": 640.62,
+        "download_mbps": 168.57,
+        "upload_cpu_avg": 54.1,
+        "upload_cpu_peak": 92.0,
+        "download_cpu_avg": 85.1,
+        "download_cpu_peak": 139.0,
+        "peak_cpu": 139.0,
+        "peak_mem_mb": 197.6
       },
       {
         "name": "MipsTUN (MTU 1500) [Single Stream]",
@@ -1995,14 +1980,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 595.64,
-        "download_mbps": 236.55,
-        "upload_cpu_avg": 113.1,
+        "upload_mbps": 554.09,
+        "download_mbps": 234.41,
+        "upload_cpu_avg": 77.9,
         "upload_cpu_peak": 210.0,
-        "download_cpu_avg": 101.5,
-        "download_cpu_peak": 176.0,
+        "download_cpu_avg": 68.8,
+        "download_cpu_peak": 169.0,
         "peak_cpu": 210.0,
-        "peak_mem_mb": 127.1
+        "peak_mem_mb": 110.2
       },
       {
         "name": "Hev (MTU 9000) [Single Stream]",
@@ -2011,14 +1996,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 648.14,
-        "download_mbps": 357.31,
-        "upload_cpu_avg": 38.2,
-        "upload_cpu_peak": 62.0,
-        "download_cpu_avg": 54.8,
+        "upload_mbps": 638.04,
+        "download_mbps": 355.81,
+        "upload_cpu_avg": 22.9,
+        "upload_cpu_peak": 60.0,
+        "download_cpu_avg": 34.2,
         "download_cpu_peak": 70.0,
         "peak_cpu": 70.0,
-        "peak_mem_mb": 97.3
+        "peak_mem_mb": 110.8
       },
       {
         "name": "Xray TUN (MTU 9000) [Single Stream]",
@@ -2043,14 +2028,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 333.84,
-        "download_mbps": 356.27,
-        "upload_cpu_avg": 27.3,
-        "upload_cpu_peak": 89.2,
-        "download_cpu_avg": 83.5,
-        "download_cpu_peak": 114.0,
-        "peak_cpu": 114.0,
-        "peak_mem_mb": 111.4
+        "upload_mbps": 621.32,
+        "download_mbps": 351.83,
+        "upload_cpu_avg": 36.9,
+        "upload_cpu_peak": 78.5,
+        "download_cpu_avg": 85.1,
+        "download_cpu_peak": 111.0,
+        "peak_cpu": 111.0,
+        "peak_mem_mb": 197.3
       },
       {
         "name": "MipsTUN (MTU 9000) [Single Stream]",
@@ -2059,14 +2044,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 353.2,
-        "download_mbps": 285.81,
-        "upload_cpu_avg": 42.3,
-        "upload_cpu_peak": 100.0,
-        "download_cpu_avg": 94.4,
-        "download_cpu_peak": 150.0,
-        "peak_cpu": 150.0,
-        "peak_mem_mb": 124.9
+        "upload_mbps": 612.43,
+        "download_mbps": 363.35,
+        "upload_cpu_avg": 32.2,
+        "upload_cpu_peak": 118.0,
+        "download_cpu_avg": 50.4,
+        "download_cpu_peak": 149.0,
+        "peak_cpu": 149.0,
+        "peak_mem_mb": 115.0
       },
       {
         "name": "Hev (MTU 1500) [P=8]",
@@ -2075,14 +2060,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 325.38,
-        "download_mbps": 302.05,
-        "upload_cpu_avg": 35.9,
-        "upload_cpu_peak": 89.0,
-        "download_cpu_avg": 64.5,
-        "download_cpu_peak": 89.0,
-        "peak_cpu": 89.0,
-        "peak_mem_mb": 98.2
+        "upload_mbps": 675.07,
+        "download_mbps": 290.27,
+        "upload_cpu_avg": 50.0,
+        "upload_cpu_peak": 97.0,
+        "download_cpu_avg": 62.0,
+        "download_cpu_peak": 87.0,
+        "peak_cpu": 97.0,
+        "peak_mem_mb": 97.8
       },
       {
         "name": "Xray TUN (MTU 1500) [P=8]",
@@ -2107,14 +2092,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 223.21,
-        "download_mbps": 393.51,
-        "upload_cpu_avg": 62.5,
+        "upload_mbps": 259.69,
+        "download_mbps": 403.91,
+        "upload_cpu_avg": 71.5,
         "upload_cpu_peak": 125.0,
-        "download_cpu_avg": 135.7,
-        "download_cpu_peak": 218.0,
-        "peak_cpu": 218.0,
-        "peak_mem_mb": 106.1
+        "download_cpu_avg": 137.7,
+        "download_cpu_peak": 226.0,
+        "peak_cpu": 226.0,
+        "peak_mem_mb": 197.6
       },
       {
         "name": "MipsTUN (MTU 1500) [P=8]",
@@ -2123,14 +2108,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 344.44,
-        "download_mbps": 161.88,
-        "upload_cpu_avg": 94.3,
-        "upload_cpu_peak": 192.0,
-        "download_cpu_avg": 98.4,
-        "download_cpu_peak": 161.0,
-        "peak_cpu": 192.0,
-        "peak_mem_mb": 0.0
+        "upload_mbps": 653.49,
+        "download_mbps": 167.21,
+        "upload_cpu_avg": 124.0,
+        "upload_cpu_peak": 251.0,
+        "download_cpu_avg": 105.0,
+        "download_cpu_peak": 172.0,
+        "peak_cpu": 251.0,
+        "peak_mem_mb": 123.4
       },
       {
         "name": "Hev (MTU 9000) [P=8]",
@@ -2139,14 +2124,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 339.46,
-        "download_mbps": 360.44,
-        "upload_cpu_avg": 29.4,
-        "upload_cpu_peak": 53.0,
-        "download_cpu_avg": 62.0,
-        "download_cpu_peak": 94.0,
-        "peak_cpu": 94.0,
-        "peak_mem_mb": 97.7
+        "upload_mbps": 757.63,
+        "download_mbps": 434.75,
+        "upload_cpu_avg": 0.8,
+        "upload_cpu_peak": 4.0,
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 4.0,
+        "peak_mem_mb": 95.2
       },
       {
         "name": "Xray TUN (MTU 9000) [P=8]",
@@ -2171,14 +2156,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 325.38,
-        "download_mbps": 391.13,
-        "upload_cpu_avg": 33.1,
-        "upload_cpu_peak": 144.0,
-        "download_cpu_avg": 98.2,
-        "download_cpu_peak": 151.0,
-        "peak_cpu": 151.0,
-        "peak_mem_mb": 148.0
+        "upload_mbps": 685.6,
+        "download_mbps": 355.91,
+        "upload_cpu_avg": 50.0,
+        "upload_cpu_peak": 137.0,
+        "download_cpu_avg": 92.6,
+        "download_cpu_peak": 117.0,
+        "peak_cpu": 137.0,
+        "peak_mem_mb": 143.3
       },
       {
         "name": "MipsTUN (MTU 9000) [P=8]",
@@ -2187,14 +2172,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 335.02,
-        "download_mbps": 392.83,
-        "upload_cpu_avg": 45.7,
-        "upload_cpu_peak": 203.0,
-        "download_cpu_avg": 111.7,
-        "download_cpu_peak": 160.0,
-        "peak_cpu": 203.0,
-        "peak_mem_mb": 183.3
+        "upload_mbps": 669.01,
+        "download_mbps": 385.68,
+        "upload_cpu_avg": 48.1,
+        "upload_cpu_peak": 207.0,
+        "download_cpu_avg": 79.9,
+        "download_cpu_peak": 169.0,
+        "peak_cpu": 207.0,
+        "peak_mem_mb": 130.5
       },
       {
         "name": "USB Baseline (No VPN) [UDP] [Single Stream]",
@@ -2203,18 +2188,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 199.96,
-        "download_mbps": 200.02,
-        "upload_cpu_avg": 0.7,
-        "upload_cpu_peak": 3.7,
+        "upload_mbps": 199.8,
+        "download_mbps": 200.04,
+        "upload_cpu_avg": 1.0,
+        "upload_cpu_peak": 5.0,
         "download_cpu_avg": 0.0,
         "download_cpu_peak": 0.0,
-        "peak_cpu": 3.7,
-        "peak_mem_mb": 92.9,
-        "upload_loss_percent": 0.00671926356871287,
+        "peak_cpu": 5.0,
+        "peak_mem_mb": 143.0,
+        "upload_loss_percent": 0.06382978723404255,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.015335439921522283,
-        "download_jitter_ms": 0.0926260566276018
+        "upload_jitter_ms": 0.009904554962283386,
+        "download_jitter_ms": 0.0744079459560907
       },
       {
         "name": "USB Baseline (No VPN) [UDP] [P=8]",
@@ -2223,18 +2208,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.86,
-        "download_mbps": 200.0,
-        "upload_cpu_avg": 0.0,
-        "upload_cpu_peak": 0.0,
-        "download_cpu_avg": 0.2,
-        "download_cpu_peak": 2.0,
-        "peak_cpu": 2.0,
-        "peak_mem_mb": 91.8,
+        "upload_mbps": 199.87,
+        "download_mbps": 200.06,
+        "upload_cpu_avg": 1.2,
+        "upload_cpu_peak": 5.0,
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 5.0,
+        "peak_mem_mb": 142.9,
         "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.08462522217094645,
-        "download_jitter_ms": 0.5500252208384727
+        "upload_jitter_ms": 0.0903767759809627,
+        "download_jitter_ms": 0.6053622513857863
       },
       {
         "name": "Hev (MTU 1500) [UDP] [Single Stream]",
@@ -2243,18 +2228,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 199.4,
-        "download_mbps": 120.99,
-        "upload_cpu_avg": 159.6,
-        "upload_cpu_peak": 191.0,
-        "download_cpu_avg": 130.9,
+        "upload_mbps": 199.14,
+        "download_mbps": 120.52,
+        "upload_cpu_avg": 134.0,
+        "upload_cpu_peak": 190.0,
+        "download_cpu_avg": 116.8,
         "download_cpu_peak": 168.0,
-        "peak_cpu": 191.0,
-        "peak_mem_mb": 106.6,
-        "upload_loss_percent": 0.0733519606251155,
-        "download_loss_percent": 29.1346271888218,
-        "upload_jitter_ms": 0.78204412239009,
-        "download_jitter_ms": 0.04751567511303415
+        "peak_cpu": 190.0,
+        "peak_mem_mb": 155.4,
+        "upload_loss_percent": 0.3,
+        "download_loss_percent": 18.0,
+        "upload_jitter_ms": 0.07,
+        "download_jitter_ms": 0.06
       },
       {
         "name": "Xray TUN (MTU 1500) [UDP] [Single Stream]",
@@ -2283,18 +2268,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 140.11,
-        "download_mbps": 85.41,
-        "upload_cpu_avg": 185.9,
-        "upload_cpu_peak": 233.0,
-        "download_cpu_avg": 144.9,
-        "download_cpu_peak": 173.0,
-        "peak_cpu": 233.0,
-        "peak_mem_mb": 0.0,
-        "upload_loss_percent": 20.267652164174926,
-        "download_loss_percent": 41.12516354121239,
-        "upload_jitter_ms": 0.040904727998447965,
-        "download_jitter_ms": 0.04833938317070247
+        "upload_mbps": 140.61,
+        "download_mbps": 84.17,
+        "upload_cpu_avg": 183.2,
+        "upload_cpu_peak": 222.0,
+        "download_cpu_avg": 145.2,
+        "download_cpu_peak": 174.0,
+        "peak_cpu": 222.0,
+        "peak_mem_mb": 152.4,
+        "upload_loss_percent": 11.40310606993696,
+        "download_loss_percent": 28.635199087074724,
+        "upload_jitter_ms": 0.0453476905003126,
+        "download_jitter_ms": 0.15378432280077448
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [Single Stream]",
@@ -2303,18 +2288,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 198.0,
-        "download_mbps": 121.75,
-        "upload_cpu_avg": 196.4,
-        "upload_cpu_peak": 248.0,
-        "download_cpu_avg": 159.5,
-        "download_cpu_peak": 207.0,
-        "peak_cpu": 248.0,
-        "peak_mem_mb": 114.7,
-        "upload_loss_percent": 0.11646788733971666,
-        "download_loss_percent": 29.49549680662297,
-        "upload_jitter_ms": 0.09867144654950037,
-        "download_jitter_ms": 0.1946342051241305
+        "upload_mbps": 112.53,
+        "download_mbps": 74.54,
+        "upload_cpu_avg": 99.2,
+        "upload_cpu_peak": 226.0,
+        "download_cpu_avg": 101.3,
+        "download_cpu_peak": 194.0,
+        "peak_cpu": 226.0,
+        "peak_mem_mb": 121.4,
+        "upload_loss_percent": 29.1,
+        "download_loss_percent": 27.5,
+        "upload_jitter_ms": 0.07,
+        "download_jitter_ms": 0.15
       },
       {
         "name": "Hev (MTU 1500) [UDP] [P=8]",
@@ -2323,18 +2308,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.92,
-        "download_mbps": 200.13,
-        "upload_cpu_avg": 135.1,
-        "upload_cpu_peak": 204.0,
-        "download_cpu_avg": 123.0,
-        "download_cpu_peak": 173.0,
-        "peak_cpu": 204.0,
-        "peak_mem_mb": 104.9,
+        "upload_mbps": 199.2,
+        "download_mbps": 196.73,
+        "upload_cpu_avg": 78.4,
+        "upload_cpu_peak": 253.0,
+        "download_cpu_avg": 73.4,
+        "download_cpu_peak": 265.0,
+        "peak_cpu": 265.0,
+        "peak_mem_mb": 123.5,
         "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.16482498525480452,
-        "download_jitter_ms": 0.40474613247910324
+        "upload_jitter_ms": 0.49,
+        "download_jitter_ms": 0.87
       },
       {
         "name": "Xray TUN (MTU 1500) [UDP] [P=8]",
@@ -2363,18 +2348,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 195.69,
-        "download_mbps": 199.55,
-        "upload_cpu_avg": 198.4,
-        "upload_cpu_peak": 227.0,
-        "download_cpu_avg": 190.2,
-        "download_cpu_peak": 219.0,
-        "peak_cpu": 227.0,
-        "peak_mem_mb": 131.3,
-        "upload_loss_percent": 0.07111618817231397,
+        "upload_mbps": 199.22,
+        "download_mbps": 200.0,
+        "upload_cpu_avg": 208.3,
+        "upload_cpu_peak": 222.0,
+        "download_cpu_avg": 185.2,
+        "download_cpu_peak": 213.0,
+        "peak_cpu": 222.0,
+        "peak_mem_mb": 151.1,
+        "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.650255154403389,
-        "download_jitter_ms": 0.6567980039787124
+        "upload_jitter_ms": 0.624233460234778,
+        "download_jitter_ms": 0.6621153673910425
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [P=8]",
@@ -2383,18 +2368,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.92,
-        "download_mbps": 191.72,
-        "upload_cpu_avg": 205.9,
-        "upload_cpu_peak": 242.0,
-        "download_cpu_avg": 192.9,
-        "download_cpu_peak": 244.0,
-        "peak_cpu": 244.0,
-        "peak_mem_mb": 121.2,
+        "upload_mbps": 199.81,
+        "download_mbps": 169.78,
+        "upload_cpu_avg": 124.4,
+        "upload_cpu_peak": 254.0,
+        "download_cpu_avg": 123.2,
+        "download_cpu_peak": 261.0,
+        "peak_cpu": 261.0,
+        "peak_mem_mb": 125.4,
         "upload_loss_percent": 0.0,
-        "download_loss_percent": 4.099113221067718,
-        "upload_jitter_ms": 0.3269897289214862,
-        "download_jitter_ms": 0.4635351739644344
+        "download_loss_percent": 15.2,
+        "upload_jitter_ms": 0.44,
+        "download_jitter_ms": 0.62
       },
       {
         "name": "Loopback Baseline (No VPN) [Single Stream]",
@@ -2564,31 +2549,11 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 98.3,
+            "pss_mb": 120.9,
             "delta_mb": 0.0
-          },
-          {
-            "connections": 250,
-            "pss_mb": 105.1,
-            "delta_mb": 6.8
-          },
-          {
-            "connections": 500,
-            "pss_mb": 108.0,
-            "delta_mb": 9.7
-          },
-          {
-            "connections": 750,
-            "pss_mb": 111.1,
-            "delta_mb": 12.8
-          },
-          {
-            "connections": 1000,
-            "pss_mb": 114.1,
-            "delta_mb": 15.8
           }
         ],
-        "slope_kib_per_conn": 16.179
+        "slope_kib_per_conn": -6.25
       },
       {
         "name": "HEV UDP Idle Flows (0-1000)",
@@ -2598,31 +2563,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 120.1,
+            "pss_mb": 98.7,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 103.3,
-            "delta_mb": -16.8
+            "pss_mb": 104.7,
+            "delta_mb": 6.0
           },
           {
             "connections": 500,
-            "pss_mb": 107.2,
-            "delta_mb": -12.9
+            "pss_mb": 109.2,
+            "delta_mb": 10.5
           },
           {
             "connections": 750,
-            "pss_mb": 110.8,
-            "delta_mb": -9.3
+            "pss_mb": 113.0,
+            "delta_mb": 14.3
           },
           {
             "connections": 1000,
-            "pss_mb": 114.9,
-            "delta_mb": -5.2
+            "pss_mb": 117.0,
+            "delta_mb": 18.3
           }
         ],
-        "slope_kib_per_conn": -5.325
+        "slope_kib_per_conn": 18.74
       },
       {
         "name": "XRAY TCP Idle Flows (0-1000)",
@@ -2700,31 +2665,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 102.9,
+            "pss_mb": 147.8,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 114.3,
-            "delta_mb": 11.4
+            "pss_mb": 150.2,
+            "delta_mb": 2.4
           },
           {
             "connections": 500,
-            "pss_mb": 127.2,
-            "delta_mb": 24.3
+            "pss_mb": 158.2,
+            "delta_mb": 10.4
           },
           {
             "connections": 750,
-            "pss_mb": 140.0,
-            "delta_mb": 37.1
+            "pss_mb": 157.9,
+            "delta_mb": 10.1
           },
           {
             "connections": 1000,
-            "pss_mb": 151.4,
-            "delta_mb": 48.5
+            "pss_mb": 162.4,
+            "delta_mb": 14.6
           }
         ],
-        "slope_kib_per_conn": 49.664
+        "slope_kib_per_conn": 14.95
       },
       {
         "name": "SING UDP Idle Flows (0-1000)",
@@ -2734,31 +2699,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 99.2,
+            "pss_mb": 162.1,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 107.4,
-            "delta_mb": 8.2
+            "pss_mb": 165.4,
+            "delta_mb": 3.3
           },
           {
             "connections": 500,
-            "pss_mb": 114.8,
-            "delta_mb": 15.6
+            "pss_mb": 167.6,
+            "delta_mb": 5.5
           },
           {
             "connections": 750,
-            "pss_mb": 123.8,
-            "delta_mb": 24.6
+            "pss_mb": 171.0,
+            "delta_mb": 8.9
           },
           {
             "connections": 1000,
-            "pss_mb": 123.4,
-            "delta_mb": 24.2
+            "pss_mb": 172.6,
+            "delta_mb": 10.5
           }
         ],
-        "slope_kib_per_conn": 24.781
+        "slope_kib_per_conn": 10.752
       },
       {
         "name": "MIPS TCP Idle Flows (0-1000)",
@@ -2768,31 +2733,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 123.7,
+            "pss_mb": 107.1,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 115.5,
-            "delta_mb": -8.2
+            "pss_mb": 123.0,
+            "delta_mb": 15.9
           },
           {
             "connections": 500,
-            "pss_mb": 129.5,
-            "delta_mb": 5.8
+            "pss_mb": 136.2,
+            "delta_mb": 29.1
           },
           {
             "connections": 750,
-            "pss_mb": 143.1,
-            "delta_mb": 19.4
+            "pss_mb": 148.5,
+            "delta_mb": 41.4
           },
           {
             "connections": 1000,
-            "pss_mb": 155.7,
-            "delta_mb": 32.0
+            "pss_mb": 160.9,
+            "delta_mb": 53.8
           }
         ],
-        "slope_kib_per_conn": 32.768
+        "slope_kib_per_conn": 55.09
       },
       {
         "name": "MIPS UDP Idle Flows (0-1000)",
@@ -2802,31 +2767,26 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 101.5,
+            "pss_mb": 123.4,
             "delta_mb": 0.0
           },
           {
-            "connections": 250,
-            "pss_mb": 119.6,
-            "delta_mb": 18.1
-          },
-          {
             "connections": 500,
-            "pss_mb": 131.5,
-            "delta_mb": 30.0
+            "pss_mb": 131.0,
+            "delta_mb": 7.6
           },
           {
             "connections": 750,
-            "pss_mb": 165.1,
-            "delta_mb": 63.6
+            "pss_mb": 146.2,
+            "delta_mb": 22.8
           },
           {
             "connections": 1000,
-            "pss_mb": 160.8,
-            "delta_mb": 59.3
+            "pss_mb": 155.1,
+            "delta_mb": 31.7
           }
         ],
-        "slope_kib_per_conn": 60.723
+        "slope_kib_per_conn": 32.46
       }
     ],
     "round_3": [
@@ -2837,14 +2797,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 391.26,
-        "download_mbps": 346.51,
-        "upload_cpu_avg": 0.4,
-        "upload_cpu_peak": 4.0,
-        "download_cpu_avg": 0.3,
-        "download_cpu_peak": 3.0,
-        "peak_cpu": 4.0,
-        "peak_mem_mb": 100.1
+        "upload_mbps": 369.4,
+        "download_mbps": 336.09,
+        "upload_cpu_avg": 0.0,
+        "upload_cpu_peak": 0.0,
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 169.0
       },
       {
         "name": "Wi-Fi Baseline (No VPN) [P=8]",
@@ -2853,14 +2813,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 384.49,
-        "download_mbps": 395.61,
+        "upload_mbps": 381.54,
+        "download_mbps": 418.91,
         "upload_cpu_avg": 0.0,
         "upload_cpu_peak": 0.0,
         "download_cpu_avg": 0.0,
         "download_cpu_peak": 0.0,
         "peak_cpu": 0.0,
-        "peak_mem_mb": 100.0
+        "peak_mem_mb": 0.0
       },
       {
         "name": "Hev (MTU 1500) [Single Stream]",
@@ -2869,14 +2829,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 353.42,
-        "download_mbps": 277.22,
-        "upload_cpu_avg": 27.5,
-        "upload_cpu_peak": 70.0,
-        "download_cpu_avg": 44.7,
-        "download_cpu_peak": 68.0,
-        "peak_cpu": 73.5,
-        "peak_mem_mb": 102.25
+        "upload_mbps": 370.8,
+        "download_mbps": 263.76,
+        "upload_cpu_avg": 28.0,
+        "upload_cpu_peak": 65.0,
+        "download_cpu_avg": 44.4,
+        "download_cpu_peak": 65.0,
+        "peak_cpu": 65.0,
+        "peak_mem_mb": 159.1
       },
       {
         "name": "Xray TUN (MTU 1500) [Single Stream]",
@@ -2901,14 +2861,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 360.38,
-        "download_mbps": 170.37,
-        "upload_cpu_avg": 28.4,
-        "upload_cpu_peak": 103.0,
-        "download_cpu_avg": 82.45,
-        "download_cpu_peak": 142.5,
-        "peak_cpu": 142.5,
-        "peak_mem_mb": 109.25
+        "upload_mbps": 376.29,
+        "download_mbps": 192.68,
+        "upload_cpu_avg": 40.0,
+        "upload_cpu_peak": 110.0,
+        "download_cpu_avg": 82.5,
+        "download_cpu_peak": 140.0,
+        "peak_cpu": 140.0,
+        "peak_mem_mb": 169.8
       },
       {
         "name": "MipsTUN (MTU 1500) [Single Stream]",
@@ -2917,14 +2877,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 356.37,
-        "download_mbps": 241.88,
-        "upload_cpu_avg": 55.05,
-        "upload_cpu_peak": 188.5,
-        "download_cpu_avg": 103.95,
-        "download_cpu_peak": 194.5,
-        "peak_cpu": 201.0,
-        "peak_mem_mb": 136.6
+        "upload_mbps": 292.46,
+        "download_mbps": 228.57,
+        "upload_cpu_avg": 38.7,
+        "upload_cpu_peak": 196.0,
+        "download_cpu_avg": 65.3,
+        "download_cpu_peak": 192.0,
+        "peak_cpu": 196.0,
+        "peak_mem_mb": 109.8
       },
       {
         "name": "Hev (MTU 9000) [Single Stream]",
@@ -2933,14 +2893,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 371.82,
-        "download_mbps": 361.4,
-        "upload_cpu_avg": 17.3,
-        "upload_cpu_peak": 50.0,
-        "download_cpu_avg": 46.8,
-        "download_cpu_peak": 74.5,
-        "peak_cpu": 74.5,
-        "peak_mem_mb": 97.15
+        "upload_mbps": 270.21,
+        "download_mbps": 327.92,
+        "upload_cpu_avg": 0.4,
+        "upload_cpu_peak": 4.0,
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 4.0,
+        "peak_mem_mb": 96.0
       },
       {
         "name": "Xray TUN (MTU 9000) [Single Stream]",
@@ -2965,14 +2925,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 384.61,
-        "download_mbps": 277.53,
-        "upload_cpu_avg": 27.05,
-        "upload_cpu_peak": 97.75,
-        "download_cpu_avg": 55.2,
-        "download_cpu_peak": 91.5,
-        "peak_cpu": 97.75,
-        "peak_mem_mb": 111.0
+        "upload_mbps": 365.37,
+        "download_mbps": 342.8,
+        "upload_cpu_avg": 26.7,
+        "upload_cpu_peak": 82.1,
+        "download_cpu_avg": 64.2,
+        "download_cpu_peak": 90.0,
+        "peak_cpu": 90.0,
+        "peak_mem_mb": 169.3
       },
       {
         "name": "MipsTUN (MTU 9000) [Single Stream]",
@@ -2981,14 +2941,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 343.19,
-        "download_mbps": 353.59,
-        "upload_cpu_avg": 34.15,
-        "upload_cpu_peak": 125.0,
-        "download_cpu_avg": 76.15,
-        "download_cpu_peak": 119.0,
-        "peak_cpu": 125.0,
-        "peak_mem_mb": 126.5
+        "upload_mbps": 376.05,
+        "download_mbps": 327.92,
+        "upload_cpu_avg": 21.8,
+        "upload_cpu_peak": 139.0,
+        "download_cpu_avg": 36.9,
+        "download_cpu_peak": 112.0,
+        "peak_cpu": 139.0,
+        "peak_mem_mb": 107.8
       },
       {
         "name": "Hev (MTU 1500) [P=8]",
@@ -2997,14 +2957,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 366.06,
-        "download_mbps": 299.38,
-        "upload_cpu_avg": 23.85,
+        "upload_mbps": 394.72,
+        "download_mbps": 304.43,
+        "upload_cpu_avg": 27.8,
         "upload_cpu_peak": 94.0,
-        "download_cpu_avg": 52.0,
-        "download_cpu_peak": 73.5,
+        "download_cpu_avg": 53.5,
+        "download_cpu_peak": 74.0,
         "peak_cpu": 94.0,
-        "peak_mem_mb": 98.45
+        "peak_mem_mb": 118.3
       },
       {
         "name": "Xray TUN (MTU 1500) [P=8]",
@@ -3029,14 +2989,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 344.33,
-        "download_mbps": 429.29,
-        "upload_cpu_avg": 48.35,
-        "upload_cpu_peak": 133.0,
-        "download_cpu_avg": 127.85,
-        "download_cpu_peak": 226.0,
-        "peak_cpu": 226.0,
-        "peak_mem_mb": 155.3
+        "upload_mbps": 369.98,
+        "download_mbps": 405.39,
+        "upload_cpu_avg": 59.0,
+        "upload_cpu_peak": 117.0,
+        "download_cpu_avg": 122.0,
+        "download_cpu_peak": 204.0,
+        "peak_cpu": 204.0,
+        "peak_mem_mb": 172.3
       },
       {
         "name": "MipsTUN (MTU 1500) [P=8]",
@@ -3045,14 +3005,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 383.46,
-        "download_mbps": 141.44,
-        "upload_cpu_avg": 48.6,
-        "upload_cpu_peak": 179.5,
-        "download_cpu_avg": 93.25,
-        "download_cpu_peak": 160.0,
-        "peak_cpu": 179.5,
-        "peak_mem_mb": 171.3
+        "upload_mbps": 357.66,
+        "download_mbps": 143.96,
+        "upload_cpu_avg": 43.2,
+        "upload_cpu_peak": 200.0,
+        "download_cpu_avg": 64.6,
+        "download_cpu_peak": 181.0,
+        "peak_cpu": 200.0,
+        "peak_mem_mb": 126.4
       },
       {
         "name": "Hev (MTU 9000) [P=8]",
@@ -3061,14 +3021,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 377.85,
-        "download_mbps": 411.21,
-        "upload_cpu_avg": 16.0,
-        "upload_cpu_peak": 56.5,
-        "download_cpu_avg": 54.45,
-        "download_cpu_peak": 92.0,
-        "peak_cpu": 92.0,
-        "peak_mem_mb": 144.5
+        "upload_mbps": 366.82,
+        "download_mbps": 373.73,
+        "upload_cpu_avg": 20.8,
+        "upload_cpu_peak": 56.0,
+        "download_cpu_avg": 50.1,
+        "download_cpu_peak": 101.0,
+        "peak_cpu": 101.0,
+        "peak_mem_mb": 97.5
       },
       {
         "name": "Xray TUN (MTU 9000) [P=8]",
@@ -3093,14 +3053,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 346.84,
-        "download_mbps": 400.62,
-        "upload_cpu_avg": 25.9,
-        "upload_cpu_peak": 114.0,
-        "download_cpu_avg": 76.2,
-        "download_cpu_peak": 105.5,
-        "peak_cpu": 116.0,
-        "peak_mem_mb": 191.0
+        "upload_mbps": 382.67,
+        "download_mbps": 409.48,
+        "upload_cpu_avg": 36.8,
+        "upload_cpu_peak": 100.0,
+        "download_cpu_avg": 78.6,
+        "download_cpu_peak": 94.0,
+        "peak_cpu": 100.0,
+        "peak_mem_mb": 172.9
       },
       {
         "name": "MipsTUN (MTU 9000) [P=8]",
@@ -3109,14 +3069,14 @@
         "medium": "5GHz Wi-Fi",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 348.47,
-        "download_mbps": 377.0,
-        "upload_cpu_avg": 35.8,
-        "upload_cpu_peak": 179.5,
-        "download_cpu_avg": 81.6,
-        "download_cpu_peak": 132.0,
-        "peak_cpu": 179.5,
-        "peak_mem_mb": 170.65
+        "upload_mbps": 362.15,
+        "download_mbps": 340.4,
+        "upload_cpu_avg": 32.7,
+        "upload_cpu_peak": 207.0,
+        "download_cpu_avg": 57.1,
+        "download_cpu_peak": 120.0,
+        "peak_cpu": 207.0,
+        "peak_mem_mb": 130.7
       },
       {
         "name": "Wi-Fi Baseline (No VPN) [UDP] [Single Stream]",
@@ -3125,18 +3085,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 195.57,
-        "download_mbps": 199.97,
-        "upload_cpu_avg": 0.85,
-        "upload_cpu_peak": 4.5,
-        "download_cpu_avg": 0.1,
-        "download_cpu_peak": 1.0,
-        "peak_cpu": 4.5,
-        "peak_mem_mb": 92.75,
-        "upload_loss_percent": 1.55,
-        "download_loss_percent": 0.00503305036405731,
-        "upload_jitter_ms": 0.16,
-        "download_jitter_ms": 0.07
+        "upload_mbps": 196.68,
+        "download_mbps": 199.98,
+        "upload_cpu_avg": 0.0,
+        "upload_cpu_peak": 0.0,
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 0.0,
+        "upload_loss_percent": 1.4299311348748671,
+        "download_loss_percent": 0.0,
+        "upload_jitter_ms": 0.05772790572707632,
+        "download_jitter_ms": 0.051628562006751644
       },
       {
         "name": "Wi-Fi Baseline (No VPN) [UDP] [P=8]",
@@ -3145,18 +3105,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.46,
-        "download_mbps": 200.0,
-        "upload_cpu_avg": 0.0,
-        "upload_cpu_peak": 0.0,
-        "download_cpu_avg": 0.25,
-        "download_cpu_peak": 2.5,
-        "peak_cpu": 2.5,
-        "peak_mem_mb": 91.7,
-        "upload_loss_percent": 0.0027998812850335147,
+        "upload_mbps": 195.1,
+        "download_mbps": 200.03,
+        "upload_cpu_avg": 1.2,
+        "upload_cpu_peak": 5.0,
+        "download_cpu_avg": 0.2,
+        "download_cpu_peak": 1.0,
+        "peak_cpu": 5.0,
+        "peak_mem_mb": 91.8,
+        "upload_loss_percent": 0.01007940329932468,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.79,
-        "download_jitter_ms": 0.5
+        "upload_jitter_ms": 3.874527643871907,
+        "download_jitter_ms": 0.5408163006652408
       },
       {
         "name": "Hev (MTU 1500) [UDP] [Single Stream]",
@@ -3165,18 +3125,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 148.5,
-        "download_mbps": 123.75,
-        "upload_cpu_avg": 154.45,
-        "upload_cpu_peak": 182.5,
-        "download_cpu_avg": 131.2,
-        "download_cpu_peak": 169.0,
-        "peak_cpu": 182.5,
-        "peak_mem_mb": 105.25,
-        "upload_loss_percent": 17.71,
-        "download_loss_percent": 29.61,
-        "upload_jitter_ms": 0.07,
-        "download_jitter_ms": 0.08
+        "upload_mbps": 145.01,
+        "download_mbps": 129.75,
+        "upload_cpu_avg": 135.0,
+        "upload_cpu_peak": 183.0,
+        "download_cpu_avg": 116.3,
+        "download_cpu_peak": 166.0,
+        "peak_cpu": 183.0,
+        "peak_mem_mb": 107.3,
+        "upload_loss_percent": 10.5,
+        "download_loss_percent": 19.7,
+        "upload_jitter_ms": 0.1,
+        "download_jitter_ms": 0.06
       },
       {
         "name": "Xray TUN (MTU 1500) [UDP] [Single Stream]",
@@ -3205,18 +3165,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 142.91,
-        "download_mbps": 123.68,
-        "upload_cpu_avg": 181.4,
-        "upload_cpu_peak": 227.0,
-        "download_cpu_avg": 152.8,
-        "download_cpu_peak": 180.0,
-        "peak_cpu": 227.0,
-        "peak_mem_mb": 113.6,
-        "upload_loss_percent": 19.900667443110553,
-        "download_loss_percent": 24.922041778900425,
-        "upload_jitter_ms": 0.23000399658061593,
-        "download_jitter_ms": 0.07611447286977943
+        "upload_mbps": 163.83,
+        "download_mbps": 136.93,
+        "upload_cpu_avg": 181.7,
+        "upload_cpu_peak": 225.0,
+        "download_cpu_avg": 157.4,
+        "download_cpu_peak": 185.0,
+        "peak_cpu": 225.0,
+        "peak_mem_mb": 114.2,
+        "upload_loss_percent": 2.913447542268503,
+        "download_loss_percent": 14.635315094444755,
+        "upload_jitter_ms": 0.1418615622077725,
+        "download_jitter_ms": 0.058224552855693036
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [Single Stream]",
@@ -3225,18 +3185,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 144.38,
-        "download_mbps": 122.19,
-        "upload_cpu_avg": 185.4,
-        "upload_cpu_peak": 226.0,
-        "download_cpu_avg": 164.1,
-        "download_cpu_peak": 209.0,
-        "peak_cpu": 226.0,
-        "peak_mem_mb": 116.3,
-        "upload_loss_percent": 18.53266286635831,
-        "download_loss_percent": 30.596910700818412,
-        "upload_jitter_ms": 0.07704342038998606,
-        "download_jitter_ms": 0.04506512361340122
+        "upload_mbps": 149.37,
+        "download_mbps": 132.98,
+        "upload_cpu_avg": 120.6,
+        "upload_cpu_peak": 225.0,
+        "download_cpu_avg": 105.2,
+        "download_cpu_peak": 216.0,
+        "peak_cpu": 225.0,
+        "peak_mem_mb": 111.6,
+        "upload_loss_percent": 10.2,
+        "download_loss_percent": 16.6,
+        "upload_jitter_ms": 0.11,
+        "download_jitter_ms": 0.07
       },
       {
         "name": "Hev (MTU 1500) [UDP] [P=8]",
@@ -3245,18 +3205,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 186.89,
-        "download_mbps": 200.12,
-        "upload_cpu_avg": 132.0,
-        "upload_cpu_peak": 208.5,
-        "download_cpu_avg": 114.2,
-        "download_cpu_peak": 171.5,
-        "peak_cpu": 208.5,
-        "peak_mem_mb": 110.65,
-        "upload_loss_percent": 0.081756075708366,
-        "download_loss_percent": 0.0011158223610801161,
-        "upload_jitter_ms": 1.05,
-        "download_jitter_ms": 0.63
+        "upload_mbps": 198.82,
+        "download_mbps": 193.18,
+        "upload_cpu_avg": 53.7,
+        "upload_cpu_peak": 174.0,
+        "download_cpu_avg": 44.8,
+        "download_cpu_peak": 159.0,
+        "peak_cpu": 174.0,
+        "peak_mem_mb": 122.4,
+        "upload_loss_percent": 0.1,
+        "download_loss_percent": 0.0,
+        "upload_jitter_ms": 0.7,
+        "download_jitter_ms": 0.72
       },
       {
         "name": "Xray TUN (MTU 1500) [UDP] [P=8]",
@@ -3285,18 +3245,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.66,
-        "download_mbps": 200.16,
-        "upload_cpu_avg": 195.9,
-        "upload_cpu_peak": 226.0,
-        "download_cpu_avg": 153.6,
+        "upload_mbps": 132.81,
+        "download_mbps": 199.98,
+        "upload_cpu_avg": 139.4,
+        "upload_cpu_peak": 215.0,
+        "download_cpu_avg": 179.2,
         "download_cpu_peak": 216.0,
-        "peak_cpu": 226.0,
-        "peak_mem_mb": 115.2,
-        "upload_loss_percent": 0.007839623698062494,
+        "peak_cpu": 216.0,
+        "peak_mem_mb": 116.2,
+        "upload_loss_percent": 0.890297437735173,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.7023178845060685,
-        "download_jitter_ms": 0.69196404480798
+        "upload_jitter_ms": 1.0695848685274731,
+        "download_jitter_ms": 0.7259961028322504
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [P=8]",
@@ -3305,18 +3265,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.33,
-        "download_mbps": 197.91,
-        "upload_cpu_avg": 192.3,
-        "upload_cpu_peak": 238.0,
-        "download_cpu_avg": 164.3,
-        "download_cpu_peak": 218.0,
-        "peak_cpu": 238.0,
-        "peak_mem_mb": 116.3,
-        "upload_loss_percent": 0.20327024302833463,
-        "download_loss_percent": 0.972371244635193,
-        "upload_jitter_ms": 0.7422180182412972,
-        "download_jitter_ms": 0.5190661450520557
+        "upload_mbps": 142.01,
+        "download_mbps": 194.75,
+        "upload_cpu_avg": 74.0,
+        "upload_cpu_peak": 151.0,
+        "download_cpu_avg": 117.4,
+        "download_cpu_peak": 315.0,
+        "peak_cpu": 315.0,
+        "peak_mem_mb": 125.9,
+        "upload_loss_percent": 28.8,
+        "download_loss_percent": 2.5,
+        "upload_jitter_ms": 0.69,
+        "download_jitter_ms": 0.48
       },
       {
         "name": "USB Baseline (No VPN) [Single Stream]",
@@ -3325,14 +3285,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 692.0,
-        "download_mbps": 381.48,
-        "upload_cpu_avg": 0.8,
-        "upload_cpu_peak": 4.0,
+        "upload_mbps": 647.61,
+        "download_mbps": 369.84,
+        "upload_cpu_avg": 0.0,
+        "upload_cpu_peak": 0.0,
         "download_cpu_avg": 0.0,
         "download_cpu_peak": 0.0,
-        "peak_cpu": 4.0,
-        "peak_mem_mb": 92.2
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 110.4
       },
       {
         "name": "USB Baseline (No VPN) [P=8]",
@@ -3341,14 +3301,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 758.48,
-        "download_mbps": 424.92,
-        "upload_cpu_avg": 0.0,
-        "upload_cpu_peak": 0.0,
-        "download_cpu_avg": 0.25,
-        "download_cpu_peak": 2.5,
-        "peak_cpu": 2.5,
-        "peak_mem_mb": 91.65
+        "upload_mbps": 753.39,
+        "download_mbps": 437.06,
+        "upload_cpu_avg": 0.6,
+        "upload_cpu_peak": 3.0,
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 3.0,
+        "peak_mem_mb": 108.0
       },
       {
         "name": "Hev (MTU 1500) [Single Stream]",
@@ -3357,14 +3317,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 638.39,
-        "download_mbps": 303.01,
-        "upload_cpu_avg": 48.45,
-        "upload_cpu_peak": 83.0,
-        "download_cpu_avg": 60.05,
-        "download_cpu_peak": 74.5,
-        "peak_cpu": 83.0,
-        "peak_mem_mb": 100.45
+        "upload_mbps": 631.08,
+        "download_mbps": 295.06,
+        "upload_cpu_avg": 48.3,
+        "upload_cpu_peak": 88.0,
+        "download_cpu_avg": 57.0,
+        "download_cpu_peak": 73.0,
+        "peak_cpu": 88.0,
+        "peak_mem_mb": 96.8
       },
       {
         "name": "Xray TUN (MTU 1500) [Single Stream]",
@@ -3389,14 +3349,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 643.88,
-        "download_mbps": 177.25,
-        "upload_cpu_avg": 54.6,
-        "upload_cpu_peak": 101.6,
-        "download_cpu_avg": 83.9,
-        "download_cpu_peak": 144.0,
-        "peak_cpu": 144.0,
-        "peak_mem_mb": 111.45
+        "upload_mbps": 594.6,
+        "download_mbps": 160.81,
+        "upload_cpu_avg": 56.0,
+        "upload_cpu_peak": 100.0,
+        "download_cpu_avg": 83.2,
+        "download_cpu_peak": 143.0,
+        "peak_cpu": 143.0,
+        "peak_mem_mb": 110.5
       },
       {
         "name": "MipsTUN (MTU 1500) [Single Stream]",
@@ -3405,14 +3365,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 608.62,
-        "download_mbps": 232.4,
-        "upload_cpu_avg": 111.85,
-        "upload_cpu_peak": 205.0,
-        "download_cpu_avg": 102.25,
-        "download_cpu_peak": 177.5,
-        "peak_cpu": 205.0,
-        "peak_mem_mb": 129.85
+        "upload_mbps": 582.89,
+        "download_mbps": 273.39,
+        "upload_cpu_avg": 109.9,
+        "upload_cpu_peak": 210.0,
+        "download_cpu_avg": 120.9,
+        "download_cpu_peak": 188.0,
+        "peak_cpu": 210.0,
+        "peak_mem_mb": 130.2
       },
       {
         "name": "Hev (MTU 9000) [Single Stream]",
@@ -3421,14 +3381,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 647.39,
-        "download_mbps": 358.3,
-        "upload_cpu_avg": 38.65,
+        "upload_mbps": 622.73,
+        "download_mbps": 351.4,
+        "upload_cpu_avg": 35.6,
         "upload_cpu_peak": 64.0,
-        "download_cpu_avg": 54.55,
-        "download_cpu_peak": 70.0,
-        "peak_cpu": 70.0,
-        "peak_mem_mb": 97.35
+        "download_cpu_avg": 49.0,
+        "download_cpu_peak": 68.0,
+        "peak_cpu": 68.0,
+        "peak_mem_mb": 109.7
       },
       {
         "name": "Xray TUN (MTU 9000) [Single Stream]",
@@ -3453,14 +3413,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 490.16,
-        "download_mbps": 361.88,
-        "upload_cpu_avg": 31.55,
-        "upload_cpu_peak": 77.9,
-        "download_cpu_avg": 84.65,
-        "download_cpu_peak": 116.0,
-        "peak_cpu": 116.0,
-        "peak_mem_mb": 111.65
+        "upload_mbps": 625.19,
+        "download_mbps": 364.19,
+        "upload_cpu_avg": 37.2,
+        "upload_cpu_peak": 74.0,
+        "download_cpu_avg": 84.4,
+        "download_cpu_peak": 111.0,
+        "peak_cpu": 111.0,
+        "peak_mem_mb": 111.3
       },
       {
         "name": "MipsTUN (MTU 9000) [Single Stream]",
@@ -3469,14 +3429,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 1,
-        "upload_mbps": 492.88,
-        "download_mbps": 323.97,
-        "upload_cpu_avg": 50.2,
-        "upload_cpu_peak": 107.0,
-        "download_cpu_avg": 97.95,
-        "download_cpu_peak": 150.0,
-        "peak_cpu": 150.0,
-        "peak_mem_mb": 126.35
+        "upload_mbps": 615.12,
+        "download_mbps": 330.0,
+        "upload_cpu_avg": 44.2,
+        "upload_cpu_peak": 140.0,
+        "download_cpu_avg": 72.8,
+        "download_cpu_peak": 161.0,
+        "peak_cpu": 161.0,
+        "peak_mem_mb": 109.0
       },
       {
         "name": "Hev (MTU 1500) [P=8]",
@@ -3485,14 +3445,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 514.52,
-        "download_mbps": 301.95,
-        "upload_cpu_avg": 42.25,
-        "upload_cpu_peak": 93.5,
-        "download_cpu_avg": 64.75,
-        "download_cpu_peak": 90.0,
-        "peak_cpu": 93.5,
-        "peak_mem_mb": 98.2
+        "upload_mbps": 705.16,
+        "download_mbps": 302.76,
+        "upload_cpu_avg": 49.3,
+        "upload_cpu_peak": 99.0,
+        "download_cpu_avg": 59.7,
+        "download_cpu_peak": 83.0,
+        "peak_cpu": 99.0,
+        "peak_mem_mb": 98.3
       },
       {
         "name": "Xray TUN (MTU 1500) [P=8]",
@@ -3517,14 +3477,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 220.77,
-        "download_mbps": 395.75,
-        "upload_cpu_avg": 64.2,
-        "upload_cpu_peak": 121.5,
-        "download_cpu_avg": 135.3,
-        "download_cpu_peak": 222.5,
-        "peak_cpu": 222.5,
-        "peak_mem_mb": 111.8
+        "upload_mbps": 221.29,
+        "download_mbps": 363.65,
+        "upload_cpu_avg": 63.1,
+        "upload_cpu_peak": 90.0,
+        "download_cpu_avg": 125.1,
+        "download_cpu_peak": 187.0,
+        "peak_cpu": 187.0,
+        "peak_mem_mb": 115.6
       },
       {
         "name": "MipsTUN (MTU 1500) [P=8]",
@@ -3533,14 +3493,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 504.16,
-        "download_mbps": 158.94,
-        "upload_cpu_avg": 107.05,
-        "upload_cpu_peak": 221.5,
-        "download_cpu_avg": 99.25,
-        "download_cpu_peak": 176.5,
-        "peak_cpu": 221.5,
-        "peak_mem_mb": 150.8
+        "upload_mbps": 511.82,
+        "download_mbps": 193.11,
+        "upload_cpu_avg": 75.3,
+        "upload_cpu_peak": 214.0,
+        "download_cpu_avg": 76.1,
+        "download_cpu_peak": 181.0,
+        "peak_cpu": 214.0,
+        "peak_mem_mb": 128.3
       },
       {
         "name": "Hev (MTU 9000) [P=8]",
@@ -3549,14 +3509,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 513.97,
-        "download_mbps": 362.6,
-        "upload_cpu_avg": 33.85,
-        "upload_cpu_peak": 63.5,
-        "download_cpu_avg": 61.7,
-        "download_cpu_peak": 92.0,
-        "peak_cpu": 92.0,
-        "peak_mem_mb": 98.25
+        "upload_mbps": 675.46,
+        "download_mbps": 421.72,
+        "upload_cpu_avg": 22.2,
+        "upload_cpu_peak": 61.0,
+        "download_cpu_avg": 39.7,
+        "download_cpu_peak": 59.0,
+        "peak_cpu": 61.0,
+        "peak_mem_mb": 129.3
       },
       {
         "name": "Xray TUN (MTU 9000) [P=8]",
@@ -3581,14 +3541,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 505.8,
-        "download_mbps": 381.72,
-        "upload_cpu_avg": 37.25,
-        "upload_cpu_peak": 120.1,
-        "download_cpu_avg": 95.95,
-        "download_cpu_peak": 136.5,
-        "peak_cpu": 136.5,
-        "peak_mem_mb": 152.2
+        "upload_mbps": 682.42,
+        "download_mbps": 394.1,
+        "upload_cpu_avg": 48.8,
+        "upload_cpu_peak": 148.0,
+        "download_cpu_avg": 98.8,
+        "download_cpu_peak": 140.0,
+        "peak_cpu": 148.0,
+        "peak_mem_mb": 152.1
       },
       {
         "name": "MipsTUN (MTU 9000) [P=8]",
@@ -3597,14 +3557,14 @@
         "medium": "USB 3.2 / 4.0",
         "network": "tcp",
         "parallel": 8,
-        "upload_mbps": 510.15,
-        "download_mbps": 393.05,
-        "upload_cpu_avg": 55.85,
-        "upload_cpu_peak": 183.5,
-        "download_cpu_avg": 112.4,
-        "download_cpu_peak": 162.5,
-        "peak_cpu": 184.0,
-        "peak_mem_mb": 191.05
+        "upload_mbps": 674.57,
+        "download_mbps": 388.71,
+        "upload_cpu_avg": 38.5,
+        "upload_cpu_peak": 166.0,
+        "download_cpu_avg": 58.1,
+        "download_cpu_peak": 171.0,
+        "peak_cpu": 171.0,
+        "peak_mem_mb": 137.2
       },
       {
         "name": "USB Baseline (No VPN) [UDP] [Single Stream]",
@@ -3613,18 +3573,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 199.88,
-        "download_mbps": 200.01,
-        "upload_cpu_avg": 0.75,
-        "upload_cpu_peak": 4.35,
+        "upload_mbps": 199.92,
+        "download_mbps": 200.02,
+        "upload_cpu_avg": 0.0,
+        "upload_cpu_peak": 0.0,
         "download_cpu_avg": 0.0,
         "download_cpu_peak": 0.0,
-        "peak_cpu": 4.35,
-        "peak_mem_mb": 92.45,
-        "upload_loss_percent": 0.04,
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 150.1,
+        "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.01,
-        "download_jitter_ms": 0.08
+        "upload_jitter_ms": 0.00790160663720082,
+        "download_jitter_ms": 0.06784322748437976
       },
       {
         "name": "USB Baseline (No VPN) [UDP] [P=8]",
@@ -3634,17 +3594,17 @@
         "network": "udp",
         "parallel": 8,
         "upload_mbps": 199.9,
-        "download_mbps": 200.0,
+        "download_mbps": 200.02,
         "upload_cpu_avg": 0.0,
         "upload_cpu_peak": 0.0,
-        "download_cpu_avg": 0.2,
-        "download_cpu_peak": 2.0,
-        "peak_cpu": 2.0,
-        "peak_mem_mb": 91.65,
+        "download_cpu_avg": 0.0,
+        "download_cpu_peak": 0.0,
+        "peak_cpu": 0.0,
+        "peak_mem_mb": 150.0,
         "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.08,
-        "download_jitter_ms": 0.53
+        "upload_jitter_ms": 0.10315951317598762,
+        "download_jitter_ms": 0.5445132864105424
       },
       {
         "name": "Hev (MTU 1500) [UDP] [Single Stream]",
@@ -3653,18 +3613,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 199.57,
-        "download_mbps": 137.12,
-        "upload_cpu_avg": 159.25,
-        "upload_cpu_peak": 192.0,
-        "download_cpu_avg": 129.85,
-        "download_cpu_peak": 168.5,
-        "peak_cpu": 192.0,
-        "peak_mem_mb": 106.4,
-        "upload_loss_percent": 0.05,
-        "download_loss_percent": 20.77,
-        "upload_jitter_ms": 0.42,
-        "download_jitter_ms": 0.05
+        "upload_mbps": 199.74,
+        "download_mbps": 121.32,
+        "upload_cpu_avg": 133.2,
+        "upload_cpu_peak": 184.0,
+        "download_cpu_avg": 115.3,
+        "download_cpu_peak": 168.0,
+        "peak_cpu": 184.0,
+        "peak_mem_mb": 160.8,
+        "upload_loss_percent": 0.0,
+        "download_loss_percent": 16.8,
+        "upload_jitter_ms": 0.05,
+        "download_jitter_ms": 0.07
       },
       {
         "name": "Xray TUN (MTU 1500) [UDP] [Single Stream]",
@@ -3693,18 +3653,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 198.11,
-        "download_mbps": 118.78,
-        "upload_cpu_avg": 190.8,
-        "upload_cpu_peak": 240.0,
-        "download_cpu_avg": 151.8,
-        "download_cpu_peak": 182.0,
-        "peak_cpu": 240.0,
-        "peak_mem_mb": 112.6,
-        "upload_loss_percent": 0.9076605204069634,
-        "download_loss_percent": 31.494839888472306,
-        "upload_jitter_ms": 0.0416126718793395,
-        "download_jitter_ms": 0.04248523380737933
+        "upload_mbps": 197.93,
+        "download_mbps": 117.64,
+        "upload_cpu_avg": 188.0,
+        "upload_cpu_peak": 224.0,
+        "download_cpu_avg": 153.0,
+        "download_cpu_peak": 177.0,
+        "peak_cpu": 224.0,
+        "peak_mem_mb": 158.8,
+        "upload_loss_percent": 0.7491181904708583,
+        "download_loss_percent": 22.513194157749684,
+        "upload_jitter_ms": 0.0857904391167034,
+        "download_jitter_ms": 0.270974808136231
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [Single Stream]",
@@ -3713,18 +3673,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 198.58,
-        "download_mbps": 130.73,
-        "upload_cpu_avg": 193.5,
-        "upload_cpu_peak": 222.0,
-        "download_cpu_avg": 163.3,
-        "download_cpu_peak": 210.0,
-        "peak_cpu": 222.0,
-        "peak_mem_mb": 114.6,
-        "upload_loss_percent": 0.07895178901394255,
-        "download_loss_percent": 26.75236980755987,
-        "upload_jitter_ms": 0.06004109100339069,
-        "download_jitter_ms": 0.045121539536809065
+        "upload_mbps": 150.68,
+        "download_mbps": 72.89,
+        "upload_cpu_avg": 125.7,
+        "upload_cpu_peak": 228.0,
+        "download_cpu_avg": 97.8,
+        "download_cpu_peak": 191.0,
+        "peak_cpu": 228.0,
+        "peak_mem_mb": 117.4,
+        "upload_loss_percent": 6.6,
+        "download_loss_percent": 27.8,
+        "upload_jitter_ms": 0.43,
+        "download_jitter_ms": 0.09
       },
       {
         "name": "Hev (MTU 1500) [UDP] [P=8]",
@@ -3733,18 +3693,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.9,
-        "download_mbps": 200.43,
-        "upload_cpu_avg": 135.3,
-        "upload_cpu_peak": 203.5,
-        "download_cpu_avg": 122.7,
-        "download_cpu_peak": 175.0,
-        "peak_cpu": 203.5,
-        "peak_mem_mb": 104.6,
+        "upload_mbps": 199.15,
+        "download_mbps": 193.24,
+        "upload_cpu_avg": 77.3,
+        "upload_cpu_peak": 254.0,
+        "download_cpu_avg": 72.6,
+        "download_cpu_peak": 262.0,
+        "peak_cpu": 262.0,
+        "peak_mem_mb": 118.5,
         "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.21,
-        "download_jitter_ms": 0.43
+        "upload_jitter_ms": 0.5,
+        "download_jitter_ms": 0.61
       },
       {
         "name": "Xray TUN (MTU 1500) [UDP] [P=8]",
@@ -3773,18 +3733,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.9,
-        "download_mbps": 200.04,
-        "upload_cpu_avg": 203.2,
-        "upload_cpu_peak": 238.0,
-        "download_cpu_avg": 189.8,
-        "download_cpu_peak": 236.0,
-        "peak_cpu": 238.0,
-        "peak_mem_mb": 64.4,
+        "upload_mbps": 198.13,
+        "download_mbps": 198.89,
+        "upload_cpu_avg": 201.5,
+        "upload_cpu_peak": 225.0,
+        "download_cpu_avg": 184.4,
+        "download_cpu_peak": 215.0,
+        "peak_cpu": 225.0,
+        "peak_mem_mb": 159.4,
         "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.393748336176429,
-        "download_jitter_ms": 0.44041188452719526
+        "upload_jitter_ms": 1.3695449429217732,
+        "download_jitter_ms": 0.6523612246431756
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [P=8]",
@@ -3793,18 +3753,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.93,
-        "download_mbps": 193.66,
-        "upload_cpu_avg": 204.5,
-        "upload_cpu_peak": 239.0,
-        "download_cpu_avg": 192.1,
-        "download_cpu_peak": 246.0,
-        "peak_cpu": 246.0,
-        "peak_mem_mb": 73.7,
+        "upload_mbps": 199.73,
+        "download_mbps": 182.43,
+        "upload_cpu_avg": 127.5,
+        "upload_cpu_peak": 261.0,
+        "download_cpu_avg": 122.9,
+        "download_cpu_peak": 285.0,
+        "peak_cpu": 285.0,
+        "peak_mem_mb": 120.7,
         "upload_loss_percent": 0.0,
-        "download_loss_percent": 3.1265375497607013,
-        "upload_jitter_ms": 0.30228617013266534,
-        "download_jitter_ms": 0.407279219748306
+        "download_loss_percent": 8.6,
+        "upload_jitter_ms": 0.46,
+        "download_jitter_ms": 0.92
       },
       {
         "name": "Loopback Baseline (No VPN) [Single Stream]",
@@ -3974,31 +3934,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 97.6,
+            "pss_mb": 120.1,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 104.8,
-            "delta_mb": 7.2
+            "pss_mb": 127.9,
+            "delta_mb": 7.8
           },
           {
             "connections": 500,
-            "pss_mb": 107.8,
-            "delta_mb": 10.2
+            "pss_mb": 131.6,
+            "delta_mb": 11.5
           },
           {
             "connections": 750,
-            "pss_mb": 111.2,
-            "delta_mb": 13.6
+            "pss_mb": 134.6,
+            "delta_mb": 14.5
           },
           {
             "connections": 1000,
-            "pss_mb": 114.1,
-            "delta_mb": 16.5
+            "pss_mb": 137.3,
+            "delta_mb": 17.2
           }
         ],
-        "slope_kib_per_conn": 16.896
+        "slope_kib_per_conn": 17.61
       },
       {
         "name": "HEV UDP Idle Flows (0-1000)",
@@ -4008,31 +3968,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 99.2,
+            "pss_mb": 120.8,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 104.1,
-            "delta_mb": 4.9
+            "pss_mb": 126.1,
+            "delta_mb": 5.3
           },
           {
             "connections": 500,
-            "pss_mb": 108.3,
-            "delta_mb": 9.1
+            "pss_mb": 129.8,
+            "delta_mb": 9.0
           },
           {
             "connections": 750,
-            "pss_mb": 112.3,
-            "delta_mb": 13.1
+            "pss_mb": 134.1,
+            "delta_mb": 13.3
           },
           {
             "connections": 1000,
-            "pss_mb": 115.9,
-            "delta_mb": 16.7
+            "pss_mb": 137.4,
+            "delta_mb": 16.6
           }
         ],
-        "slope_kib_per_conn": 17.101
+        "slope_kib_per_conn": 17.0
       },
       {
         "name": "XRAY TCP Idle Flows (0-1000)",
@@ -4110,31 +4070,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 104.6,
+            "pss_mb": 156.0,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 116.4,
-            "delta_mb": 11.8
+            "pss_mb": 156.6,
+            "delta_mb": 0.6
           },
           {
             "connections": 500,
-            "pss_mb": 126.6,
-            "delta_mb": 22.0
+            "pss_mb": 157.8,
+            "delta_mb": 1.8
           },
           {
             "connections": 750,
-            "pss_mb": 140.9,
-            "delta_mb": 36.3
+            "pss_mb": 158.0,
+            "delta_mb": 2.0
           },
           {
             "connections": 1000,
-            "pss_mb": 150.2,
-            "delta_mb": 45.6
+            "pss_mb": 165.5,
+            "delta_mb": 9.5
           }
         ],
-        "slope_kib_per_conn": 46.694
+        "slope_kib_per_conn": 9.728
       },
       {
         "name": "SING UDP Idle Flows (0-1000)",
@@ -4144,31 +4104,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 100.9,
+            "pss_mb": 166.6,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 106.8,
-            "delta_mb": 5.9
+            "pss_mb": 165.6,
+            "delta_mb": -1.0
           },
           {
             "connections": 500,
-            "pss_mb": 114.0,
-            "delta_mb": 13.1
+            "pss_mb": 169.4,
+            "delta_mb": 2.8
           },
           {
             "connections": 750,
-            "pss_mb": 120.8,
-            "delta_mb": 19.9
+            "pss_mb": 170.0,
+            "delta_mb": 3.4
           },
           {
             "connections": 1000,
-            "pss_mb": 122.1,
-            "delta_mb": 21.2
+            "pss_mb": 169.9,
+            "delta_mb": 3.3
           }
         ],
-        "slope_kib_per_conn": 21.709
+        "slope_kib_per_conn": 3.379
       },
       {
         "name": "MIPS TCP Idle Flows (0-1000)",
@@ -4178,31 +4138,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 104.1,
+            "pss_mb": 123.3,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 118.5,
-            "delta_mb": 14.4
+            "pss_mb": 134.9,
+            "delta_mb": 11.6
           },
           {
             "connections": 500,
-            "pss_mb": 136.9,
-            "delta_mb": 32.8
+            "pss_mb": 144.9,
+            "delta_mb": 21.6
           },
           {
             "connections": 750,
-            "pss_mb": 143.6,
-            "delta_mb": 39.5
+            "pss_mb": 165.3,
+            "delta_mb": 42.0
           },
           {
             "connections": 1000,
-            "pss_mb": 156.0,
-            "delta_mb": 51.9
+            "pss_mb": 171.7,
+            "delta_mb": 48.4
           }
         ],
-        "slope_kib_per_conn": 53.146
+        "slope_kib_per_conn": 49.56
       },
       {
         "name": "MIPS UDP Idle Flows (0-1000)",
@@ -4212,31 +4172,26 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 102.0,
+            "pss_mb": 124.7,
             "delta_mb": 0.0
           },
           {
-            "connections": 250,
-            "pss_mb": 116.6,
-            "delta_mb": 14.6
-          },
-          {
             "connections": 500,
-            "pss_mb": 133.2,
-            "delta_mb": 31.2
+            "pss_mb": 133.5,
+            "delta_mb": 8.8
           },
           {
             "connections": 750,
             "pss_mb": 148.2,
-            "delta_mb": 46.2
+            "delta_mb": 23.5
           },
           {
             "connections": 1000,
-            "pss_mb": 162.7,
-            "delta_mb": 60.7
+            "pss_mb": 153.9,
+            "delta_mb": 29.2
           }
         ],
-        "slope_kib_per_conn": 62.157
+        "slope_kib_per_conn": 29.9
       }
     ]
   }
