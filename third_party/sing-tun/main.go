@@ -7,8 +7,14 @@ import "C"
 
 import (
 	"context"
+	"flag"
+	"fmt"
+	"log"
+	"os"
+	"os/signal"
 	"sync"
 	"sync/atomic"
+	"syscall"
 	"time"
 
 	tun "github.com/sagernet/sing-tun"
@@ -170,4 +176,63 @@ func singTunGetStats(txPkts *C.uint64_t, txBytes *C.uint64_t, rxPkts *C.uint64_t
 	}
 }
 
-func main() {}
+func runCLI() {
+	tunName := flag.String("tun", "tun0", "TUN interface name")
+	socksHost := flag.String("socks-host", "127.0.0.1", "SOCKS5 server host")
+	socksPort := flag.Int("socks-port", 10800, "SOCKS5 server port")
+	mtu := flag.Int("mtu", 1500, "MTU")
+	flag.Parse()
+
+	tunDev, err := tun.New(tun.Options{
+		Name:                      *tunName,
+		MTU:                       uint32(*mtu),
+		AutoRoute:                 false,
+		StrictRoute:               false,
+		EXP_ExternalConfiguration: true,
+	})
+	if err != nil {
+		log.Fatalf("tun.New error: %v", err)
+	}
+	defer tunDev.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	socksServerAddr := M.ParseSocksaddrHostPort(*socksHost, uint16(*socksPort))
+	socksClient := socks.NewClient(N.SystemDialer, socksServerAddr, socks.Version5, "", "")
+
+	h := newSingTunHandler(socksClient, &globalStats)
+
+	stack, err := tun.NewStack("go", tun.StackOptions{
+		Context:     ctx,
+		Tun:         tunDev,
+		TunOptions:  tun.Options{MTU: uint32(*mtu)},
+		UDPTimeout:  30 * time.Second,
+		ICMPTimeout: 10 * time.Second,
+		Handler:     h,
+	})
+	if err != nil {
+		log.Fatalf("tun.NewStack error: %v", err)
+	}
+	defer stack.Close()
+
+	if err := stack.Start(); err != nil {
+		log.Fatalf("stack.Start error: %v", err)
+	}
+	if err := tunDev.Start(); err != nil {
+		log.Fatalf("tunDev.Start error: %v", err)
+	}
+
+	fmt.Printf("SingTUN running on %s -> %s:%d\n", *tunName, *socksHost, *socksPort)
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+	fmt.Println("SingTUN stopping...")
+}
+
+func main() {
+	if len(os.Args) > 1 {
+		runCLI()
+	}
+}

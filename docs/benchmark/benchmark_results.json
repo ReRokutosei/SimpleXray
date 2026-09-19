@@ -1154,31 +1154,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 99.1,
+            "pss_mb": 95.6,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 106.5,
-            "delta_mb": 7.4
+            "pss_mb": 104.5,
+            "delta_mb": 8.9
           },
           {
             "connections": 500,
-            "pss_mb": 109.4,
-            "delta_mb": 10.3
+            "pss_mb": 107.6,
+            "delta_mb": 12.0
           },
           {
             "connections": 750,
-            "pss_mb": 112.7,
-            "delta_mb": 13.6
+            "pss_mb": 110.8,
+            "delta_mb": 15.2
           },
           {
             "connections": 1000,
-            "pss_mb": 115.8,
-            "delta_mb": 16.7
+            "pss_mb": 113.7,
+            "delta_mb": 18.1
           }
         ],
-        "slope_kib_per_conn": 17.101
+        "slope_kib_per_conn": 18.534
       },
       {
         "name": "HEV UDP Idle Flows (0-1000)",
@@ -1188,31 +1188,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 148.3,
+            "pss_mb": 98.2,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 153.9,
-            "delta_mb": 5.6
+            "pss_mb": 103.0,
+            "delta_mb": 4.8
           },
           {
             "connections": 500,
-            "pss_mb": 158.4,
-            "delta_mb": 10.1
+            "pss_mb": 107.7,
+            "delta_mb": 9.5
           },
           {
             "connections": 750,
-            "pss_mb": 161.6,
-            "delta_mb": 13.3
+            "pss_mb": 111.0,
+            "delta_mb": 12.8
           },
           {
             "connections": 1000,
-            "pss_mb": 165.9,
-            "delta_mb": 17.6
+            "pss_mb": 115.5,
+            "delta_mb": 17.3
           }
         ],
-        "slope_kib_per_conn": 18.022
+        "slope_kib_per_conn": 17.715
       },
       {
         "name": "XRAY TCP Idle Flows (0-1000)",
@@ -1222,31 +1222,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 93.7,
+            "pss_mb": 98.4,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 102.2,
-            "delta_mb": 8.5
-          },
-          {
-            "connections": 500,
-            "pss_mb": 97.0,
+            "pss_mb": 101.7,
             "delta_mb": 3.3
           },
           {
+            "connections": 500,
+            "pss_mb": 101.2,
+            "delta_mb": 2.8
+          },
+          {
             "connections": 750,
-            "pss_mb": 98.3,
-            "delta_mb": 4.6
+            "pss_mb": 101.8,
+            "delta_mb": 3.4
           },
           {
             "connections": 1000,
-            "pss_mb": 98.2,
-            "delta_mb": 4.5
+            "pss_mb": 100.9,
+            "delta_mb": 2.5
           }
         ],
-        "slope_kib_per_conn": 4.608
+        "slope_kib_per_conn": 2.56
       },
       {
         "name": "XRAY UDP Idle Flows (0-1000)",
@@ -1256,31 +1256,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 149.4,
+            "pss_mb": 98.9,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 154.6,
-            "delta_mb": 5.2
-          },
-          {
-            "connections": 500,
-            "pss_mb": 148.7,
-            "delta_mb": -0.7
-          },
-          {
-            "connections": 750,
-            "pss_mb": 149.4,
+            "pss_mb": 98.9,
             "delta_mb": 0.0
           },
           {
+            "connections": 500,
+            "pss_mb": 100.6,
+            "delta_mb": 1.7
+          },
+          {
+            "connections": 750,
+            "pss_mb": 104.1,
+            "delta_mb": 5.2
+          },
+          {
             "connections": 1000,
-            "pss_mb": 153.1,
-            "delta_mb": 3.7
+            "pss_mb": 103.6,
+            "delta_mb": 4.7
           }
         ],
-        "slope_kib_per_conn": 3.789
+        "slope_kib_per_conn": 4.813
       },
       {
         "name": "SING TCP Idle Flows (0-1000)",
@@ -1290,31 +1290,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 101.9,
+            "pss_mb": 103.3,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 119.7,
-            "delta_mb": 17.8
+            "pss_mb": 118.8,
+            "delta_mb": 15.5
           },
           {
             "connections": 500,
-            "pss_mb": 128.2,
-            "delta_mb": 26.3
+            "pss_mb": 136.9,
+            "delta_mb": 33.6
           },
           {
             "connections": 750,
-            "pss_mb": 142.7,
-            "delta_mb": 40.8
+            "pss_mb": 153.4,
+            "delta_mb": 50.1
           },
           {
             "connections": 1000,
-            "pss_mb": 149.7,
-            "delta_mb": 47.8
+            "pss_mb": 149.3,
+            "delta_mb": 46.0
           }
         ],
-        "slope_kib_per_conn": 48.947
+        "slope_kib_per_conn": 47.104
       },
       {
         "name": "SING UDP Idle Flows (0-1000)",
@@ -1324,31 +1324,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 150.7,
+            "pss_mb": 121.4,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 155.8,
-            "delta_mb": 5.1
+            "pss_mb": 105.8,
+            "delta_mb": -15.6
           },
           {
             "connections": 500,
-            "pss_mb": 152.2,
-            "delta_mb": 1.5
+            "pss_mb": 114.2,
+            "delta_mb": -7.2
           },
           {
             "connections": 750,
-            "pss_mb": 158.9,
-            "delta_mb": 8.2
+            "pss_mb": 120.7,
+            "delta_mb": -0.7
           },
           {
             "connections": 1000,
-            "pss_mb": 167.5,
-            "delta_mb": 16.8
+            "pss_mb": 127.9,
+            "delta_mb": 6.5
           }
         ],
-        "slope_kib_per_conn": 17.203
+        "slope_kib_per_conn": 6.656
       },
       {
         "name": "MIPS TCP Idle Flows (0-1000)",
@@ -1358,31 +1358,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 156.2,
+            "pss_mb": 103.6,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 172.8,
-            "delta_mb": 16.6
+            "pss_mb": 116.9,
+            "delta_mb": 13.3
           },
           {
             "connections": 500,
-            "pss_mb": 182.7,
-            "delta_mb": 26.5
+            "pss_mb": 131.4,
+            "delta_mb": 27.8
           },
           {
             "connections": 750,
-            "pss_mb": 201.8,
-            "delta_mb": 45.6
+            "pss_mb": 143.3,
+            "delta_mb": 39.7
           },
           {
             "connections": 1000,
-            "pss_mb": 208.3,
-            "delta_mb": 52.1
+            "pss_mb": 155.5,
+            "delta_mb": 51.9
           }
         ],
-        "slope_kib_per_conn": 53.35
+        "slope_kib_per_conn": 53.146
       },
       {
         "name": "MIPS UDP Idle Flows (0-1000)",
@@ -1392,31 +1392,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 126.5,
+            "pss_mb": 99.9,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 118.5,
-            "delta_mb": -8.0
+            "pss_mb": 117.0,
+            "delta_mb": 17.1
           },
           {
             "connections": 500,
-            "pss_mb": 134.3,
-            "delta_mb": 7.8
+            "pss_mb": 134.8,
+            "delta_mb": 34.9
           },
           {
             "connections": 750,
-            "pss_mb": 146.8,
-            "delta_mb": 20.3
+            "pss_mb": 147.7,
+            "delta_mb": 47.8
           },
           {
             "connections": 1000,
-            "pss_mb": 163.4,
-            "delta_mb": 36.9
+            "pss_mb": 163.9,
+            "delta_mb": 64.0
           }
         ],
-        "slope_kib_per_conn": 37.786
+        "slope_kib_per_conn": 65.536
       }
     ],
     "round_2": [
@@ -1795,18 +1795,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 159.59,
-        "download_mbps": 122.41,
-        "upload_cpu_avg": 181.2,
-        "upload_cpu_peak": 222.0,
-        "download_cpu_avg": 152.7,
-        "download_cpu_peak": 185.0,
-        "peak_cpu": 222.0,
-        "peak_mem_mb": 117.2,
-        "upload_loss_percent": 9.765111005347293,
-        "download_loss_percent": 27.931736994864924,
-        "upload_jitter_ms": 0.05393466203257053,
-        "download_jitter_ms": 0.07184571773576166
+        "upload_mbps": 150.13,
+        "download_mbps": 124.79,
+        "upload_cpu_avg": 182.1,
+        "upload_cpu_peak": 226.0,
+        "download_cpu_avg": 152.2,
+        "download_cpu_peak": 186.0,
+        "peak_cpu": 226.0,
+        "peak_mem_mb": 117.7,
+        "upload_loss_percent": 15.274091494484574,
+        "download_loss_percent": 30.327937459196143,
+        "upload_jitter_ms": 0.0744298935065623,
+        "download_jitter_ms": 0.05446773291871127
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [Single Stream]",
@@ -1815,18 +1815,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 144.88,
-        "download_mbps": 121.69,
-        "upload_cpu_avg": 187.4,
-        "upload_cpu_peak": 230.0,
-        "download_cpu_avg": 159.7,
-        "download_cpu_peak": 212.0,
-        "peak_cpu": 230.0,
-        "peak_mem_mb": 134.1,
-        "upload_loss_percent": 17.150635843814083,
-        "download_loss_percent": 28.134605711730845,
-        "upload_jitter_ms": 0.06321555121092418,
-        "download_jitter_ms": 0.1310974650913042
+        "upload_mbps": 177.08,
+        "download_mbps": 128.22,
+        "upload_cpu_avg": 175.9,
+        "upload_cpu_peak": 227.0,
+        "download_cpu_avg": 161.4,
+        "download_cpu_peak": 216.0,
+        "peak_cpu": 227.0,
+        "peak_mem_mb": 0.0,
+        "upload_loss_percent": 2.732791255067984,
+        "download_loss_percent": 26.687183382577174,
+        "upload_jitter_ms": 0.285169448250492,
+        "download_jitter_ms": 0.10942000272450046
       },
       {
         "name": "Hev (MTU 1500) [UDP] [P=8]",
@@ -1875,18 +1875,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.66,
-        "download_mbps": 200.03,
-        "upload_cpu_avg": 195.4,
-        "upload_cpu_peak": 238.0,
-        "download_cpu_avg": 144.5,
-        "download_cpu_peak": 210.0,
-        "peak_cpu": 238.0,
-        "peak_mem_mb": 115.1,
-        "upload_loss_percent": 0.0,
+        "upload_mbps": 199.43,
+        "download_mbps": 200.0,
+        "upload_cpu_avg": 192.9,
+        "upload_cpu_peak": 222.0,
+        "download_cpu_avg": 164.8,
+        "download_cpu_peak": 218.0,
+        "peak_cpu": 222.0,
+        "peak_mem_mb": 115.0,
+        "upload_loss_percent": 0.13999328032254452,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.6313757723450896,
-        "download_jitter_ms": 0.562941424636626
+        "upload_jitter_ms": 0.6546716146024666,
+        "download_jitter_ms": 0.582607204340696
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [P=8]",
@@ -1895,18 +1895,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 166.03,
-        "download_mbps": 199.83,
-        "upload_cpu_avg": 201.9,
+        "upload_mbps": 199.73,
+        "download_mbps": 197.75,
+        "upload_cpu_avg": 197.1,
         "upload_cpu_peak": 228.0,
-        "download_cpu_avg": 188.2,
-        "download_cpu_peak": 230.0,
-        "peak_cpu": 230.0,
-        "peak_mem_mb": 130.1,
-        "upload_loss_percent": 0.050394758945069715,
-        "download_loss_percent": 0.2522515010006671,
-        "upload_jitter_ms": 1.1934001896826514,
-        "download_jitter_ms": 0.5607543852136705
+        "download_cpu_avg": 162.6,
+        "download_cpu_peak": 219.0,
+        "peak_cpu": 228.0,
+        "peak_mem_mb": 0.0,
+        "upload_loss_percent": 0.0,
+        "download_loss_percent": 1.3559850374064837,
+        "upload_jitter_ms": 0.6371857974028516,
+        "download_jitter_ms": 0.5581049499852294
       },
       {
         "name": "USB Baseline (No VPN) [Single Stream]",
@@ -2283,18 +2283,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 198.09,
-        "download_mbps": 117.06,
-        "upload_cpu_avg": 190.2,
-        "upload_cpu_peak": 236.0,
-        "download_cpu_avg": 150.2,
-        "download_cpu_peak": 182.0,
-        "peak_cpu": 236.0,
-        "peak_mem_mb": 111.5,
-        "upload_loss_percent": 0.8923822055488676,
-        "download_loss_percent": 29.544040218994944,
-        "upload_jitter_ms": 0.05383274632765755,
-        "download_jitter_ms": 0.17059932920685092
+        "upload_mbps": 140.11,
+        "download_mbps": 85.41,
+        "upload_cpu_avg": 185.9,
+        "upload_cpu_peak": 233.0,
+        "download_cpu_avg": 144.9,
+        "download_cpu_peak": 173.0,
+        "peak_cpu": 233.0,
+        "peak_mem_mb": 0.0,
+        "upload_loss_percent": 20.267652164174926,
+        "download_loss_percent": 41.12516354121239,
+        "upload_jitter_ms": 0.040904727998447965,
+        "download_jitter_ms": 0.04833938317070247
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [Single Stream]",
@@ -2303,18 +2303,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 148.51,
-        "download_mbps": 71.11,
-        "upload_cpu_avg": 189.4,
-        "upload_cpu_peak": 225.0,
-        "download_cpu_avg": 146.4,
-        "download_cpu_peak": 187.0,
-        "peak_cpu": 225.0,
-        "peak_mem_mb": 124.0,
-        "upload_loss_percent": 15.030200379341961,
-        "download_loss_percent": 42.437609227542815,
-        "upload_jitter_ms": 0.04372166877880712,
-        "download_jitter_ms": 0.11321979658251481
+        "upload_mbps": 198.0,
+        "download_mbps": 121.75,
+        "upload_cpu_avg": 196.4,
+        "upload_cpu_peak": 248.0,
+        "download_cpu_avg": 159.5,
+        "download_cpu_peak": 207.0,
+        "peak_cpu": 248.0,
+        "peak_mem_mb": 114.7,
+        "upload_loss_percent": 0.11646788733971666,
+        "download_loss_percent": 29.49549680662297,
+        "upload_jitter_ms": 0.09867144654950037,
+        "download_jitter_ms": 0.1946342051241305
       },
       {
         "name": "Hev (MTU 1500) [UDP] [P=8]",
@@ -2363,18 +2363,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.92,
-        "download_mbps": 200.5,
-        "upload_cpu_avg": 202.2,
-        "upload_cpu_peak": 237.0,
-        "download_cpu_avg": 192.5,
-        "download_cpu_peak": 238.0,
-        "peak_cpu": 238.0,
-        "peak_mem_mb": 111.7,
-        "upload_loss_percent": 0.0,
+        "upload_mbps": 195.69,
+        "download_mbps": 199.55,
+        "upload_cpu_avg": 198.4,
+        "upload_cpu_peak": 227.0,
+        "download_cpu_avg": 190.2,
+        "download_cpu_peak": 219.0,
+        "peak_cpu": 227.0,
+        "peak_mem_mb": 131.3,
+        "upload_loss_percent": 0.07111618817231397,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.29675617971649737,
-        "download_jitter_ms": 0.4210483699048263
+        "upload_jitter_ms": 0.650255154403389,
+        "download_jitter_ms": 0.6567980039787124
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [P=8]",
@@ -2383,18 +2383,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 185.51,
-        "download_mbps": 199.29,
-        "upload_cpu_avg": 187.2,
-        "upload_cpu_peak": 224.0,
-        "download_cpu_avg": 195.6,
-        "download_cpu_peak": 227.0,
-        "peak_cpu": 227.0,
-        "peak_mem_mb": 128.0,
-        "upload_loss_percent": 6.98961986155149,
-        "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.5645953240018924,
-        "download_jitter_ms": 0.7979454317222302
+        "upload_mbps": 199.92,
+        "download_mbps": 191.72,
+        "upload_cpu_avg": 205.9,
+        "upload_cpu_peak": 242.0,
+        "download_cpu_avg": 192.9,
+        "download_cpu_peak": 244.0,
+        "peak_cpu": 244.0,
+        "peak_mem_mb": 121.2,
+        "upload_loss_percent": 0.0,
+        "download_loss_percent": 4.099113221067718,
+        "upload_jitter_ms": 0.3269897289214862,
+        "download_jitter_ms": 0.4635351739644344
       },
       {
         "name": "Loopback Baseline (No VPN) [Single Stream]",
@@ -2564,31 +2564,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 103.6,
+            "pss_mb": 98.3,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 112.5,
-            "delta_mb": 8.9
+            "pss_mb": 105.1,
+            "delta_mb": 6.8
           },
           {
             "connections": 500,
-            "pss_mb": 115.9,
-            "delta_mb": 12.3
+            "pss_mb": 108.0,
+            "delta_mb": 9.7
           },
           {
             "connections": 750,
-            "pss_mb": 118.8,
-            "delta_mb": 15.2
+            "pss_mb": 111.1,
+            "delta_mb": 12.8
           },
           {
             "connections": 1000,
-            "pss_mb": 122.0,
-            "delta_mb": 18.4
+            "pss_mb": 114.1,
+            "delta_mb": 15.8
           }
         ],
-        "slope_kib_per_conn": 18.842
+        "slope_kib_per_conn": 16.179
       },
       {
         "name": "HEV UDP Idle Flows (0-1000)",
@@ -2598,31 +2598,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 148.3,
+            "pss_mb": 120.1,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 153.9,
-            "delta_mb": 5.6
+            "pss_mb": 103.3,
+            "delta_mb": -16.8
           },
           {
             "connections": 500,
-            "pss_mb": 158.4,
-            "delta_mb": 10.1
+            "pss_mb": 107.2,
+            "delta_mb": -12.9
           },
           {
             "connections": 750,
-            "pss_mb": 161.6,
-            "delta_mb": 13.3
+            "pss_mb": 110.8,
+            "delta_mb": -9.3
           },
           {
             "connections": 1000,
-            "pss_mb": 165.9,
-            "delta_mb": 17.6
+            "pss_mb": 114.9,
+            "delta_mb": -5.2
           }
         ],
-        "slope_kib_per_conn": 18.022
+        "slope_kib_per_conn": -5.325
       },
       {
         "name": "XRAY TCP Idle Flows (0-1000)",
@@ -2632,31 +2632,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 93.7,
+            "pss_mb": 98.2,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 102.2,
-            "delta_mb": 8.5
+            "pss_mb": 102.0,
+            "delta_mb": 3.8
           },
           {
             "connections": 500,
-            "pss_mb": 97.0,
-            "delta_mb": 3.3
+            "pss_mb": 101.8,
+            "delta_mb": 3.6
           },
           {
             "connections": 750,
-            "pss_mb": 98.3,
-            "delta_mb": 4.6
+            "pss_mb": 101.5,
+            "delta_mb": 3.3
           },
           {
             "connections": 1000,
-            "pss_mb": 98.2,
-            "delta_mb": 4.5
+            "pss_mb": 100.8,
+            "delta_mb": 2.6
           }
         ],
-        "slope_kib_per_conn": 4.608
+        "slope_kib_per_conn": 2.662
       },
       {
         "name": "XRAY UDP Idle Flows (0-1000)",
@@ -2666,31 +2666,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 149.4,
+            "pss_mb": 98.8,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 154.6,
-            "delta_mb": 5.2
+            "pss_mb": 101.0,
+            "delta_mb": 2.2
           },
           {
             "connections": 500,
-            "pss_mb": 148.7,
-            "delta_mb": -0.7
+            "pss_mb": 104.0,
+            "delta_mb": 5.2
           },
           {
             "connections": 750,
-            "pss_mb": 149.4,
-            "delta_mb": 0.0
+            "pss_mb": 104.6,
+            "delta_mb": 5.8
           },
           {
             "connections": 1000,
-            "pss_mb": 153.1,
-            "delta_mb": 3.7
+            "pss_mb": 103.7,
+            "delta_mb": 4.9
           }
         ],
-        "slope_kib_per_conn": 3.789
+        "slope_kib_per_conn": 5.018
       },
       {
         "name": "SING TCP Idle Flows (0-1000)",
@@ -2700,31 +2700,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 101.9,
+            "pss_mb": 102.9,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 119.7,
-            "delta_mb": 17.8
+            "pss_mb": 114.3,
+            "delta_mb": 11.4
           },
           {
             "connections": 500,
-            "pss_mb": 128.2,
-            "delta_mb": 26.3
+            "pss_mb": 127.2,
+            "delta_mb": 24.3
           },
           {
             "connections": 750,
-            "pss_mb": 142.7,
-            "delta_mb": 40.8
+            "pss_mb": 140.0,
+            "delta_mb": 37.1
           },
           {
             "connections": 1000,
-            "pss_mb": 149.7,
-            "delta_mb": 47.8
+            "pss_mb": 151.4,
+            "delta_mb": 48.5
           }
         ],
-        "slope_kib_per_conn": 48.947
+        "slope_kib_per_conn": 49.664
       },
       {
         "name": "SING UDP Idle Flows (0-1000)",
@@ -2734,31 +2734,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 150.7,
+            "pss_mb": 99.2,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 155.8,
-            "delta_mb": 5.1
-          },
-          {
-            "connections": 500,
-            "pss_mb": 152.2,
-            "delta_mb": 1.5
-          },
-          {
-            "connections": 750,
-            "pss_mb": 158.9,
+            "pss_mb": 107.4,
             "delta_mb": 8.2
           },
           {
+            "connections": 500,
+            "pss_mb": 114.8,
+            "delta_mb": 15.6
+          },
+          {
+            "connections": 750,
+            "pss_mb": 123.8,
+            "delta_mb": 24.6
+          },
+          {
             "connections": 1000,
-            "pss_mb": 167.5,
-            "delta_mb": 16.8
+            "pss_mb": 123.4,
+            "delta_mb": 24.2
           }
         ],
-        "slope_kib_per_conn": 17.203
+        "slope_kib_per_conn": 24.781
       },
       {
         "name": "MIPS TCP Idle Flows (0-1000)",
@@ -2768,31 +2768,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 156.2,
+            "pss_mb": 123.7,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 172.8,
-            "delta_mb": 16.6
+            "pss_mb": 115.5,
+            "delta_mb": -8.2
           },
           {
             "connections": 500,
-            "pss_mb": 182.7,
-            "delta_mb": 26.5
+            "pss_mb": 129.5,
+            "delta_mb": 5.8
           },
           {
             "connections": 750,
-            "pss_mb": 201.8,
-            "delta_mb": 45.6
+            "pss_mb": 143.1,
+            "delta_mb": 19.4
           },
           {
             "connections": 1000,
-            "pss_mb": 208.3,
-            "delta_mb": 52.1
+            "pss_mb": 155.7,
+            "delta_mb": 32.0
           }
         ],
-        "slope_kib_per_conn": 53.35
+        "slope_kib_per_conn": 32.768
       },
       {
         "name": "MIPS UDP Idle Flows (0-1000)",
@@ -2802,31 +2802,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 126.5,
+            "pss_mb": 101.5,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 118.5,
-            "delta_mb": -8.0
+            "pss_mb": 119.6,
+            "delta_mb": 18.1
           },
           {
             "connections": 500,
-            "pss_mb": 134.3,
-            "delta_mb": 7.8
+            "pss_mb": 131.5,
+            "delta_mb": 30.0
           },
           {
             "connections": 750,
-            "pss_mb": 146.8,
-            "delta_mb": 20.3
+            "pss_mb": 165.1,
+            "delta_mb": 63.6
           },
           {
             "connections": 1000,
-            "pss_mb": 163.4,
-            "delta_mb": 36.9
+            "pss_mb": 160.8,
+            "delta_mb": 59.3
           }
         ],
-        "slope_kib_per_conn": 37.786
+        "slope_kib_per_conn": 60.723
       }
     ],
     "round_3": [
@@ -3205,18 +3205,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 159.59,
-        "download_mbps": 122.41,
-        "upload_cpu_avg": 181.2,
-        "upload_cpu_peak": 222.0,
-        "download_cpu_avg": 152.7,
-        "download_cpu_peak": 185.0,
-        "peak_cpu": 222.0,
-        "peak_mem_mb": 117.2,
-        "upload_loss_percent": 9.77,
-        "download_loss_percent": 27.93,
-        "upload_jitter_ms": 0.05,
-        "download_jitter_ms": 0.07
+        "upload_mbps": 142.91,
+        "download_mbps": 123.68,
+        "upload_cpu_avg": 181.4,
+        "upload_cpu_peak": 227.0,
+        "download_cpu_avg": 152.8,
+        "download_cpu_peak": 180.0,
+        "peak_cpu": 227.0,
+        "peak_mem_mb": 113.6,
+        "upload_loss_percent": 19.900667443110553,
+        "download_loss_percent": 24.922041778900425,
+        "upload_jitter_ms": 0.23000399658061593,
+        "download_jitter_ms": 0.07611447286977943
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [Single Stream]",
@@ -3225,18 +3225,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 144.88,
-        "download_mbps": 121.69,
-        "upload_cpu_avg": 187.4,
-        "upload_cpu_peak": 230.0,
-        "download_cpu_avg": 159.7,
-        "download_cpu_peak": 212.0,
-        "peak_cpu": 230.0,
-        "peak_mem_mb": 134.1,
-        "upload_loss_percent": 17.15,
-        "download_loss_percent": 28.13,
-        "upload_jitter_ms": 0.06,
-        "download_jitter_ms": 0.13
+        "upload_mbps": 144.38,
+        "download_mbps": 122.19,
+        "upload_cpu_avg": 185.4,
+        "upload_cpu_peak": 226.0,
+        "download_cpu_avg": 164.1,
+        "download_cpu_peak": 209.0,
+        "peak_cpu": 226.0,
+        "peak_mem_mb": 116.3,
+        "upload_loss_percent": 18.53266286635831,
+        "download_loss_percent": 30.596910700818412,
+        "upload_jitter_ms": 0.07704342038998606,
+        "download_jitter_ms": 0.04506512361340122
       },
       {
         "name": "Hev (MTU 1500) [UDP] [P=8]",
@@ -3286,17 +3286,17 @@
         "network": "udp",
         "parallel": 8,
         "upload_mbps": 199.66,
-        "download_mbps": 200.03,
-        "upload_cpu_avg": 195.4,
-        "upload_cpu_peak": 238.0,
-        "download_cpu_avg": 144.5,
-        "download_cpu_peak": 210.0,
-        "peak_cpu": 238.0,
-        "peak_mem_mb": 115.1,
-        "upload_loss_percent": 0.0,
+        "download_mbps": 200.16,
+        "upload_cpu_avg": 195.9,
+        "upload_cpu_peak": 226.0,
+        "download_cpu_avg": 153.6,
+        "download_cpu_peak": 216.0,
+        "peak_cpu": 226.0,
+        "peak_mem_mb": 115.2,
+        "upload_loss_percent": 0.007839623698062494,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.63,
-        "download_jitter_ms": 0.56
+        "upload_jitter_ms": 0.7023178845060685,
+        "download_jitter_ms": 0.69196404480798
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [P=8]",
@@ -3305,18 +3305,18 @@
         "medium": "5GHz Wi-Fi",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 166.03,
-        "download_mbps": 199.83,
-        "upload_cpu_avg": 201.9,
-        "upload_cpu_peak": 228.0,
-        "download_cpu_avg": 188.2,
-        "download_cpu_peak": 230.0,
-        "peak_cpu": 230.0,
-        "peak_mem_mb": 130.1,
-        "upload_loss_percent": 0.05,
-        "download_loss_percent": 0.25,
-        "upload_jitter_ms": 1.19,
-        "download_jitter_ms": 0.56
+        "upload_mbps": 199.33,
+        "download_mbps": 197.91,
+        "upload_cpu_avg": 192.3,
+        "upload_cpu_peak": 238.0,
+        "download_cpu_avg": 164.3,
+        "download_cpu_peak": 218.0,
+        "peak_cpu": 238.0,
+        "peak_mem_mb": 116.3,
+        "upload_loss_percent": 0.20327024302833463,
+        "download_loss_percent": 0.972371244635193,
+        "upload_jitter_ms": 0.7422180182412972,
+        "download_jitter_ms": 0.5190661450520557
       },
       {
         "name": "USB Baseline (No VPN) [Single Stream]",
@@ -3693,18 +3693,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 198.09,
-        "download_mbps": 117.06,
-        "upload_cpu_avg": 190.2,
-        "upload_cpu_peak": 236.0,
-        "download_cpu_avg": 150.2,
+        "upload_mbps": 198.11,
+        "download_mbps": 118.78,
+        "upload_cpu_avg": 190.8,
+        "upload_cpu_peak": 240.0,
+        "download_cpu_avg": 151.8,
         "download_cpu_peak": 182.0,
-        "peak_cpu": 236.0,
-        "peak_mem_mb": 111.5,
-        "upload_loss_percent": 0.89,
-        "download_loss_percent": 29.54,
-        "upload_jitter_ms": 0.05,
-        "download_jitter_ms": 0.17
+        "peak_cpu": 240.0,
+        "peak_mem_mb": 112.6,
+        "upload_loss_percent": 0.9076605204069634,
+        "download_loss_percent": 31.494839888472306,
+        "upload_jitter_ms": 0.0416126718793395,
+        "download_jitter_ms": 0.04248523380737933
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [Single Stream]",
@@ -3713,18 +3713,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 1,
-        "upload_mbps": 148.51,
-        "download_mbps": 71.11,
-        "upload_cpu_avg": 189.4,
-        "upload_cpu_peak": 225.0,
-        "download_cpu_avg": 146.4,
-        "download_cpu_peak": 187.0,
-        "peak_cpu": 225.0,
-        "peak_mem_mb": 124.0,
-        "upload_loss_percent": 15.03,
-        "download_loss_percent": 42.44,
-        "upload_jitter_ms": 0.04,
-        "download_jitter_ms": 0.11
+        "upload_mbps": 198.58,
+        "download_mbps": 130.73,
+        "upload_cpu_avg": 193.5,
+        "upload_cpu_peak": 222.0,
+        "download_cpu_avg": 163.3,
+        "download_cpu_peak": 210.0,
+        "peak_cpu": 222.0,
+        "peak_mem_mb": 114.6,
+        "upload_loss_percent": 0.07895178901394255,
+        "download_loss_percent": 26.75236980755987,
+        "upload_jitter_ms": 0.06004109100339069,
+        "download_jitter_ms": 0.045121539536809065
       },
       {
         "name": "Hev (MTU 1500) [UDP] [P=8]",
@@ -3773,18 +3773,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 199.92,
-        "download_mbps": 200.5,
-        "upload_cpu_avg": 202.2,
-        "upload_cpu_peak": 237.0,
-        "download_cpu_avg": 192.5,
-        "download_cpu_peak": 238.0,
+        "upload_mbps": 199.9,
+        "download_mbps": 200.04,
+        "upload_cpu_avg": 203.2,
+        "upload_cpu_peak": 238.0,
+        "download_cpu_avg": 189.8,
+        "download_cpu_peak": 236.0,
         "peak_cpu": 238.0,
-        "peak_mem_mb": 111.7,
+        "peak_mem_mb": 64.4,
         "upload_loss_percent": 0.0,
         "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.3,
-        "download_jitter_ms": 0.42
+        "upload_jitter_ms": 0.393748336176429,
+        "download_jitter_ms": 0.44041188452719526
       },
       {
         "name": "MipsTUN (MTU 1500) [UDP] [P=8]",
@@ -3793,18 +3793,18 @@
         "medium": "USB 3.2 / 4.0",
         "network": "udp",
         "parallel": 8,
-        "upload_mbps": 185.51,
-        "download_mbps": 199.29,
-        "upload_cpu_avg": 187.2,
-        "upload_cpu_peak": 224.0,
-        "download_cpu_avg": 195.6,
-        "download_cpu_peak": 227.0,
-        "peak_cpu": 227.0,
-        "peak_mem_mb": 128.0,
-        "upload_loss_percent": 6.99,
-        "download_loss_percent": 0.0,
-        "upload_jitter_ms": 0.56,
-        "download_jitter_ms": 0.8
+        "upload_mbps": 199.93,
+        "download_mbps": 193.66,
+        "upload_cpu_avg": 204.5,
+        "upload_cpu_peak": 239.0,
+        "download_cpu_avg": 192.1,
+        "download_cpu_peak": 246.0,
+        "peak_cpu": 246.0,
+        "peak_mem_mb": 73.7,
+        "upload_loss_percent": 0.0,
+        "download_loss_percent": 3.1265375497607013,
+        "upload_jitter_ms": 0.30228617013266534,
+        "download_jitter_ms": 0.407279219748306
       },
       {
         "name": "Loopback Baseline (No VPN) [Single Stream]",
@@ -3974,31 +3974,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 99.1,
+            "pss_mb": 97.6,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 106.5,
-            "delta_mb": 7.4
+            "pss_mb": 104.8,
+            "delta_mb": 7.2
           },
           {
             "connections": 500,
-            "pss_mb": 109.4,
-            "delta_mb": 10.3
+            "pss_mb": 107.8,
+            "delta_mb": 10.2
           },
           {
             "connections": 750,
-            "pss_mb": 112.7,
+            "pss_mb": 111.2,
             "delta_mb": 13.6
           },
           {
             "connections": 1000,
-            "pss_mb": 115.8,
-            "delta_mb": 16.7
+            "pss_mb": 114.1,
+            "delta_mb": 16.5
           }
         ],
-        "slope_kib_per_conn": 17.101
+        "slope_kib_per_conn": 16.896
       },
       {
         "name": "HEV UDP Idle Flows (0-1000)",
@@ -4008,31 +4008,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 148.3,
+            "pss_mb": 99.2,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 153.9,
-            "delta_mb": 5.6
+            "pss_mb": 104.1,
+            "delta_mb": 4.9
           },
           {
             "connections": 500,
-            "pss_mb": 158.4,
-            "delta_mb": 10.1
+            "pss_mb": 108.3,
+            "delta_mb": 9.1
           },
           {
             "connections": 750,
-            "pss_mb": 161.6,
-            "delta_mb": 13.3
+            "pss_mb": 112.3,
+            "delta_mb": 13.1
           },
           {
             "connections": 1000,
-            "pss_mb": 165.9,
-            "delta_mb": 17.6
+            "pss_mb": 115.9,
+            "delta_mb": 16.7
           }
         ],
-        "slope_kib_per_conn": 18.022
+        "slope_kib_per_conn": 17.101
       },
       {
         "name": "XRAY TCP Idle Flows (0-1000)",
@@ -4042,31 +4042,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 93.7,
+            "pss_mb": 99.5,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 102.2,
-            "delta_mb": 8.5
+            "pss_mb": 102.5,
+            "delta_mb": 3.0
           },
           {
             "connections": 500,
-            "pss_mb": 97.0,
-            "delta_mb": 3.3
+            "pss_mb": 102.5,
+            "delta_mb": 3.0
           },
           {
             "connections": 750,
-            "pss_mb": 98.3,
-            "delta_mb": 4.6
+            "pss_mb": 103.3,
+            "delta_mb": 3.8
           },
           {
             "connections": 1000,
-            "pss_mb": 98.2,
-            "delta_mb": 4.5
+            "pss_mb": 100.7,
+            "delta_mb": 1.2
           }
         ],
-        "slope_kib_per_conn": 4.608
+        "slope_kib_per_conn": 1.229
       },
       {
         "name": "XRAY UDP Idle Flows (0-1000)",
@@ -4076,31 +4076,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 149.4,
+            "pss_mb": 99.8,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 154.6,
-            "delta_mb": 5.2
+            "pss_mb": 105.6,
+            "delta_mb": 5.8
           },
           {
             "connections": 500,
-            "pss_mb": 148.7,
-            "delta_mb": -0.7
+            "pss_mb": 100.2,
+            "delta_mb": 0.4
           },
           {
             "connections": 750,
-            "pss_mb": 149.4,
-            "delta_mb": 0.0
+            "pss_mb": 105.6,
+            "delta_mb": 5.8
           },
           {
             "connections": 1000,
-            "pss_mb": 153.1,
-            "delta_mb": 3.7
+            "pss_mb": 99.7,
+            "delta_mb": -0.1
           }
         ],
-        "slope_kib_per_conn": 3.789
+        "slope_kib_per_conn": -0.102
       },
       {
         "name": "SING TCP Idle Flows (0-1000)",
@@ -4110,31 +4110,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 101.9,
+            "pss_mb": 104.6,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 119.7,
-            "delta_mb": 17.8
+            "pss_mb": 116.4,
+            "delta_mb": 11.8
           },
           {
             "connections": 500,
-            "pss_mb": 128.2,
-            "delta_mb": 26.3
+            "pss_mb": 126.6,
+            "delta_mb": 22.0
           },
           {
             "connections": 750,
-            "pss_mb": 142.7,
-            "delta_mb": 40.8
+            "pss_mb": 140.9,
+            "delta_mb": 36.3
           },
           {
             "connections": 1000,
-            "pss_mb": 149.7,
-            "delta_mb": 47.8
+            "pss_mb": 150.2,
+            "delta_mb": 45.6
           }
         ],
-        "slope_kib_per_conn": 48.947
+        "slope_kib_per_conn": 46.694
       },
       {
         "name": "SING UDP Idle Flows (0-1000)",
@@ -4144,31 +4144,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 150.7,
+            "pss_mb": 100.9,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 155.8,
-            "delta_mb": 5.1
+            "pss_mb": 106.8,
+            "delta_mb": 5.9
           },
           {
             "connections": 500,
-            "pss_mb": 152.2,
-            "delta_mb": 1.5
+            "pss_mb": 114.0,
+            "delta_mb": 13.1
           },
           {
             "connections": 750,
-            "pss_mb": 158.9,
-            "delta_mb": 8.2
+            "pss_mb": 120.8,
+            "delta_mb": 19.9
           },
           {
             "connections": 1000,
-            "pss_mb": 167.5,
-            "delta_mb": 16.8
+            "pss_mb": 122.1,
+            "delta_mb": 21.2
           }
         ],
-        "slope_kib_per_conn": 17.203
+        "slope_kib_per_conn": 21.709
       },
       {
         "name": "MIPS TCP Idle Flows (0-1000)",
@@ -4178,31 +4178,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 156.2,
+            "pss_mb": 104.1,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 172.8,
-            "delta_mb": 16.6
+            "pss_mb": 118.5,
+            "delta_mb": 14.4
           },
           {
             "connections": 500,
-            "pss_mb": 182.7,
-            "delta_mb": 26.5
+            "pss_mb": 136.9,
+            "delta_mb": 32.8
           },
           {
             "connections": 750,
-            "pss_mb": 201.8,
-            "delta_mb": 45.6
+            "pss_mb": 143.6,
+            "delta_mb": 39.5
           },
           {
             "connections": 1000,
-            "pss_mb": 208.3,
-            "delta_mb": 52.1
+            "pss_mb": 156.0,
+            "delta_mb": 51.9
           }
         ],
-        "slope_kib_per_conn": 53.35
+        "slope_kib_per_conn": 53.146
       },
       {
         "name": "MIPS UDP Idle Flows (0-1000)",
@@ -4212,31 +4212,31 @@
         "idle_flows": [
           {
             "connections": 0,
-            "pss_mb": 126.5,
+            "pss_mb": 102.0,
             "delta_mb": 0.0
           },
           {
             "connections": 250,
-            "pss_mb": 118.5,
-            "delta_mb": -8.0
+            "pss_mb": 116.6,
+            "delta_mb": 14.6
           },
           {
             "connections": 500,
-            "pss_mb": 134.3,
-            "delta_mb": 7.8
+            "pss_mb": 133.2,
+            "delta_mb": 31.2
           },
           {
             "connections": 750,
-            "pss_mb": 146.8,
-            "delta_mb": 20.3
+            "pss_mb": 148.2,
+            "delta_mb": 46.2
           },
           {
             "connections": 1000,
-            "pss_mb": 163.4,
-            "delta_mb": 36.9
+            "pss_mb": 162.7,
+            "delta_mb": 60.7
           }
         ],
-        "slope_kib_per_conn": 37.786
+        "slope_kib_per_conn": 62.157
       }
     ]
   }

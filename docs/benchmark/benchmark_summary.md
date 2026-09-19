@@ -1,4 +1,5 @@
-# SimpleXray TUN Backends Benchmark Summary
+# SimpleXray Benchmark Summary
+Generated at: 2026-09-19 13:09:13
 
 ### Round 1 Results
 
@@ -75,14 +76,14 @@
 
 | Backend | Network | Conns Range | Baseline PSS | 1000 Conns PSS | Memory Slope |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| HEV | TCP | 0 -> 1000 | 99.1 MB | 115.8 MB | 17.10 KiB/conn |
-| HEV | UDP | 0 -> 1000 | 148.3 MB | 165.9 MB | 18.02 KiB/conn |
-| XRAY | TCP | 0 -> 1000 | 93.7 MB | 98.2 MB | 4.61 KiB/conn |
-| XRAY | UDP | 0 -> 1000 | 149.4 MB | 153.1 MB | 3.79 KiB/conn |
-| SING | TCP | 0 -> 1000 | 101.9 MB | 149.7 MB | 48.95 KiB/conn |
-| SING | UDP | 0 -> 1000 | 150.7 MB | 167.5 MB | 17.20 KiB/conn |
-| MIPS | TCP | 0 -> 1000 | 156.2 MB | 208.3 MB | 53.35 KiB/conn |
-| MIPS | UDP | 0 -> 1000 | 126.5 MB | 163.4 MB | 37.79 KiB/conn |
+| HEV | TCP | 0 -> 1000 | 95.6 MB | 113.7 MB | 18.53 KiB/conn |
+| HEV | UDP | 0 -> 1000 | 98.2 MB | 115.5 MB | 17.71 KiB/conn |
+| XRAY | TCP | 0 -> 1000 | 98.4 MB | 100.9 MB | 2.56 KiB/conn |
+| XRAY | UDP | 0 -> 1000 | 98.9 MB | 103.6 MB | 4.81 KiB/conn |
+| SING | TCP | 0 -> 1000 | 103.3 MB | 149.3 MB | 47.10 KiB/conn |
+| SING | UDP | 0 -> 1000 | 121.4 MB | 127.9 MB | 6.66 KiB/conn |
+| MIPS | TCP | 0 -> 1000 | 103.6 MB | 155.5 MB | 53.15 KiB/conn |
+| MIPS | UDP | 0 -> 1000 | 99.9 MB | 163.9 MB | 65.54 KiB/conn |
 
 ### Round 2 Results
 
@@ -159,14 +160,14 @@
 
 | Backend | Network | Conns Range | Baseline PSS | 1000 Conns PSS | Memory Slope |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| HEV | TCP | 0 -> 1000 | 103.6 MB | 122.0 MB | 18.84 KiB/conn |
-| HEV | UDP | 0 -> 1000 | 148.3 MB | 165.9 MB | 18.02 KiB/conn |
-| XRAY | TCP | 0 -> 1000 | 93.7 MB | 98.2 MB | 4.61 KiB/conn |
-| XRAY | UDP | 0 -> 1000 | 149.4 MB | 153.1 MB | 3.79 KiB/conn |
-| SING | TCP | 0 -> 1000 | 101.9 MB | 149.7 MB | 48.95 KiB/conn |
-| SING | UDP | 0 -> 1000 | 150.7 MB | 167.5 MB | 17.20 KiB/conn |
-| MIPS | TCP | 0 -> 1000 | 156.2 MB | 208.3 MB | 53.35 KiB/conn |
-| MIPS | UDP | 0 -> 1000 | 126.5 MB | 163.4 MB | 37.79 KiB/conn |
+| HEV | TCP | 0 -> 1000 | 98.3 MB | 114.1 MB | 16.18 KiB/conn |
+| HEV | UDP | 0 -> 1000 | 120.1 MB | 114.9 MB | -5.33 KiB/conn |
+| XRAY | TCP | 0 -> 1000 | 98.2 MB | 100.8 MB | 2.66 KiB/conn |
+| XRAY | UDP | 0 -> 1000 | 98.8 MB | 103.7 MB | 5.02 KiB/conn |
+| SING | TCP | 0 -> 1000 | 102.9 MB | 151.4 MB | 49.66 KiB/conn |
+| SING | UDP | 0 -> 1000 | 99.2 MB | 123.4 MB | 24.78 KiB/conn |
+| MIPS | TCP | 0 -> 1000 | 123.7 MB | 155.7 MB | 32.77 KiB/conn |
+| MIPS | UDP | 0 -> 1000 | 101.5 MB | 160.8 MB | 60.72 KiB/conn |
 
 ### Round 3 Results
 
@@ -243,11 +244,11 @@
 
 | Backend | Network | Conns Range | Baseline PSS | 1000 Conns PSS | Memory Slope |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| HEV | TCP | 0 -> 1000 | 99.1 MB | 115.8 MB | 17.10 KiB/conn |
-| HEV | UDP | 0 -> 1000 | 148.3 MB | 165.9 MB | 18.02 KiB/conn |
-| XRAY | TCP | 0 -> 1000 | 93.7 MB | 98.2 MB | 4.61 KiB/conn |
-| XRAY | UDP | 0 -> 1000 | 149.4 MB | 153.1 MB | 3.79 KiB/conn |
-| SING | TCP | 0 -> 1000 | 101.9 MB | 149.7 MB | 48.95 KiB/conn |
-| SING | UDP | 0 -> 1000 | 150.7 MB | 167.5 MB | 17.20 KiB/conn |
-| MIPS | TCP | 0 -> 1000 | 156.2 MB | 208.3 MB | 53.35 KiB/conn |
-| MIPS | UDP | 0 -> 1000 | 126.5 MB | 163.4 MB | 37.79 KiB/conn |
+| HEV | TCP | 0 -> 1000 | 97.6 MB | 114.1 MB | 16.90 KiB/conn |
+| HEV | UDP | 0 -> 1000 | 99.2 MB | 115.9 MB | 17.10 KiB/conn |
+| XRAY | TCP | 0 -> 1000 | 99.5 MB | 100.7 MB | 1.23 KiB/conn |
+| XRAY | UDP | 0 -> 1000 | 99.8 MB | 99.7 MB | -0.10 KiB/conn |
+| SING | TCP | 0 -> 1000 | 104.6 MB | 150.2 MB | 46.69 KiB/conn |
+| SING | UDP | 0 -> 1000 | 100.9 MB | 122.1 MB | 21.71 KiB/conn |
+| MIPS | TCP | 0 -> 1000 | 104.1 MB | 156.0 MB | 53.15 KiB/conn |
+| MIPS | UDP | 0 -> 1000 | 102.0 MB | 162.7 MB | 62.16 KiB/conn |

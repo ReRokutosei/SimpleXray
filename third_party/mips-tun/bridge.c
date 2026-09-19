@@ -1,3 +1,4 @@
+#if defined(__ANDROID__)
 #include <jni.h>
 #include <stdlib.h>
 #include <stdint.h>
@@ -94,3 +95,4 @@ Java_com_simplexray_re_service_TProxyService_MipsTunGetStats(
     }
     return res;
 }
+#endif
