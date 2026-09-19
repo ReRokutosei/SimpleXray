@@ -15,6 +15,7 @@ import android.net.ProxyInfo
 import android.net.VpnService
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
+import android.os.SystemClock
 import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
@@ -228,19 +229,20 @@ class TProxyService : VpnService() {
         periodicGeoUpdateJob = null
         serviceScope.cancel()
         killXrayProcess()
-        runCatching { TProxyStopService() }
-        runCatching { SingTunStopService() }
-        runCatching { MipsTunStopService() }
+        val pfd = tunFd
+        tunFd = null
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+            runCatching { TProxyStopService() }
+            runCatching { SingTunStopService() }
+            runCatching { MipsTunStopService() }
+            pfd?.let { runCatching { it.close() } }
+        }
         wakeLock?.let {
             if (it.isHeld) {
                 it.release()
                 Log.d(TAG, "Partial wake lock released in onDestroy.")
             }
             wakeLock = null
-        }
-        tunFd?.let {
-            runCatching { it.close() }
-            tunFd = null
         }
         stopForeground(Service.STOP_FOREGROUND_REMOVE)
         VpnStateHub.updateState(VpnRunningState.Disconnected)
@@ -254,6 +256,9 @@ class TProxyService : VpnService() {
 
     private fun startXray() {
         if (!acquireStart("startXray")) return
+        @Suppress("SameParameterValue") val channelName = "socks5"
+        initNotificationChannel(channelName)
+        createNotification(channelName)
         VpnStateHub.updateState(VpnRunningState.Connecting)
         val prefs = Preferences(this)
         if (prefs.keepAwake && wakeLock == null) {
@@ -540,8 +545,17 @@ class TProxyService : VpnService() {
             }
         }
         val builder = getVpnBuilder(prefs, tunMtu)
-        tunFd = builder.establish()
+        var establishAttempts = 0
+        while (tunFd == null && establishAttempts < 3) {
+            tunFd = builder.establish()
+            if (tunFd == null) {
+                establishAttempts++
+                Log.w(TAG, "builder.establish() returned null, retrying ($establishAttempts/3)...")
+                SystemClock.sleep(300)
+            }
+        }
         if (tunFd == null) {
+            Log.e(TAG, "builder.establish() returned null after 3 attempts, stopping.")
             stopXray()
             return
         }
@@ -684,17 +698,14 @@ class TProxyService : VpnService() {
     private fun stopService() {
         isStartingLock.set(false)
         unregisterNetworkCallback()
-        tunFd?.let {
-            try {
-                it.close()
-            } catch (ignored: IOException) {
-            } finally {
-                tunFd = null
-            }
-            stopForeground(Service.STOP_FOREGROUND_REMOVE)
+        stopForeground(Service.STOP_FOREGROUND_REMOVE)
+        val pfd = tunFd
+        tunFd = null
+        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
             runCatching { TProxyStopService() }
             runCatching { SingTunStopService() }
             runCatching { MipsTunStopService() }
+            pfd?.let { runCatching { it.close() } }
         }
         stopSelf()
         wakeLock?.let {

@@ -19,7 +19,6 @@ from typing import Any, Dict, List, Optional, Tuple
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 APP_PKG = "com.simplexray.re.debug"
-ACTION_BENCHMARK = "com.simplexray.re.action.BENCHMARK"
 DEFAULT_DURATION = 10
 DEFAULT_PORT = 5201
 LOOPBACK_PORT = 5202
@@ -101,18 +100,21 @@ class AdbRunner:
         self.shell("chmod 755 /data/local/tmp/iperf3")
 
     def set_app_state(self, backend: str, mtu: int, cmd: str = "start"):
-        log_info(f"Sending Benchmark broadcast: cmd={cmd}, backend={backend}, mtu={mtu}")
+        log_info(f"Controlling Headless Benchmark Service: cmd={cmd}, backend={backend}, mtu={mtu}")
         self.shell(
-            f"am broadcast --user 0 -a {ACTION_BENCHMARK} -p {APP_PKG} "
-            f"--es cmd {cmd} --es backend {backend} --ei mtu {mtu}"
+            f"am start-foreground-service -n {APP_PKG}/com.simplexray.re.service.BenchmarkService "
+            f"--es cmd {cmd} --es backend {backend} --ei mtu {mtu}",
+            timeout=10.0
         )
 
     def get_app_memory_mb(self) -> float:
-        rc, out, _ = self.shell(f"dumpsys meminfo {APP_PKG} | grep 'TOTAL PSS:'")
-        match = re.search(r"TOTAL PSS:\s+(\d+)", out)
-        if match:
-            pss_kb = float(match.group(1))
-            return round(pss_kb / 1024.0, 1)
+        for _ in range(3):
+            rc, out, _ = self.shell(f"dumpsys meminfo {APP_PKG} | grep 'TOTAL PSS:'", timeout=5.0)
+            match = re.search(r"TOTAL PSS:\s+(\d+)", out)
+            if match:
+                pss_kb = float(match.group(1))
+                return round(pss_kb / 1024.0, 1)
+            time.sleep(0.3)
         return 0.0
 
 
@@ -359,7 +361,7 @@ class BenchmarkRunner:
 
         # Stop previous VPN and start new
         self.adb.set_app_state(backend, 1500, cmd="stop")
-        time.sleep(2)
+        time.sleep(3)
         if backend != "direct_none":
             self.adb.set_app_state(backend, 1500, cmd="start")
             log_info("Waiting 4s for VPN to initialize...")
@@ -404,7 +406,7 @@ class BenchmarkRunner:
         # Stop VPN
         if backend != "direct_none":
             self.adb.set_app_state(backend, 1500, cmd="stop")
-            time.sleep(2)
+            time.sleep(3)
 
         # Calculate slope
         slope_kib = 0.0
@@ -654,6 +656,8 @@ def main():
                         help="Sanitized device name to record in output metadata (default: auto-masked serial)")
     parser.add_argument("--rounds", type=int, default=3,
                         help="Number of test rounds to execute (default: 3)")
+    parser.add_argument("--merge", action="store_true",
+                        help="Merge new benchmark results into existing JSON/Markdown if files already exist")
     parser.add_argument("--output-json", default="docs/benchmark/benchmark_results.json",
                         help="File path to save JSON results")
     parser.add_argument("--output-md", default="docs/benchmark/benchmark_summary.md",
@@ -729,14 +733,48 @@ def main():
     # Save outputs
     json_path = os.path.abspath(args.output_json)
     os.makedirs(os.path.dirname(json_path), exist_ok=True)
+    if args.merge and os.path.exists(json_path):
+        log_info(f"Merging new results into existing JSON: {json_path}")
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                existing_data = json.load(f)
+            for r_key, r_items in all_rounds_data["rounds"].items():
+                if r_key not in existing_data.get("rounds", {}):
+                    existing_data.setdefault("rounds", {})[r_key] = r_items
+                else:
+                    existing_list = existing_data["rounds"][r_key]
+                    for new_item in r_items:
+                        matched = False
+                        for idx, old_item in enumerate(existing_list):
+                            if (old_item.get("backend") == new_item.get("backend") and
+                                old_item.get("network") == new_item.get("network") and
+                                old_item.get("type") == new_item.get("type")):
+                                existing_list[idx] = new_item
+                                matched = True
+                                break
+                        if not matched:
+                            existing_list.append(new_item)
+            all_rounds_data = existing_data
+        except Exception as e:
+            log_warn(f"Failed to merge with existing JSON: {e}")
+
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(all_rounds_data, f, indent=2, ensure_ascii=False)
     log_success(f"JSON results saved to: {json_path}")
 
     md_path = os.path.abspath(args.output_md)
     os.makedirs(os.path.dirname(md_path), exist_ok=True)
-    with open(md_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(markdown_reports))
+    if args.merge and os.path.exists(json_path):
+        full_md_reports = [f"# SimpleXray Benchmark Summary\nGenerated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"]
+        for r_name in ["round_1", "round_2", "round_3"]:
+            if r_name in all_rounds_data.get("rounds", {}):
+                r_num = r_name.split("_")[-1]
+                full_md_reports.append(format_markdown_table(all_rounds_data["rounds"][r_name], title=f"Round {r_num} Results"))
+        with open(md_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(full_md_reports))
+    else:
+        with open(md_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(markdown_reports))
     log_success(f"Markdown report saved to: {md_path}")
 
     # Automatically generate modern dashboards
