@@ -15,6 +15,7 @@ import (
 func runTunInbound(ctx context.Context, file *os.File, stack *mipstack.Stack, mtu int, stats *stats) {
 	logInfo("runTunInbound: loop started")
 	buf := make([]byte, 65535)
+	packetBatch := make([][]byte, 1)
 
 	for {
 		select {
@@ -40,7 +41,8 @@ func runTunInbound(ctx context.Context, file *os.File, stack *mipstack.Stack, mt
 			continue
 		}
 
-		count, werr := stack.Write([][]byte{buf[:n]}, 0)
+		packetBatch[0] = buf[:n]
+		count, werr := stack.Write(packetBatch, 0)
 		if werr != nil {
 			logError(fmt.Sprintf("runTunInbound: stack.Write error: %v", werr))
 		}
