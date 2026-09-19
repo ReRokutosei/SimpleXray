@@ -505,7 +505,7 @@ def generate_mega_dashboard():
         "SPECIFICATIONS & METHODOLOGY\n"
         "Host (Server): AMD Ryzen 7 6800H @ 3.2GHz (8C/16T), Linux 6.12.107+deb13-amd64 | iPerf3 v3.18 (cJSON 1.7.15) | 1201 Mbps HE80 Wi-Fi 6E AX210 / USB 3.2 Gen1 Type-C RNDIS\n"
         "DUT (Client): Qualcomm Snapdragon 778G SM7325 (1x2.4GHz + 3x2.2GHz Cortex-A78 + 4x1.9GHz Cortex-A55), Android 14, Linux 5.4 | iPerf3 v3.21 static arm64\n"
-        "Backends: hev-socks5-tunnel (git d1178b52, lwIP 2.2.0) | SingTUN (sing-box git fbc0c3dff312) | MipsTUN (mipstack git 5e78149cf123, BBRv3) | Xray Native TUN (core v26.9.9, gVisor netstack)\n"
+        "Backends: hev-socks5-tunnel (git b514150 | SingTUN (git a39eab51450b) | MipsTUN (git 802d64336f8c) | Xray Native TUN (core v26.9.9)\n"
         "Sampling & Metrics: 3-round arithmetic mean; CPU% represents multi-core cumulative load (800% system ceiling); Scheme 1 Android PSS via dumpsys meminfo; Scheme 2 Linux unshare -r -n isolated user namespace"
     )
     fig.text(
