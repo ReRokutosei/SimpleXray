@@ -1,11 +1,11 @@
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
-github.com/metacubex/mipstack v0.0.0-20260918021735-5e78149cf123 h1:ctyg96awFFB+i0yMu/AwiFBY9N35kFFZTQ0v8C/KHtQ=
-github.com/metacubex/mipstack v0.0.0-20260918021735-5e78149cf123/go.mod h1:+bbwALZI0pbi2auSG5A3ptdpV2DZ2eLObziXo+P7oj0=
+github.com/metacubex/mipstack v0.0.0-20260919101445-802d64336f8c h1:yqFyHJfj4AXZICcP6tlvzVKR652QvQxC1rI6REJji3o=
+github.com/metacubex/mipstack v0.0.0-20260919101445-802d64336f8c/go.mod h1:+bbwALZI0pbi2auSG5A3ptdpV2DZ2eLObziXo+P7oj0=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/sagernet/sing v0.9.5-0.20260917142815-f37989cadbf0 h1:rn2MLe/qiqCxvRIHfT9WRc22eNLBTRCKlY39pZTWRdg=
-github.com/sagernet/sing v0.9.5-0.20260917142815-f37989cadbf0/go.mod h1:K3Owt3xPhHugvlnlPPxZJ/exXdaJfEPOTNorGk4AXjo=
+github.com/sagernet/sing v0.9.5 h1:BHaElRqhHhkH747xIkxgsqgRJxkIiuAlpnfwiJnu2aY=
+github.com/sagernet/sing v0.9.5/go.mod h1:K3Owt3xPhHugvlnlPPxZJ/exXdaJfEPOTNorGk4AXjo=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 golang.org/x/sys v0.47.0 h1:o7XGOvZQCADBQQ4Y7VNq2dRWQR7JmOUW8Kxx4ZsNgWs=
