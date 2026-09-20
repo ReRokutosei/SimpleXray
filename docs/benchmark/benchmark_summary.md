@@ -1,38 +1,38 @@
 # SimpleXray Benchmark Summary
-Merged at: 2026-09-18T20:37:50.541307
+Generated at: 2026-09-20 17:33:10
 
 ### Round 1 Results
 
 | Test Case | Backend | MTU | Medium | Upload | Download | Up CPU | Down CPU | Peak CPU | Peak Memory |
 | :--- | :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Wi-Fi Baseline (No VPN) [Single Stream] | direct_none | 0 | 5GHz Wi-Fi | 225.46 Mbps | 292.06 Mbps | 0.0% | 0.0% | 0.0% | 182.7 MB |
-| Wi-Fi Baseline (No VPN) [P=8] | direct_none | 0 | 5GHz Wi-Fi | 287.19 Mbps | 307.49 Mbps | 0.0% | 0.0% | 0.0% | 177.8 MB |
-| Hev (MTU 1500) [Single Stream] | hev | 1500 | 5GHz Wi-Fi | 298.92 Mbps | 257.47 Mbps | 21.6% | 49.1% | 71.0% | 97.9 MB |
-| Xray TUN (MTU 1500) [Single Stream] | xray | 1500 | 5GHz Wi-Fi | 379.66 Mbps | 60.5 Mbps | 50.3% | 61.9% | 171.0% | 100.7 MB |
-| SingTUN (MTU 1500) [Single Stream] | sing | 1500 | 5GHz Wi-Fi | 355.41 Mbps | 173.38 Mbps | 34.1% | 83.7% | 139.0% | 179.1 MB |
-| MipsTUN (MTU 1500) [Single Stream] | mips | 1500 | 5GHz Wi-Fi | 341.5 Mbps | 231.26 Mbps | 40.2% | 67.2% | 186.0% | 110.8 MB |
-| Hev (MTU 9000) [Single Stream] | hev | 9000 | 5GHz Wi-Fi | 328.51 Mbps | 290.18 Mbps | 14.4% | 27.9% | 69.0% | 111.6 MB |
-| Xray TUN (MTU 9000) [Single Stream] | xray | 9000 | 5GHz Wi-Fi | 246.97 Mbps | 61.96 Mbps | 83.2% | 55.4% | 177.0% | 97.9 MB |
-| SingTUN (MTU 9000) [Single Stream] | sing | 9000 | 5GHz Wi-Fi | 329.74 Mbps | 319.95 Mbps | 28.8% | 61.6% | 91.0% | 179.6 MB |
-| MipsTUN (MTU 9000) [Single Stream] | mips | 9000 | 5GHz Wi-Fi | 206.48 Mbps | 288.51 Mbps | 14.6% | 37.2% | 104.0% | 115.0 MB |
-| Hev (MTU 1500) [P=8] | hev | 1500 | 5GHz Wi-Fi | 351.57 Mbps | 259.99 Mbps | 29.7% | 51.6% | 92.0% | 98.4 MB |
-| Xray TUN (MTU 1500) [P=8] | xray | 1500 | 5GHz Wi-Fi | 349.04 Mbps | 175.93 Mbps | 116.8% | 91.9% | 238.0% | 99.3 MB |
-| SingTUN (MTU 1500) [P=8] | sing | 1500 | 5GHz Wi-Fi | 358.21 Mbps | 366.61 Mbps | 45.8% | 119.8% | 212.0% | 180.0 MB |
-| MipsTUN (MTU 1500) [P=8] | mips | 1500 | 5GHz Wi-Fi | 336.87 Mbps | 159.56 Mbps | 45.3% | 65.5% | 210.0% | 125.5 MB |
-| Hev (MTU 9000) [P=8] | hev | 9000 | 5GHz Wi-Fi | 376.8 Mbps | 337.77 Mbps | 17.6% | 51.3% | 90.0% | 97.2 MB |
-| Xray TUN (MTU 9000) [P=8] | xray | 9000 | 5GHz Wi-Fi | 359.05 Mbps | 182.37 Mbps | 118.3% | 93.6% | 245.0% | 98.3 MB |
-| SingTUN (MTU 9000) [P=8] | sing | 9000 | 5GHz Wi-Fi | 302.61 Mbps | 390.26 Mbps | 37.0% | 75.1% | 151.0% | 180.2 MB |
-| MipsTUN (MTU 9000) [P=8] | mips | 9000 | 5GHz Wi-Fi | 319.13 Mbps | 335.15 Mbps | 36.7% | 60.2% | 170.0% | 127.6 MB |
-| Wi-Fi Baseline (No VPN) [UDP] [Single Stream] | direct_none | 0 | 5GHz Wi-Fi | 196.79 Mbps (1.4% loss) | 200.14 Mbps | 0.0% | 0.0% | 0.0% | 178.4 MB |
-| Wi-Fi Baseline (No VPN) [UDP] [P=8] | direct_none | 0 | 5GHz Wi-Fi | 199.52 Mbps | 200.08 Mbps | 0.0% | 0.0% | 0.0% | 178.3 MB |
-| Hev (MTU 1500) [UDP] [Single Stream] | hev | 1500 | 5GHz Wi-Fi | 149.93 Mbps (6.0% loss) | 125.23 Mbps (19.8% loss) | 135.3% | 114.9% | 185.0% | 109.0 MB |
-| Xray TUN (MTU 1500) [UDP] [Single Stream] | xray | 1500 | 5GHz Wi-Fi | 127.15 Mbps (35.6% loss) | 105.33 Mbps (37.2% loss) | 129.9% | 42.3% | 212.0% | 103.5 MB |
-| SingTUN (MTU 1500) [UDP] [Single Stream] | sing | 1500 | 5GHz Wi-Fi | 159.68 Mbps (1.8% loss) | 119.56 Mbps (22.4% loss) | 189.0% | 164.0% | 248.0% | 184.5 MB |
-| MipsTUN (MTU 1500) [UDP] [Single Stream] | mips | 1500 | 5GHz Wi-Fi | 146.31 Mbps (9.1% loss) | 119.8 Mbps (23.2% loss) | 120.9% | 106.9% | 223.0% | 113.8 MB |
-| Hev (MTU 1500) [UDP] [P=8] | hev | 1500 | 5GHz Wi-Fi | 198.72 Mbps | 199.95 Mbps | 69.2% | 33.8% | 262.0% | 119.5 MB |
-| Xray TUN (MTU 1500) [UDP] [P=8] | xray | 1500 | 5GHz Wi-Fi | 196.39 Mbps (0.3% loss) | 199.76 Mbps | 80.3% | 56.0% | 220.0% | 102.3 MB |
-| SingTUN (MTU 1500) [UDP] [P=8] | sing | 1500 | 5GHz Wi-Fi | 159.4 Mbps | 199.96 Mbps | 175.6% | 184.4% | 250.0% | 188.4 MB |
-| MipsTUN (MTU 1500) [UDP] [P=8] | mips | 1500 | 5GHz Wi-Fi | 138.83 Mbps (13.0% loss) | 170.79 Mbps (0.3% loss) | 97.3% | 120.4% | 336.0% | 124.1 MB |
+| Wi-Fi Baseline (No VPN) [Single Stream] | direct_none | 0 | 5GHz Wi-Fi | 312.47 Mbps | 763.9 Mbps | 0.3% | 0.8% | 3.7% | 146.6 MB |
+| Wi-Fi Baseline (No VPN) [P=8] | direct_none | 0 | 5GHz Wi-Fi | 820.93 Mbps | 843.11 Mbps | 0.2% | 0.5% | 1.0% | 145.4 MB |
+| Hev (MTU 1500) [Single Stream] | hev | 1500 | 5GHz Wi-Fi | 612.93 Mbps | 638.3 Mbps | 60.6% | 88.3% | 103.0% | 171.9 MB |
+| Xray TUN (MTU 1500) [Single Stream] | xray | 1500 | 5GHz Wi-Fi | 657.0 Mbps | 198.78 Mbps | 168.2% | 118.4% | 201.0% | 172.7 MB |
+| SingTUN (MTU 1500) [Single Stream] | sing | 1500 | 5GHz Wi-Fi | 642.67 Mbps | 255.72 Mbps | 65.4% | 121.4% | 134.0% | 188.8 MB |
+| MipsTUN (MTU 1500) [Single Stream] | mips | 1500 | 5GHz Wi-Fi | 521.6 Mbps | 236.83 Mbps | 117.2% | 201.1% | 235.4% | 128.6 MB |
+| Hev (MTU 9000) [Single Stream] | hev | 9000 | 5GHz Wi-Fi | 597.87 Mbps | 807.2 Mbps | 41.4% | 109.0% | 125.0% | 97.3 MB |
+| Xray TUN (MTU 9000) [Single Stream] | xray | 9000 | 5GHz Wi-Fi | 254.93 Mbps | 60.18 Mbps | 167.9% | 106.8% | 191.7% | 97.8 MB |
+| SingTUN (MTU 9000) [Single Stream] | sing | 9000 | 5GHz Wi-Fi | 607.7 Mbps | 566.48 Mbps | 76.7% | 147.6% | 159.0% | 111.3 MB |
+| MipsTUN (MTU 9000) [Single Stream] | mips | 9000 | 5GHz Wi-Fi | 584.01 Mbps | 788.71 Mbps | 73.0% | 202.6% | 211.0% | 127.6 MB |
+| Hev (MTU 1500) [P=8] | hev | 1500 | 5GHz Wi-Fi | 759.9 Mbps | 279.57 Mbps | 76.3% | 78.9% | 153.0% | 98.3 MB |
+| Xray TUN (MTU 1500) [P=8] | xray | 1500 | 5GHz Wi-Fi | 364.69 Mbps | 184.68 Mbps | 239.8% | 186.9% | 255.5% | 99.2 MB |
+| SingTUN (MTU 1500) [P=8] | sing | 1500 | 5GHz Wi-Fi | 715.49 Mbps | 766.58 Mbps | 159.8% | 349.0% | 437.0% | 115.7 MB |
+| MipsTUN (MTU 1500) [P=8] | mips | 1500 | 5GHz Wi-Fi | 823.23 Mbps | 135.88 Mbps | 145.4% | 190.0% | 295.7% | 148.8 MB |
+| Hev (MTU 9000) [P=8] | hev | 9000 | 5GHz Wi-Fi | 833.04 Mbps | 890.24 Mbps | 43.3% | 137.5% | 162.0% | 97.6 MB |
+| Xray TUN (MTU 9000) [P=8] | xray | 9000 | 5GHz Wi-Fi | 359.58 Mbps | 156.59 Mbps | 235.2% | 178.0% | 244.0% | 98.6 MB |
+| SingTUN (MTU 9000) [P=8] | sing | 9000 | 5GHz Wi-Fi | 807.74 Mbps | 900.51 Mbps | 93.4% | 237.1% | 256.0% | 147.2 MB |
+| MipsTUN (MTU 9000) [P=8] | mips | 9000 | 5GHz Wi-Fi | 837.81 Mbps | 685.38 Mbps | 84.1% | 212.4% | 262.6% | 145.7 MB |
+| Wi-Fi Baseline (No VPN) [UDP] [Single Stream] | direct_none | 0 | 5GHz Wi-Fi | 199.69 Mbps | 200.02 Mbps | 0.0% | 0.0% | 0.0% | 126.0 MB |
+| Wi-Fi Baseline (No VPN) [UDP] [P=8] | direct_none | 0 | 5GHz Wi-Fi | 199.77 Mbps | 200.08 Mbps | 0.1% | 0.0% | 1.0% | 125.3 MB |
+| Hev (MTU 1500) [UDP] [Single Stream] | hev | 1500 | 5GHz Wi-Fi | 130.63 Mbps (25.6% loss) | 114.89 Mbps (32.9% loss) | 287.8% | 266.8% | 349.0% | 137.0 MB |
+| Xray TUN (MTU 1500) [UDP] [Single Stream] | xray | 1500 | 5GHz Wi-Fi | 149.8 Mbps (24.2% loss) | 103.22 Mbps (37.9% loss) | 270.2% | 83.5% | 302.0% | 137.0 MB |
+| SingTUN (MTU 1500) [UDP] [Single Stream] | sing | 1500 | 5GHz Wi-Fi | 167.05 Mbps (8.5% loss) | 115.18 Mbps (33.7% loss) | 373.7% | 305.4% | 387.0% | 130.5 MB |
+| MipsTUN (MTU 1500) [UDP] [Single Stream] | mips | 1500 | 5GHz Wi-Fi | 159.2 Mbps (11.9% loss) | 125.99 Mbps (28.0% loss) | 377.1% | 328.7% | 386.0% | 133.4 MB |
+| Hev (MTU 1500) [UDP] [P=8] | hev | 1500 | 5GHz Wi-Fi | 199.83 Mbps | 200.37 Mbps | 258.2% | 240.2% | 355.0% | 103.4 MB |
+| Xray TUN (MTU 1500) [UDP] [P=8] | xray | 1500 | 5GHz Wi-Fi | 198.94 Mbps (0.4% loss) | 200.36 Mbps | 158.7% | 117.8% | 210.0% | 102.0 MB |
+| SingTUN (MTU 1500) [UDP] [P=8] | sing | 1500 | 5GHz Wi-Fi | 169.68 Mbps | 200.19 Mbps | 410.0% | 380.6% | 434.0% | 116.1 MB |
+| MipsTUN (MTU 1500) [UDP] [P=8] | mips | 1500 | 5GHz Wi-Fi | 199.57 Mbps | 187.22 Mbps (6.5% loss) | 391.4% | 374.7% | 420.0% | 138.5 MB |
 | USB Baseline (No VPN) [Single Stream] | direct_none | 0 | USB 3.2 / 4.0 | 710.53 Mbps | 371.32 Mbps | 0.0% | 0.0% | 0.0% | 179.8 MB |
 | USB Baseline (No VPN) [P=8] | direct_none | 0 | USB 3.2 / 4.0 | 757.01 Mbps | 441.76 Mbps | 0.0% | 0.0% | 0.0% | 179.2 MB |
 | Hev (MTU 1500) [Single Stream] | hev | 1500 | USB 3.2 / 4.0 | 648.05 Mbps | 303.58 Mbps | 46.0% | 56.9% | 85.0% | 96.8 MB |
@@ -89,34 +89,34 @@ Merged at: 2026-09-18T20:37:50.541307
 
 | Test Case | Backend | MTU | Medium | Upload | Download | Up CPU | Down CPU | Peak CPU | Peak Memory |
 | :--- | :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Wi-Fi Baseline (No VPN) [Single Stream] | direct_none | 0 | 5GHz Wi-Fi | 334.42 Mbps | 206.93 Mbps | 0.0% | 0.0% | 0.0% | 192.2 MB |
-| Wi-Fi Baseline (No VPN) [P=8] | direct_none | 0 | 5GHz Wi-Fi | 351.71 Mbps | 427.08 Mbps | 0.0% | 0.0% | 0.0% | 191.7 MB |
-| Hev (MTU 1500) [Single Stream] | hev | 1500 | 5GHz Wi-Fi | 290.28 Mbps | 261.66 Mbps | 24.4% | 43.6% | 70.0% | 156.9 MB |
-| Xray TUN (MTU 1500) [Single Stream] | xray | 1500 | 5GHz Wi-Fi | 246.56 Mbps | 66.16 Mbps | 80.4% | 55.2% | 173.0% | 103.9 MB |
-| SingTUN (MTU 1500) [Single Stream] | sing | 1500 | 5GHz Wi-Fi | 368.18 Mbps | 157.67 Mbps | 36.4% | 80.6% | 139.0% | 193.0 MB |
-| MipsTUN (MTU 1500) [Single Stream] | mips | 1500 | 5GHz Wi-Fi | 331.93 Mbps | 229.79 Mbps | 38.8% | 67.6% | 189.0% | 109.5 MB |
-| Hev (MTU 9000) [Single Stream] | hev | 9000 | 5GHz Wi-Fi | 359.29 Mbps | 327.92 Mbps | 0.5% | 0.0% | 5.0% | 95.6 MB |
-| Xray TUN (MTU 9000) [Single Stream] | xray | 9000 | 5GHz Wi-Fi | 249.79 Mbps | 64.06 Mbps | 84.7% | 55.3% | 196.0% | 98.0 MB |
-| SingTUN (MTU 9000) [Single Stream] | sing | 9000 | 5GHz Wi-Fi | 370.88 Mbps | 359.15 Mbps | 31.3% | 66.8% | 89.0% | 193.2 MB |
-| MipsTUN (MTU 9000) [Single Stream] | mips | 9000 | 5GHz Wi-Fi | 389.54 Mbps | 369.01 Mbps | 19.9% | 38.1% | 139.0% | 107.9 MB |
-| Hev (MTU 1500) [P=8] | hev | 1500 | 5GHz Wi-Fi | 415.63 Mbps | 302.44 Mbps | 15.1% | 30.4% | 91.0% | 109.4 MB |
-| Xray TUN (MTU 1500) [P=8] | xray | 1500 | 5GHz Wi-Fi | 312.72 Mbps | 133.84 Mbps | 103.1% | 79.0% | 239.0% | 98.8 MB |
-| SingTUN (MTU 1500) [P=8] | sing | 1500 | 5GHz Wi-Fi | 355.59 Mbps | 435.58 Mbps | 58.5% | 131.0% | 229.0% | 197.3 MB |
-| MipsTUN (MTU 1500) [P=8] | mips | 1500 | 5GHz Wi-Fi | 403.44 Mbps | 153.19 Mbps | 26.8% | 39.4% | 214.0% | 130.1 MB |
-| Hev (MTU 9000) [P=8] | hev | 9000 | 5GHz Wi-Fi | 368.38 Mbps | 419.86 Mbps | 19.1% | 52.1% | 91.0% | 97.1 MB |
-| Xray TUN (MTU 9000) [P=8] | xray | 9000 | 5GHz Wi-Fi | 288.25 Mbps | 178.14 Mbps | 87.5% | 92.9% | 244.0% | 190.4 MB |
-| SingTUN (MTU 9000) [P=8] | sing | 9000 | 5GHz Wi-Fi | 391.93 Mbps | 428.45 Mbps | 39.1% | 81.5% | 133.0% | 197.2 MB |
-| MipsTUN (MTU 9000) [P=8] | mips | 9000 | 5GHz Wi-Fi | 410.92 Mbps | 417.9 Mbps | 32.9% | 63.0% | 207.0% | 129.3 MB |
-| Wi-Fi Baseline (No VPN) [UDP] [Single Stream] | direct_none | 0 | 5GHz Wi-Fi | 196.48 Mbps (1.5% loss) | 199.89 Mbps | 0.0% | 0.0% | 0.0% | 195.9 MB |
-| Wi-Fi Baseline (No VPN) [UDP] [P=8] | direct_none | 0 | 5GHz Wi-Fi | 199.56 Mbps | 200.09 Mbps | 0.0% | 0.0% | 0.0% | 195.6 MB |
-| Hev (MTU 1500) [UDP] [Single Stream] | hev | 1500 | 5GHz Wi-Fi | 157.7 Mbps (5.2% loss) | 130.19 Mbps (21.3% loss) | 135.4% | 115.9% | 188.0% | 106.2 MB |
-| Xray TUN (MTU 1500) [UDP] [Single Stream] | xray | 1500 | 5GHz Wi-Fi | 168.95 Mbps (14.7% loss) | 155.26 Mbps (14.8% loss) | 117.9% | 48.8% | 223.0% | 102.7 MB |
-| SingTUN (MTU 1500) [UDP] [Single Stream] | sing | 1500 | 5GHz Wi-Fi | 89.34 Mbps (32.4% loss) | 108.5 Mbps (26.5% loss) | 154.2% | 162.5% | 250.0% | 205.4 MB |
-| MipsTUN (MTU 1500) [UDP] [Single Stream] | mips | 1500 | 5GHz Wi-Fi | 117.59 Mbps (20.4% loss) | 102.28 Mbps (28.7% loss) | 122.1% | 104.1% | 226.0% | 114.1 MB |
-| Hev (MTU 1500) [UDP] [P=8] | hev | 1500 | 5GHz Wi-Fi | 199.32 Mbps | 199.67 Mbps | 81.6% | 66.4% | 192.0% | 103.4 MB |
-| Xray TUN (MTU 1500) [UDP] [P=8] | xray | 1500 | 5GHz Wi-Fi | 198.43 Mbps (0.5% loss) | 199.46 Mbps | 79.8% | 55.5% | 214.0% | 110.8 MB |
-| SingTUN (MTU 1500) [UDP] [P=8] | sing | 1500 | 5GHz Wi-Fi | 163.1 Mbps (0.1% loss) | 199.99 Mbps | 206.2% | 185.6% | 247.0% | 206.3 MB |
-| MipsTUN (MTU 1500) [UDP] [P=8] | mips | 1500 | 5GHz Wi-Fi | 169.7 Mbps | 190.81 Mbps (0.1% loss) | 157.0% | 149.4% | 299.0% | 118.0 MB |
+| Wi-Fi Baseline (No VPN) [Single Stream] | direct_none | 0 | 5GHz Wi-Fi | 817.99 Mbps | 783.93 Mbps | 0.6% | 0.0% | 6.0% | 0.0 MB |
+| Wi-Fi Baseline (No VPN) [P=8] | direct_none | 0 | 5GHz Wi-Fi | 833.06 Mbps | 893.18 Mbps | 0.0% | 0.0% | 0.0% | 0.0 MB |
+| Hev (MTU 1500) [Single Stream] | hev | 1500 | 5GHz Wi-Fi | 803.21 Mbps | 493.5 Mbps | 91.1% | 95.3% | 137.0% | 118.7 MB |
+| Xray TUN (MTU 1500) [Single Stream] | xray | 1500 | 5GHz Wi-Fi | 252.95 Mbps | 79.37 Mbps | 167.6% | 100.8% | 196.1% | 98.2 MB |
+| SingTUN (MTU 1500) [Single Stream] | sing | 1500 | 5GHz Wi-Fi | 795.5 Mbps | 148.78 Mbps | 105.3% | 148.7% | 196.0% | 110.8 MB |
+| MipsTUN (MTU 1500) [Single Stream] | mips | 1500 | 5GHz Wi-Fi | 778.62 Mbps | 236.22 Mbps | 157.3% | 200.7% | 232.8% | 130.1 MB |
+| Hev (MTU 9000) [Single Stream] | hev | 9000 | 5GHz Wi-Fi | 801.45 Mbps | 787.28 Mbps | 93.8% | 107.8% | 127.0% | 112.4 MB |
+| Xray TUN (MTU 9000) [Single Stream] | xray | 9000 | 5GHz Wi-Fi | 256.03 Mbps | 61.95 Mbps | 169.4% | 109.1% | 214.4% | 112.2 MB |
+| SingTUN (MTU 9000) [Single Stream] | sing | 9000 | 5GHz Wi-Fi | 794.11 Mbps | 543.94 Mbps | 87.3% | 139.7% | 162.8% | 124.4 MB |
+| MipsTUN (MTU 9000) [Single Stream] | mips | 9000 | 5GHz Wi-Fi | 795.02 Mbps | 786.34 Mbps | 102.8% | 198.3% | 216.0% | 131.4 MB |
+| Hev (MTU 1500) [P=8] | hev | 1500 | 5GHz Wi-Fi | 827.01 Mbps | 289.45 Mbps | 76.4% | 79.0% | 146.0% | 98.6 MB |
+| Xray TUN (MTU 1500) [P=8] | xray | 1500 | 5GHz Wi-Fi | 364.97 Mbps | 156.06 Mbps | 234.0% | 176.2% | 241.0% | 99.4 MB |
+| SingTUN (MTU 1500) [P=8] | sing | 1500 | 5GHz Wi-Fi | 619.72 Mbps | 885.37 Mbps | 138.7% | 407.8% | 428.0% | 119.4 MB |
+| MipsTUN (MTU 1500) [P=8] | mips | 1500 | 5GHz Wi-Fi | 825.6 Mbps | 114.29 Mbps | 141.6% | 167.6% | 281.1% | 147.2 MB |
+| Hev (MTU 9000) [P=8] | hev | 9000 | 5GHz Wi-Fi | 809.54 Mbps | 898.35 Mbps | 52.6% | 129.9% | 162.0% | 129.9 MB |
+| Xray TUN (MTU 9000) [P=8] | xray | 9000 | 5GHz Wi-Fi | 355.85 Mbps | 182.01 Mbps | 235.0% | 186.8% | 248.0% | 129.2 MB |
+| SingTUN (MTU 9000) [P=8] | sing | 9000 | 5GHz Wi-Fi | 820.65 Mbps | 897.1 Mbps | 60.0% | 236.2% | 246.0% | 149.9 MB |
+| MipsTUN (MTU 9000) [P=8] | mips | 9000 | 5GHz Wi-Fi | 831.63 Mbps | 691.35 Mbps | 78.2% | 211.0% | 292.0% | 148.9 MB |
+| Wi-Fi Baseline (No VPN) [UDP] [Single Stream] | direct_none | 0 | 5GHz Wi-Fi | 199.77 Mbps | 199.9 Mbps | 0.0% | 0.0% | 0.0% | 128.0 MB |
+| Wi-Fi Baseline (No VPN) [UDP] [P=8] | direct_none | 0 | 5GHz Wi-Fi | 199.87 Mbps | 200.06 Mbps | 0.0% | 0.0% | 0.0% | 128.0 MB |
+| Hev (MTU 1500) [UDP] [Single Stream] | hev | 1500 | 5GHz Wi-Fi | 157.84 Mbps (13.1% loss) | 122.82 Mbps (30.7% loss) | 307.3% | 261.8% | 349.0% | 139.0 MB |
+| Xray TUN (MTU 1500) [UDP] [Single Stream] | xray | 1500 | 5GHz Wi-Fi | 133.22 Mbps (32.5% loss) | 105.15 Mbps (36.4% loss) | 262.1% | 80.4% | 298.0% | 139.3 MB |
+| SingTUN (MTU 1500) [UDP] [Single Stream] | sing | 1500 | 5GHz Wi-Fi | 160.58 Mbps (12.3% loss) | 121.32 Mbps (31.6% loss) | 375.7% | 307.0% | 387.0% | 131.9 MB |
+| MipsTUN (MTU 1500) [UDP] [Single Stream] | mips | 1500 | 5GHz Wi-Fi | 171.65 Mbps (5.6% loss) | 124.38 Mbps (29.9% loss) | 378.2% | 328.4% | 393.0% | 136.7 MB |
+| Hev (MTU 1500) [UDP] [P=8] | hev | 1500 | 5GHz Wi-Fi | 199.69 Mbps | 200.23 Mbps | 253.6% | 239.3% | 353.0% | 105.0 MB |
+| Xray TUN (MTU 1500) [UDP] [P=8] | xray | 1500 | 5GHz Wi-Fi | 199.27 Mbps (0.1% loss) | 200.18 Mbps | 157.7% | 117.8% | 212.0% | 103.6 MB |
+| SingTUN (MTU 1500) [UDP] [P=8] | sing | 1500 | 5GHz Wi-Fi | 169.73 Mbps (0.3% loss) | 200.0 Mbps | 404.7% | 373.9% | 438.0% | 114.7 MB |
+| MipsTUN (MTU 1500) [UDP] [P=8] | mips | 1500 | 5GHz Wi-Fi | 199.63 Mbps | 187.98 Mbps (5.9% loss) | 394.0% | 358.1% | 418.0% | 131.7 MB |
 | USB Baseline (No VPN) [Single Stream] | direct_none | 0 | USB 3.2 / 4.0 | 659.85 Mbps | 387.05 Mbps | 0.0% | 0.0% | 0.0% | 196.7 MB |
 | USB Baseline (No VPN) [P=8] | direct_none | 0 | USB 3.2 / 4.0 | 736.16 Mbps | 442.06 Mbps | 0.0% | 0.0% | 0.0% | 196.6 MB |
 | Hev (MTU 1500) [Single Stream] | hev | 1500 | USB 3.2 / 4.0 | 632.62 Mbps | 297.31 Mbps | 46.4% | 54.7% | 86.0% | 96.5 MB |
@@ -173,34 +173,34 @@ Merged at: 2026-09-18T20:37:50.541307
 
 | Test Case | Backend | MTU | Medium | Upload | Download | Up CPU | Down CPU | Peak CPU | Peak Memory |
 | :--- | :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
-| Wi-Fi Baseline (No VPN) [Single Stream] | direct_none | 0 | 5GHz Wi-Fi | 369.4 Mbps | 336.09 Mbps | 0.0% | 0.0% | 0.0% | 169.0 MB |
-| Wi-Fi Baseline (No VPN) [P=8] | direct_none | 0 | 5GHz Wi-Fi | 381.54 Mbps | 418.91 Mbps | 0.0% | 0.0% | 0.0% | 0.0 MB |
-| Hev (MTU 1500) [Single Stream] | hev | 1500 | 5GHz Wi-Fi | 370.8 Mbps | 263.76 Mbps | 28.0% | 44.4% | 65.0% | 159.1 MB |
-| Xray TUN (MTU 1500) [Single Stream] | xray | 1500 | 5GHz Wi-Fi | 313.11 Mbps | 63.33 Mbps | 65.35% | 58.55% | 172.0% | 102.3 MB |
-| SingTUN (MTU 1500) [Single Stream] | sing | 1500 | 5GHz Wi-Fi | 376.29 Mbps | 192.68 Mbps | 40.0% | 82.5% | 140.0% | 169.8 MB |
-| MipsTUN (MTU 1500) [Single Stream] | mips | 1500 | 5GHz Wi-Fi | 292.46 Mbps | 228.57 Mbps | 38.7% | 65.3% | 196.0% | 109.8 MB |
-| Hev (MTU 9000) [Single Stream] | hev | 9000 | 5GHz Wi-Fi | 270.21 Mbps | 327.92 Mbps | 0.4% | 0.0% | 4.0% | 96.0 MB |
-| Xray TUN (MTU 9000) [Single Stream] | xray | 9000 | 5GHz Wi-Fi | 248.38 Mbps | 63.01 Mbps | 83.95% | 55.35% | 186.5% | 97.95 MB |
-| SingTUN (MTU 9000) [Single Stream] | sing | 9000 | 5GHz Wi-Fi | 365.37 Mbps | 342.8 Mbps | 26.7% | 64.2% | 90.0% | 169.3 MB |
-| MipsTUN (MTU 9000) [Single Stream] | mips | 9000 | 5GHz Wi-Fi | 376.05 Mbps | 327.92 Mbps | 21.8% | 36.9% | 139.0% | 107.8 MB |
-| Hev (MTU 1500) [P=8] | hev | 1500 | 5GHz Wi-Fi | 394.72 Mbps | 304.43 Mbps | 27.8% | 53.5% | 94.0% | 118.3 MB |
-| Xray TUN (MTU 1500) [P=8] | xray | 1500 | 5GHz Wi-Fi | 330.88 Mbps | 154.88 Mbps | 109.95% | 85.45% | 238.5% | 99.05 MB |
-| SingTUN (MTU 1500) [P=8] | sing | 1500 | 5GHz Wi-Fi | 369.98 Mbps | 405.39 Mbps | 59.0% | 122.0% | 204.0% | 172.3 MB |
-| MipsTUN (MTU 1500) [P=8] | mips | 1500 | 5GHz Wi-Fi | 357.66 Mbps | 143.96 Mbps | 43.2% | 64.6% | 200.0% | 126.4 MB |
-| Hev (MTU 9000) [P=8] | hev | 9000 | 5GHz Wi-Fi | 366.82 Mbps | 373.73 Mbps | 20.8% | 50.1% | 101.0% | 97.5 MB |
-| Xray TUN (MTU 9000) [P=8] | xray | 9000 | 5GHz Wi-Fi | 323.65 Mbps | 180.25 Mbps | 102.9% | 93.25% | 244.5% | 144.35 MB |
-| SingTUN (MTU 9000) [P=8] | sing | 9000 | 5GHz Wi-Fi | 382.67 Mbps | 409.48 Mbps | 36.8% | 78.6% | 100.0% | 172.9 MB |
-| MipsTUN (MTU 9000) [P=8] | mips | 9000 | 5GHz Wi-Fi | 362.15 Mbps | 340.4 Mbps | 32.7% | 57.1% | 207.0% | 130.7 MB |
-| Wi-Fi Baseline (No VPN) [UDP] [Single Stream] | direct_none | 0 | 5GHz Wi-Fi | 196.68 Mbps (1.4% loss) | 199.98 Mbps | 0.0% | 0.0% | 0.0% | 0.0 MB |
-| Wi-Fi Baseline (No VPN) [UDP] [P=8] | direct_none | 0 | 5GHz Wi-Fi | 195.1 Mbps | 200.03 Mbps | 1.2% | 0.2% | 5.0% | 91.8 MB |
-| Hev (MTU 1500) [UDP] [Single Stream] | hev | 1500 | 5GHz Wi-Fi | 145.01 Mbps (10.5% loss) | 129.75 Mbps (19.7% loss) | 135.0% | 116.3% | 183.0% | 107.3 MB |
-| Xray TUN (MTU 1500) [UDP] [Single Stream] | xray | 1500 | 5GHz Wi-Fi | 148.05 Mbps (25.2% loss) | 130.29 Mbps (26.0% loss) | 123.9% | 45.55% | 217.5% | 103.1 MB |
-| SingTUN (MTU 1500) [UDP] [Single Stream] | sing | 1500 | 5GHz Wi-Fi | 163.83 Mbps (2.9% loss) | 136.93 Mbps (14.6% loss) | 181.7% | 157.4% | 225.0% | 114.2 MB |
-| MipsTUN (MTU 1500) [UDP] [Single Stream] | mips | 1500 | 5GHz Wi-Fi | 149.37 Mbps (10.2% loss) | 132.98 Mbps (16.6% loss) | 120.6% | 105.2% | 225.0% | 111.6 MB |
-| Hev (MTU 1500) [UDP] [P=8] | hev | 1500 | 5GHz Wi-Fi | 198.82 Mbps (0.1% loss) | 193.18 Mbps | 53.7% | 44.8% | 174.0% | 122.4 MB |
-| Xray TUN (MTU 1500) [UDP] [P=8] | xray | 1500 | 5GHz Wi-Fi | 197.41 Mbps (0.4% loss) | 199.61 Mbps | 80.05% | 55.75% | 217.0% | 106.55 MB |
-| SingTUN (MTU 1500) [UDP] [P=8] | sing | 1500 | 5GHz Wi-Fi | 132.81 Mbps (0.9% loss) | 199.98 Mbps | 139.4% | 179.2% | 216.0% | 116.2 MB |
-| MipsTUN (MTU 1500) [UDP] [P=8] | mips | 1500 | 5GHz Wi-Fi | 142.01 Mbps (28.8% loss) | 194.75 Mbps (2.5% loss) | 74.0% | 117.4% | 315.0% | 125.9 MB |
+| Wi-Fi Baseline (No VPN) [Single Stream] | direct_none | 0 | 5GHz Wi-Fi | 637.69 Mbps | 726.16 Mbps | 0.0% | 0.1% | 1.0% | 98.4 MB |
+| Wi-Fi Baseline (No VPN) [P=8] | direct_none | 0 | 5GHz Wi-Fi | 695.23 Mbps | 578.06 Mbps | 0.0% | 0.0% | 0.0% | 98.4 MB |
+| Hev (MTU 1500) [Single Stream] | hev | 1500 | 5GHz Wi-Fi | 678.84 Mbps | 381.11 Mbps | 74.6% | 86.7% | 119.0% | 101.4 MB |
+| Xray TUN (MTU 1500) [Single Stream] | xray | 1500 | 5GHz Wi-Fi | 256.17 Mbps | 56.93 Mbps | 170.3% | 108.8% | 217.8% | 101.4 MB |
+| SingTUN (MTU 1500) [Single Stream] | sing | 1500 | 5GHz Wi-Fi | 673.95 Mbps | 154.44 Mbps | 121.7% | 149.4% | 181.0% | 110.5 MB |
+| MipsTUN (MTU 1500) [Single Stream] | mips | 1500 | 5GHz Wi-Fi | 666.77 Mbps | 242.61 Mbps | 145.9% | 204.2% | 265.0% | 127.9 MB |
+| Hev (MTU 9000) [Single Stream] | hev | 9000 | 5GHz Wi-Fi | 676.92 Mbps | 700.22 Mbps | 59.9% | 109.6% | 133.0% | 97.5 MB |
+| Xray TUN (MTU 9000) [Single Stream] | xray | 9000 | 5GHz Wi-Fi | 565.43 Mbps | 57.66 Mbps | 163.6% | 118.3% | 217.7% | 98.4 MB |
+| SingTUN (MTU 9000) [Single Stream] | sing | 9000 | 5GHz Wi-Fi | 679.07 Mbps | 569.1 Mbps | 107.1% | 146.3% | 165.0% | 110.9 MB |
+| MipsTUN (MTU 9000) [Single Stream] | mips | 9000 | 5GHz Wi-Fi | 672.29 Mbps | 707.29 Mbps | 87.7% | 196.5% | 209.0% | 127.8 MB |
+| Hev (MTU 1500) [P=8] | hev | 1500 | 5GHz Wi-Fi | 617.67 Mbps | 275.85 Mbps | 95.0% | 80.2% | 145.0% | 114.8 MB |
+| Xray TUN (MTU 1500) [P=8] | xray | 1500 | 5GHz Wi-Fi | 353.62 Mbps | 159.73 Mbps | 231.2% | 161.5% | 251.1% | 114.8 MB |
+| SingTUN (MTU 1500) [P=8] | sing | 1500 | 5GHz Wi-Fi | 606.39 Mbps | 778.48 Mbps | 110.2% | 406.2% | 449.0% | 153.8 MB |
+| MipsTUN (MTU 1500) [P=8] | mips | 1500 | 5GHz Wi-Fi | 688.44 Mbps | 126.02 Mbps | 126.1% | 180.1% | 253.0% | 145.9 MB |
+| Hev (MTU 9000) [P=8] | hev | 9000 | 5GHz Wi-Fi | 699.63 Mbps | 769.93 Mbps | 50.3% | 138.0% | 165.0% | 128.2 MB |
+| Xray TUN (MTU 9000) [P=8] | xray | 9000 | 5GHz Wi-Fi | 369.44 Mbps | 181.65 Mbps | 238.7% | 183.0% | 245.0% | 127.8 MB |
+| SingTUN (MTU 9000) [P=8] | sing | 9000 | 5GHz Wi-Fi | 699.65 Mbps | 789.91 Mbps | 61.6% | 239.2% | 260.0% | 155.3 MB |
+| MipsTUN (MTU 9000) [P=8] | mips | 9000 | 5GHz Wi-Fi | 713.41 Mbps | 712.41 Mbps | 77.1% | 221.7% | 260.1% | 0.0 MB |
+| Wi-Fi Baseline (No VPN) [UDP] [Single Stream] | direct_none | 0 | 5GHz Wi-Fi | 199.54 Mbps (0.1% loss) | 200.04 Mbps | 0.0% | 0.0% | 0.0% | 0.0 MB |
+| Wi-Fi Baseline (No VPN) [UDP] [P=8] | direct_none | 0 | 5GHz Wi-Fi | 199.82 Mbps | 200.08 Mbps | 0.0% | 0.0% | 0.0% | 0.0 MB |
+| Hev (MTU 1500) [UDP] [Single Stream] | hev | 1500 | 5GHz Wi-Fi | 158.5 Mbps (12.7% loss) | 120.38 Mbps (31.4% loss) | 306.0% | 262.1% | 351.0% | 135.6 MB |
+| Xray TUN (MTU 1500) [UDP] [Single Stream] | xray | 1500 | 5GHz Wi-Fi | 199.41 Mbps (0.1% loss) | 158.52 Mbps (14.1% loss) | 144.3% | 102.5% | 251.0% | 120.6 MB |
+| SingTUN (MTU 1500) [UDP] [Single Stream] | sing | 1500 | 5GHz Wi-Fi | 116.36 Mbps (30.3% loss) | 112.85 Mbps (34.3% loss) | 367.2% | 308.2% | 377.0% | 107.8 MB |
+| MipsTUN (MTU 1500) [UDP] [Single Stream] | mips | 1500 | 5GHz Wi-Fi | 160.3 Mbps (11.1% loss) | 121.85 Mbps (30.6% loss) | 377.3% | 326.9% | 392.0% | 129.9 MB |
+| Hev (MTU 1500) [UDP] [P=8] | hev | 1500 | 5GHz Wi-Fi | 172.65 Mbps | 200.19 Mbps | 246.4% | 249.7% | 383.0% | 117.5 MB |
+| Xray TUN (MTU 1500) [UDP] [P=8] | xray | 1500 | 5GHz Wi-Fi | 199.73 Mbps | 200.22 Mbps | 131.6% | 152.1% | 210.0% | 117.7 MB |
+| SingTUN (MTU 1500) [UDP] [P=8] | sing | 1500 | 5GHz Wi-Fi | 199.66 Mbps | 200.56 Mbps | 390.9% | 370.7% | 418.0% | 129.6 MB |
+| MipsTUN (MTU 1500) [UDP] [P=8] | mips | 1500 | 5GHz Wi-Fi | 199.88 Mbps | 185.23 Mbps (7.5% loss) | 413.9% | 382.0% | 442.0% | 134.5 MB |
 | USB Baseline (No VPN) [Single Stream] | direct_none | 0 | USB 3.2 / 4.0 | 647.61 Mbps | 369.84 Mbps | 0.0% | 0.0% | 0.0% | 110.4 MB |
 | USB Baseline (No VPN) [P=8] | direct_none | 0 | USB 3.2 / 4.0 | 753.39 Mbps | 437.06 Mbps | 0.6% | 0.0% | 3.0% | 108.0 MB |
 | Hev (MTU 1500) [Single Stream] | hev | 1500 | USB 3.2 / 4.0 | 631.08 Mbps | 295.06 Mbps | 48.3% | 57.0% | 88.0% | 96.8 MB |
