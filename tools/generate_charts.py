@@ -528,6 +528,128 @@ def render_idle_memory_dashboard(
     print(f"[Dashboard] Saved: {output_path}")
 
 
+def render_udp_jitter_dashboard(
+    output_path: str,
+    title: str,
+    subtitle: str,
+    categories: List[Dict[str, Any]],
+    wifi_jitters: Dict[str, Dict[str, float]],
+    usb_jitters: Dict[str, Dict[str, float]],
+    wifi_baselines: Dict[str, float],
+    usb_baselines: Dict[str, float]
+):
+    """
+    Renders a unified 16:9 UDP Jitter dashboard with side-by-side subplots split by physical medium:
+    Left: 5GHz Wi-Fi (Lower is Better)
+    Right: USB 3.2 Tethering (Lower is Better)
+    """
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 9.5), dpi=200)
+    plt.subplots_adjust(left=0.18, right=0.96, top=0.80, bottom=0.08, wspace=0.10)
+
+    add_dashboard_header(fig, title, subtitle)
+
+    cat_labels = [c['label'] for c in categories]
+    cat_keys = [c['key'] for c in categories]
+    num_cats = len(categories)
+    num_backends = len(BACKEND_ORDER)
+
+    y_indices = np.arange(num_cats)
+    y_indices_rev = y_indices[::-1]
+
+    bar_height = 0.17
+    offsets = np.linspace((num_backends - 1) * bar_height / 2, -(num_backends - 1) * bar_height / 2, num_backends)
+
+    legend_rects = []
+    legend_labels = []
+
+    def draw_subplot(ax, data_map, baselines, sub_title, is_left: bool = True):
+        ax.set_title(sub_title, fontsize=12, fontweight='bold', color='#1e293b',
+                     fontproperties=prop_bold, pad=12)
+        ax.set_yticks(y_indices_rev)
+        if is_left:
+            ax.set_yticklabels(cat_labels, fontsize=10, fontproperties=prop_medium, color='#334155')
+        else:
+            ax.set_yticklabels([])
+            ax.tick_params(left=False)
+
+        max_val = 0.05
+        for k in cat_keys:
+            base_v = baselines.get(k, 0.0)
+            max_val = max(max_val, base_v)
+            for b_key in BACKEND_ORDER:
+                max_val = max(max_val, data_map.get(k, {}).get(b_key, 0.0))
+
+        ax.set_xlim(0, max_val * 1.30)
+        ax.set_xlabel("Jitter (ms)", fontsize=10, color='#64748b', fontproperties=prop_regular)
+        ax.grid(True, axis='x', zorder=0)
+
+        for y in y_indices:
+            if y < num_cats - 1:
+                ax.axhline(y + 0.5, color='#e2e8f0', linestyle='--', linewidth=0.8, zorder=1)
+
+        for b_idx, b_key in enumerate(BACKEND_ORDER):
+            b_info = PALETTE[b_key]
+            vals = [data_map.get(k, {}).get(b_key, 0.0) for k in cat_keys]
+            y_positions = y_indices_rev + offsets[b_idx]
+
+            rects = ax.barh(
+                y_positions, vals, bar_height,
+                color=b_info['fill'], edgecolor=b_info['edge'],
+                linewidth=0.8, zorder=3,
+                label=b_info['name']
+            )
+
+            if len(legend_rects) < num_backends:
+                legend_rects.append(rects)
+                legend_labels.append(b_info['name'])
+
+            for cat_idx, (rect, val) in enumerate(zip(rects, vals)):
+                if val >= 0:
+                    text_x = val + max_val * 0.015
+                    txt = f"{val:.3f} ms" if val < 0.1 else f"{val:.2f} ms"
+
+                    ax.text(
+                        text_x, rect.get_y() + rect.get_height() / 2,
+                        txt,
+                        ha='left', va='center',
+                        fontsize=8.2, fontweight='bold', color='#1e293b',
+                        fontproperties=prop_bold,
+                        bbox=dict(boxstyle='round,pad=0.15', facecolor='#ffffff', edgecolor='none', alpha=0.85),
+                        zorder=5
+                    )
+
+        for idx, k in enumerate(cat_keys):
+            base_val = baselines.get(k, 0.0)
+            if base_val > 0:
+                y_center = y_indices_rev[idx]
+                y_min = y_center - (num_backends * bar_height / 2) - 0.04
+                y_max = y_center + (num_backends * bar_height / 2) + 0.04
+                ax.vlines(
+                    x=base_val, ymin=y_min, ymax=y_max,
+                    colors='#64748b', linestyles='--', linewidth=1.5, zorder=4
+                )
+                txt_base = f"Baseline: {base_val:.3f} ms" if base_val < 0.1 else f"Baseline: {base_val:.2f} ms"
+                ax.text(
+                    base_val, y_max + 0.03,
+                    txt_base,
+                    ha='center', va='bottom',
+                    fontsize=7.5, color='#64748b',
+                    fontproperties=prop_regular,
+                    bbox=dict(boxstyle='round,pad=0.12', facecolor='#ffffff', edgecolor='none', alpha=0.85),
+                    zorder=5
+                )
+
+    draw_subplot(ax1, wifi_jitters, wifi_baselines, "5GHz Wi-Fi Transmission Jitter (Lower is Better)", is_left=True)
+    draw_subplot(ax2, usb_jitters, usb_baselines, "USB 3.2 Tethering Jitter (Lower is Better)", is_left=False)
+
+    create_top_legend(fig, legend_rects, legend_labels)
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    plt.savefig(output_path, dpi=200, facecolor='#f8fafc', edgecolor='none')
+    plt.close()
+    print(f"[Dashboard] Saved: {output_path}")
+
+
 def render_fullstack_attribution_dashboard(
     output_path: str,
     android_avg_records: List[Dict[str, Any]],
@@ -917,6 +1039,51 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
             tcp_idle, udp_idle
         )
 
+    # 6. UDP Packet Jitter Dashboard
+    has_udp_jitter = any(r.get("network") == "udp" and ("upload_jitter_ms" in r or "download_jitter_ms" in r) for r in records)
+    if has_udp_jitter:
+        jitter_cats = [
+            {"key": "p8_up", "label": "Multi Stream (P=8) Upload"},
+            {"key": "p8_down", "label": "Multi Stream (P=8) Download"},
+            {"key": "p1_up", "label": "Single Stream (P=1) Upload"},
+            {"key": "p1_down", "label": "Single Stream (P=1) Download"},
+        ]
+        wifi_jitters = {k["key"]: {} for k in jitter_cats}
+        usb_jitters = {k["key"]: {} for k in jitter_cats}
+        wifi_base_jit = {}
+        usb_base_jit = {}
+
+        for r in records:
+            if r.get("network") != "udp" or r.get("type") == "idle_memory":
+                continue
+            medium = r.get("medium", "")
+            if "Wi-Fi" not in medium and "USB" not in medium:
+                continue
+            is_wifi = "Wi-Fi" in medium
+            par_key = "p8" if r.get("parallel", 1) == 8 else "p1"
+            b = r.get("backend")
+            up_j = r.get("upload_jitter_ms", 0.0)
+            down_j = r.get("download_jitter_ms", 0.0)
+
+            target_jit = wifi_jitters if is_wifi else usb_jitters
+            target_base = wifi_base_jit if is_wifi else usb_base_jit
+
+            if b == "direct_none":
+                target_base[f"{par_key}_up"] = up_j
+                target_base[f"{par_key}_down"] = down_j
+            elif b in BACKEND_ORDER:
+                target_jit[f"{par_key}_up"][b] = up_j
+                target_jit[f"{par_key}_down"][b] = down_j
+
+        render_udp_jitter_dashboard(
+            os.path.join(output_dir, f"{prefix}udp_jitter_dashboard.webp"),
+            "UDP Packet Transmission Jitter (Lower is Better)",
+            "Delay variation in milliseconds comparing 5GHz Wi Fi and USB 3.2 tethering",
+            jitter_cats,
+            wifi_jitters, usb_jitters,
+            wifi_base_jit, usb_base_jit
+        )
+
 
 def main():
     parser = argparse.ArgumentParser(description="Generate benchmark dashboards (v2)")
@@ -973,7 +1140,8 @@ def main():
                                 vals.append(match[field])
                             break
                 if vals:
-                    rec[field] = round(sum(vals) / len(vals), 2)
+                    digits = 3 if "jitter" in field else 2
+                    rec[field] = round(sum(vals) / len(vals), digits)
 
             # Average idle_flows across all rounds
             if rec.get("type") == "idle_memory":
