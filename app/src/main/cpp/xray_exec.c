@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
 #include <sys/prctl.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -117,6 +118,9 @@ Java_com_simplexray_re_service_TProxyService_nativeSpawnXray(
 
     if (pid == 0) {
         /* child */
+        /* Die if parent dies unexpectedly (prevent orphan Xray process) */
+        prctl(PR_SET_PDEATHSIG, SIGKILL);
+
         dup2(stdin_pipe[0],  STDIN_FILENO);
         dup2(stdout_pipe[1], STDOUT_FILENO);
         dup2(stdout_pipe[1], STDERR_FILENO);
@@ -125,9 +129,17 @@ Java_com_simplexray_re_service_TProxyService_nativeSpawnXray(
         close(stdout_pipe[0]); close(stdout_pipe[1]);
 
         /* dup2 does not copy FD_CLOEXEC, so CHILD_TUN_FD survives exec */
-        if ((int)vpn_fd >= 0 && (int)vpn_fd != CHILD_TUN_FD) {
-            if (dup2((int)vpn_fd, CHILD_TUN_FD) < 0) {
-                _exit(1);
+        if ((int)vpn_fd >= 0) {
+            if ((int)vpn_fd != CHILD_TUN_FD) {
+                if (dup2((int)vpn_fd, CHILD_TUN_FD) < 0) {
+                    _exit(1);
+                }
+            } else {
+                /* Android VpnService sets FD_CLOEXEC by default; clear it if vpn_fd == CHILD_TUN_FD */
+                int flags = fcntl(CHILD_TUN_FD, F_GETFD);
+                if (flags >= 0) {
+                    fcntl(CHILD_TUN_FD, F_SETFD, flags & ~FD_CLOEXEC);
+                }
             }
         }
 
