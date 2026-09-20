@@ -388,7 +388,7 @@ def generate_mega_dashboard():
     # -------------------------------------------------------------
     # CHART 7: 60s Sustained Throughput & Stability (Bottom Left)
     # -------------------------------------------------------------
-    ax7 = fig.add_axes([0.06, 0.08, 0.40, 0.23])
+    ax7 = fig.add_axes([0.06, 0.08, 0.58, 0.23])
     ax7.set_facecolor('#ffffff')
     ax7.set_title("60s Sustained High-Throughput Stability & Attenuation (Higher is Better)", fontsize=11, fontweight='bold',
                   fontproperties=prop_bold, color='#1e293b', pad=14)
@@ -412,6 +412,7 @@ def generate_mega_dashboard():
                 max_tp = max(max_tp, max(series))
                 ax7.plot(time_axis[:len(series)], series, color=color, linewidth=1.8, label=lbl, zorder=3)
 
+        bottom_y7 = 200
         top_y7 = max(max_tp * 1.15, 950)
         label_y7 = np.linspace(top_y7 * 0.88, top_y7 * 0.48, len(sorted_runs))
 
@@ -435,8 +436,8 @@ def generate_mega_dashboard():
                 bbox=dict(boxstyle='round,pad=0.18', facecolor='#ffffff', edgecolor=edge_c, alpha=0.92, linewidth=0.8)
             )
 
-        ax7.set_xlim(0, 77)
-        ax7.set_ylim(0, top_y7)
+        ax7.set_xlim(0, 78)
+        ax7.set_ylim(bottom_y7, top_y7)
         ax7.set_xlabel("Elapsed Time (Seconds)", fontsize=9, color='#64748b', fontproperties=prop_regular)
         ax7.set_ylabel("TCP Download Throughput (Mbps)", fontsize=9, color='#64748b', fontproperties=prop_regular)
         ax7.grid(True, zorder=0)
@@ -446,16 +447,16 @@ def generate_mega_dashboard():
     # -------------------------------------------------------------
     # CHART 8: UDP Transmission Jitter Across Media (Bottom Right)
     # -------------------------------------------------------------
-    ax8 = fig.add_axes([0.56, 0.08, 0.39, 0.23])
+    ax8 = fig.add_axes([0.70, 0.08, 0.25, 0.23])
     ax8.set_facecolor('#ffffff')
     ax8.set_title("UDP Transmission Jitter Across Media (Lower is Better)", fontsize=11, fontweight='bold',
                   fontproperties=prop_bold, color='#1e293b', pad=14)
 
     udp_scenarios = [
-        ("Wi-Fi UDP (P=1)", "5GHz Wi-Fi", 1),
-        ("Wi-Fi UDP (P=8)", "5GHz Wi-Fi", 8),
-        ("USB UDP (P=1)", "USB 3.2 / 4.0", 1),
-        ("USB UDP (P=8)", "USB 3.2 / 4.0", 8),
+        ("Wi-Fi (P=1)", "5GHz Wi-Fi", 1),
+        ("Wi-Fi (P=8)", "5GHz Wi-Fi", 8),
+        ("USB (P=1)", "USB 3.2 / 4.0", 1),
+        ("USB (P=8)", "USB 3.2 / 4.0", 8),
     ]
     num_scenarios = len(udp_scenarios)
     y_pos8 = np.arange(num_scenarios)[::-1]
@@ -465,7 +466,7 @@ def generate_mega_dashboard():
     ax8.set_yticks(y_pos8)
     ax8.set_yticklabels([s[0] for s in udp_scenarios], fontsize=9, fontproperties=prop_medium, color='#334155')
     ax8.set_xlabel("Average Jitter (Milliseconds)", fontsize=9, color='#64748b', fontproperties=prop_regular)
-    ax8.set_xlim(0, 1.85)
+    ax8.set_xlim(0, 1.00)
     ax8.grid(True, axis='x', zorder=0)
 
     for b_idx, b in enumerate(BACKEND_ORDER):
