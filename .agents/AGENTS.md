@@ -28,17 +28,26 @@ This file provides the necessary context and constraints for AI agents interacti
 - `app/src/main/proto/`: Protobuf definitions for gRPC.
 - `third_party/miuix/`: Submodule containing the Miuix UI component library used for the application's design system. See `third_party/miuix/AGENTS.md` for specific UI constraints.
 - `docs/benchmark/`: Benchmark whitepaper (`android-tun-benchmark.md`), raw JSON datasets, and statistical summaries.
-- `docs/images/`: Standardized 16:9 light-theme WebP dashboards and architectural diagrams.
-- `tools/`: Automated benchmarking tools:
-  - `benchmark.py`: Android end-to-end multi-stream and idle connection benchmark suite.
+- `docs/images/`: Standardized 16:9 light-theme WebP dashboards, master infographic (`mega_benchmark_infographic.webp`), and architectural diagrams.
+- `version.properties`: Root version contract tracking live core (`XRAY_CORE_VERSION`) and tunnel backend commits/hashes (`HEV_TUN_VERSION`, `SING_TUN_VERSION`, `MIPS_TUN_VERSION`, `GO_VERSION`, `NDK_VERSION`).
+- `tools/`: Automated benchmarking tools & modular pipeline:
+  - `benchmark.py`: Unified master CLI runner orchestrating throughput (Wi-Fi, USB, Loopback), idle flow retention, and advanced suites (Bufferbloat, 60s stability).
+  - `advanced_bench.py`: Backward-compatible wrapper delegating to `benchmark.py`.
+  - `common/`: Core shared libraries (`adb.py`, `iperf.py`, `dataset.py`, `theme.py`, `logging.py`).
+  - `suites/`: High-cohesion benchmark suites (`standard.py`, `idle.py`, `bufferbloat.py`, `long_run.py`).
   - `generate_charts.py`: Publication dashboard generator adhering to modern light theme (`#F8FAFC`).
-  - `idle_bench/`: Low-overhead Go connection retention and PSS memory sampling probe.
+  - `generate_mega_dashboard.py`: 8-archetype 3-row master infographic generator.
+  - `update_benchmark_doc.py`: Precise, in-place non-destructive markdown table synchronizer for `android-tun-benchmark.md`.
+  - `sync_versions.py`: Automated submodule and go.mod dependency inspector and `version.properties` synchronizer.
+  - `idle_bench/`: Low-overhead Go connection retention and PSS memory sampling probe (cross-compiled for `amd64` and `arm64`).
   - `microbench/`: Standalone Linux user-namespace microbench harness (`unshare -r -n`) testing pure user-space TUN stacks in isolation.
 
 ## Build and Execution
 - **Build System**: Gradle with Kotlin DSL/Groovy.
 - **Native Build**: NDK via CMake (`externalNativeBuild`).
 - **Standalone TUN CLI**: Go stacks (`third_party/sing-tun`, `third_party/mips-tun`) support standalone CLI compilation via standard `go build` with `#if defined(__ANDROID__)` guards for dual host/Android compatibility.
+- **Version Verification**: Run `python3 tools/sync_versions.py --check` before committing to verify that `version.properties` matches all submodules and `go.mod` dependency hashes.
+- **Headless Benchmark Service**: `BenchmarkService` operates headlessly via `am start-foreground-service` intents (`--es cmd start/stop --es backend ... --ei mtu ...`), validated by active `tun0` hardware interface polling.
 
 ## Coding Guidelines for AI Agents
 1. **Jetpack Compose**: Follow standard Compose best practices (state hoisting, `remember` for complex derived states, non-blocking composition).

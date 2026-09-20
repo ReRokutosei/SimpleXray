@@ -4,13 +4,25 @@ This directory contains automated testing scripts and profiling tools for benchm
 
 ## Files & Architecture
 
-- `benchmark.py`: Cross-platform Python benchmark test runner supporting multi-mode throughput (TCP/UDP, MTU 1500/9000, single/8-stream), CPU usage, memory profiling, and idle flow tracking across all TUN backends (`Hev`, `Xray Native TUN`, `SingTUN`, `MipsTUN`).
-- `generate_charts.py`: Generates standardized 16:9 ultra-wide WebP publication dashboards (light theme) with JetBrains Mono typography and fullstack memory attribution.
-- `idle_bench/`: High-performance, zero-external-dependency Go probe (cross-compiled for both Linux `amd64` and Android `arm64`) for stepped 0 $\to$ 1000 connection retention and userspace PSS memory growth profiling.
-- `microbench/`: Standalone Linux user-namespace microbenchmark harness (Scheme 2) that benchmarks pure TUN user-space network stacks in isolation without Android OS overhead:
-  - `microbench/socks5_sink.go`: Bidirectional TCP/UDP echo SOCKS5 sink server.
-  - `microbench/microbench.py`: Unshare-based runner profiling pure stack memory slope (PSS/RSS/Dirty).
-- `update_benchmark_doc.py`: Data-driven report synchronization script that reads benchmark JSON datasets and updates `docs/benchmark/android-tun-benchmark.md`.
+- `benchmark.py`: Unified master CLI runner orchestrating physical throughput (Wi-Fi, USB, Loopback), idle flow retention, and advanced suites (Bufferbloat, 60s stability).
+- `advanced_bench.py`: Backward-compatibility wrapper delegating directly to `benchmark.py`.
+- `common/`: Core shared libraries:
+  - `adb.py`: ADB communication, device discovery, `BenchmarkService` headless control, `tun0` interface verification, CPU/PSS sampling.
+  - `iperf.py`: Host/device iPerf3 server management, arguments builder, JSON parsing.
+  - `dataset.py`: JSON dataset loading, multi-round arithmetic clean averaging, `version.properties` extraction.
+  - `theme.py`: Unified `PALETTE`, JetBrains Mono typography, standard light theme styling.
+  - `logging.py`: Terminal colors, logger utilities, and subprocess wrapper.
+- `suites/`: High-cohesion benchmark test suites:
+  - `standard.py`: Physical media throughput (Wi-Fi, USB, Loopback; MTU 1500/9000, P=1/P=8, TCP/UDP).
+  - `idle.py`: Stepped 0 -> 1000 idle connection retention and memory slope probe.
+  - `bufferbloat.py`: Saturated TCP download with concurrent ICMP ping probing.
+  - `long_run.py`: 60s continuous 8-stream TCP download stability, decay rate, and CV%.
+- `generate_charts.py`: Generates standardized 16:9 individual WebP publication dashboards.
+- `generate_mega_dashboard.py`: Master 8-archetype 3-row mega infographic generator.
+- `update_benchmark_doc.py`: Non-destructive, in-place synchronizer for Section 3.1 tables in `android-tun-benchmark.md`.
+- `sync_versions.py`: Automated submodule and dependency commit hash synchronizer for `version.properties`.
+- `idle_bench/`: High-performance, zero-external-dependency Go probe (cross-compiled for Linux `amd64` and Android `arm64`).
+- `microbench/`: Standalone Linux user-namespace microbenchmark harness (Scheme 2).
 
 ## Prerequisites
 
