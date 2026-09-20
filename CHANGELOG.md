@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.2.0-beta.1](https://github.com/ReRokutosei/SimpleXray/compare/v2.1.1-alpha.3...v2.2.0-beta.1) (2026-09-20)
+
+
+### Bug Fixes
+
+* **native:** harden xray subprocess lifecycle with pdeathsig and cloexec clearance ([ef89687](https://github.com/ReRokutosei/SimpleXray/commit/ef89687d008f73c485b19f5e78c15ee3f43a1673))
+
 ### [2.1.1-alpha.3](https://github.com/ReRokutosei/SimpleXray/compare/v2.1.1-alpha.2...v2.1.1-alpha.3) (2026-09-19)
 
 
