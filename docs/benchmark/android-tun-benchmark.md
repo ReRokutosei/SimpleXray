@@ -157,38 +157,40 @@ hev-socks5-tunnel      SingTUN      mipstack      Xray TUN Inbound
 | **SingTUN (MTU 1500) [UDP] [P=8]** | `sing` | 1500 | UDP | P=8 | 199.07 Mbps | 199.67 Mbps | 205.4% / 231.3% | 184.3 MB |
 | **MipsTUN (MTU 1500) [UDP] [P=8]** | `mips` | 1500 | UDP | P=8 | 199.72 Mbps | 182.22 Mbps (8.9% 丢包) | 139.0% / 283.0% | 121.1 MB |
 
+
 #### 3.1.2 5GHz Wi-Fi 无线网络测试 (TCP & UDP)
 
 | 测试用例 / 配置 | 后端协议栈 | MTU | 协议 | 流模式 | 上传吞吐 (Mbps) | 下载吞吐 (Mbps) | 平均/峰值 CPU (%) | 内存占用 (PSS) |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
 | **Wi-Fi Baseline (No VPN) [Single Stream]** | `direct_none` | 0 | TCP | 单流 | 589.38 Mbps | 758.00 Mbps | 0.3% / 3.6% | 81.7 MB |
 | **Wi-Fi Baseline (No VPN) [P=8]** | `direct_none` | 0 | TCP | P=8 | 783.07 Mbps | 771.45 Mbps | 0.1% / 0.3% | 81.3 MB |
-| **Hev (MTU 1500) [Single Stream]** | `hev` | 1500 | TCP | 单流 | 698.33 Mbps | 504.30 Mbps | 82.8% / 119.7% | 130.7 MB |
-| **Xray TUN (MTU 1500) [Single Stream]** | `xray` | 1500 | TCP | 单流 | 388.71 Mbps | 111.69 Mbps | 139.0% / 205.0% | 124.1 MB |
-| **SingTUN (MTU 1500) [Single Stream]** | `sing` | 1500 | TCP | 单流 | 704.04 Mbps | 186.31 Mbps | 118.7% / 170.3% | 136.7 MB |
-| **MipsTUN (MTU 1500) [Single Stream]** | `mips` | 1500 | TCP | 单流 | 655.66 Mbps | 238.55 Mbps | 171.1% / 244.4% | 128.9 MB |
-| **Hev (MTU 9000) [Single Stream]** | `hev` | 9000 | TCP | 单流 | 692.08 Mbps | 764.90 Mbps | 86.9% / 128.3% | 102.4 MB |
-| **Xray TUN (MTU 9000) [Single Stream]** | `xray` | 9000 | TCP | 单流 | 358.80 Mbps | 59.93 Mbps | 139.2% / 207.9% | 102.8 MB |
-| **SingTUN (MTU 9000) [Single Stream]** | `sing` | 9000 | TCP | 单流 | 693.63 Mbps | 559.84 Mbps | 117.5% / 162.3% | 115.5 MB |
-| **MipsTUN (MTU 9000) [Single Stream]** | `mips` | 9000 | TCP | 单流 | 683.77 Mbps | 760.78 Mbps | 143.5% / 212.0% | 128.9 MB |
-| **Hev (MTU 1500) [P=8]** | `hev` | 1500 | TCP | P=8 | 734.86 Mbps | 281.62 Mbps | 81.0% / 148.0% | 103.9 MB |
-| **Xray TUN (MTU 1500) [P=8]** | `xray` | 1500 | TCP | P=8 | 361.09 Mbps | 166.82 Mbps | 204.9% / 249.2% | 104.5 MB |
-| **SingTUN (MTU 1500) [P=8]** | `sing` | 1500 | TCP | P=8 | 647.20 Mbps | 810.14 Mbps | 261.9% / 438.0% | 129.6 MB |
-| **MipsTUN (MTU 1500) [P=8]** | `mips` | 1500 | TCP | P=8 | 779.09 Mbps | 125.40 Mbps | 158.5% / 276.6% | 147.3 MB |
-| **Hev (MTU 9000) [P=8]** | `hev` | 9000 | TCP | P=8 | 780.74 Mbps | 852.84 Mbps | 91.9% / 163.0% | 118.6 MB |
-| **Xray TUN (MTU 9000) [P=8]** | `xray` | 9000 | TCP | P=8 | 361.62 Mbps | 173.42 Mbps | 209.4% / 245.7% | 118.5 MB |
-| **SingTUN (MTU 9000) [P=8]** | `sing` | 9000 | TCP | P=8 | 776.01 Mbps | 862.51 Mbps | 154.6% / 254.0% | 150.8 MB |
-| **MipsTUN (MTU 9000) [P=8]** | `mips` | 9000 | TCP | P=8 | 794.28 Mbps | 696.38 Mbps | 147.4% / 271.6% | 98.2 MB |
+| **Hev (MTU 1500) [Single Stream]** | `hev` | 1500 | TCP | 单流 | 698.33 Mbps | 504.30 Mbps | 75.4% / 119.7% | 130.7 MB |
+| **Xray TUN (MTU 1500) [Single Stream]** | `xray` | 1500 | TCP | 单流 | 388.71 Mbps | 111.69 Mbps | 168.7% / 205.0% | 124.1 MB |
+| **SingTUN (MTU 1500) [Single Stream]** | `sing` | 1500 | TCP | 单流 | 704.04 Mbps | 186.31 Mbps | 97.5% / 170.3% | 136.7 MB |
+| **MipsTUN (MTU 1500) [Single Stream]** | `mips` | 1500 | TCP | 单流 | 655.66 Mbps | 238.55 Mbps | 140.1% / 244.4% | 128.9 MB |
+| **Hev (MTU 9000) [Single Stream]** | `hev` | 9000 | TCP | 单流 | 692.08 Mbps | 764.90 Mbps | 65.0% / 128.3% | 102.4 MB |
+| **Xray TUN (MTU 9000) [Single Stream]** | `xray` | 9000 | TCP | 单流 | 358.80 Mbps | 59.93 Mbps | 167.0% / 207.9% | 102.8 MB |
+| **SingTUN (MTU 9000) [Single Stream]** | `sing` | 9000 | TCP | 单流 | 693.63 Mbps | 559.84 Mbps | 90.4% / 162.3% | 115.5 MB |
+| **MipsTUN (MTU 9000) [Single Stream]** | `mips` | 9000 | TCP | 单流 | 683.77 Mbps | 760.78 Mbps | 87.8% / 212.0% | 128.9 MB |
+| **Hev (MTU 1500) [P=8]** | `hev` | 1500 | TCP | P=8 | 734.86 Mbps | 281.62 Mbps | 82.6% / 148.0% | 103.9 MB |
+| **Xray TUN (MTU 1500) [P=8]** | `xray` | 1500 | TCP | P=8 | 361.09 Mbps | 166.82 Mbps | 235.0% / 249.2% | 104.5 MB |
+| **SingTUN (MTU 1500) [P=8]** | `sing` | 1500 | TCP | P=8 | 647.20 Mbps | 810.14 Mbps | 136.2% / 438.0% | 129.6 MB |
+| **MipsTUN (MTU 1500) [P=8]** | `mips` | 1500 | TCP | P=8 | 779.09 Mbps | 125.40 Mbps | 137.7% / 276.6% | 147.3 MB |
+| **Hev (MTU 9000) [P=8]** | `hev` | 9000 | TCP | P=8 | 780.74 Mbps | 852.84 Mbps | 48.7% / 163.0% | 118.6 MB |
+| **Xray TUN (MTU 9000) [P=8]** | `xray` | 9000 | TCP | P=8 | 361.62 Mbps | 173.42 Mbps | 236.3% / 245.7% | 118.5 MB |
+| **SingTUN (MTU 9000) [P=8]** | `sing` | 9000 | TCP | P=8 | 776.01 Mbps | 862.51 Mbps | 71.7% / 254.0% | 150.8 MB |
+| **MipsTUN (MTU 9000) [P=8]** | `mips` | 9000 | TCP | P=8 | 794.28 Mbps | 696.38 Mbps | 79.8% / 271.6% | 98.2 MB |
 | **Wi-Fi Baseline (No VPN) [UDP] [Single Stream]** | `direct_none` | 0 | UDP | 单流 | 199.67 Mbps | 199.99 Mbps | 0.0% / 0.0% | 84.7 MB |
 | **Wi-Fi Baseline (No VPN) [UDP] [P=8]** | `direct_none` | 0 | UDP | P=8 | 199.82 Mbps | 200.07 Mbps | 0.0% / 0.3% | 84.4 MB |
-| **Hev (MTU 1500) [UDP] [Single Stream]** | `hev` | 1500 | UDP | 单流 | 148.99 Mbps (17.1% 丢包) | 119.36 Mbps (31.7% 丢包) | 282.0% / 349.7% | 137.2 MB |
-| **Xray TUN (MTU 1500) [UDP] [Single Stream]** | `xray` | 1500 | UDP | 单流 | 160.81 Mbps (18.9% 丢包) | 122.30 Mbps (29.5% 丢包) | 157.2% / 283.7% | 132.3 MB |
-| **SingTUN (MTU 1500) [UDP] [Single Stream]** | `sing` | 1500 | UDP | 单流 | 148.00 Mbps (17.0% 丢包) | 116.45 Mbps (33.2% 丢包) | 339.5% / 383.7% | 123.4 MB |
-| **MipsTUN (MTU 1500) [UDP] [Single Stream]** | `mips` | 1500 | UDP | 单流 | 163.72 Mbps (9.5% 丢包) | 124.07 Mbps (29.5% 丢包) | 352.8% / 390.3% | 133.3 MB |
-| **Hev (MTU 1500) [UDP] [P=8]** | `hev` | 1500 | UDP | P=8 | 190.72 Mbps | 200.26 Mbps | 247.9% / 363.7% | 108.6 MB |
-| **Xray TUN (MTU 1500) [UDP] [P=8]** | `xray` | 1500 | UDP | P=8 | 199.31 Mbps (0.2% 丢包) | 200.25 Mbps | 139.3% / 210.7% | 107.8 MB |
-| **SingTUN (MTU 1500) [UDP] [P=8]** | `sing` | 1500 | UDP | P=8 | 179.69 Mbps | 200.25 Mbps | 388.5% / 430.0% | 120.1 MB |
-| **MipsTUN (MTU 1500) [UDP] [P=8]** | `mips` | 1500 | UDP | P=8 | 199.69 Mbps | 186.81 Mbps (6.6% 丢包) | 385.7% / 426.7% | 134.9 MB |
+| **Hev (MTU 1500) [UDP] [Single Stream]** | `hev` | 1500 | UDP | 单流 | 148.99 Mbps (17.1% 丢包) | 119.36 Mbps (31.7% 丢包) | 300.4% / 349.7% | 137.2 MB |
+| **Xray TUN (MTU 1500) [UDP] [Single Stream]** | `xray` | 1500 | UDP | 单流 | 160.81 Mbps (18.9% 丢包) | 122.30 Mbps (29.5% 丢包) | 225.5% / 283.7% | 132.3 MB |
+| **SingTUN (MTU 1500) [UDP] [Single Stream]** | `sing` | 1500 | UDP | 单流 | 148.00 Mbps (17.0% 丢包) | 116.45 Mbps (33.2% 丢包) | 372.2% / 383.7% | 123.4 MB |
+| **MipsTUN (MTU 1500) [UDP] [Single Stream]** | `mips` | 1500 | UDP | 单流 | 163.72 Mbps (9.5% 丢包) | 124.07 Mbps (29.5% 丢包) | 377.5% / 390.3% | 133.3 MB |
+| **Hev (MTU 1500) [UDP] [P=8]** | `hev` | 1500 | UDP | P=8 | 190.72 Mbps | 200.26 Mbps | 252.7% / 363.7% | 108.6 MB |
+| **Xray TUN (MTU 1500) [UDP] [P=8]** | `xray` | 1500 | UDP | P=8 | 199.31 Mbps (0.2% 丢包) | 200.25 Mbps | 149.3% / 210.7% | 107.8 MB |
+| **SingTUN (MTU 1500) [UDP] [P=8]** | `sing` | 1500 | UDP | P=8 | 179.69 Mbps (0.1% 丢包) | 200.25 Mbps | 401.9% / 430.0% | 120.1 MB |
+| **MipsTUN (MTU 1500) [UDP] [P=8]** | `mips` | 1500 | UDP | P=8 | 199.69 Mbps | 186.81 Mbps (6.6% 丢包) | 399.8% / 426.7% | 134.9 MB |
+
 
 #### 3.1.3 设备内部纯回环压力测试
 
@@ -205,20 +207,22 @@ hev-socks5-tunnel      SingTUN      mipstack      Xray TUN Inbound
 | **SingTUN (MTU 9000) [P=8]** | `sing` | 9000 | P=8 | 18.29 Gbps | 18.5% | 99.0 MB |
 | **MipsTUN (MTU 9000) [P=8]** | `mips` | 9000 | P=8 | 18.48 Gbps | 9.8% | 102.3 MB |
 
+
 #### 3.1.4 空闲连接驻留与内存增长 (TCP & UDP)
 
 注：本表数据为 3 轮独立实测的算术平均值，基准 PSS 为建立连接前的空闲内存，1000 连接 PSS 为阶梯压测达到 1000 连接并稳定 1.5 秒后采样的物理内存。
 
 | 后端协议栈 | 传输协议 | 连接范围 | 基准 PSS (3轮均值) | 1000 连接 PSS (3轮均值) | 内存增长斜率 (3轮均值) |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| **HEV** | TCP | 0 -> 1000 | 113.3 MB | 126.2 MB | 9.35 KiB/conn |
+| **HEV** | TCP | 0 -> 1000 | 113.3 MB | 126.2 MB | 17.15 KiB/conn |
 | **HEV** | UDP | 0 -> 1000 | 106.7 MB | 124.1 MB | 17.82 KiB/conn |
 | **XRAY** | TCP | 0 -> 1000 | 98.7 MB | 100.8 MB | 2.15 KiB/conn |
-| **XRAY** | UDP | 0 -> 1000 | 99.2 MB | 102.3 MB | 3.24 KiB/conn |
-| **SING** | TCP | 0 -> 1000 | 181.7 MB | 190.9 MB | 9.45 KiB/conn |
+| **XRAY** | UDP | 0 -> 1000 | 99.2 MB | 102.3 MB | 4.92 KiB/conn |
+| **SING** | TCP | 0 -> 1000 | 181.7 MB | 190.9 MB | 9.46 KiB/conn |
 | **SING** | UDP | 0 -> 1000 | 173.8 MB | 178.9 MB | 5.22 KiB/conn |
-| **MIPS** | TCP | 0 -> 1000 | 111.7 MB | 166.3 MB | ~0.00 KiB/conn (GC 稳态) |
+| **MIPS** | TCP | 0 -> 1000 | 111.7 MB | 166.3 MB | 52.33 KiB/conn |
 | **MIPS** | UDP | 0 -> 1000 | 124.2 MB | 155.8 MB | 32.29 KiB/conn |
+
 ---
 
 ### 3.2 分轮实测数据明细

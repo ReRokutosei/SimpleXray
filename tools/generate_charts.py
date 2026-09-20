@@ -27,107 +27,25 @@ DEFAULT_JSON_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "benc
 
 DEFAULT_MICROBENCH_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "benchmark", "microbench_results.json"))
 
-# Register JetBrains Mono fonts
-FONT_DIR = "/home/vanitas/.local/share/fonts/JetBrains"
-FONT_REGULAR = os.path.join(FONT_DIR, "JetBrainsMonoNerdFont-Regular.ttf")
-FONT_BOLD = os.path.join(FONT_DIR, "JetBrainsMonoNerdFont-Bold.ttf")
-FONT_MEDIUM = os.path.join(FONT_DIR, "JetBrainsMonoNerdFont-Medium.ttf")
+sys.path.insert(0, SCRIPT_DIR)
+from common.theme import (
+    PALETTE,
+    setup_fonts,
+    apply_global_theme,
+    add_dashboard_header,
+    create_top_legend,
+    save_dashboard,
+)
+from common.dataset import (
+    DEFAULT_BENCH_JSON,
+    DEFAULT_MICRO_JSON,
+    compute_clean_averages,
+)
 
-prop_regular = None
-prop_bold = None
-prop_medium = None
-
-for p, target in [(FONT_REGULAR, 'regular'), (FONT_BOLD, 'bold'), (FONT_MEDIUM, 'medium')]:
-    if os.path.exists(p):
-        try:
-            fm.fontManager.addfont(p)
-            fprop = fm.FontProperties(fname=p)
-            if target == 'regular':
-                prop_regular = fprop
-            elif target == 'bold':
-                prop_bold = fprop
-            elif target == 'medium':
-                prop_medium = fprop
-        except Exception:
-            pass
-
-if prop_regular:
-    plt.rcParams['font.sans-serif'] = [prop_regular.get_name(), 'DejaVu Sans', 'Arial', 'sans-serif']
-    plt.rcParams['font.family'] = 'sans-serif'
-
-# Global Theme Styling (Light Modern Aesthetic)
-plt.rcParams['figure.facecolor'] = '#f8fafc'
-plt.rcParams['axes.facecolor'] = '#ffffff'
-plt.rcParams['axes.edgecolor'] = '#cbd5e1'
-plt.rcParams['axes.labelcolor'] = '#334155'
-plt.rcParams['xtick.color'] = '#475569'
-plt.rcParams['ytick.color'] = '#0f172a'
-plt.rcParams['grid.color'] = '#f1f5f9'
-plt.rcParams['grid.alpha'] = 1.0
-plt.rcParams['grid.linestyle'] = '-'
-
-# Backend Palette (Modern Light Theme, High Contrast)
-PALETTE = {
-    'hev': {
-        'name': 'Hev (C/lwIP)',
-        'fill': '#0d9488',  # Teal 600
-        'edge': '#0f766e',  # Teal 700
-    },
-    'sing': {
-        'name': 'SingTUN (Go/sing-box)',
-        'fill': '#2563eb',  # Blue 600
-        'edge': '#1d4ed8',  # Blue 700
-    },
-    'mips': {
-        'name': 'MipsTUN (Go/BBRv3)',
-        'fill': '#7c3aed',  # Violet 600
-        'edge': '#6d28d9',  # Violet 700
-    },
-    'xray': {
-        'name': 'Xray TUN (gVisor)',
-        'fill': '#e11d48',  # Rose 600
-        'edge': '#be123c',  # Rose 700
-    },
-    'direct_none': {
-        'name': 'No VPN (Physical Baseline)',
-        'fill': '#94a3b8',  # Slate 400
-        'edge': '#64748b',  # Slate 500
-    }
-}
+prop_regular, prop_bold, prop_medium = setup_fonts()
+apply_global_theme()
 
 BACKEND_ORDER = ['xray', 'sing', 'mips', 'hev']
-
-
-def add_dashboard_header(fig, title: str, subtitle: str):
-    """Adds a standardized dashboard header with centered title and subtitle."""
-    fig.text(
-        0.5, 0.970, title,
-        fontsize=16, fontweight='bold', color='#0f172a',
-        fontproperties=prop_bold if prop_bold else None,
-        ha='center', va='top'
-    )
-    fig.text(
-        0.5, 0.938, subtitle,
-        fontsize=10, color='#64748b',
-        fontproperties=prop_regular if prop_regular else None,
-        ha='center', va='top'
-    )
-
-
-def create_top_legend(fig, handles, labels, y_pos=0.895):
-    """Creates a clean, top-center aligned horizontal legend."""
-    fig.legend(
-        handles=handles,
-        labels=labels,
-        loc='upper center',
-        bbox_to_anchor=(0.5, y_pos),
-        ncol=len(labels),
-        frameon=True,
-        facecolor='#f8fafc',
-        edgecolor='#cbd5e1',
-        fontsize=9.5,
-        prop=prop_medium if prop_medium else prop_regular
-    )
 
 
 def render_throughput_dashboard(
@@ -983,7 +901,7 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
 
     render_efficiency_dashboard(
         os.path.join(output_dir, f"{prefix}cpu_efficiency_dashboard.webp"),
-        "Processor Efficiency & Compute Cost (Lower is Better)",
+        "Processor Efficiency & Compute Cost",
         "Standardized Metric: CPU % consumed per 100 Mbps (Multi-Core Cumulative: Snapdragon 778G 8-Core Max: 800%)",
         eff_cats, single_costs, multi_costs, max_c
     )
@@ -1109,65 +1027,7 @@ def main():
 
     # Average dataset
     if rounds:
-        first_round = list(rounds.values())[0]
-        numeric_fields = [
-            "upload_mbps", "download_mbps", "speed_gbps",
-            "upload_cpu_avg", "upload_cpu_peak",
-            "download_cpu_avg", "download_cpu_peak",
-            "peak_cpu", "peak_mem_mb",
-            "upload_loss_percent", "download_loss_percent",
-            "upload_jitter_ms", "download_jitter_ms"
-        ]
-        avg_records = []
-        for rec_template in first_round:
-            rec = dict(rec_template)
-            medium = rec.get("medium")
-            backend = rec.get("backend")
-            mtu = rec.get("mtu")
-            parallel = rec.get("parallel")
-            net = rec.get("network", "tcp")
-
-            for field in numeric_fields:
-                vals = []
-                for r_list in rounds.values():
-                    for match in r_list:
-                        if (match.get("medium") == medium and
-                            match.get("backend") == backend and
-                            match.get("mtu") == mtu and
-                            match.get("parallel") == parallel and
-                            match.get("network", "tcp") == net):
-                            if field in match:
-                                vals.append(match[field])
-                            break
-                if vals:
-                    digits = 3 if "jitter" in field else 2
-                    rec[field] = round(sum(vals) / len(vals), digits)
-
-            # Average idle_flows across all rounds
-            if rec.get("type") == "idle_memory":
-                conns_map = {}
-                for r_list in rounds.values():
-                    for match in r_list:
-                        if (match.get("type") == "idle_memory" and
-                            match.get("backend") == backend and
-                            match.get("network", "tcp") == net):
-                            for flow in match.get("idle_flows", []):
-                                c = flow.get("connections", 0)
-                                if c not in conns_map:
-                                    conns_map[c] = {"pss": [], "delta": []}
-                                conns_map[c]["pss"].append(flow.get("pss_mb", 0.0))
-                                conns_map[c]["delta"].append(flow.get("delta_mb", 0.0))
-                            break
-                new_flows = []
-                for c in sorted(conns_map.keys()):
-                    p_list = conns_map[c]["pss"]
-                    d_list = conns_map[c]["delta"]
-                    avg_pss = round(sum(p_list) / len(p_list), 2) if p_list else 0.0
-                    avg_delta = round(sum(d_list) / len(d_list), 2) if d_list else 0.0
-                    new_flows.append({"connections": c, "pss_mb": avg_pss, "delta_mb": avg_delta})
-                rec["idle_flows"] = new_flows
-
-            avg_records.append(rec)
+        avg_records = compute_clean_averages(root)
 
         print("Generating unified dashboards for average across all rounds...")
         process_dataset_and_generate_dashboards(avg_records, args.output_dir, prefix="avg_")

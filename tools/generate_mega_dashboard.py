@@ -24,7 +24,6 @@ Design Language & Standards:
   - Automatic version extraction from version.properties.
 """
 
-import json
 import os
 import sys
 from typing import Dict, List, Any, Tuple
@@ -32,181 +31,29 @@ from typing import Dict, List, Any, Tuple
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 import numpy as np
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_BENCH_JSON = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "benchmark", "benchmark_results.json"))
-DEFAULT_MICRO_JSON = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "benchmark", "microbench_results.json"))
-DEFAULT_ADVANCED_JSON = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "benchmark", "advanced_benchmark_results.json"))
-VERSION_PROPS_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "version.properties"))
-OUTPUT_MEGA_IMAGE = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "images", "mega_benchmark_infographic.webp"))
+PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+sys.path.insert(0, SCRIPT_DIR)
 
-# Register JetBrains Mono fonts
-FONT_DIR = "/home/vanitas/.local/share/fonts/JetBrains"
-FONT_REGULAR = os.path.join(FONT_DIR, "JetBrainsMonoNerdFont-Regular.ttf")
-FONT_BOLD = os.path.join(FONT_DIR, "JetBrainsMonoNerdFont-Bold.ttf")
-FONT_MEDIUM = os.path.join(FONT_DIR, "JetBrainsMonoNerdFont-Medium.ttf")
+from common.dataset import (
+    load_datasets,
+    load_version_properties,
+    compute_clean_averages,
+    get_rec as common_get_rec,
+)
+from common.theme import (
+    PALETTE,
+    BACKEND_ORDER,
+    setup_fonts,
+    apply_global_theme,
+)
 
-prop_regular = None
-prop_bold = None
-prop_medium = None
+OUTPUT_MEGA_IMAGE = os.path.join(PROJECT_ROOT, "docs", "images", "mega_benchmark_infographic.webp")
 
-for p, target in [(FONT_REGULAR, 'regular'), (FONT_BOLD, 'bold'), (FONT_MEDIUM, 'medium')]:
-    if os.path.exists(p):
-        try:
-            fm.fontManager.addfont(p)
-            fprop = fm.FontProperties(fname=p)
-            if target == 'regular':
-                prop_regular = fprop
-            elif target == 'bold':
-                prop_bold = fprop
-            elif target == 'medium':
-                prop_medium = fprop
-        except Exception:
-            pass
-
-if prop_regular:
-    plt.rcParams['font.sans-serif'] = [prop_regular.get_name(), 'DejaVu Sans', 'Arial', 'sans-serif']
-    plt.rcParams['font.family'] = 'sans-serif'
-
-# Global Theme Styling
-plt.rcParams['figure.facecolor'] = '#f8fafc'
-plt.rcParams['axes.facecolor'] = '#ffffff'
-plt.rcParams['axes.edgecolor'] = '#cbd5e1'
-plt.rcParams['axes.labelcolor'] = '#334155'
-plt.rcParams['xtick.color'] = '#475569'
-plt.rcParams['ytick.color'] = '#0f172a'
-plt.rcParams['grid.color'] = '#f1f5f9'
-plt.rcParams['grid.alpha'] = 1.0
-plt.rcParams['grid.linestyle'] = '-'
-
-# Unified Backend Palette
-PALETTE = {
-    'hev': {
-        'name': 'Hev (C/lwIP)',
-        'fill': '#0d9488',   # Teal 600
-        'edge': '#0f766e',   # Teal 700
-        'light': '#ccfbf1',  # Teal 100
-        'so_size_mb': 0.34,  # 346 KB
-        'runtime': 'C (Single-threaded lwIP)',
-        'ipc': 'Local SOCKS5 Inbound'
-    },
-    'sing': {
-        'name': 'SingTUN (Go/sing-box)',
-        'fill': '#2563eb',   # Blue 600
-        'edge': '#1d4ed8',   # Blue 700
-        'light': '#dbeafe',  # Blue 100
-        'so_size_mb': 6.30,  # 6.3 MB
-        'runtime': 'Go 1.26 (pure user-space sing-tun)',
-        'ipc': 'Local SOCKS5 Inbound'
-    },
-    'mips': {
-        'name': 'MipsTUN (Go/BBRv3)',
-        'fill': '#7c3aed',   # Violet 600
-        'edge': '#6d28d9',   # Violet 700
-        'light': '#ede9fe',  # Violet 100
-        'so_size_mb': 4.80,  # 4.8 MB
-        'runtime': 'Go 1.27 (mipstack BBRv3)',
-        'ipc': 'Local SOCKS5 Inbound'
-    },
-    'xray': {
-        'name': 'Xray TUN (gVisor)',
-        'fill': '#e11d48',   # Rose 600
-        'edge': '#be123c',   # Rose 700
-        'light': '#ffe4e6',  # Rose 100
-        'so_size_mb': 34.00, # 34 MB
-        'runtime': 'Go / gVisor Netstack',
-        'ipc': 'JNI Fork Child Process (FD Injected)'
-    }
-}
-
-BACKEND_ORDER = ['hev', 'sing', 'mips', 'xray']
-
-
-def load_version_properties() -> Dict[str, str]:
-    props = {}
-    if os.path.exists(VERSION_PROPS_PATH):
-        with open(VERSION_PROPS_PATH, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    k, v = line.split("=", 1)
-                    props[k.strip()] = v.strip()
-    return props
-
-
-def load_datasets():
-    with open(DEFAULT_BENCH_JSON, 'r', encoding='utf-8') as f:
-        bench_root = json.load(f)
-    with open(DEFAULT_MICRO_JSON, 'r', encoding='utf-8') as f:
-        micro_root = json.load(f)
-    advanced_root = {}
-    if os.path.exists(DEFAULT_ADVANCED_JSON):
-        try:
-            with open(DEFAULT_ADVANCED_JSON, 'r', encoding='utf-8') as f:
-                advanced_root = json.load(f)
-        except Exception:
-            pass
-    return bench_root, micro_root, advanced_root
-
-
-def compute_clean_averages(bench_root: Dict[str, Any]) -> List[Dict[str, Any]]:
-    rounds = bench_root.get("rounds", {})
-    first_round = list(rounds.values())[0]
-    numeric_fields = [
-        "upload_mbps", "download_mbps", "speed_gbps",
-        "upload_cpu_avg", "upload_cpu_peak",
-        "download_cpu_avg", "download_cpu_peak",
-        "peak_cpu", "peak_mem_mb",
-        "upload_loss_percent", "download_loss_percent",
-        "upload_jitter_ms", "download_jitter_ms"
-    ]
-    avg_records = []
-    for rec_template in first_round:
-        rec = dict(rec_template)
-        med = rec.get("medium")
-        b = rec.get("backend")
-        mtu = rec.get("mtu")
-        par = rec.get("parallel")
-        net = rec.get("network", "tcp")
-
-        for fld in numeric_fields:
-            vals = []
-            for r_list in rounds.values():
-                for m in r_list:
-                    if (m.get("medium") == med and
-                        m.get("backend") == b and
-                        m.get("mtu") == mtu and
-                        m.get("parallel") == par and
-                        m.get("network", "tcp") == net):
-                        val = m.get(fld)
-                        if val is not None and isinstance(val, (int, float)) and val >= 0.0:
-                            vals.append(float(val))
-                        break
-            if vals:
-                rec[fld] = round(sum(vals) / len(vals), 3)
-
-        if rec.get("type") == "idle_memory":
-            conns_map = {}
-            for r_list in rounds.values():
-                for m in r_list:
-                    if (m.get("type") == "idle_memory" and
-                        m.get("backend") == b and
-                        m.get("network", "tcp") == net):
-                        for flow in m.get("idle_flows", []):
-                            c = flow.get("connections", 0)
-                            conns_map.setdefault(c, []).append(flow.get("pss_mb", 0.0))
-                        break
-            new_flows = []
-            for c in sorted(conns_map.keys()):
-                p_list = conns_map[c]
-                avg_pss = round(sum(p_list) / len(p_list), 2) if p_list else 0.0
-                new_flows.append({"connections": c, "pss_mb": avg_pss})
-            rec["idle_flows"] = new_flows
-
-        avg_records.append(rec)
-    return avg_records
+prop_regular, prop_bold, prop_medium = setup_fonts()
+apply_global_theme()
 
 
 def generate_mega_dashboard():
