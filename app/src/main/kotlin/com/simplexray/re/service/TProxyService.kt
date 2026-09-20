@@ -273,7 +273,10 @@ class TProxyService : VpnService() {
             Log.d(TAG, "Partial wake lock acquired.")
         }
         logFileManager.clearLogs()
-        startService()
+        if (!startService()) {
+            Log.e(TAG, "VPN service establishment failed, aborting Xray process launch.")
+            return
+        }
         launchXrayProcess()
     }
 
@@ -298,9 +301,13 @@ class TProxyService : VpnService() {
         var currentPid = -1
 
         try {
+            val prefs = Preferences(applicationContext)
+            if (isStopping || (!prefs.disableVpn && tunFd == null)) {
+                Log.e(TAG, "Aborting Xray process startup: isStopping=$isStopping, tunFd=$tunFd")
+                return
+            }
             Log.d(TAG, "Attempting to start native Xray process with TUN fd & local gRPC API.")
             val libraryDir = getNativeLibraryDir(applicationContext)
-            val prefs = Preferences(applicationContext)
             val selectedConfigPath = prefs.selectedConfigPath ?: return
             val xrayPath = "$libraryDir/libxray.so"
             val configFile = File(selectedConfigPath)
@@ -528,8 +535,8 @@ class TProxyService : VpnService() {
         stopService()
     }
 
-    private fun startService() {
-        if (tunFd != null) return
+    private fun startService(): Boolean {
+        if (tunFd != null) return true
         val prefs = Preferences(this)
 
         val selectedConfigPath = prefs.selectedConfigPath
@@ -557,7 +564,7 @@ class TProxyService : VpnService() {
         if (tunFd == null) {
             Log.e(TAG, "builder.establish() returned null after 3 attempts, stopping.")
             stopXray()
-            return
+            return false
         }
         registerNetworkCallback()
 
@@ -568,7 +575,7 @@ class TProxyService : VpnService() {
             if (fd == null) {
                 Log.e(TAG, "tunFd is null after establish()")
                 stopXray()
-                return
+                return false
             }
             Log.d(TAG, "Starting SingTUN backend on fd=$fd")
             val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
@@ -583,14 +590,14 @@ class TProxyService : VpnService() {
             if (!ok) {
                 Log.e(TAG, "SingTunStartService failed")
                 stopXray()
-                return
+                return false
             }
         } else if (prefs.tunnelMode == TunnelMode.MipsTun && !prefs.disableVpn) {
             val fd = tunFd?.fd
             if (fd == null) {
                 Log.e(TAG, "tunFd is null after establish()")
                 stopXray()
-                return
+                return false
             }
             Log.d(TAG, "Starting MipsTUN backend on fd=$fd")
             val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
@@ -605,7 +612,7 @@ class TProxyService : VpnService() {
             if (!ok) {
                 Log.e(TAG, "MipsTunStartService failed")
                 stopXray()
-                return
+                return false
             }
         } else {
             val tproxyFile = File(cacheDir, "tproxy.conf")
@@ -618,7 +625,7 @@ class TProxyService : VpnService() {
             } catch (e: IOException) {
                 Log.e(TAG, e.toString())
                 stopXray()
-                return
+                return false
             }
 
             tunFd?.fd?.let { fd ->
@@ -626,13 +633,14 @@ class TProxyService : VpnService() {
             } ?: run {
                 Log.e(TAG, "tunFd is null after establish()")
                 stopXray()
-                return
+                return false
             }
         }
 
         @Suppress("SameParameterValue") val channelName = "socks5"
         initNotificationChannel(channelName)
         createNotification(channelName)
+        return true
     }
 
     private fun getVpnBuilder(prefs: Preferences, tunMtu: Int): Builder = Builder().apply {

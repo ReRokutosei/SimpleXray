@@ -5,6 +5,7 @@ Replaces benchmark.ps1 with a cross-platform (Linux / macOS / Windows) test suit
 """
 
 import argparse
+import copy
 import json
 import os
 import re
@@ -102,7 +103,7 @@ class AdbRunner:
     def set_app_state(self, backend: str, mtu: int, cmd: str = "start"):
         log_info(f"Controlling Headless Benchmark Service: cmd={cmd}, backend={backend}, mtu={mtu}")
         self.shell(
-            f"am start-foreground-service -n {APP_PKG}/com.simplexray.re.service.BenchmarkService "
+            f"am start-foreground-service --user 0 -n {APP_PKG}/com.simplexray.re.service.BenchmarkService "
             f"--es cmd {cmd} --es backend {backend} --ei mtu {mtu}",
             timeout=10.0
         )
@@ -133,21 +134,31 @@ class CpuProfiler:
             f"top -b -d 1 -n {self.sample_duration} -u {self.app_uid}"
         ]
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        current_frame_cpu = 0.0
+        in_frame = False
         try:
             while not self._stop_event.is_set():
                 line = proc.stdout.readline()
                 if not line:
                     break
                 trimmed = line.strip()
+                if trimmed.startswith("Tasks:"):
+                    if in_frame:
+                        self.cpu_samples.append(round(current_frame_cpu, 1))
+                        current_frame_cpu = 0.0
+                    in_frame = True
+                    continue
                 if any(k in trimmed for k in [APP_PKG, "libxray", "simplexray", "sing-box"]):
                     parts = trimmed.split()
                     if len(parts) >= 9:
                         try:
                             # In Android top -b: PID USER PR NI VIRT RES SHR S [%CPU] %MEM TIME+ ARGS
                             cpu_val = float(parts[8])
-                            self.cpu_samples.append(cpu_val)
+                            current_frame_cpu += cpu_val
                         except ValueError:
                             pass
+            if in_frame:
+                self.cpu_samples.append(round(current_frame_cpu, 1))
             proc.wait(timeout=2)
         except Exception:
             pass
@@ -187,6 +198,9 @@ class BenchmarkRunner:
 
         # Ensure deviceidle whitelist to allow background service launch
         self.adb.shell(f"cmd deviceidle whitelist +{APP_PKG}")
+        self.adb.shell("dumpsys deviceidle disable")
+        self.adb.shell("svc power stayon true")
+        self.adb.shell("input keyevent KEYCODE_WAKEUP")
 
     def _start_host_server(self, port: int = DEFAULT_PORT) -> subprocess.Popen:
         # iperf3 -s -1: run once and exit upon client disconnect
@@ -213,6 +227,9 @@ class BenchmarkRunner:
         medium: str = "5GHz Wi-Fi",
         network: str = "tcp"
     ) -> Dict[str, Any]:
+        # Wake up screen and CPU before each test case
+        self.adb.shell("input keyevent KEYCODE_WAKEUP")
+
         par_desc = f" [P={parallel}]" if parallel > 1 else " [Single Stream]"
         net_desc = f" [{network.upper()}]" if network != "tcp" else ""
         full_name = f"{name}{net_desc}{par_desc}"
@@ -228,8 +245,29 @@ class BenchmarkRunner:
         # Start VPN if not physical baseline
         if backend != "direct_none":
             self.adb.set_app_state(backend, mtu, cmd="start")
-            log_info("Waiting 4s for VPN & proxy backend to initialize...")
-            time.sleep(4)
+            log_info("Waiting for VPN & proxy backend to initialize...")
+            tun_ready = False
+            for _ in range(8):
+                time.sleep(1)
+                rc, out, _ = self.adb.shell("ip addr show dev tun0")
+                if rc == 0 and "tun0" in out:
+                    tun_ready = True
+                    break
+
+            if not tun_ready:
+                log_error(f"Failed to establish VPN interface 'tun0' for backend '{backend}'!")
+                raise RuntimeError(
+                    f"FATAL: 'tun0' interface does not exist after starting backend '{backend}'. "
+                    f"Ensure VpnService is properly authorized on device and not returning null on establish()."
+                )
+            log_success(f"Verified VPN interface 'tun0' is UP for backend '{backend}'.")
+        else:
+            # Baseline (No VPN): ensure tun0 is NOT present
+            rc, out, _ = self.adb.shell("ip addr show dev tun0")
+            if rc == 0 and "tun0" in out:
+                log_warn("Warning: 'tun0' interface is still active during baseline test! Stopping...")
+                self.adb.set_app_state("hev", 1500, cmd="stop")
+                time.sleep(2)
 
         duration = self.args.duration
         par_flags = f"-P {parallel} -l 64K" if (parallel > 1 and network == "tcp") else (f"-P {parallel}" if parallel > 1 else "")
@@ -711,6 +749,53 @@ def main():
         "rounds": {}
     }
 
+    def save_benchmark_outputs(data_to_save: Dict[str, Any], reports_to_save: List[str]):
+        json_path = os.path.abspath(args.output_json)
+        os.makedirs(os.path.dirname(json_path), exist_ok=True)
+        merged_data = copy.deepcopy(data_to_save)
+        if args.merge and os.path.exists(json_path):
+            try:
+                with open(json_path, "r", encoding="utf-8") as f:
+                    existing_data = json.load(f)
+                for r_key, r_items in merged_data["rounds"].items():
+                    if r_key not in existing_data.get("rounds", {}):
+                        existing_data.setdefault("rounds", {})[r_key] = r_items
+                    else:
+                        existing_list = existing_data["rounds"][r_key]
+                        for new_item in r_items:
+                            matched = False
+                            for idx, old_item in enumerate(existing_list):
+                                if (old_item.get("name") == new_item.get("name") and
+                                    old_item.get("medium") == new_item.get("medium")):
+                                    existing_list[idx] = new_item
+                                    matched = True
+                                    break
+                            if not matched:
+                                existing_list.append(new_item)
+                merged_data = existing_data
+            except Exception as e:
+                log_warn(f"Failed to merge with existing JSON: {e}")
+
+        with open(json_path, "w", encoding="utf-8") as f:
+            json.dump(merged_data, f, indent=2, ensure_ascii=False)
+        log_success(f"JSON results saved to: {json_path}")
+
+        md_path = os.path.abspath(args.output_md)
+        os.makedirs(os.path.dirname(md_path), exist_ok=True)
+        if args.merge and os.path.exists(json_path):
+            full_md_reports = [f"# SimpleXray Benchmark Summary\nGenerated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"]
+            for r_name in ["round_1", "round_2", "round_3"]:
+                if r_name in merged_data.get("rounds", {}):
+                    r_num = r_name.split("_")[-1]
+                    full_md_reports.append(format_markdown_table(merged_data["rounds"][r_name], title=f"Round {r_num} Results"))
+            with open(md_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(full_md_reports))
+        else:
+            with open(md_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(reports_to_save))
+        log_success(f"Markdown report saved to: {md_path}")
+        return merged_data
+
     markdown_reports: List[str] = [f"# SimpleXray Benchmark Summary\nGenerated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"]
 
     try:
@@ -722,6 +807,9 @@ def main():
             md_table = format_markdown_table(round_results, title=f"Round {r} Results")
             markdown_reports.append(md_table)
             print("\n" + md_table)
+
+            # Incrementally save results after each round
+            save_benchmark_outputs(all_rounds_data, markdown_reports)
             
             # Short cooldown between rounds
             if r < args.rounds:
@@ -732,53 +820,18 @@ def main():
         log_warn("Benchmark interrupted by user! Stopping active VPN and cleaning up...")
         runner.adb.set_app_state("direct_none", 0, cmd="stop")
         runner.adb.shell("pkill iperf3")
+        save_benchmark_outputs(all_rounds_data, markdown_reports)
         sys.exit(130)
+    except Exception as e:
+        log_error(f"Benchmark encountered error: {e}")
+        runner.adb.set_app_state("direct_none", 0, cmd="stop")
+        runner.adb.shell("pkill iperf3")
+        save_benchmark_outputs(all_rounds_data, markdown_reports)
+        raise e
 
-    # Save outputs
+    # Final save and chart generation
+    final_data = save_benchmark_outputs(all_rounds_data, markdown_reports)
     json_path = os.path.abspath(args.output_json)
-    os.makedirs(os.path.dirname(json_path), exist_ok=True)
-    if args.merge and os.path.exists(json_path):
-        log_info(f"Merging new results into existing JSON: {json_path}")
-        try:
-            with open(json_path, "r", encoding="utf-8") as f:
-                existing_data = json.load(f)
-            for r_key, r_items in all_rounds_data["rounds"].items():
-                if r_key not in existing_data.get("rounds", {}):
-                    existing_data.setdefault("rounds", {})[r_key] = r_items
-                else:
-                    existing_list = existing_data["rounds"][r_key]
-                    for new_item in r_items:
-                        matched = False
-                        for idx, old_item in enumerate(existing_list):
-                            if (old_item.get("name") == new_item.get("name") and
-                                old_item.get("medium") == new_item.get("medium")):
-                                existing_list[idx] = new_item
-                                matched = True
-                                break
-                        if not matched:
-                            existing_list.append(new_item)
-            all_rounds_data = existing_data
-        except Exception as e:
-            log_warn(f"Failed to merge with existing JSON: {e}")
-
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(all_rounds_data, f, indent=2, ensure_ascii=False)
-    log_success(f"JSON results saved to: {json_path}")
-
-    md_path = os.path.abspath(args.output_md)
-    os.makedirs(os.path.dirname(md_path), exist_ok=True)
-    if args.merge and os.path.exists(json_path):
-        full_md_reports = [f"# SimpleXray Benchmark Summary\nGenerated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n"]
-        for r_name in ["round_1", "round_2", "round_3"]:
-            if r_name in all_rounds_data.get("rounds", {}):
-                r_num = r_name.split("_")[-1]
-                full_md_reports.append(format_markdown_table(all_rounds_data["rounds"][r_name], title=f"Round {r_num} Results"))
-        with open(md_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(full_md_reports))
-    else:
-        with open(md_path, "w", encoding="utf-8") as f:
-            f.write("\n".join(markdown_reports))
-    log_success(f"Markdown report saved to: {md_path}")
 
     # Automatically generate modern dashboards
     chart_gen = os.path.join(SCRIPT_DIR, "generate_charts.py")
