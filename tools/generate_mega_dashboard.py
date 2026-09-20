@@ -2,21 +2,26 @@
 """
 SimpleXray Super Mega Benchmark Dashboard Generator
 Generates an ultra-wide, publication-grade, multi-archetype master infographic
-synthesizing Scheme 1 (Android End-to-End) and Scheme 2 (Linux Standalone Microbench).
+synthesizing Scheme 1 (Android End-to-End), Scheme 2 (Linux Standalone Microbench),
+and Advanced Benchmarks (60s Long-run Stability & UDP Jitter).
 
 Design Language & Standards:
   - Clean, restrained, high-density scientific aesthetics (inspired by tailscale/mundotunnel).
   - Modern light theme (#f8fafc canvas, pure #ffffff chart cards, slate borders).
-  - Novel visualization archetypes:
-      1. Physical Baseline Retention Radar Matrix
-      2. Multi-Stream (P=1 -> P=8) Scaling Speedup Ratio
-      3. Compute Cost (CPU% per 100 Mbps) Density Heatmap
-      4. Dual-Layer Memory Attribution (Microbench Stack vs Android App PSS)
-      5. Step 0 -> 1000 Idle Flows Memory Growth Band
-      6. Architecture Specs & Stripped arm64-v8a Shared Binary Footprint
+  - 8 Visualization Archetypes (3 Rows):
+      Row 1:
+        1. Physical Baseline Retention Radar Matrix
+        2. Multi-Stream (P=1 -> P=8) Scaling Speedup Ratio
+        3. Compute Cost (CPU% per 100 Mbps) Density Heatmap
+      Row 2:
+        4. Dual-Layer Memory Attribution (Microbench Stack vs Android App PSS)
+        5. Step 0 -> 1000 Idle Flows Memory Growth Band
+        6. Architecture Specs & Stripped arm64-v8a Shared Binary Footprint
+      Row 3:
+        7. 60s Sustained High-Throughput Stability & Attenuation Time-Series
+        8. UDP Transmission Jitter Across Media (Single Stream & Multi-Stream)
   - Standardized font: JetBrains Mono (monospace precision).
-  - Pure English in charts; directional indicators "(Higher is Better)" / "(Lower is Better)" spaced without middle-dots.
-  - Academic methodology & hardware specifications footnote directly synthesized from report documentation.
+  - Automatic version extraction from version.properties.
 """
 
 import json
@@ -33,6 +38,8 @@ import numpy as np
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_BENCH_JSON = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "benchmark", "benchmark_results.json"))
 DEFAULT_MICRO_JSON = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "benchmark", "microbench_results.json"))
+DEFAULT_ADVANCED_JSON = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "benchmark", "advanced_benchmark_results.json"))
+VERSION_PROPS_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "version.properties"))
 OUTPUT_MEGA_IMAGE = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "images", "mega_benchmark_infographic.webp"))
 
 # Register JetBrains Mono fonts
@@ -91,7 +98,7 @@ PALETTE = {
         'edge': '#1d4ed8',   # Blue 700
         'light': '#dbeafe',  # Blue 100
         'so_size_mb': 6.30,  # 6.3 MB
-        'runtime': 'Go 1.25 (sing-tun 0.9.4 mod)',
+        'runtime': 'Go 1.26 (pure user-space sing-tun)',
         'ipc': 'Local SOCKS5 Inbound'
     },
     'mips': {
@@ -117,12 +124,31 @@ PALETTE = {
 BACKEND_ORDER = ['hev', 'sing', 'mips', 'xray']
 
 
+def load_version_properties() -> Dict[str, str]:
+    props = {}
+    if os.path.exists(VERSION_PROPS_PATH):
+        with open(VERSION_PROPS_PATH, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    props[k.strip()] = v.strip()
+    return props
+
+
 def load_datasets():
     with open(DEFAULT_BENCH_JSON, 'r', encoding='utf-8') as f:
         bench_root = json.load(f)
     with open(DEFAULT_MICRO_JSON, 'r', encoding='utf-8') as f:
         micro_root = json.load(f)
-    return bench_root, micro_root
+    advanced_root = {}
+    if os.path.exists(DEFAULT_ADVANCED_JSON):
+        try:
+            with open(DEFAULT_ADVANCED_JSON, 'r', encoding='utf-8') as f:
+                advanced_root = json.load(f)
+        except Exception:
+            pass
+    return bench_root, micro_root, advanced_root
 
 
 def compute_clean_averages(bench_root: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -133,7 +159,8 @@ def compute_clean_averages(bench_root: Dict[str, Any]) -> List[Dict[str, Any]]:
         "upload_cpu_avg", "upload_cpu_peak",
         "download_cpu_avg", "download_cpu_peak",
         "peak_cpu", "peak_mem_mb",
-        "upload_loss_percent", "download_loss_percent"
+        "upload_loss_percent", "download_loss_percent",
+        "upload_jitter_ms", "download_jitter_ms"
     ]
     avg_records = []
     for rec_template in first_round:
@@ -153,11 +180,12 @@ def compute_clean_averages(bench_root: Dict[str, Any]) -> List[Dict[str, Any]]:
                         m.get("mtu") == mtu and
                         m.get("parallel") == par and
                         m.get("network", "tcp") == net):
-                        if fld in m and m[fld] > 0.0:
-                            vals.append(m[fld])
+                        val = m.get(fld)
+                        if val is not None and isinstance(val, (int, float)) and val >= 0.0:
+                            vals.append(float(val))
                         break
             if vals:
-                rec[fld] = round(sum(vals) / len(vals), 2)
+                rec[fld] = round(sum(vals) / len(vals), 3)
 
         if rec.get("type") == "idle_memory":
             conns_map = {}
@@ -182,8 +210,9 @@ def compute_clean_averages(bench_root: Dict[str, Any]) -> List[Dict[str, Any]]:
 
 
 def generate_mega_dashboard():
-    print("[Mega Dashboard] Loading datasets...")
-    bench_root, micro_root = load_datasets()
+    print("[Mega Dashboard] Loading datasets and component versions...")
+    bench_root, micro_root, advanced_root = load_datasets()
+    version_props = load_version_properties()
     avg_records = compute_clean_averages(bench_root)
 
     def get_rec(med: str, b: str, mtu: int, par: int, net: str = "tcp") -> Dict[str, Any]:
@@ -196,21 +225,21 @@ def generate_mega_dashboard():
                 return r
         return {}
 
-    # Canvas dimensions: 22 x 15 inches @ 220 DPI
-    fig = plt.figure(figsize=(22, 15.0), dpi=220)
+    # Canvas dimensions: 22 x 21.5 inches @ 220 DPI (3-Row Layout)
+    fig = plt.figure(figsize=(22, 21.5), dpi=220)
     fig.patch.set_facecolor('#f8fafc')
 
     # -------------------------------------------------------------
     # 0. HEADER & TITLE
     # -------------------------------------------------------------
     fig.text(
-        0.5, 0.976,
+        0.5, 0.984,
         "SimpleXray Cross-Stack TUN Architecture & Performance Infographic",
         fontsize=18, fontweight='bold', color='#0f172a',
         fontproperties=prop_bold, ha='center', va='top'
     )
     fig.text(
-        0.5, 0.954,
+        0.5, 0.968,
         "Comparative Evaluation of C/lwIP, sing-box, Mihomo mipstack, and Xray gVisor Across Physical Media & Microbenchmarks",
         fontsize=10.5, color='#475569',
         fontproperties=prop_regular, ha='center', va='top'
@@ -226,7 +255,7 @@ def generate_mega_dashboard():
         handles=legend_handles,
         labels=legend_labels,
         loc='upper center',
-        bbox_to_anchor=(0.5, 0.935),
+        bbox_to_anchor=(0.5, 0.954),
         ncol=4,
         frameon=True,
         facecolor='#ffffff',
@@ -235,15 +264,16 @@ def generate_mega_dashboard():
         prop=prop_medium
     )
 
-    # Geometry layout bounds
-    # Row 1: y = [0.55, 0.88] (height = 0.33)
-    # Row 2: y = [0.14, 0.47] (height = 0.33)
-    # Footnote: y = [0.02, 0.09]
+    # Geometry Layout:
+    # Row 1: y = [0.69, 0.92] (height = 0.23)
+    # Row 2: y = [0.385, 0.615] (height = 0.23)
+    # Row 3: y = [0.08, 0.31] (height = 0.23)
+    # Footnote: y = 0.020
 
     # -------------------------------------------------------------
     # CHART 1: Physical Baseline Retention Radar Matrix (Top Left)
     # -------------------------------------------------------------
-    ax1 = fig.add_axes([0.06, 0.55, 0.25, 0.33], polar=True)
+    ax1 = fig.add_axes([0.06, 0.69, 0.25, 0.23], polar=True)
     ax1.set_facecolor('#ffffff')
 
     radar_dims = [
@@ -262,7 +292,7 @@ def generate_mega_dashboard():
     ax1.set_theta_direction(-1)
     ax1.set_xticks(angles[:-1])
     ax1.set_xticklabels([d[0] for d in radar_dims], fontsize=8.5, fontproperties=prop_medium, color='#334155')
-    ax1.set_ylim(0, 115)
+    ax1.set_ylim(0, 120)
     ax1.set_yticks([25, 50, 75, 100])
     ax1.set_yticklabels(["25%", "50%", "75%", "100%"], fontsize=7, color='#94a3b8')
     ax1.grid(color='#e2e8f0', linestyle='--', linewidth=0.8)
@@ -277,7 +307,7 @@ def generate_mega_dashboard():
             b_rec = get_rec(med, b, mtu, par, net)
             base_val = base_rec.get(fld, 1.0)
             b_val = b_rec.get(fld, 0.0)
-            ret = min(110.0, (b_val / base_val * 100.0)) if base_val > 0 else 0.0
+            ret = min(115.0, (b_val / base_val * 100.0)) if base_val > 0 else 0.0
             retentions.append(ret)
         retentions += retentions[:1]
         ax1.plot(angles, retentions, color=PALETTE[b]['fill'], linewidth=1.8)
@@ -289,7 +319,7 @@ def generate_mega_dashboard():
     # -------------------------------------------------------------
     # CHART 2: P=1 to P=8 Scaling Dynamics (Top Center)
     # -------------------------------------------------------------
-    ax2 = fig.add_axes([0.38, 0.55, 0.26, 0.33])
+    ax2 = fig.add_axes([0.38, 0.69, 0.26, 0.23])
     ax2.set_facecolor('#ffffff')
 
     scaling_cases = [
@@ -308,7 +338,11 @@ def generate_mega_dashboard():
     ax2.set_yticks(y_pos)
     ax2.set_yticklabels([c[0] for c in scaling_cases], fontsize=9, fontproperties=prop_medium, color='#334155')
     ax2.set_xlabel("Speedup Factor (Throughput P=8 / Throughput P=1)", fontsize=9, color='#64748b', fontproperties=prop_regular)
-    ax2.set_xlim(0, 3.0)
+    
+    # Extended to 5.2 to comfortably house SingTUN 4.35x speedup without overflow
+    ax2.set_xlim(0, 5.2)
+    ax2.set_xticks([0, 1, 2, 3, 4, 5])
+    ax2.set_xticklabels(["0x", "1x", "2x", "3x", "4x", "5x"], fontsize=8)
     ax2.axvline(1.0, color='#94a3b8', linestyle='--', linewidth=1.2, zorder=2)
     ax2.grid(True, axis='x', zorder=0)
 
@@ -327,7 +361,7 @@ def generate_mega_dashboard():
                         color=PALETTE[b]['fill'], edgecolor=PALETTE[b]['edge'], linewidth=0.8, zorder=3)
         for bar, factor in zip(bars, factors):
             ax2.text(
-                factor + 0.05, bar.get_y() + bar.get_height() / 2,
+                factor + 0.08, bar.get_y() + bar.get_height() / 2,
                 f"{factor:.2f}x",
                 ha='left', va='center', fontsize=7.5, fontweight='bold',
                 fontproperties=prop_bold, color='#1e293b'
@@ -336,7 +370,7 @@ def generate_mega_dashboard():
     # -------------------------------------------------------------
     # CHART 3: Compute Cost Density Heatmap (Top Right)
     # -------------------------------------------------------------
-    ax3 = fig.add_axes([0.70, 0.55, 0.25, 0.33])
+    ax3 = fig.add_axes([0.70, 0.69, 0.25, 0.23])
     ax3.set_facecolor('#ffffff')
 
     heat_scenarios = [
@@ -358,7 +392,7 @@ def generate_mega_dashboard():
             cost = (cpu / (spd / 100.0)) if spd > 5.0 else 0.0
             matrix[i, j] = round(cost, 1)
 
-    cax = ax3.imshow(matrix, cmap="YlGnBu", aspect="auto", vmin=0, vmax=60)
+    cax = ax3.imshow(matrix, cmap="YlGnBu", aspect="auto", vmin=0, vmax=110)
 
     ax3.set_title("Compute Cost Heatmap (CPU% per 100 Mbps) (Lower is Better)", fontsize=11, fontweight='bold',
                   fontproperties=prop_bold, color='#1e293b', pad=14)
@@ -370,7 +404,7 @@ def generate_mega_dashboard():
     for i in range(len(BACKEND_ORDER)):
         for j in range(len(heat_scenarios)):
             val = matrix[i, j]
-            txt_color = "#ffffff" if val > 35 else "#0f172a"
+            txt_color = "#ffffff" if val > 55 else "#0f172a"
             ax3.text(j, i, f"{val:.1f}%", ha="center", va="center", color=txt_color, fontsize=8, fontweight='bold', fontproperties=prop_bold)
 
     cbar = fig.colorbar(cax, ax=ax3, orientation='horizontal', fraction=0.046, pad=0.24)
@@ -378,9 +412,9 @@ def generate_mega_dashboard():
     cbar.ax.tick_params(labelsize=7)
 
     # -------------------------------------------------------------
-    # CHART 4: Dual-Layer Full-Stack Memory Attribution (Bottom Left)
+    # CHART 4: Dual-Layer Full-Stack Memory Attribution (Middle Left)
     # -------------------------------------------------------------
-    ax4 = fig.add_axes([0.06, 0.15, 0.25, 0.32])
+    ax4 = fig.add_axes([0.06, 0.385, 0.25, 0.23])
     ax4.set_facecolor('#ffffff')
 
     mb_rounds = micro_root.get("rounds", {})
@@ -428,7 +462,7 @@ def generate_mega_dashboard():
 
         ax4.text(v_pure + 1.5, y + bh / 2 + 0.02, f"{v_pure:.1f} KiB", ha='left', va='center', fontsize=7.8, fontweight='bold', color='#9a3412', fontproperties=prop_bold)
 
-        note = " (IPC fd)" if b == 'xray' else ""
+        note = " (IPC fd)" if b == 'xray' else ("*" if b == 'sing' else "")
         ax4.text(v_and + 1.5, y - bh / 2 - 0.02, f"{v_and:.1f} KiB{note}", ha='left', va='center', fontsize=7.8, fontweight='bold', color='#7c2d12' if b != 'xray' else '#b45309', fontproperties=prop_bold)
 
     ax4.legend(
@@ -436,11 +470,17 @@ def generate_mega_dashboard():
         labels=["Scheme 2: Pure Stack Microbench", "Scheme 1: Android Host App PSS"],
         loc='lower right', fontsize=7.5, frameon=True, facecolor='#ffffff'
     )
+    # Footnote annotation for SingTUN Scheme 1 GC phenomenon
+    ax4.text(
+        0.02, -0.22,
+        "* SingTUN Scheme 1 is lower due to Go runtime heap steady-state reuse & periodic GC in Android host.",
+        transform=ax4.transAxes, fontsize=6.8, color='#64748b', fontproperties=prop_regular
+    )
 
     # -------------------------------------------------------------
-    # CHART 5: 0 -> 1000 Idle Flows Step Growth Band (Bottom Center)
+    # CHART 5: 0 -> 1000 Idle Flows Step Growth Band (Middle Center)
     # -------------------------------------------------------------
-    ax5 = fig.add_axes([0.38, 0.15, 0.26, 0.32])
+    ax5 = fig.add_axes([0.38, 0.385, 0.26, 0.23])
     ax5.set_facecolor('#ffffff')
 
     ax5.set_title("0 -> 1000 TCP Connection Retention Growth (Lower is Better)", fontsize=11, fontweight='bold',
@@ -468,9 +508,9 @@ def generate_mega_dashboard():
     ax5.set_xticks([0, 250, 500, 750, 1000])
 
     # -------------------------------------------------------------
-    # CHART 6: Binary Footprint & Architecture Feature Specs (Bottom Right)
+    # CHART 6: Binary Footprint & Architecture Feature Specs (Middle Right)
     # -------------------------------------------------------------
-    ax6 = fig.add_axes([0.70, 0.15, 0.25, 0.32])
+    ax6 = fig.add_axes([0.70, 0.385, 0.25, 0.23])
     ax6.set_facecolor('#ffffff')
 
     ax6.set_title("Stripped arm64-v8a Binary Size (Lower is Better)", fontsize=11, fontweight='bold',
@@ -499,17 +539,141 @@ def generate_mega_dashboard():
         )
 
     # -------------------------------------------------------------
+    # CHART 7: 60s Sustained Throughput & Stability (Bottom Left)
+    # -------------------------------------------------------------
+    ax7 = fig.add_axes([0.06, 0.08, 0.40, 0.23])
+    ax7.set_facecolor('#ffffff')
+    ax7.set_title("60s Sustained High-Throughput Stability & Attenuation (Higher is Better)", fontsize=11, fontweight='bold',
+                  fontproperties=prop_bold, color='#1e293b', pad=14)
+
+    long_runs = advanced_root.get("long_run", [])
+    if long_runs:
+        time_axis = np.arange(1, 61)
+        max_tp = 0
+        sorted_runs = sorted(
+            [r for r in long_runs if r.get("backend") in BACKEND_ORDER or r.get("backend") == "direct_none"],
+            key=lambda x: x.get("avg_throughput_mbps", 0.0),
+            reverse=True
+        )
+
+        for match in sorted_runs:
+            b = match["backend"]
+            color = PALETTE[b]['fill'] if b in PALETTE else '#64748b'
+            lbl = PALETTE[b]['name'].split()[0] if b in PALETTE else 'Baseline'
+            series = match.get("time_series", [])[:60]
+            if series:
+                max_tp = max(max_tp, max(series))
+                ax7.plot(time_axis[:len(series)], series, color=color, linewidth=1.8, label=lbl, zorder=3)
+
+        top_y7 = max(max_tp * 1.15, 950)
+        label_y7 = np.linspace(top_y7 * 0.88, top_y7 * 0.48, len(sorted_runs))
+
+        for idx, match in enumerate(sorted_runs):
+            b = match["backend"]
+            color = PALETTE[b]['fill'] if b in PALETTE else '#64748b'
+            edge_c = PALETTE[b]['edge'] if b in PALETTE else '#475569'
+            lbl = PALETTE[b]['name'].split()[0] if b in PALETTE else 'Baseline'
+            series = match.get("time_series", [])
+            final_y = series[-1] if series else 0
+            cv = match.get("cv_percent", 0.0)
+            decay = match.get("decay_percent", 0.0)
+            avg = match.get("avg_throughput_mbps", 0.0)
+            lbl_y = label_y7[idx]
+
+            tag = f"{lbl}: {avg:.0f}M (CV {cv:.1f}%, Decay {decay:+.1f}%)"
+            ax7.plot([60.2, 61.2], [final_y, lbl_y], color=color, linestyle=':', linewidth=1.0, alpha=0.85)
+            ax7.text(
+                61.5, lbl_y, tag, fontsize=7.8, fontweight='bold', color=edge_c,
+                va='center', fontproperties=prop_bold,
+                bbox=dict(boxstyle='round,pad=0.18', facecolor='#ffffff', edgecolor=edge_c, alpha=0.92, linewidth=0.8)
+            )
+
+        ax7.set_xlim(0, 77)
+        ax7.set_ylim(0, top_y7)
+        ax7.set_xlabel("Elapsed Time (Seconds)", fontsize=9, color='#64748b', fontproperties=prop_regular)
+        ax7.set_ylabel("TCP Download Throughput (Mbps)", fontsize=9, color='#64748b', fontproperties=prop_regular)
+        ax7.grid(True, zorder=0)
+    else:
+        ax7.text(0.5, 0.5, "60s Long-Run Data Not Available", ha='center', va='center', color='#94a3b8')
+
+    # -------------------------------------------------------------
+    # CHART 8: UDP Transmission Jitter Across Media (Bottom Right)
+    # -------------------------------------------------------------
+    ax8 = fig.add_axes([0.56, 0.08, 0.39, 0.23])
+    ax8.set_facecolor('#ffffff')
+    ax8.set_title("UDP Transmission Jitter Across Media (Lower is Better)", fontsize=11, fontweight='bold',
+                  fontproperties=prop_bold, color='#1e293b', pad=14)
+
+    udp_scenarios = [
+        ("Wi-Fi UDP (P=1)", "5GHz Wi-Fi", 1),
+        ("Wi-Fi UDP (P=8)", "5GHz Wi-Fi", 8),
+        ("USB UDP (P=1)", "USB 3.2 / 4.0", 1),
+        ("USB UDP (P=8)", "USB 3.2 / 4.0", 8),
+    ]
+    num_scenarios = len(udp_scenarios)
+    y_pos8 = np.arange(num_scenarios)[::-1]
+    bh8 = 0.17
+    offsets8 = np.linspace((len(BACKEND_ORDER) - 1) * bh8 / 2, -(len(BACKEND_ORDER) - 1) * bh8 / 2, len(BACKEND_ORDER))
+
+    ax8.set_yticks(y_pos8)
+    ax8.set_yticklabels([s[0] for s in udp_scenarios], fontsize=9, fontproperties=prop_medium, color='#334155')
+    ax8.set_xlabel("Average Jitter (Milliseconds)", fontsize=9, color='#64748b', fontproperties=prop_regular)
+    ax8.set_xlim(0, 1.85)
+    ax8.grid(True, axis='x', zorder=0)
+
+    for b_idx, b in enumerate(BACKEND_ORDER):
+        jitters = []
+        for s in udp_scenarios:
+            lbl, med, par = s
+            rec = get_rec(med, b, 1500, par, "udp")
+            up_j = rec.get("upload_jitter_ms", 0.0)
+            down_j = rec.get("download_jitter_ms", 0.0)
+            avg_j = (up_j + down_j) / 2.0 if (up_j > 0 and down_j > 0) else max(up_j, down_j)
+            jitters.append(round(avg_j, 3))
+
+        bars8 = ax8.barh(y_pos8 + offsets8[b_idx], jitters, bh8,
+                         color=PALETTE[b]['fill'], edgecolor=PALETTE[b]['edge'], linewidth=0.8, zorder=3)
+        for bar, j_val in zip(bars8, jitters):
+            txt = f"{j_val:.3f} ms" if j_val < 0.1 else f"{j_val:.2f} ms"
+            ax8.text(
+                j_val + 0.03, bar.get_y() + bar.get_height() / 2,
+                txt,
+                ha='left', va='center', fontsize=7.5, fontweight='bold',
+                fontproperties=prop_bold, color='#1e293b'
+            )
+
+    # Add baseline markers for UDP jitter
+    for idx, s in enumerate(udp_scenarios):
+        lbl, med, par = s
+        base_rec = get_rec(med, "direct_none", 0, par, "udp")
+        b_up = base_rec.get("upload_jitter_ms", 0.0)
+        b_down = base_rec.get("download_jitter_ms", 0.0)
+        b_avg = (b_up + b_down) / 2.0 if (b_up > 0 and b_down > 0) else max(b_up, b_down)
+        if b_avg > 0:
+            y_center = y_pos8[idx]
+            y_min = y_center - (len(BACKEND_ORDER) * bh8 / 2) - 0.03
+            y_max = y_center + (len(BACKEND_ORDER) * bh8 / 2) + 0.03
+            ax8.vlines(x=b_avg, ymin=y_min, ymax=y_max, colors='#64748b', linestyles='--', linewidth=1.2, zorder=4)
+            b_txt = f"Base: {b_avg:.3f}ms" if b_avg < 0.1 else f"Base: {b_avg:.2f}ms"
+            ax8.text(b_avg, y_max + 0.02, b_txt, ha='center', va='bottom', fontsize=7.2, color='#64748b', fontproperties=prop_regular)
+
+    # -------------------------------------------------------------
     # 7. ACADEMIC & METHODOLOGY FOOTNOTE
     # -------------------------------------------------------------
+    xray_ver = version_props.get("XRAY_CORE_VERSION", "v26.9.9")
+    hev_ver = version_props.get("HEV_TUN_VERSION", "2.17.1 (b514150)")
+    sing_ver = version_props.get("SING_TUN_VERSION", "a39eab51450b")
+    mips_ver = version_props.get("MIPS_TUN_VERSION", "802d64336f8c")
+
     footnote_text = (
         "SPECIFICATIONS & METHODOLOGY\n"
-        "Host (Server): AMD Ryzen 7 6800H @ 3.2GHz (8C/16T), Linux 6.12.107+deb13-amd64 | iPerf3 v3.18 (cJSON 1.7.15) | 1201 Mbps HE80 Wi-Fi 6E AX210 / USB 3.2 Gen1 Type-C RNDIS\n"
-        "DUT (Client): Qualcomm Snapdragon 778G SM7325 (1x2.4GHz + 3x2.2GHz Cortex-A78 + 4x1.9GHz Cortex-A55), Android 14, Linux 5.4 | iPerf3 v3.21 static arm64\n"
-        "Backends: hev-socks5-tunnel (git b514150 | SingTUN (git a39eab51450b) | MipsTUN (git 802d64336f8c) | Xray Native TUN (core v26.9.9)\n"
-        "Sampling & Metrics: 3-round arithmetic mean; CPU% represents multi-core cumulative load (800% system ceiling); Scheme 1 Android PSS via dumpsys meminfo; Scheme 2 Linux unshare -r -n isolated user namespace"
+        "Host (Server): AMD Ryzen 7 6800H @ 3.2GHz (8C/16T), Linux 6.12 | iPerf3 v3.18 | 1201 Mbps HE80 Wi-Fi 6 / 1Gbps USB 3.2 Gen1 Type-C RNDIS\n"
+        "DUT (Client): Qualcomm Snapdragon 778G (1+3+4 Cores), Android 14, Linux 5.4 | iPerf3 v3.21 static arm64\n"
+        f"Backends: hev-socks5-tunnel ({hev_ver}) | SingTUN ({sing_ver}) | MipsTUN ({mips_ver}) | Xray Native TUN ({xray_ver})\n"
+        "Sampling & Metrics: 3-round arithmetic mean; CPU% represents multi-core cumulative load (800% max); Scheme 1 Android PSS; Scheme 2 Linux isolated user namespace"
     )
     fig.text(
-        0.5, 0.024, footnote_text,
+        0.5, 0.016, footnote_text,
         fontsize=7.5, color='#64748b', fontproperties=prop_regular,
         ha='center', va='bottom', linespacing=1.45
     )
