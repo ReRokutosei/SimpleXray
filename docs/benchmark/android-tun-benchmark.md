@@ -569,6 +569,9 @@ Scheme 2 独立测量了 Xray 核心内部 gVisor netstack 的完整开销，实
 #### (6) 空闲连接驻留与内存增长
 ![Idle Memory Dashboard](../images/avg_idle_memory_dashboard.webp)
 
+#### (7) UDP 数据包传输抖动
+![UDP Jitter Dashboard](../images/avg_udp_jitter_dashboard.webp)
+
 ---
 
 ### 5.2 分轮可视化明细
@@ -581,6 +584,7 @@ Scheme 2 独立测量了 Xray 核心内部 gVisor netstack 的完整开销，实
 ![Round 1 Efficiency](../images/r1_cpu_efficiency_dashboard.webp)
 ![Round 1 Loopback](../images/r1_loopback_dashboard.webp)
 ![Round 1 Idle](../images/r1_idle_memory_dashboard.webp)
+![Round 1 Jitter](../images/r1_udp_jitter_dashboard.webp)
 
 </details>
 
@@ -594,6 +598,7 @@ Scheme 2 独立测量了 Xray 核心内部 gVisor netstack 的完整开销，实
 ![Round 2 Efficiency](../images/r2_cpu_efficiency_dashboard.webp)
 ![Round 2 Loopback](../images/r2_loopback_dashboard.webp)
 ![Round 2 Idle](../images/r2_idle_memory_dashboard.webp)
+![Round 2 Jitter](../images/r2_udp_jitter_dashboard.webp)
 
 </details>
 
@@ -607,6 +612,7 @@ Scheme 2 独立测量了 Xray 核心内部 gVisor netstack 的完整开销，实
 ![Round 3 Efficiency](../images/r3_cpu_efficiency_dashboard.webp)
 ![Round 3 Loopback](../images/r3_loopback_dashboard.webp)
 ![Round 3 Idle](../images/r3_idle_memory_dashboard.webp)
+![Round 3 Jitter](../images/r3_udp_jitter_dashboard.webp)
 
 </details>
 
