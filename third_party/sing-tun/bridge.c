@@ -12,7 +12,7 @@ extern int singTunIsRunning(void);
 extern void singTunGetStats(uint64_t *tx_pkts, uint64_t *tx_bytes, uint64_t *rx_pkts, uint64_t *rx_bytes);
 
 JNIEXPORT jboolean JNICALL
-Java_com_simplexray_re_service_TProxyService_SingTunStartService(
+Java_com_simplexray_re_service_SingTunService_SingTunStartService(
     JNIEnv *env,
     jobject thiz,
     jint tun_fd,
@@ -59,7 +59,7 @@ Java_com_simplexray_re_service_TProxyService_SingTunStartService(
 }
 
 JNIEXPORT jboolean JNICALL
-Java_com_simplexray_re_service_TProxyService_SingTunStopService(
+Java_com_simplexray_re_service_SingTunService_SingTunStopService(
     JNIEnv *env,
     jobject thiz
 ) {
@@ -68,7 +68,7 @@ Java_com_simplexray_re_service_TProxyService_SingTunStopService(
 }
 
 JNIEXPORT jboolean JNICALL
-Java_com_simplexray_re_service_TProxyService_SingTunIsRunning(
+Java_com_simplexray_re_service_SingTunService_SingTunIsRunning(
     JNIEnv *env,
     jobject thiz
 ) {
@@ -76,7 +76,7 @@ Java_com_simplexray_re_service_TProxyService_SingTunIsRunning(
 }
 
 JNIEXPORT jlongArray JNICALL
-Java_com_simplexray_re_service_TProxyService_SingTunGetStats(
+Java_com_simplexray_re_service_SingTunService_SingTunGetStats(
     JNIEnv *env,
     jobject thiz
 ) {

@@ -167,6 +167,7 @@ def main():
         app_uid = adb.get_app_uid()
         log_info(f"Connected to Device: {adb.device} | App UID: {app_uid}")
         adb.wake_device()
+        adb.wakeup_app_from_stopped_state()  # Ensure app is not in stopped state before any test
     except Exception as e:
         log_error(f"Device initialization failed: {e}")
         sys.exit(1)

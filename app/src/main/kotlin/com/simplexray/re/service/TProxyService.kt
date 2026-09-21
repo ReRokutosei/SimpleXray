@@ -5,7 +5,9 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
+import android.content.ComponentName
 import android.content.Intent
+import android.content.ServiceConnection
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.net.ConnectivityManager
@@ -14,6 +16,7 @@ import android.net.NetworkCapabilities
 import android.net.ProxyInfo
 import android.net.VpnService
 import android.os.IBinder
+import android.os.Handler
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.system.ErrnoException
@@ -52,7 +55,15 @@ import java.util.Locale
 import kotlin.concurrent.Volatile
 
 class TProxyService : VpnService() {
+    private enum class NativeBackend {
+        NONE,
+        HEV,
+        SING,
+        MIPS
+    }
+
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val nativeLifecycleLock = Any()
 
     private fun findAvailablePort(excludedPorts: Set<Int>): Int? {
         repeat(5) {
@@ -82,6 +93,10 @@ class TProxyService : VpnService() {
     private var xrayStarted = false
     private var xrayStartAttempt = 0
     private var tunFd: ParcelFileDescriptor? = null
+    @Volatile
+    private var activeBackend = NativeBackend.NONE
+    private var goTunBinder: IGoTunBackend? = null
+    private var goTunConnection: ServiceConnection? = null
     private var wakeLock: android.os.PowerManager.WakeLock? = null
 
     @Volatile
@@ -232,9 +247,7 @@ class TProxyService : VpnService() {
         val pfd = tunFd
         tunFd = null
         kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
-            runCatching { TProxyStopService() }
-            runCatching { SingTunStopService() }
-            runCatching { MipsTunStopService() }
+            stopActiveBackend()
             pfd?.let { runCatching { it.close() } }
         }
         wakeLock?.let {
@@ -579,8 +592,8 @@ class TProxyService : VpnService() {
             }
             Log.d(TAG, "Starting SingTUN backend on fd=$fd")
             val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
-            val ok = SingTunStartService(
-                tunFd = fd,
+            val ok = startGoTunService(
+                serviceClass = SingTunService::class.java,
                 socksHost = host,
                 socksPort = prefs.socksPort,
                 mtu = tunMtu,
@@ -592,6 +605,7 @@ class TProxyService : VpnService() {
                 stopXray()
                 return false
             }
+            activeBackend = NativeBackend.SING
         } else if (prefs.tunnelMode == TunnelMode.MipsTun && !prefs.disableVpn) {
             val fd = tunFd?.fd
             if (fd == null) {
@@ -601,8 +615,8 @@ class TProxyService : VpnService() {
             }
             Log.d(TAG, "Starting MipsTUN backend on fd=$fd")
             val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
-            val ok = MipsTunStartService(
-                tunFd = fd,
+            val ok = startGoTunService(
+                serviceClass = MipsTunService::class.java,
                 socksHost = host,
                 socksPort = prefs.socksPort,
                 mtu = tunMtu,
@@ -614,6 +628,7 @@ class TProxyService : VpnService() {
                 stopXray()
                 return false
             }
+            activeBackend = NativeBackend.MIPS
         } else {
             val tproxyFile = File(cacheDir, "tproxy.conf")
             try {
@@ -629,7 +644,12 @@ class TProxyService : VpnService() {
             }
 
             tunFd?.fd?.let { fd ->
-                TProxyStartService(tproxyFile.absolutePath, fd)
+                if (!TProxyStartService(tproxyFile.absolutePath, fd)) {
+                    Log.e(TAG, "TProxyStartService failed")
+                    stopXray()
+                    return false
+                }
+                activeBackend = NativeBackend.HEV
             } ?: run {
                 Log.e(TAG, "tunFd is null after establish()")
                 stopXray()
@@ -641,6 +661,51 @@ class TProxyService : VpnService() {
         initNotificationChannel(channelName)
         createNotification(channelName)
         return true
+    }
+
+    private fun startGoTunService(
+        serviceClass: Class<out GoTunService>,
+        socksHost: String,
+        socksPort: Int,
+        mtu: Int,
+        username: String,
+        password: String
+    ): Boolean {
+        val connection = object : ServiceConnection {
+            override fun onServiceConnected(name: ComponentName, service: IBinder) {
+                val binder = IGoTunBackend.Stub.asInterface(service)
+                goTunBinder = binder
+                val pfd = runCatching {
+                    ParcelFileDescriptor.dup(tunFd?.fileDescriptor ?: return)
+                }.getOrElse {
+                    Log.e(TAG, "Failed to duplicate VPN fd for ${serviceClass.simpleName}", it)
+                    return
+                }
+                val ok = runCatching {
+                    binder.start(pfd, socksHost, socksPort, mtu, username, password)
+                }.onFailure {
+                    Log.e(TAG, "Failed to start ${serviceClass.simpleName} backend", it)
+                }.getOrDefault(false)
+                runCatching { pfd.close() }
+                if (!ok) {
+                    Log.e(TAG, "${serviceClass.simpleName} backend rejected start")
+                    Handler(mainLooper).post { stopXray() }
+                }
+            }
+
+            override fun onServiceDisconnected(name: ComponentName) {
+                goTunBinder = null
+                Log.w(TAG, "${serviceClass.simpleName} process disconnected")
+                Handler(mainLooper).post { if (tunFd != null) stopXray() }
+            }
+        }
+        goTunConnection = connection
+        return runCatching {
+            bindService(Intent(this, serviceClass), connection, Context.BIND_AUTO_CREATE)
+        }.onFailure {
+            goTunConnection = null
+            Log.e(TAG, "Failed to bind ${serviceClass.simpleName}", it)
+        }.getOrDefault(false)
     }
 
     private fun getVpnBuilder(prefs: Preferences, tunMtu: Int): Builder = Builder().apply {
@@ -709,9 +774,7 @@ class TProxyService : VpnService() {
         stopForeground(Service.STOP_FOREGROUND_REMOVE)
         val pfd = tunFd
         tunFd = null
-        runCatching { TProxyStopService() }
-        runCatching { SingTunStopService() }
-        runCatching { MipsTunStopService() }
+        stopActiveBackend()
         pfd?.let { runCatching { it.close() } }
         stopSelf()
         wakeLock?.let {
@@ -722,6 +785,37 @@ class TProxyService : VpnService() {
             wakeLock = null
         }
         exit()
+    }
+
+    /**
+     * Stops exactly the backend that owns the current tun fd.
+     *
+     * Calling every native stop entry point is unsafe because SingTUN and
+     * MipsTUN embed independent Go runtimes. A stop call is not a harmless
+     * probe: it can enter the other runtime's cleanup path.
+     */
+    private fun stopActiveBackend() {
+        synchronized(nativeLifecycleLock) {
+            val backend = activeBackend
+            activeBackend = NativeBackend.NONE
+            val result = when (backend) {
+                NativeBackend.HEV -> runCatching { TProxyStopService() }
+                NativeBackend.SING, NativeBackend.MIPS -> runCatching {
+                    goTunBinder?.stop() ?: true
+                }
+                NativeBackend.NONE -> return
+            }
+            goTunBinder = null
+            goTunConnection?.let { connection ->
+                runCatching { unbindService(connection) }
+                goTunConnection = null
+            }
+            result.onSuccess {
+                Log.d(TAG, "Stopped native backend $backend: ok=$it")
+            }.onFailure {
+                Log.w(TAG, "Failed to stop native backend $backend", it)
+            }
+        }
     }
 
     @Suppress("SameParameterValue")
@@ -754,30 +848,6 @@ class TProxyService : VpnService() {
     private external fun TProxyIsRunning(): Boolean
     private external fun TProxyGetStats(): LongArray?
 
-    private external fun SingTunStartService(
-        tunFd: Int,
-        socksHost: String,
-        socksPort: Int,
-        mtu: Int,
-        username: String,
-        password: String
-    ): Boolean
-    private external fun SingTunStopService(): Boolean
-    private external fun SingTunIsRunning(): Boolean
-    private external fun SingTunGetStats(): LongArray?
-
-    private external fun MipsTunStartService(
-        tunFd: Int,
-        socksHost: String,
-        socksPort: Int,
-        mtu: Int,
-        username: String,
-        password: String
-    ): Boolean
-    private external fun MipsTunStopService(): Boolean
-    private external fun MipsTunIsRunning(): Boolean
-    private external fun MipsTunGetStats(): LongArray?
-
     companion object {
         const val ACTION_CONNECT: String = "com.simplexray.re.CONNECT"
         const val ACTION_DISCONNECT: String = "com.simplexray.re.DISCONNECT"
@@ -795,16 +865,6 @@ class TProxyService : VpnService() {
                 System.loadLibrary("hev-socks5-tunnel")
             } catch (e: Throwable) {
                 Log.e(TAG, "Failed to load hev-socks5-tunnel library", e)
-            }
-            try {
-                System.loadLibrary("singtun")
-            } catch (e: Throwable) {
-                Log.e(TAG, "Failed to load singtun library", e)
-            }
-            try {
-                System.loadLibrary("mipstun")
-            } catch (e: Throwable) {
-                Log.e(TAG, "Failed to load mipstun library", e)
             }
             try {
                 System.loadLibrary("xray-exec")

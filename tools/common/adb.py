@@ -21,6 +21,10 @@ class AdbRunner:
 
     def __init__(self, device: Optional[str] = None):
         self.device = device
+        # A force-stop already tears down the previous service/process. The next
+        # stop intent would start BenchmarkService again and can re-enter the
+        # native cleanup path before the next Go backend is started.
+        self._just_force_reset = False
         self._ensure_device()
 
     def _ensure_device(self):
@@ -69,6 +73,11 @@ class AdbRunner:
         self.shell("input keyevent KEYCODE_WAKEUP")
 
     def set_app_state(self, backend: str, mtu: int, cmd: str = "start"):
+        if cmd == "stop" and self._just_force_reset:
+            log_info("Skipping stop intent after force_reset (process already clean).")
+            self._just_force_reset = False
+            return
+        self._just_force_reset = False
         log_info(f"Controlling Headless Benchmark Service: cmd={cmd}, backend={backend}, mtu={mtu}")
         self.shell(
             f"am start-foreground-service --user 0 -n {APP_PKG}/com.simplexray.re.service.BenchmarkService "
@@ -76,7 +85,51 @@ class AdbRunner:
             timeout=10.0
         )
 
-    def wait_for_tun0(self, backend: str, timeout_sec: int = 8):
+    def wakeup_app_from_stopped_state(self):
+        """Ensures the app Activity is in the foreground before issuing service intents.
+
+        On HyperOS/MIUI (and Android 14+ in general), am start-foreground-service is blocked
+        when the app is in the background or in stopped state. Launching the Activity brings
+        the app to the foreground, allowing BenchmarkService intents to be received.
+
+        The Activity is intentionally LEFT in the foreground (no HOME key) so that subsequent
+        set_app_state() calls succeed under HyperOS background execution restrictions.
+        Safe to call even when the app is already in the foreground.
+        """
+        rc, out, _ = self.shell(f"dumpsys package {APP_PKG} | grep 'stopped='")
+        if "stopped=true" in out:
+            log_info(f"App is in Android stopped state. Launching Activity to exit stopped state...")
+        else:
+            log_info(f"Ensuring {APP_PKG} Activity is in foreground for service intent delivery...")
+        self.shell(
+            f"am start --user 0 -n {APP_PKG}/com.simplexray.re.MainActivityLineal "
+            f"--activity-no-animation -f 0x10000000",
+            timeout=10.0
+        )
+        # Wait for Activity + Application to fully initialize before service intents are sent.
+        # Do NOT send KEYCODE_HOME: keeping the Activity in foreground is required for
+        # HyperOS/MIUI to allow am start-foreground-service to succeed.
+        time.sleep(2.0)
+        log_info("App Activity is in foreground. Ready to receive service intents.")
+
+    def force_reset_app(self):
+        """Force-stops the app to reset Go runtime state between different Go-based TUN backends.
+
+        libsingtun.so and libmipstun.so are each compiled as independent Go c-shared libraries.
+        Loading both sequentially in the same process causes fatal Go runtime conflicts
+        (fatal error: unknown caller pc via cgocallbackg). Calling this between backends ensures
+        the next backend starts in a fresh process with no Go runtime residue.
+        """
+        log_info(f"Force-stopping {APP_PKG} to isolate Go runtime between backends...")
+        self.shell(f"am force-stop {APP_PKG}", timeout=10.0)
+        time.sleep(1.0)
+        # After force-stop, the app enters Android's stopped state. Wake it via Activity
+        # so the next am start-foreground-service intent can be received on Android 14+.
+        self.wakeup_app_from_stopped_state()
+        self._just_force_reset = True
+        log_info("App process reset complete. Ready for next backend cold-start.")
+
+    def wait_for_tun0(self, backend: str, timeout_sec: int = 15):
         """Strictly verifies that Android kernel has established tun0 interface."""
         log_info(f"Waiting up to {timeout_sec}s for VPN & proxy backend '{backend}' to establish tun0...")
         tun_ready = False
@@ -94,6 +147,22 @@ class AdbRunner:
                 f"Ensure VpnService is properly authorized on device and not returning null on establish()."
             )
         log_success(f"Verified VPN interface 'tun0' is UP for backend '{backend}'.")
+
+    def wait_for_no_tun0(self, timeout_sec: int = 10):
+        """Waits until tun0 interface is fully torn down after a backend stop.
+
+        After sending ACTION_DISCONNECT to TProxyService, the VPN fd is released
+        asynchronously. Starting the next backend before tun0 disappears may cause
+        establish() to return null (VPN already held). This method polls until tun0
+        is gone or the timeout elapses.
+        """
+        for i in range(timeout_sec):
+            rc, out, _ = self.shell("ip addr show dev tun0")
+            if rc != 0 or "tun0" not in out:
+                log_info(f"tun0 is down after {i}s — VPN teardown complete.")
+                return
+            time.sleep(1)
+        log_warn(f"tun0 still present after {timeout_sec}s stop wait; proceeding anyway.")
 
     def ensure_no_tun0(self):
         """Ensures tun0 interface is completely torn down (for physical baseline tests)."""
