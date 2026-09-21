@@ -12,7 +12,7 @@ extern int mipsTunIsRunning(void);
 extern void mipsTunGetStats(uint64_t *tx_pkts, uint64_t *tx_bytes, uint64_t *rx_pkts, uint64_t *rx_bytes);
 
 JNIEXPORT jboolean JNICALL
-Java_com_simplexray_re_service_TProxyService_MipsTunStartService(
+Java_com_simplexray_re_service_MipsTunService_MipsTunStartService(
     JNIEnv *env,
     jobject thiz,
     jint tun_fd,
@@ -59,7 +59,7 @@ Java_com_simplexray_re_service_TProxyService_MipsTunStartService(
 }
 
 JNIEXPORT jboolean JNICALL
-Java_com_simplexray_re_service_TProxyService_MipsTunStopService(
+Java_com_simplexray_re_service_MipsTunService_MipsTunStopService(
     JNIEnv *env,
     jobject thiz
 ) {
@@ -68,7 +68,7 @@ Java_com_simplexray_re_service_TProxyService_MipsTunStopService(
 }
 
 JNIEXPORT jboolean JNICALL
-Java_com_simplexray_re_service_TProxyService_MipsTunIsRunning(
+Java_com_simplexray_re_service_MipsTunService_MipsTunIsRunning(
     JNIEnv *env,
     jobject thiz
 ) {
@@ -76,7 +76,7 @@ Java_com_simplexray_re_service_TProxyService_MipsTunIsRunning(
 }
 
 JNIEXPORT jlongArray JNICALL
-Java_com_simplexray_re_service_TProxyService_MipsTunGetStats(
+Java_com_simplexray_re_service_MipsTunService_MipsTunGetStats(
     JNIEnv *env,
     jobject thiz
 ) {

@@ -49,7 +49,7 @@ def run_throughput_case(
 
     # Stop previous VPN instance
     adb.set_app_state(backend, mtu, cmd="stop")
-    time.sleep(2)
+    adb.wait_for_no_tun0()  # Wait for VPN fd to be fully released before starting next backend
 
     # Start VPN if not physical baseline
     if backend != "direct_none":
@@ -121,7 +121,7 @@ def run_throughput_case(
     # Cleanup VPN
     if backend != "direct_none":
         adb.set_app_state(backend, mtu, cmd="stop")
-        time.sleep(2)
+        adb.wait_for_no_tun0()
 
     peak_cpu = max(up_peak_cpu, down_peak_cpu)
     peak_mem = max(up_mem_mb, down_mem_mb)
@@ -169,7 +169,7 @@ def run_loopback_case(
     print(f"{Colors.MAGENTA}======================================================={Colors.RESET}")
 
     adb.set_app_state(backend, mtu, cmd="stop")
-    time.sleep(2)
+    adb.wait_for_no_tun0()  # Wait for VPN fd to be fully released before starting next backend
 
     if backend != "direct_none":
         adb.set_app_state(backend, mtu, cmd="start")
@@ -263,9 +263,21 @@ def run_media_suite(
         "mips": "MipsTUN"
     }
 
+    # Go-based TUN backends that carry an independent Go runtime in their .so
+    GO_BACKENDS = {"sing", "mips", "xray"}
+    prev_backend: Optional[str] = None
+
     # 2. MTU 1500 & MTU 9000
     for b in backends:
         b_name = name_map.get(b, b.upper())
+
+        # Force-reset the app process when transitioning between Go-based TUN backends to
+        # prevent fatal Go runtime conflicts (libsingtun.so / libmipstun.so both embed
+        # independent Go runtimes; sequential load in the same process triggers
+        # "fatal error: unknown caller pc" via cgocallbackg).
+        if prev_backend is not None and (b in GO_BACKENDS or prev_backend in GO_BACKENDS):
+            adb.force_reset_app()
+        prev_backend = b
 
         # TCP MTU 1500
         if "tcp" in networks:
@@ -302,6 +314,7 @@ def run_media_suite(
     return results
 
 
+
 def run_loopback_suite(
     adb: AdbRunner,
     app_uid: str,
@@ -315,12 +328,30 @@ def run_loopback_suite(
         results.append(run_loopback_case(adb, app_uid, "Loopback Baseline (No VPN)", "direct_none", 0, duration=duration, parallel=1))
         results.append(run_loopback_case(adb, app_uid, "Loopback Baseline (No VPN)", "direct_none", 0, duration=duration, parallel=8))
 
+    GO_BACKENDS = {"sing", "mips", "xray"}
     name_map = {"hev": "Hev", "xray": "Xray TUN", "sing": "SingTUN", "mips": "MipsTUN"}
+
+    prev_backend: Optional[str] = None
     for b in backends:
         b_name = name_map.get(b, b.upper())
+        # Force-reset between Go-based backends to prevent Go runtime cgo conflicts.
+        if prev_backend is not None and (b in GO_BACKENDS or prev_backend in GO_BACKENDS):
+            adb.force_reset_app()
+        prev_backend = b
         results.append(run_loopback_case(adb, app_uid, f"{b_name} (MTU 9000)", b, 9000, duration=duration, parallel=1))
+
+    # The previous loop leaves the last Go backend stopped in this process. Start
+    # the parallel loop from a clean process as well, otherwise its first backend
+    # can inherit the previous Go runtime's native state.
+    if backends and any(b in GO_BACKENDS for b in backends):
+        adb.force_reset_app()
+
+    prev_backend = None
     for b in backends:
         b_name = name_map.get(b, b.upper())
+        if prev_backend is not None and (b in GO_BACKENDS or prev_backend in GO_BACKENDS):
+            adb.force_reset_app()
+        prev_backend = b
         results.append(run_loopback_case(adb, app_uid, f"{b_name} (MTU 9000)", b, 9000, duration=duration, parallel=8))
 
     return results
