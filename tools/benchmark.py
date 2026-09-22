@@ -14,13 +14,13 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 sys.path.insert(0, SCRIPT_DIR)
 
 from common.adb import AdbRunner, APP_PKG
-from common.dataset import (
-    DEFAULT_BENCH_JSON,
-    DEFAULT_ADVANCED_JSON,
+from common.device import (
+    DEFAULT_DEVICE,
+    DEVICE_PROFILES,
+    resolve_device_paths,
 )
 from common.logging import (
     Colors,
@@ -116,19 +116,27 @@ def main():
                         help="Duration in seconds per throughput test direction (default: 10)")
     parser.add_argument("--device", default=None,
                         help="ADB device serial if multiple devices are connected")
+    parser.add_argument("--device-profile", default=DEFAULT_DEVICE, choices=sorted(DEVICE_PROFILES),
+                        help=f"Device profile used for default output paths (default: {DEFAULT_DEVICE})")
     parser.add_argument("--rounds", type=int, default=3,
                         help="Number of test rounds to execute (default: 3)")
     parser.add_argument("--merge", action="store_true",
                         help="Merge new benchmark results into existing JSON file")
-    parser.add_argument("--output-json", default=DEFAULT_BENCH_JSON,
-                        help="File path to save standard benchmark JSON results")
-    parser.add_argument("--output-md", default=os.path.join(PROJECT_ROOT, "docs/benchmark/benchmark_summary.md"),
-                        help="File path to save standard Markdown summary tables")
-    parser.add_argument("--advanced-json", default=DEFAULT_ADVANCED_JSON,
-                        help="File path to save advanced benchmark results (Bufferbloat & Stability)")
+    parser.add_argument("--output-json", default=None,
+                        help="File path to save standard benchmark JSON results (defaults to profile data dir)")
+    parser.add_argument("--output-md", default=None,
+                        help="File path to save standard Markdown summary tables (defaults to profile data dir)")
+    parser.add_argument("--advanced-json", default=None,
+                        help="File path to save advanced benchmark results (defaults to profile data dir)")
     parser.add_argument("--no-charts", action="store_true",
-                        help="Skip generating visualization charts in docs/images/")
+                        help="Skip generating visualization charts in the profile chart directory")
     args = parser.parse_args()
+
+    profile = resolve_device_paths(args.device_profile)
+    args.output_json = args.output_json or profile["bench_json"]
+    args.output_md = args.output_md or profile["bench_summary"]
+    args.advanced_json = args.advanced_json or profile["advanced_json"]
+    chart_dir = profile["charts_dir"]
 
     # Parse modes
     raw_modes = [m.strip().lower() for m in args.mode.split(",") if m.strip()]
@@ -281,7 +289,7 @@ def main():
             adv_data["bufferbloat"] = bloat_res
 
             if not args.no_charts:
-                chart_path = os.path.join(PROJECT_ROOT, "docs/images/bufferbloat_dashboard.webp")
+                chart_path = os.path.join(chart_dir, "bufferbloat_dashboard.webp")
                 render_bufferbloat_chart(bloat_res, chart_path)
 
         if "longrun" in modes:
@@ -292,7 +300,7 @@ def main():
             adv_data["long_run"] = long_res
 
             if not args.no_charts:
-                chart_path = os.path.join(PROJECT_ROOT, "docs/images/long_run_stability_dashboard.webp")
+                chart_path = os.path.join(chart_dir, "long_run_stability_dashboard.webp")
                 render_long_run_chart(long_res, chart_path)
 
         os.makedirs(os.path.dirname(adv_json_path), exist_ok=True)

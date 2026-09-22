@@ -24,6 +24,7 @@ Design Language & Standards:
   - Automatic version extraction from version.properties.
 """
 
+import argparse
 import os
 import sys
 from typing import Dict, List, Any, Tuple
@@ -43,6 +44,11 @@ from common.dataset import (
     compute_clean_averages,
     get_rec as common_get_rec,
 )
+from common.device import (
+    DEFAULT_DEVICE,
+    DEVICE_PROFILES,
+    resolve_device_paths,
+)
 from common.theme import (
     PALETTE,
     BACKEND_ORDER,
@@ -50,15 +56,21 @@ from common.theme import (
     apply_global_theme,
 )
 
-OUTPUT_MEGA_IMAGE = os.path.join(PROJECT_ROOT, "docs", "images", "mega_benchmark_infographic.webp")
-
 prop_regular, prop_bold, prop_medium = setup_fonts()
 apply_global_theme()
 
 
-def generate_mega_dashboard():
+def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = None):
+    profile = resolve_device_paths(device)
+    data_dir = profile["data_dir"]
+    output_image = output_path or os.path.join(profile["charts_dir"], "mega_benchmark_infographic.webp")
+
     print("[Mega Dashboard] Loading datasets and component versions...")
-    bench_root, micro_root, advanced_root = load_datasets()
+    bench_root, micro_root, advanced_root = load_datasets(
+        bench_path=os.path.join(data_dir, "benchmark_results.json"),
+        micro_path=os.path.join(data_dir, "microbench_results.json"),
+        advanced_path=os.path.join(data_dir, "advanced_benchmark_results.json"),
+    )
     version_props = load_version_properties()
     avg_records = compute_clean_averages(bench_root)
 
@@ -333,8 +345,9 @@ def generate_mega_dashboard():
     ax5.set_title("0 -> 1000 TCP Connection Retention Growth (Lower is Better)", fontsize=11, fontweight='bold',
                   fontproperties=prop_bold, color='#1e293b', pad=14)
     ax5.set_xlabel("Retained Idle Connections (Flows)", fontsize=9, color='#64748b', fontproperties=prop_regular)
-    ax5.set_ylabel("Memory Growth (MiB PSS above baseline)", fontsize=9, color='#64748b', fontproperties=prop_regular)
+    ax5.set_ylabel("PSS Delta from Baseline (MiB)", fontsize=9, color='#64748b', fontproperties=prop_regular)
     ax5.grid(True, zorder=0)
+    ax5.axhline(0, color='#64748b', linewidth=0.9, linestyle='--', zorder=2)
 
     markers = {'hev': 'o', 'sing': 's', 'mips': '^', 'xray': 'D'}
     for b in BACKEND_ORDER:
@@ -344,14 +357,26 @@ def generate_mega_dashboard():
                 if flows:
                     xs = [f["connections"] for f in flows]
                     base = flows[0]["pss_mb"]
-                    ys = [max(0.0, round(f["pss_mb"] - base, 2)) for f in flows]
+                    # Preserve negative deltas: Android GC/heap reuse can make the
+                    # final PSS lower than the step-0 sample. Clipping to zero
+                    # hides that measurement effect and makes the subplot look empty.
+                    ys = [round(f["pss_mb"] - base, 2) for f in flows]
                     ax5.plot(xs, ys, color=PALETTE[b]['fill'], marker=markers[b], markersize=5.5, linewidth=1.8, label=PALETTE[b]['name'].split()[0], zorder=3)
                     slope = (ys[-1] - ys[0]) * 1024.0 / (xs[-1] - xs[0])
-                    ax5.text(xs[-1] + 20, ys[-1], f"{slope:.2f} KiB", fontsize=7.5, fontweight='bold', color=PALETTE[b]['edge'], va='center', fontproperties=prop_bold)
+                    label_y = ys[-1]
+                    # Keep near-zero GC/heap-reuse labels readable instead of
+                    # stacking three values on the same baseline.
+                    if b == 'sing':
+                        label_y = -0.35
+                    elif b == 'mips':
+                        label_y = -1.15
+                    elif b == 'xray':
+                        label_y = -2.05
+                    ax5.text(xs[-1] + 20, label_y, f"{slope:.2f} KiB", fontsize=7.5, fontweight='bold', color=PALETTE[b]['edge'], va='center', fontproperties=prop_bold)
                 break
 
     ax5.set_xlim(-30, 1250)
-    ax5.set_ylim(-1, 58)
+    ax5.set_ylim(-4, 58)
     ax5.set_xticks([0, 250, 500, 750, 1000])
 
     # -------------------------------------------------------------
@@ -516,7 +541,7 @@ def generate_mega_dashboard():
     footnote_text = (
         "SPECIFICATIONS & METHODOLOGY\n"
         "Host (Server): AMD Ryzen 7 6800H @ 3.2GHz (8C/16T), Linux 6.12 | iPerf3 v3.18 | 1201 Mbps HE80 Wi-Fi 6 / 1Gbps USB 3.2 Gen1 Type-C RNDIS\n"
-        "DUT (Client): Qualcomm Snapdragon 778G (1+3+4 Cores), Android 14, Linux 5.4 | iPerf3 v3.21 static arm64\n"
+        f"DUT (Client): {profile['dut_footer']} | iPerf3 v3.21 static arm64\n"
         f"Backends: hev-socks5-tunnel ({hev_ver}) | SingTUN ({sing_ver}) | MipsTUN ({mips_ver}) | Xray Native TUN ({xray_ver})\n"
         "Sampling & Metrics: 3-round arithmetic mean; CPU% represents multi-core cumulative load (800% max); Scheme 1 Android PSS; Scheme 2 Linux isolated user namespace"
     )
@@ -527,17 +552,30 @@ def generate_mega_dashboard():
     )
 
     # Save image
-    os.makedirs(os.path.dirname(OUTPUT_MEGA_IMAGE), exist_ok=True)
+    os.makedirs(os.path.dirname(output_image), exist_ok=True)
     plt.savefig(
-        OUTPUT_MEGA_IMAGE,
+        output_image,
         dpi=400,
         facecolor='#f8fafc',
         edgecolor='none',
         pil_kwargs={'lossless': True}
     )
     plt.close()
-    print(f"[Mega Dashboard] Successfully generated: {OUTPUT_MEGA_IMAGE}")
+    print(f"[Mega Dashboard] Successfully generated: {output_image}")
 
 
 if __name__ == "__main__":
-    generate_mega_dashboard()
+    parser = argparse.ArgumentParser(description="Generate the SimpleXray mega benchmark infographic")
+    parser.add_argument(
+        "--device",
+        default=DEFAULT_DEVICE,
+        choices=sorted(DEVICE_PROFILES),
+        help=f"Device profile used for input data and output chart path (default: {DEFAULT_DEVICE})",
+    )
+    parser.add_argument(
+        "--output",
+        default=None,
+        help="Optional output image path. Defaults to the selected device chart directory.",
+    )
+    args = parser.parse_args()
+    generate_mega_dashboard(args.device, args.output)

@@ -175,9 +175,11 @@ def render_long_run_chart(results: List[Dict[str, Any]], output_path: str):
         b_info = PALETTE[b]
         series = match["time_series"]
         final_y = series[-1]
-        cv = match["cv_percent"]
-        decay = match["decay_percent"]
-        avg = match["avg_throughput_mbps"]
+        avg = float(np.mean(series)) if series else 0.0
+        cv = round((float(np.std(series)) / avg) * 100.0, 2) if avg > 0 else 0.0
+        first_5s = float(np.mean(series[:5])) if len(series) >= 5 else avg
+        last_5s = float(np.mean(series[-5:])) if len(series) >= 5 else avg
+        decay = round(((last_5s - first_5s) / first_5s) * 100.0, 2) if first_5s > 0 else 0.0
         lbl_y = label_y_positions[idx]
 
         tag = f"{b_info['name'].split()[0]}: {avg:.0f}M (CV: {cv:.1f}%, Decay: {decay:+.1f}%)"

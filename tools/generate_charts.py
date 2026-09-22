@@ -22,12 +22,13 @@ import matplotlib.font_manager as fm
 import numpy as np
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_DOCS_IMAGES = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "images"))
-DEFAULT_JSON_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "benchmark", "benchmark_results.json"))
-
-DEFAULT_MICROBENCH_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "docs", "benchmark", "microbench_results.json"))
 
 sys.path.insert(0, SCRIPT_DIR)
+from common.device import (
+    DEFAULT_DEVICE,
+    DEVICE_PROFILES,
+    resolve_device_paths,
+)
 from common.theme import (
     PALETTE,
     setup_fonts,
@@ -36,16 +37,22 @@ from common.theme import (
     create_top_legend,
     save_dashboard,
 )
-from common.dataset import (
-    DEFAULT_BENCH_JSON,
-    DEFAULT_MICRO_JSON,
-    compute_clean_averages,
-)
+from common.dataset import compute_clean_averages
 
 prop_regular, prop_bold, prop_medium = setup_fonts()
 apply_global_theme()
 
 BACKEND_ORDER = ['xray', 'sing', 'mips', 'hev']
+
+
+def infer_dut_label(json_path: str, output_dir: str) -> str:
+    """Infers a human-readable DUT label from known benchmark dataset paths."""
+    haystack = f"{json_path} {output_dir}".lower()
+    if "8-elite-gen-5" in haystack or "8_elite_gen_5" in haystack:
+        return "Snapdragon 8 Elite Gen 5"
+    if "778g" in haystack or "778-g" in haystack:
+        return "Snapdragon 778G"
+    return "DUT"
 
 
 def render_throughput_dashboard(
@@ -736,9 +743,17 @@ def render_fullstack_attribution_dashboard(
     print(f"[Dashboard] Saved: {output_path}")
 
 
-def process_dataset_and_generate_dashboards(records: list, output_dir: str, prefix: str = ""):
+def process_dataset_and_generate_dashboards(
+    records: list,
+    output_dir: str,
+    prefix: str = "",
+    dut_label: str = "DUT",
+):
     """
     Processes records and produces the 5 publication dashboards.
+
+    dut_label is printed in chart subtitles so the same generator can be reused
+    for different Android devices without hardcoding a SoC name.
     """
     def get_val(medium: str, backend: str, mtu: int, parallel: int, field: str, network: str = "tcp") -> float:
         for r in records:
@@ -810,7 +825,7 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
     render_throughput_dashboard(
         os.path.join(output_dir, f"{prefix}wifi_throughput_dashboard.webp"),
         "5GHz Wi-Fi Network Throughput (Mbps)",
-        "iPerf3 Client (DUT: Snapdragon 778G) -> 5GHz Wi-Fi -> Linux 6.12 Server (iPerf3 UDP Target Limit: 200 Mbps)",
+        f"iPerf3 Client (DUT: {dut_label}) -> 5GHz Wi-Fi -> Linux 6.12 Server (iPerf3 UDP Target Limit: 200 Mbps)",
         categories, wifi_single, wifi_multi, wifi_base_single, wifi_base_multi, max_wifi,
         single_losses=wifi_loss_single, multi_losses=wifi_loss_multi
     )
@@ -854,7 +869,7 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
     render_throughput_dashboard(
         os.path.join(output_dir, f"{prefix}usb_throughput_dashboard.webp"),
         "USB 3.2 Gen1 / 4.0 Wired Throughput (Mbps)",
-        "iPerf3 Client (DUT: Snapdragon 778G) -> USB 3.2 RNDIS (1 Gbps) -> Linux 6.12 Server (UDP Target Limit: 200 Mbps)",
+        f"iPerf3 Client (DUT: {dut_label}) -> USB 3.2 RNDIS (1 Gbps) -> Linux 6.12 Server (UDP Target Limit: 200 Mbps)",
         categories, usb_single, usb_multi, usb_base_single, usb_base_multi, max_usb,
         single_losses=usb_loss_single, multi_losses=usb_loss_multi
     )
@@ -902,7 +917,7 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
     render_efficiency_dashboard(
         os.path.join(output_dir, f"{prefix}cpu_efficiency_dashboard.webp"),
         "Processor Efficiency & Compute Cost",
-        "Standardized Metric: CPU % consumed per 100 Mbps (Multi-Core Cumulative: Snapdragon 778G 8-Core Max: 800%)",
+        f"Standardized Metric: CPU % consumed per 100 Mbps (Multi-Core Cumulative: {dut_label} 8-Core Max: 800%)",
         eff_cats, single_costs, multi_costs, max_c
     )
 
@@ -1005,14 +1020,34 @@ def process_dataset_and_generate_dashboards(records: list, output_dir: str, pref
 
 def main():
     parser = argparse.ArgumentParser(description="Generate benchmark dashboards (v2)")
-    parser.add_argument("--json", default=DEFAULT_JSON_PATH, help="Path to benchmark_results.json")
-    parser.add_argument("--microbench", default=DEFAULT_MICROBENCH_PATH, help="Path to microbench_results.json")
-    parser.add_argument("--output-dir", default=DEFAULT_DOCS_IMAGES, help="Path to output directory")
+    parser.add_argument(
+        "--device",
+        default=DEFAULT_DEVICE,
+        choices=sorted(DEVICE_PROFILES),
+        help=f"Device profile used for default JSON, microbench, and chart paths (default: {DEFAULT_DEVICE})",
+    )
+    parser.add_argument("--json", default=None, help="Path to benchmark_results.json (defaults to profile data dir)")
+    parser.add_argument("--microbench", default=None, help="Path to microbench_results.json (defaults to profile data dir)")
+    parser.add_argument("--output-dir", default=None, help="Path to output directory (defaults to profile charts dir)")
+    parser.add_argument(
+        "--dut",
+        default=None,
+        help="DUT/SoC label printed in chart subtitles (defaults to device profile name)",
+    )
     args = parser.parse_args()
+
+    profile = resolve_device_paths(args.device)
+    args.json = args.json or profile["bench_json"]
+    args.microbench = args.microbench or profile["microbench_json"]
+    args.output_dir = args.output_dir or profile["charts_dir"]
 
     if not os.path.exists(args.json):
         print(f"Error: {args.json} not found.")
         sys.exit(1)
+
+    dut_label = args.dut or infer_dut_label(args.json, args.output_dir)
+    if dut_label == "DUT":
+        dut_label = profile["name"]
 
     print(f"Loading results from {args.json}...")
     with open(args.json, "r", encoding="utf-8") as f:
@@ -1023,15 +1058,21 @@ def main():
         r_num = r_name.replace("round_", "")
         prefix = f"r{r_num}_"
         print(f"Generating unified dashboards for {r_name} (prefix='{prefix}')...")
-        process_dataset_and_generate_dashboards(records, args.output_dir, prefix=prefix)
+        process_dataset_and_generate_dashboards(
+            records, args.output_dir, prefix=prefix, dut_label=dut_label
+        )
 
     # Average dataset
     if rounds:
         avg_records = compute_clean_averages(root)
 
         print("Generating unified dashboards for average across all rounds...")
-        process_dataset_and_generate_dashboards(avg_records, args.output_dir, prefix="avg_")
-        process_dataset_and_generate_dashboards(avg_records, args.output_dir, prefix="")
+        process_dataset_and_generate_dashboards(
+            avg_records, args.output_dir, prefix="avg_", dut_label=dut_label
+        )
+        process_dataset_and_generate_dashboards(
+            avg_records, args.output_dir, prefix="", dut_label=dut_label
+        )
 
         print("Generating Full-Stack Attribution Dashboard...")
         render_fullstack_attribution_dashboard(

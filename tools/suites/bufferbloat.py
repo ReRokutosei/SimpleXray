@@ -1,7 +1,7 @@
 """
 Bufferbloat & Loaded Latency Delta Suite:
 Measures latency inflation (Bufferbloat) under single-stream and multi-stream TCP saturation
-using concurrent ICMP ping probing.
+using concurrent TCP echo probing through the same data path.
 """
 
 import os
@@ -27,19 +27,26 @@ from common.theme import (
     save_dashboard,
 )
 
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+TOOLS_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
+RTT_PORT = 5301
 
-def measure_idle_ping(adb: AdbRunner, server_ip: str, count: int = 15) -> float:
-    """Measures baseline ping RTT (in ms) when no traffic is active."""
-    cmd = f"ping -c {count} -i 0.2 -W 1 {server_ip}"
-    rc, out, _ = adb.shell(cmd, timeout=count * 0.4 + 5)
+
+def measure_tcp_rtt(adb: AdbRunner, server_ip: str, count: int = 15) -> List[float]:
+    """Measures TCP echo RTT through the selected Android/TUN path."""
+    cmd = (
+        f"/data/local/tmp/idle_bench rtt --server {server_ip}:{RTT_PORT} "
+        f"--count {count} --interval 200ms --timeout 1s"
+    )
+    rc, out, err = adb.shell(cmd, timeout=count * 0.4 + 5)
     rtts = []
     for line in out.splitlines():
-        m = re.search(r"time=([\d\.]+)\s*ms", line)
+        m = re.search(r'"rtt_ms":([\d.]+)', line)
         if m:
             rtts.append(float(m.group(1)))
-    if rtts:
-        return float(np.median(rtts))
-    return 0.0
+    if rc != 0 and not rtts:
+        log_warn(f"TCP RTT probe failed: {err.strip()}")
+    return rtts
 
 
 def run_bufferbloat_case(
@@ -50,7 +57,7 @@ def run_bufferbloat_case(
     duration: int = 10
 ) -> Dict[str, Any]:
     """
-    Runs an iPerf3 download while concurrently pinging the host.
+    Runs an iPerf3 download while concurrently probing TCP echo RTT.
     Computes idle RTT, loaded RTT, and Delta RTT (Bufferbloat).
     """
     adb.set_app_state(backend, 1500, cmd="stop")
@@ -61,58 +68,77 @@ def run_bufferbloat_case(
     else:
         adb.ensure_no_tun0()
 
-    # Measure idle RTT
-    idle_rtt = measure_idle_ping(adb, server_ip, count=15)
-    log_info(f"[{backend}] Idle RTT: {idle_rtt:.2f} ms")
-
-    # Start host iperf3 server
+    # Start host TCP echo and iperf3 servers.
+    echo_bin = os.path.join(TOOLS_DIR, "idle_bench", "idle_bench_linux_amd64")
+    if not os.path.exists(echo_bin):
+        raise RuntimeError(f"Host RTT probe binary not found: {echo_bin}")
+    echo_proc = subprocess.Popen([echo_bin, "server", "--port", str(RTT_PORT)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     server_proc = subprocess.Popen(
         ["iperf3", "-s", "-p", str(DEFAULT_PORT)],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
     )
     time.sleep(0.5)
 
-    # Start concurrent ping thread on device
-    ping_rtts: List[float] = []
-    ping_stop_event = threading.Event()
+    client_bin = os.path.join(TOOLS_DIR, "idle_bench", "idle_bench_linux_arm64")
+    if not os.path.exists(client_bin):
+        raise RuntimeError(f"Device RTT probe binary not found: {client_bin}")
+    adb.exec(["push", client_bin, "/data/local/tmp/idle_bench"])
+    adb.shell("chmod 755 /data/local/tmp/idle_bench")
 
-    def ping_worker():
-        cmd = ["adb", "-s", adb.device, "shell", f"ping -i 0.2 {server_ip}"]
+    idle_samples = measure_tcp_rtt(adb, server_ip, count=15)
+    if len(idle_samples) < 3:
+        raise RuntimeError(f"[{backend}] TCP RTT idle probe has too few samples: {len(idle_samples)}")
+    idle_rtt = float(np.median(idle_samples))
+    log_info(f"[{backend}] Idle TCP RTT: {idle_rtt:.2f} ms ({len(idle_samples)} samples)")
+
+    # Start concurrent TCP RTT probe on device.
+    rtt_samples: List[float] = []
+    rtt_stop_event = threading.Event()
+
+    def rtt_worker():
+        cmd = ["adb", "-s", adb.device, "shell", f"/data/local/tmp/idle_bench rtt --server {server_ip}:{RTT_PORT} --count 1000 --interval 200ms --timeout 1s"]
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
-        while not ping_stop_event.is_set():
+        while not rtt_stop_event.is_set():
             line = p.stdout.readline()
             if not line:
                 break
-            m = re.search(r"time=([\d\.]+)\s*ms", line)
+            m = re.search(r'"rtt_ms":([\d.]+)', line)
             if m:
-                ping_rtts.append(float(m.group(1)))
+                rtt_samples.append(float(m.group(1)))
         p.terminate()
         p.wait()
 
-    ping_thread = threading.Thread(target=ping_worker, daemon=True)
-    ping_thread.start()
+    rtt_thread = threading.Thread(target=rtt_worker, daemon=True)
+    rtt_thread.start()
 
     # Run iperf3 download from device (reverse mode)
     par_flag = f"-P {parallel} -l 64K" if parallel > 1 else ""
     client_cmd = f"/data/local/tmp/iperf3 -c {server_ip} -p {DEFAULT_PORT} -R -t {duration} {par_flag} -J"
-    log_info(f"[{backend}] Starting {duration}s TCP download (P={parallel}) with concurrent ping...")
+    log_info(f"[{backend}] Starting {duration}s TCP download (P={parallel}) with concurrent TCP RTT...")
     rc, iperf_out, _ = adb.shell(client_cmd, timeout=duration + 15)
 
     # Stop pinging and server
-    ping_stop_event.set()
-    ping_thread.join(timeout=2)
+    rtt_stop_event.set()
+    rtt_thread.join(timeout=2)
     server_proc.terminate()
     try:
         server_proc.wait(timeout=2)
     except subprocess.TimeoutExpired:
         server_proc.kill()
+    echo_proc.terminate()
+    try:
+        echo_proc.wait(timeout=2)
+    except subprocess.TimeoutExpired:
+        echo_proc.kill()
 
     if backend != "direct_none":
         adb.set_app_state(backend, 1500, cmd="stop")
         time.sleep(2)
 
     # Process loaded RTT
-    loaded_rtt = float(np.median(ping_rtts)) if ping_rtts else idle_rtt
+    if len(rtt_samples) < 3:
+        raise RuntimeError(f"[{backend} P={parallel}] TCP RTT loaded probe has too few samples: {len(rtt_samples)}")
+    loaded_rtt = float(np.median(rtt_samples))
     delta_rtt = max(0.0, loaded_rtt - idle_rtt)
 
     # Process throughput
@@ -132,7 +158,9 @@ def run_bufferbloat_case(
         "idle_rtt_ms": round(idle_rtt, 2),
         "loaded_rtt_ms": round(loaded_rtt, 2),
         "delta_rtt_ms": round(delta_rtt, 2),
-        "pings_count": len(ping_rtts)
+        "probe": "tcp_echo",
+        "probe_samples_idle": len(idle_samples),
+        "probe_samples_loaded": len(rtt_samples)
     }
 
 

@@ -6,12 +6,15 @@ import json
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
+from .device import DEFAULT_DEVICE, resolve_device_paths
+
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 
-DEFAULT_BENCH_JSON = os.path.join(PROJECT_ROOT, "docs", "benchmark", "benchmark_results.json")
-DEFAULT_MICRO_JSON = os.path.join(PROJECT_ROOT, "docs", "benchmark", "microbench_results.json")
-DEFAULT_ADVANCED_JSON = os.path.join(PROJECT_ROOT, "docs", "benchmark", "advanced_benchmark_results.json")
+_DEFAULT_DEVICE_PATHS = resolve_device_paths(DEFAULT_DEVICE)
+DEFAULT_BENCH_JSON = _DEFAULT_DEVICE_PATHS["bench_json"]
+DEFAULT_MICRO_JSON = _DEFAULT_DEVICE_PATHS["microbench_json"]
+DEFAULT_ADVANCED_JSON = _DEFAULT_DEVICE_PATHS["advanced_json"]
 VERSION_PROPS_PATH = os.path.join(PROJECT_ROOT, "version.properties")
 
 
