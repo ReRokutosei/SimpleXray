@@ -172,6 +172,14 @@ class AdbRunner:
             self.set_app_state("hev", 1500, cmd="stop")
             time.sleep(2)
 
+    def get_route_source_ip(self, target_ip: str) -> Optional[str]:
+        """Returns the device source IP used to reach target_ip, if resolvable."""
+        rc, out, _ = self.shell(f"ip route get {target_ip}", timeout=5.0)
+        match = re.search(r"\bsrc\s+(\d{1,3}(?:\.\d{1,3}){3})", out)
+        if match:
+            return match.group(1)
+        return None
+
     def get_app_memory_mb(self) -> float:
         """Samples current PSS memory in MB with retry."""
         for _ in range(3):

@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -45,8 +46,10 @@ func main() {
 		runClient(os.Args[2:])
 	case "rtt":
 		runRTT(os.Args[2:])
+	case "cps":
+		runCPS(os.Args[2:])
 	default:
-		fmt.Printf("Unknown subcommand: %s (expected 'server' or 'client')\n", subcmd)
+		fmt.Printf("Unknown subcommand: %s (expected 'server', 'client', 'rtt', or 'cps')\n", subcmd)
 		os.Exit(1)
 	}
 }
@@ -86,6 +89,119 @@ func runRTT(args []string) {
 			time.Sleep(*interval)
 		}
 	}
+}
+
+type cpsResult struct {
+	Server      string  `json:"server"`
+	Connections int     `json:"connections"`
+	Workers     int     `json:"workers"`
+	Success     int64   `json:"success"`
+	Failed      int64   `json:"failed"`
+	DurationSec float64 `json:"duration_sec"`
+	CPS         float64 `json:"cps"`
+	P50Ms       float64 `json:"p50_ms"`
+	P95Ms       float64 `json:"p95_ms"`
+	P99Ms       float64 `json:"p99_ms"`
+	AvgMs       float64 `json:"avg_ms"`
+}
+
+func percentile(sorted []float64, p float64) float64 {
+	if len(sorted) == 0 {
+		return 0
+	}
+	idx := int(float64(len(sorted)-1) * p)
+	if idx < 0 {
+		idx = 0
+	}
+	if idx >= len(sorted) {
+		idx = len(sorted) - 1
+	}
+	return sorted[idx]
+}
+
+func runCPS(args []string) {
+	fs := flag.NewFlagSet("cps", flag.ExitOnError)
+	server := fs.String("server", "127.0.0.1:5302", "Target CPS server host:port")
+	connections := fs.Int("connections", 5000, "Total short-lived TCP connections")
+	workers := fs.Int("workers", 8, "Concurrent connection workers")
+	timeout := fs.Duration("timeout", 3*time.Second, "Per-connection timeout")
+	_ = fs.Parse(args)
+
+	if *connections <= 0 || *workers <= 0 {
+		fmt.Fprintln(os.Stderr, "connections and workers must be > 0")
+		os.Exit(1)
+	}
+	if *workers > *connections {
+		*workers = *connections
+	}
+
+	var next atomic.Int64
+	var success atomic.Int64
+	var failed atomic.Int64
+	var latMu sync.Mutex
+	latencies := make([]float64, 0, *connections)
+
+	startedAll := time.Now()
+	var wg sync.WaitGroup
+	for w := 0; w < *workers; w++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			payload := make([]byte, payloadSize)
+			response := make([]byte, payloadSize)
+			for {
+				idx := int(next.Add(1) - 1)
+				if idx >= *connections {
+					return
+				}
+				started := time.Now()
+				conn, err := net.DialTimeout("tcp", *server, *timeout)
+				if err == nil {
+					_ = conn.SetDeadline(time.Now().Add(*timeout))
+					if _, err = conn.Write(payload); err == nil {
+						_, err = io.ReadFull(conn, response)
+					}
+					_ = conn.Close()
+				}
+				elapsedMs := float64(time.Since(started).Microseconds()) / 1000.0
+				if err != nil {
+					failed.Add(1)
+					continue
+				}
+				success.Add(1)
+				latMu.Lock()
+				latencies = append(latencies, elapsedMs)
+				latMu.Unlock()
+			}
+		}()
+	}
+	wg.Wait()
+	elapsedSec := time.Since(startedAll).Seconds()
+
+	sort.Float64s(latencies)
+	var avg float64
+	for _, v := range latencies {
+		avg += v
+	}
+	if len(latencies) > 0 {
+		avg /= float64(len(latencies))
+	}
+
+	result := cpsResult{
+		Server:      *server,
+		Connections: *connections,
+		Workers:     *workers,
+		Success:     success.Load(),
+		Failed:      failed.Load(),
+		DurationSec: elapsedSec,
+		CPS:         float64(success.Load()) / elapsedSec,
+		P50Ms:       percentile(latencies, 0.50),
+		P95Ms:       percentile(latencies, 0.95),
+		P99Ms:       percentile(latencies, 0.99),
+		AvgMs:       avg,
+	}
+	out, _ := json.Marshal(result)
+	fmt.Println(string(out))
 }
 
 func runServer(args []string) {

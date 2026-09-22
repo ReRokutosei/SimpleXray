@@ -30,7 +30,8 @@ This directory contains automated testing scripts and profiling tools for benchm
 2. **Device**: An Android device connected via USB or Wi-Fi debugging with `SimpleXray` (debug build) installed.
 3. **Python 3**: Python 3.8+ with `matplotlib` and `numpy` (for chart generation).
 4. **iPerf3**: Installed on both host and Android device (`/data/local/tmp/iperf3`).
-5. **Go**: Go 1.22+ (for building `idle_bench` and `microbench/socks5_sink`).
+5. **iproute2**: Required for `weaknet` mode host-side `tc netem`.
+6. **Go**: Go 1.22+ (for building `idle_bench` and `microbench/socks5_sink`).
 
 ## Usage
 
@@ -44,6 +45,27 @@ python3 tools/benchmark.py --mode all --with-idle --rounds 3
 python3 tools/benchmark.py --mode wifi --wifi-server-ip 10.189.231.200 --duration 10
 python3 tools/benchmark.py --mode loopback --duration 10
 python3 tools/benchmark.py --mode idle --network udp --backends hev,xray,sing,mips
+
+# Weak-network TCP download through host netem (requires root/sudo on the host)
+python3 tools/benchmark.py \
+  --mode weaknet \
+  --device <adb-serial> \
+  --device-profile 8-elite-gen-5 \
+  --wifi-server-ip 192.168.31.236 \
+  --backends hev,xray,sing,mips \
+  --netem-losses 1,3 \
+  --netem-delay 50 \
+  --weaknet-duration 15
+
+# Short-lived TCP connection rate (CPS)
+python3 tools/benchmark.py \
+  --mode cps \
+  --device <adb-serial> \
+  --device-profile 8-elite-gen-5 \
+  --wifi-server-ip 192.168.31.236 \
+  --backends hev,xray,sing,mips \
+  --cps-workers 1,4,8 \
+  --cps-connections 5000
 ```
 
 ### 2. Standalone Pure Stack Microbenchmark (Scheme 2)

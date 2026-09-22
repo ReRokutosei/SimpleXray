@@ -46,4 +46,6 @@ def resolve_device_paths(device: str = DEFAULT_DEVICE) -> Dict[str, str]:
         "bench_summary": os.path.join(data_dir, "benchmark_summary.md"),
         "microbench_json": os.path.join(data_dir, "microbench_results.json"),
         "advanced_json": os.path.join(data_dir, "advanced_benchmark_results.json"),
+        "weaknet_json": os.path.join(data_dir, "weaknet_results.json"),
+        "cps_json": os.path.join(data_dir, "cps_results.json"),
     }
