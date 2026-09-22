@@ -1,0 +1,327 @@
+{
+  "timestamp": "2026-09-22T16:29:18.829074",
+  "device": "adb-32fd960c-LIEwUJ._adb-tls-connect._tcp",
+  "rounds": 3,
+  "results": [
+    {
+      "name": "HEV TCP Idle Flows (0-1000)",
+      "backend": "hev",
+      "network": "tcp",
+      "type": "idle_memory",
+      "rounds": 3,
+      "slope_rounds_kib_per_conn": [
+        9.523,
+        13.619,
+        13.824
+      ],
+      "slope_kib_per_conn": 12.322,
+      "idle_flows": [
+        {
+          "connections": 0,
+          "pss_mb": 169.1,
+          "delta_mb": 0.0
+        },
+        {
+          "connections": 250,
+          "pss_mb": 171.93,
+          "delta_mb": 2.83
+        },
+        {
+          "connections": 500,
+          "pss_mb": 174.73,
+          "delta_mb": 5.63
+        },
+        {
+          "connections": 750,
+          "pss_mb": 178.17,
+          "delta_mb": 9.07
+        },
+        {
+          "connections": 1000,
+          "pss_mb": 181.13,
+          "delta_mb": 12.03
+        }
+      ]
+    },
+    {
+      "name": "HEV UDP Idle Flows (0-1000)",
+      "backend": "hev",
+      "network": "udp",
+      "type": "idle_memory",
+      "rounds": 3,
+      "slope_rounds_kib_per_conn": [
+        19.149,
+        18.944,
+        18.33
+      ],
+      "slope_kib_per_conn": 18.808,
+      "idle_flows": [
+        {
+          "connections": 0,
+          "pss_mb": 168.53,
+          "delta_mb": 0.0
+        },
+        {
+          "connections": 250,
+          "pss_mb": 174.93,
+          "delta_mb": 6.4
+        },
+        {
+          "connections": 500,
+          "pss_mb": 178.8,
+          "delta_mb": 10.27
+        },
+        {
+          "connections": 750,
+          "pss_mb": 182.67,
+          "delta_mb": 14.13
+        },
+        {
+          "connections": 1000,
+          "pss_mb": 186.9,
+          "delta_mb": 18.37
+        }
+      ]
+    },
+    {
+      "name": "SING TCP Idle Flows (0-1000)",
+      "backend": "sing",
+      "network": "tcp",
+      "type": "idle_memory",
+      "rounds": 3,
+      "slope_rounds_kib_per_conn": [
+        -25.907,
+        -25.498,
+        -26.726
+      ],
+      "slope_kib_per_conn": -26.044,
+      "idle_flows": [
+        {
+          "connections": 0,
+          "pss_mb": 158.93,
+          "delta_mb": 0.0
+        },
+        {
+          "connections": 250,
+          "pss_mb": 134.9,
+          "delta_mb": -24.03
+        },
+        {
+          "connections": 500,
+          "pss_mb": 134.47,
+          "delta_mb": -24.47
+        },
+        {
+          "connections": 750,
+          "pss_mb": 135.0,
+          "delta_mb": -23.93
+        },
+        {
+          "connections": 1000,
+          "pss_mb": 133.5,
+          "delta_mb": -25.43
+        }
+      ]
+    },
+    {
+      "name": "SING UDP Idle Flows (0-1000)",
+      "backend": "sing",
+      "network": "udp",
+      "type": "idle_memory",
+      "rounds": 3,
+      "slope_rounds_kib_per_conn": [
+        1.024,
+        1.126,
+        1.024
+      ],
+      "slope_kib_per_conn": 1.058,
+      "idle_flows": [
+        {
+          "connections": 0,
+          "pss_mb": 134.47,
+          "delta_mb": 0.0
+        },
+        {
+          "connections": 250,
+          "pss_mb": 135.23,
+          "delta_mb": 0.77
+        },
+        {
+          "connections": 500,
+          "pss_mb": 135.1,
+          "delta_mb": 0.63
+        },
+        {
+          "connections": 750,
+          "pss_mb": 135.33,
+          "delta_mb": 0.87
+        },
+        {
+          "connections": 1000,
+          "pss_mb": 135.5,
+          "delta_mb": 1.03
+        }
+      ]
+    },
+    {
+      "name": "MIPS TCP Idle Flows (0-1000)",
+      "backend": "mips",
+      "network": "tcp",
+      "type": "idle_memory",
+      "rounds": 3,
+      "slope_rounds_kib_per_conn": [
+        -26.112,
+        -25.702,
+        -26.01
+      ],
+      "slope_kib_per_conn": -25.941,
+      "idle_flows": [
+        {
+          "connections": 0,
+          "pss_mb": 159.07,
+          "delta_mb": 0.0
+        },
+        {
+          "connections": 250,
+          "pss_mb": 135.13,
+          "delta_mb": -23.93
+        },
+        {
+          "connections": 500,
+          "pss_mb": 134.27,
+          "delta_mb": -24.8
+        },
+        {
+          "connections": 750,
+          "pss_mb": 135.27,
+          "delta_mb": -23.8
+        },
+        {
+          "connections": 1000,
+          "pss_mb": 133.73,
+          "delta_mb": -25.33
+        }
+      ]
+    },
+    {
+      "name": "MIPS UDP Idle Flows (0-1000)",
+      "backend": "mips",
+      "network": "udp",
+      "type": "idle_memory",
+      "rounds": 3,
+      "slope_rounds_kib_per_conn": [
+        0.717,
+        1.024,
+        0.512
+      ],
+      "slope_kib_per_conn": 0.751,
+      "idle_flows": [
+        {
+          "connections": 0,
+          "pss_mb": 134.53,
+          "delta_mb": 0.0
+        },
+        {
+          "connections": 250,
+          "pss_mb": 135.07,
+          "delta_mb": 0.53
+        },
+        {
+          "connections": 500,
+          "pss_mb": 135.27,
+          "delta_mb": 0.73
+        },
+        {
+          "connections": 750,
+          "pss_mb": 135.5,
+          "delta_mb": 0.97
+        },
+        {
+          "connections": 1000,
+          "pss_mb": 135.27,
+          "delta_mb": 0.73
+        }
+      ]
+    },
+    {
+      "name": "XRAY TCP Idle Flows (0-1000)",
+      "backend": "xray",
+      "network": "tcp",
+      "type": "idle_memory",
+      "rounds": 3,
+      "slope_rounds_kib_per_conn": [
+        -27.034,
+        -27.136,
+        -27.648
+      ],
+      "slope_kib_per_conn": -27.273,
+      "idle_flows": [
+        {
+          "connections": 0,
+          "pss_mb": 189.87,
+          "delta_mb": 0.0
+        },
+        {
+          "connections": 250,
+          "pss_mb": 164.57,
+          "delta_mb": -25.3
+        },
+        {
+          "connections": 500,
+          "pss_mb": 164.13,
+          "delta_mb": -25.73
+        },
+        {
+          "connections": 750,
+          "pss_mb": 164.83,
+          "delta_mb": -25.03
+        },
+        {
+          "connections": 1000,
+          "pss_mb": 163.23,
+          "delta_mb": -26.63
+        }
+      ]
+    },
+    {
+      "name": "XRAY UDP Idle Flows (0-1000)",
+      "backend": "xray",
+      "network": "udp",
+      "type": "idle_memory",
+      "rounds": 3,
+      "slope_rounds_kib_per_conn": [
+        -0.41,
+        -0.41,
+        -0.205
+      ],
+      "slope_kib_per_conn": -0.342,
+      "idle_flows": [
+        {
+          "connections": 0,
+          "pss_mb": 164.03,
+          "delta_mb": 0.0
+        },
+        {
+          "connections": 250,
+          "pss_mb": 164.23,
+          "delta_mb": 0.2
+        },
+        {
+          "connections": 500,
+          "pss_mb": 164.07,
+          "delta_mb": 0.03
+        },
+        {
+          "connections": 750,
+          "pss_mb": 163.97,
+          "delta_mb": -0.07
+        },
+        {
+          "connections": 1000,
+          "pss_mb": 163.7,
+          "delta_mb": -0.33
+        }
+      ]
+    }
+  ]
+}

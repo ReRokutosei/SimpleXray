@@ -104,12 +104,13 @@ def main():
         ax.barh(y - height / 2, and_vals, height, label="Android end-to-end",
                 color=c_android, edgecolor=edge_android, linewidth=0.8, zorder=3)
 
-        xmax = max(micro_vals + and_vals + [1.0]) * 1.45
+        xmax = max(micro_vals + and_vals + [1.0]) * 1.55
+        xmin = min(0.0, min(micro_vals + and_vals))
         for idx, b in enumerate(BACKENDS):
             v_pure = micro_vals[idx]
             v_and = and_vals[idx]
             ax.text(
-                v_pure + xmax * 0.015, y[idx] + height / 2,
+                max(0.0, v_pure) + xmax * 0.015, y[idx] + height / 2,
                 f"{v_pure:.2f}", ha="left", va="center",
                 fontsize=7.8, color="#9a3412", fontproperties=prop_bold,
             )
@@ -119,7 +120,7 @@ def main():
             elif b == "xray":
                 note = " (main proc only)"
             ax.text(
-                v_and + xmax * 0.015, y[idx] - height / 2,
+                max(0.0, v_and) + xmax * 0.015, y[idx] - height / 2,
                 f"{v_and:.2f}{note}", ha="left", va="center",
                 fontsize=7.8, color="#7c2d12", fontproperties=prop_bold,
             )
@@ -130,7 +131,7 @@ def main():
         ax.set_yticks(y)
         ax.set_yticklabels([LABELS[b] for b in BACKENDS], fontsize=10,
                            color="#334155", fontproperties=prop_medium)
-        ax.set_xlim(0, xmax)
+        ax.set_xlim(xmin - xmax * 0.03, xmax)
         ax.grid(True, axis="x", color="#f1f5f9", linewidth=0.8, zorder=0)
 
     legend_handles = [
