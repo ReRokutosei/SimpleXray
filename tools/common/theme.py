@@ -39,15 +39,6 @@ PALETTE = {
         'runtime': 'Go 1.26 (pure user-space sing-tun)',
         'ipc': 'Local SOCKS5 Inbound'
     },
-    'mips': {
-        'name': 'MipsTUN (Go/BBRv3)',
-        'fill': '#7c3aed',   # Violet 600
-        'edge': '#6d28d9',   # Violet 700
-        'light': '#ede9fe',  # Violet 100
-        'so_size_mb': 4.80,  # 4.8 MB
-        'runtime': 'Go 1.27 (mipstack BBRv3)',
-        'ipc': 'Local SOCKS5 Inbound'
-    },
     'xray': {
         'name': 'Xray TUN (gVisor)',
         'fill': '#e11d48',   # Rose 600
@@ -68,8 +59,8 @@ PALETTE = {
     }
 }
 
-BACKEND_ORDER = ['hev', 'sing', 'mips', 'xray', 'zeptun']
-TARGET_ORDER = ['direct_none', 'hev', 'sing', 'mips', 'xray', 'zeptun']
+BACKEND_ORDER = ['hev', 'sing', 'xray', 'zeptun']
+TARGET_ORDER = ['direct_none', 'hev', 'sing', 'xray', 'zeptun']
 
 # Font Discovery
 FONT_DIRS = [

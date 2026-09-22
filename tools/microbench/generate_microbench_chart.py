@@ -28,9 +28,9 @@ from common.theme import (
     save_dashboard,
 )
 
-BACKENDS = ["hev", "sing", "mips", "xray"]
+BACKENDS = ["hev", "sing", "xray"]
 NETWORKS = ["tcp", "udp"]
-LABELS = {"hev": "HEV", "sing": "SingTUN", "mips": "MipsTUN", "xray": "Xray TUN"}
+LABELS = {"hev": "HEV", "sing": "SingTUN", "xray": "Xray TUN"}
 
 
 def average_slopes(micro_json: Dict) -> Dict[Tuple[str, str], float]:

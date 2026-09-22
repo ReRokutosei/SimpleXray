@@ -30,7 +30,6 @@ enum class TunnelMode(val value: String) {
     XrayTun("xray_tun"),
     HevSocks5Tunnel("hev_socks5_tunnel"),
     SingTun("sing_tun"),
-    MipsTun("mips_tun"),
     Zeptun("zeptun");
 
     companion object {

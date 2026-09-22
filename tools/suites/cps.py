@@ -29,7 +29,7 @@ HOST_CPS_SERVER = os.path.join(TOOLS_DIR, "idle_bench", "idle_bench_linux_amd64"
 DEVICE_CPS_CLIENT = os.path.join(TOOLS_DIR, "idle_bench", "idle_bench_linux_arm64")
 CPS_PORT = 5302
 
-GO_BACKENDS = {"sing", "mips", "xray"}
+GO_BACKENDS = {"sing", "xray"}
 
 
 def _push_cps_client(adb) -> None:
@@ -161,7 +161,7 @@ def render_cps_chart(results: List[Dict[str, Any]], output_path: str) -> None:
     prop_regular, prop_bold, prop_medium = setup_fonts()
 
     workers_list = [4, 8]
-    backend_order = ["direct_none", "hev", "sing", "mips", "xray", "zeptun"]
+    backend_order = ["direct_none", "hev", "sing", "xray", "zeptun"]
     valid_backends = {
         r.get("backend")
         for r in results
@@ -220,7 +220,6 @@ def render_cps_chart(results: List[Dict[str, Any]], output_path: str) -> None:
         "direct_none": "Baseline",
         "hev": "HEV",
         "sing": "SingTUN",
-        "mips": "MipsTUN",
         "xray": "Xray",
         "zeptun": "Zeptun",
     }

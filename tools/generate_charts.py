@@ -42,7 +42,7 @@ from common.dataset import compute_clean_averages
 prop_regular, prop_bold, prop_medium = setup_fonts()
 apply_global_theme()
 
-BACKEND_ORDER = ['xray', 'sing', 'mips', 'zeptun', 'hev']
+BACKEND_ORDER = ['xray', 'sing', 'zeptun', 'hev']
 
 
 def infer_dut_label(json_path: str, output_dir: str) -> str:
@@ -391,7 +391,7 @@ def render_idle_memory_dashboard(
 
     add_dashboard_header(fig, title, subtitle)
 
-    markers = {'hev': 'o', 'sing': 's', 'mips': '^', 'xray': 'D', 'zeptun': 'P'}
+    markers = {'hev': 'o', 'sing': 's', 'xray': 'D', 'zeptun': 'P'}
     legend_lines = []
     legend_labels = []
 

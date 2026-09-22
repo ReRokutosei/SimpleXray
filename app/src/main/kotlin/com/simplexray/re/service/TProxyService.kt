@@ -59,7 +59,6 @@ class TProxyService : VpnService() {
         NONE,
         HEV,
         SING,
-        MIPS,
         ZEPTUN
     }
 
@@ -607,29 +606,6 @@ class TProxyService : VpnService() {
                 return false
             }
             activeBackend = NativeBackend.SING
-        } else if (prefs.tunnelMode == TunnelMode.MipsTun && !prefs.disableVpn) {
-            val fd = tunFd?.fd
-            if (fd == null) {
-                Log.e(TAG, "tunFd is null after establish()")
-                stopXray()
-                return false
-            }
-            Log.d(TAG, "Starting MipsTUN backend on fd=$fd")
-            val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
-            val ok = startGoTunService(
-                serviceClass = MipsTunService::class.java,
-                socksHost = host,
-                socksPort = prefs.socksPort,
-                mtu = tunMtu,
-                username = prefs.socksUsername,
-                password = prefs.socksPassword
-            )
-            if (!ok) {
-                Log.e(TAG, "MipsTunStartService failed")
-                stopXray()
-                return false
-            }
-            activeBackend = NativeBackend.MIPS
         } else if (prefs.tunnelMode == TunnelMode.Zeptun && !prefs.disableVpn) {
             val fd = tunFd?.fd
             if (fd == null) {
@@ -819,10 +795,6 @@ class TProxyService : VpnService() {
 
     /**
      * Stops exactly the backend that owns the current tun fd.
-     *
-     * Calling every native stop entry point is unsafe because SingTUN and
-     * MipsTUN embed independent Go runtimes. A stop call is not a harmless
-     * probe: it can enter the other runtime's cleanup path.
      */
     private fun stopActiveBackend() {
         synchronized(nativeLifecycleLock) {
@@ -830,7 +802,7 @@ class TProxyService : VpnService() {
             activeBackend = NativeBackend.NONE
             val result = when (backend) {
                 NativeBackend.HEV -> runCatching { TProxyStopService() }
-                NativeBackend.SING, NativeBackend.MIPS -> runCatching {
+                NativeBackend.SING -> runCatching {
                     goTunBinder?.stop() ?: true
                 }
                 NativeBackend.ZEPTUN -> runCatching { ZeptunNative.nativeStop() }

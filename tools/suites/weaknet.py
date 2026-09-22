@@ -32,7 +32,7 @@ from common.theme import (
     save_dashboard,
 )
 
-GO_BACKENDS = {"sing", "mips", "xray"}
+GO_BACKENDS = {"sing", "xray"}
 
 
 def run_weaknet_download_case(
@@ -158,7 +158,7 @@ def render_weaknet_chart(results: List[Dict[str, Any]], output_path: str) -> Non
     apply_global_theme()
     prop_regular, prop_bold, prop_medium = setup_fonts()
 
-    backend_order = ["direct_none", "hev", "sing", "mips", "xray", "zeptun"]
+    backend_order = ["direct_none", "hev", "sing", "xray", "zeptun"]
     backends = [b for b in backend_order if any(r.get("backend") == b for r in results)]
     losses = sorted({float(r.get("loss_percent", 0.0)) for r in results})
     if not backends or not losses:
@@ -209,7 +209,6 @@ def render_weaknet_chart(results: List[Dict[str, Any]], output_path: str) -> Non
         "direct_none": "Baseline",
         "hev": "HEV",
         "sing": "SingTUN",
-        "mips": "MipsTUN",
         "xray": "Xray",
         "zeptun": "Zeptun",
     }

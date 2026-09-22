@@ -50,11 +50,6 @@
             android:name="com.simplexray.re.service.SingTunService"
             android:exported="false"
             android:process=":singtun" />
-        <service
-            android:name="com.simplexray.re.service.MipsTunService"
-            android:exported="false"
-            android:process=":mipstun" />
-
         <activity
             android:name="com.simplexray.re.activity.MainActivity"
             android:configChanges="orientation|screenSize|screenLayout"

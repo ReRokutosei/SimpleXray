@@ -21,7 +21,7 @@ from common.theme import PALETTE  # noqa: F401 (keeps theme initialization consi
 from generate_charts import render_idle_memory_dashboard, render_throughput_dashboard
 
 
-BACKEND_ORDER = ["xray", "sing", "mips", "zeptun", "hev"]
+BACKEND_ORDER = ["xray", "sing", "zeptun", "hev"]
 
 
 def _value(records, medium, backend, mtu, parallel, field, network="tcp"):

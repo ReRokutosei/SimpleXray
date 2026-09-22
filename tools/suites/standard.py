@@ -260,12 +260,11 @@ def run_media_suite(
         "hev": "Hev",
         "xray": "Xray TUN",
         "sing": "SingTUN",
-        "mips": "MipsTUN",
         "zeptun": "Zeptun"
     }
 
     # Go-based TUN backends that carry an independent Go runtime in their .so
-    GO_BACKENDS = {"sing", "mips", "xray"}
+    GO_BACKENDS = {"sing", "xray"}
     prev_backend: Optional[str] = None
 
     # 2. MTU 1500 & MTU 9000
@@ -273,8 +272,8 @@ def run_media_suite(
         b_name = name_map.get(b, b.upper())
 
         # Force-reset the app process when transitioning between Go-based TUN backends to
-        # prevent fatal Go runtime conflicts (libsingtun.so / libmipstun.so both embed
-        # independent Go runtimes; sequential load in the same process triggers
+        # prevent fatal Go runtime conflicts between independent Go runtimes;
+        # sequential load in the same process triggers
         # "fatal error: unknown caller pc" via cgocallbackg).
         if prev_backend is not None and (b in GO_BACKENDS or prev_backend in GO_BACKENDS):
             adb.force_reset_app()
@@ -329,12 +328,11 @@ def run_loopback_suite(
         results.append(run_loopback_case(adb, app_uid, "Loopback Baseline (No VPN)", "direct_none", 0, duration=duration, parallel=1))
         results.append(run_loopback_case(adb, app_uid, "Loopback Baseline (No VPN)", "direct_none", 0, duration=duration, parallel=8))
 
-    GO_BACKENDS = {"sing", "mips", "xray"}
+    GO_BACKENDS = {"sing", "xray"}
     name_map = {
         "hev": "Hev",
         "xray": "Xray TUN",
         "sing": "SingTUN",
-        "mips": "MipsTUN",
         "zeptun": "Zeptun",
     }
 

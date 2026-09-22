@@ -99,7 +99,7 @@ def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = Non
     )
     fig.text(
         0.5, 0.968,
-        "Comparative Evaluation of C/lwIP, sing-box, Mihomo mipstack, and Xray gVisor Across Physical Media & Microbenchmarks",
+        "Comparative Evaluation of C/lwIP, sing-box, Zeptun, and Xray gVisor Across Physical Media & Microbenchmarks",
         fontsize=10.5, color='#475569',
         fontproperties=prop_regular, ha='center', va='top'
     )
@@ -349,7 +349,7 @@ def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = Non
     ax5.grid(True, zorder=0)
     ax5.axhline(0, color='#64748b', linewidth=0.9, linestyle='--', zorder=2)
 
-    markers = {'hev': 'o', 'sing': 's', 'mips': '^', 'xray': 'D'}
+    markers = {'hev': 'o', 'sing': 's', 'xray': 'D', 'zeptun': 'P'}
     for b in BACKEND_ORDER:
         for r in avg_records:
             if r.get("type") == "idle_memory" and r.get("backend") == b and r.get("network") == "tcp":
@@ -368,8 +368,6 @@ def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = Non
                     # stacking three values on the same baseline.
                     if b == 'sing':
                         label_y = -0.35
-                    elif b == 'mips':
-                        label_y = -1.15
                     elif b == 'xray':
                         label_y = -2.05
                     ax5.text(xs[-1] + 20, label_y, f"{slope:.2f} KiB", fontsize=7.5, fontweight='bold', color=PALETTE[b]['edge'], va='center', fontproperties=prop_bold)
@@ -536,13 +534,13 @@ def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = Non
     xray_ver = version_props.get("XRAY_CORE_VERSION", "v26.9.9")
     hev_ver = version_props.get("HEV_TUN_VERSION", "2.17.1 (b514150)")
     sing_ver = version_props.get("SING_TUN_VERSION", "a39eab51450b")
-    mips_ver = version_props.get("MIPS_TUN_VERSION", "802d64336f8c")
+    zeptun_ver = version_props.get("ZEPTUN_VERSION", "v1.1.1")
 
     footnote_text = (
         "SPECIFICATIONS & METHODOLOGY\n"
         "Host (Server): AMD Ryzen 7 6800H @ 3.2GHz (8C/16T), Linux 6.12 | iPerf3 v3.18 | 1201 Mbps HE80 Wi-Fi 6 / 1Gbps USB 3.2 Gen1 Type-C RNDIS\n"
         f"DUT (Client): {profile['dut_footer']} | iPerf3 v3.21 static arm64\n"
-        f"Backends: hev-socks5-tunnel ({hev_ver}) | SingTUN ({sing_ver}) | MipsTUN ({mips_ver}) | Xray Native TUN ({xray_ver})\n"
+        f"Backends: hev-socks5-tunnel ({hev_ver}) | SingTUN ({sing_ver}) | Zeptun ({zeptun_ver}) | Xray Native TUN ({xray_ver})\n"
         "Sampling & Metrics: 3-round arithmetic mean; CPU% represents multi-core cumulative load (800% max); Scheme 1 Android PSS; Scheme 2 Linux isolated user namespace"
     )
     fig.text(
