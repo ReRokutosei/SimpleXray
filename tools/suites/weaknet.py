@@ -8,6 +8,11 @@ through the selected Android/TUN backend.
 import time
 from typing import Any, Dict, List, Optional
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
 from common.adb import CpuProfiler
 from common.iperf import (
     DEFAULT_PORT,
@@ -18,6 +23,14 @@ from common.iperf import (
 )
 from common.logging import log_info, log_success, log_warn
 from common.netem import NetemController
+from common.theme import (
+    PALETTE,
+    setup_fonts,
+    apply_global_theme,
+    add_dashboard_header,
+    create_top_legend,
+    save_dashboard,
+)
 
 GO_BACKENDS = {"sing", "mips", "xray"}
 
@@ -138,3 +151,82 @@ def run_weaknet_suite(
             netem.clear()
 
     return results
+
+
+def render_weaknet_chart(results: List[Dict[str, Any]], output_path: str) -> None:
+    """Renders a grouped weak-network throughput chart for the available loss rates."""
+    apply_global_theme()
+    prop_regular, prop_bold, prop_medium = setup_fonts()
+
+    backend_order = ["direct_none", "hev", "sing", "mips", "xray"]
+    backends = [b for b in backend_order if any(r.get("backend") == b for r in results)]
+    losses = sorted({float(r.get("loss_percent", 0.0)) for r in results})
+    if not backends or not losses:
+        raise RuntimeError("No weak-network records to render")
+
+    fig = plt.figure(figsize=(16, 9.5), dpi=200)
+    ax = fig.add_axes([0.10, 0.13, 0.86, 0.67])
+    add_dashboard_header(
+        fig,
+        "Weak-Network TCP Download Throughput (Higher is Better)",
+        "Host netem delay 50 ms with 1% and 3% random loss (5GHz Wi-Fi)",
+        prop_bold=prop_bold,
+        prop_regular=prop_regular,
+    )
+
+    x = np.arange(len(backends))
+    width = 0.36
+    loss_colors = {
+        losses[0]: "#fdba74",
+        losses[-1]: "#ea580c",
+    }
+    loss_edges = {
+        losses[0]: "#fb923c",
+        losses[-1]: "#c2410c",
+    }
+
+    for idx, loss in enumerate(losses):
+        vals = []
+        for b in backends:
+            rec = next((r for r in results if r.get("backend") == b and float(r.get("loss_percent", 0.0)) == loss), None)
+            vals.append(float(rec.get("download_mbps", 0.0)) if rec else 0.0)
+        bars = ax.bar(x + (idx - 0.5) * width, vals, width,
+                      label=f"{loss:g}% loss", color=loss_colors.get(loss, "#64748b"),
+                      edgecolor=loss_edges.get(loss, "#475569"), linewidth=0.8, zorder=3)
+        for bar, val in zip(bars, vals):
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + max(vals + [1.0]) * 0.02,
+                f"{val:.1f}",
+                ha="center",
+                va="bottom",
+                fontsize=8.5,
+                color="#1e293b",
+                fontproperties=prop_bold,
+            )
+
+    display_names = {
+        "direct_none": "Baseline",
+        "hev": "HEV",
+        "sing": "SingTUN",
+        "mips": "MipsTUN",
+        "xray": "Xray",
+    }
+    ax.set_ylabel("Download Throughput (Mbps)", fontsize=10, color="#475569",
+                  fontproperties=prop_regular)
+    ax.set_xticks(x)
+    ax.set_xticklabels([display_names[b] for b in backends], fontsize=10,
+                       color="#334155", fontproperties=prop_medium)
+    ax.grid(True, axis="y", color="#f1f5f9", linewidth=0.8, zorder=0)
+    legend_handles = [
+        plt.Rectangle((0, 0), 1, 1, facecolor=loss_colors[loss], edgecolor=loss_edges[loss])
+        for loss in losses
+    ]
+    create_top_legend(
+        fig,
+        legend_handles,
+        [f"{loss:g}% loss" for loss in losses],
+        y_pos=0.895,
+        prop_medium=prop_medium,
+    )
+    save_dashboard(fig, output_path, dpi=200)

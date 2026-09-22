@@ -30,3 +30,4 @@ tools/microbench/socks5_sink
 third_party/*/bin/
 tools/merge_all_benchmarks.py
 tools/track.md
+*.log

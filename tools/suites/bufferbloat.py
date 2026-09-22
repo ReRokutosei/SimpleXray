@@ -32,13 +32,23 @@ TOOLS_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 RTT_PORT = 5301
 
 
-def measure_tcp_rtt(adb: AdbRunner, server_ip: str, count: int = 15) -> List[float]:
-    """Measures TCP echo RTT through the selected Android/TUN path."""
+def measure_tcp_rtt(
+    adb: AdbRunner,
+    server_ip: str,
+    count: int = 15,
+    warmup: int = 5,
+) -> List[float]:
+    """Measures TCP echo RTT through the selected Android/TUN path.
+
+    The first warmup samples are discarded so Wi-Fi power-save wake-up does not
+    inflate the idle baseline.
+    """
+    total = count + warmup
     cmd = (
         f"/data/local/tmp/idle_bench rtt --server {server_ip}:{RTT_PORT} "
-        f"--count {count} --interval 200ms --timeout 1s"
+        f"--count {total} --interval 200ms --timeout 1s"
     )
-    rc, out, err = adb.shell(cmd, timeout=count * 0.4 + 5)
+    rc, out, err = adb.shell(cmd, timeout=total * 0.4 + 5)
     rtts = []
     for line in out.splitlines():
         m = re.search(r'"rtt_ms":([\d.]+)', line)
@@ -46,6 +56,8 @@ def measure_tcp_rtt(adb: AdbRunner, server_ip: str, count: int = 15) -> List[flo
             rtts.append(float(m.group(1)))
     if rc != 0 and not rtts:
         log_warn(f"TCP RTT probe failed: {err.strip()}")
+    if len(rtts) > warmup:
+        return rtts[warmup:]
     return rtts
 
 
@@ -85,7 +97,7 @@ def run_bufferbloat_case(
     adb.exec(["push", client_bin, "/data/local/tmp/idle_bench"])
     adb.shell("chmod 755 /data/local/tmp/idle_bench")
 
-    idle_samples = measure_tcp_rtt(adb, server_ip, count=15)
+    idle_samples = measure_tcp_rtt(adb, server_ip, count=15, warmup=5)
     if len(idle_samples) < 3:
         raise RuntimeError(f"[{backend}] TCP RTT idle probe has too few samples: {len(idle_samples)}")
     idle_rtt = float(np.median(idle_samples))
@@ -139,7 +151,8 @@ def run_bufferbloat_case(
     if len(rtt_samples) < 3:
         raise RuntimeError(f"[{backend} P={parallel}] TCP RTT loaded probe has too few samples: {len(rtt_samples)}")
     loaded_rtt = float(np.median(rtt_samples))
-    delta_rtt = max(0.0, loaded_rtt - idle_rtt)
+    delta_rtt = round(loaded_rtt - idle_rtt, 2)
+    valid = delta_rtt >= 0.0
 
     # Process throughput
     metrics = parse_iperf_json(iperf_out, network="tcp")
@@ -147,7 +160,8 @@ def run_bufferbloat_case(
 
     log_success(
         f"[{backend} P={parallel}] TP: {tp_mbps:.1f} Mbps | "
-        f"Idle RTT: {idle_rtt:.1f} ms -> Loaded RTT: {loaded_rtt:.1f} ms (Delta: +{delta_rtt:.1f} ms)"
+        f"Idle RTT: {idle_rtt:.1f} ms -> Loaded RTT: {loaded_rtt:.1f} ms "
+        f"(Delta: {delta_rtt:+.1f} ms, valid={valid})"
     )
 
     return {
@@ -157,7 +171,8 @@ def run_bufferbloat_case(
         "throughput_mbps": tp_mbps,
         "idle_rtt_ms": round(idle_rtt, 2),
         "loaded_rtt_ms": round(loaded_rtt, 2),
-        "delta_rtt_ms": round(delta_rtt, 2),
+        "delta_rtt_ms": delta_rtt,
+        "valid": valid,
         "probe": "tcp_echo",
         "probe_samples_idle": len(idle_samples),
         "probe_samples_loaded": len(rtt_samples)
@@ -168,75 +183,88 @@ def run_bufferbloat_suite(
     adb: AdbRunner,
     server_ip: str,
     backends: List[str] = TARGET_ORDER,
-    duration: int = 10
+    duration: int = 10,
+    parallels: Optional[List[int]] = None,
 ) -> List[Dict[str, Any]]:
-    """Runs bufferbloat test for all backends at P=1 and P=8."""
+    """Runs the bufferbloat test for the requested parallel stream counts."""
+    if parallels is None:
+        parallels = [8]
     results = []
     for b in backends:
-        results.append(run_bufferbloat_case(adb, server_ip, b, parallel=1, duration=duration))
-        results.append(run_bufferbloat_case(adb, server_ip, b, parallel=8, duration=duration))
+        for parallel in parallels:
+            results.append(run_bufferbloat_case(
+                adb, server_ip, b, parallel=parallel, duration=duration
+            ))
     return results
 
 
-def render_bufferbloat_chart(results: List[Dict[str, Any]], output_path: str):
-    """Renders Bufferbloat & Loaded Latency Delta publication dashboard."""
+def render_bufferbloat_chart(
+    results: List[Dict[str, Any]],
+    output_path: str,
+    parallel: int = 8,
+):
+    """Renders the multi-stream bufferbloat dashboard."""
     apply_global_theme()
     prop_regular, prop_bold, prop_medium = setup_fonts()
+
+    cases = [r for r in results if r.get("parallel") == parallel]
+    if not cases:
+        raise RuntimeError(f"No bufferbloat records for P={parallel}")
 
     fig = plt.figure(figsize=(16, 9.5), dpi=200)
     add_dashboard_header(
         fig,
-        "Bufferbloat and Loaded Latency Delta",
-        "Latency inflation under saturated TCP download across TUN backends (5GHz Wi-Fi)",
+        "Bufferbloat and Loaded Latency Delta (Lower is Better)",
+        f"{parallel}-stream TCP download with concurrent TCP echo probe (5GHz Wi-Fi)",
         prop_bold=prop_bold,
         prop_regular=prop_regular
     )
 
-    ax1 = fig.add_axes([0.08, 0.10, 0.40, 0.68])
-    ax2 = fig.add_axes([0.55, 0.10, 0.40, 0.68])
+    ax = fig.add_axes([0.18, 0.10, 0.72, 0.68])
+    backends = [b for b in TARGET_ORDER if any(c["backend"] == b for c in cases)]
+    cases_map = {c["backend"]: c for c in cases}
 
-    p1_cases = [r for r in results if r["parallel"] == 1]
-    p8_cases = [r for r in results if r["parallel"] == 8]
+    y_pos = np.arange(len(backends))[::-1]
+    colors = [PALETTE[b]['fill'] for b in backends]
+    edges = [PALETTE[b]['edge'] for b in backends]
+    plot_deltas = []
+    for b in backends:
+        c = cases_map[b]
+        is_valid = bool(c.get("valid", c.get("delta_rtt_ms", 0) >= 0))
+        plot_deltas.append(max(0.0, float(c.get("delta_rtt_ms", 0.0))) if is_valid else 0.0)
 
-    def draw_bar_subplot(ax, cases, title, is_left=True):
-        ax.set_title(title, fontsize=12, fontweight='bold', fontproperties=prop_bold, color='#1e293b', pad=12)
-        backends = [b for b in TARGET_ORDER if any(c["backend"] == b for c in cases)]
-        cases_map = {c["backend"]: c for c in cases}
+    max_val = max(max(plot_deltas, default=10.0), 10.0)
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(
+        [PALETTE[b]['name'].split()[0] for b in backends],
+        fontsize=10,
+        fontproperties=prop_medium,
+    )
+    ax.set_xlim(0, max_val * 1.45)
+    ax.set_xlabel("Latency Inflation Delta (ms)", fontsize=10, color='#64748b',
+                  fontproperties=prop_regular)
+    ax.grid(True, axis='x', zorder=0)
 
-        y_pos = np.arange(len(backends))[::-1]
-        deltas = [cases_map[b]["delta_rtt_ms"] for b in backends]
-        colors = [PALETTE[b]['fill'] for b in backends]
-        edges = [PALETTE[b]['edge'] for b in backends]
-
-        ax.set_yticks(y_pos)
-        if is_left:
-            ax.set_yticklabels([PALETTE[b]['name'].split()[0] for b in backends], fontsize=10, fontproperties=prop_medium)
-        else:
-            ax.set_yticklabels([])
-
-        max_val = max(max(deltas, default=10.0), 10.0)
-        ax.set_xlim(0, max_val * 1.35)
-        ax.set_xlabel("Latency Inflation Delta (ms)", fontsize=10, color='#64748b', fontproperties=prop_regular)
-        ax.grid(True, axis='x', zorder=0)
-
-        rects = ax.barh(y_pos, deltas, 0.42, color=colors, edgecolor=edges, linewidth=0.8, zorder=3)
-        for rect, b in zip(rects, backends):
-            c = cases_map[b]
-            d_val = c["delta_rtt_ms"]
-            spd = c["throughput_mbps"]
+    rects = ax.barh(y_pos, plot_deltas, 0.42, color=colors, edgecolor=edges,
+                    linewidth=0.8, zorder=3)
+    for rect, b, plot_delta in zip(rects, backends, plot_deltas):
+        c = cases_map[b]
+        spd = c["throughput_mbps"]
+        d_val = float(c.get("delta_rtt_ms", 0.0))
+        is_valid = bool(c.get("valid", d_val >= 0))
+        if is_valid:
             txt = f"+{d_val:.1f} ms  ({spd:.0f} Mbps)"
-            ax.text(
-                d_val + max_val * 0.02, rect.get_y() + rect.get_height() / 2,
-                txt,
-                ha='left', va='center',
-                fontsize=8.5, fontweight='bold', color='#1e293b',
-                fontproperties=prop_bold,
-                bbox=dict(boxstyle='round,pad=0.15', facecolor='#ffffff', edgecolor='none', alpha=0.85),
-                zorder=5
-            )
-
-    draw_bar_subplot(ax1, p1_cases, "Single Stream (P=1) (Lower is Better)", is_left=True)
-    draw_bar_subplot(ax2, p8_cases, "Multi-Stream (P=8 Parallel) (Lower is Better)", is_left=False)
+        else:
+            txt = f"N/A (invalid idle)  ({spd:.0f} Mbps)"
+        ax.text(
+            plot_delta + max_val * 0.02, rect.get_y() + rect.get_height() / 2,
+            txt,
+            ha='left', va='center',
+            fontsize=8.5, fontweight='bold', color='#1e293b',
+            fontproperties=prop_bold,
+            bbox=dict(boxstyle='round,pad=0.15', facecolor='#ffffff', edgecolor='none', alpha=0.85),
+            zorder=5
+        )
 
     legend_rects = [plt.Rectangle((0, 0), 1, 1, facecolor=PALETTE[b]['fill'], edgecolor=PALETTE[b]['edge']) for b in TARGET_ORDER]
     legend_labels = [PALETTE[b]['name'] for b in TARGET_ORDER]
