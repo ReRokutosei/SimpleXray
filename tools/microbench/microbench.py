@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 SimpleXray Standalone TUN Micro-Benchmark Suite (Scheme 2)
-Evaluates pure user-space TUN network stacks (Hev lwIP, SingTUN, MipsTUN, Xray gVisor)
+Evaluates pure user-space TUN network stacks (Hev lwIP, SingTUN, Xray gVisor)
 in an isolated Linux user namespace without Android ART/Framework overhead.
 """
 
@@ -22,7 +22,6 @@ PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../.."))
 # Binary paths
 HEV_BIN = os.path.join(PROJECT_ROOT, "third_party/hev-socks5-tunnel/bin/hev-socks5-tunnel")
 SING_BIN = os.path.join(PROJECT_ROOT, "third_party/sing-tun/bin/sing-tun")
-MIPS_BIN = os.path.join(PROJECT_ROOT, "third_party/mips-tun/bin/mips-tun")
 XRAY_BIN = "/home/vanitas/Downloads/Xray-linux-64/xray"
 SOCKS5_SINK_BIN = os.path.join(SCRIPT_DIR, "socks5_sink")
 IDLE_BENCH_BIN = os.path.join(PROJECT_ROOT, "tools/idle_bench/idle_bench_linux_amd64")
@@ -131,16 +130,6 @@ misc:
             ]
             self.proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-        elif self.backend == "mips":
-            cmd = [
-                MIPS_BIN,
-                "-tun", self.tun_name,
-                "-socks-host", "127.0.0.1",
-                "-socks-port", str(self.socks_port),
-                "-mtu", str(self.mtu)
-            ]
-            self.proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
         elif self.backend == "xray":
             self.tmp_cfg = f"/tmp/xray_micro_{os.getpid()}.json"
             cfg = {
@@ -240,9 +229,6 @@ misc:
     tun_proc = subprocess.Popen(["{HEV_BIN}", cfg_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 elif backend == "sing":
     tun_proc = subprocess.Popen(["{SING_BIN}", "-tun", "tun0", "-socks-host", "127.0.0.1", "-socks-port", "{socks_port}", "-mtu", "1500"],
-                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-elif backend == "mips":
-    tun_proc = subprocess.Popen(["{MIPS_BIN}", "-tun", "tun0", "-socks-host", "127.0.0.1", "-socks-port", "{socks_port}", "-mtu", "1500"],
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 elif backend == "xray":
     cfg_file = "/tmp/xray_inner_{os.getpid()}.json"
@@ -429,7 +415,7 @@ def format_markdown(all_data: Dict[str, Any]) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="SimpleXray Standalone TUN Microbenchmark (Scheme 2)")
-    parser.add_argument("--backends", default="hev,xray,sing,mips", help="Comma-separated backends: hev,xray,sing,mips")
+    parser.add_argument("--backends", default="hev,xray,sing", help="Comma-separated backends: hev,xray,sing")
     parser.add_argument("--network", default="all", help="'tcp', 'udp', or 'all'")
     parser.add_argument("--rounds", type=int, default=3, help="Number of test rounds")
     parser.add_argument("--output-json", default="docs/benchmark/microbench_results.json", help="JSON output file")

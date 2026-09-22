@@ -8,9 +8,9 @@
 
 </div>
 
-SimpleXray 是一款面向 Android 的代理客户端。项目使用 [Xray-core](https://github.com/XTLS/Xray-core) 作为代理内核，并结合 Android `VpnService`、`sing-tun`、`mipstack` 和 `hev-socks5-tunnel` 处理网络流量。
+SimpleXray 是一款面向 Android 的代理客户端。项目使用 [Xray-core](https://github.com/XTLS/Xray-core) 作为代理内核，并结合 Android `VpnService`、`sing-tun` 和 `hev-socks5-tunnel` 处理网络流量。
 
-应用层与代理内核彼此独立。SimpleXray 将打包的 Xray-core 可执行文件 `libxray.so` 作为独立子进程启动，并通过标准输入传递配置。SingTUN、MipsTUN 与 Hev 模式下，Xray 使用 `ProcessBuilder` 启动；Xray 原生 TUN 模式则使用 JNI 启动器将 VPN 文件描述符传递给子进程。
+应用层与代理内核彼此独立。SimpleXray 将打包的 Xray-core 可执行文件 `libxray.so` 作为独立子进程启动，并通过标准输入传递配置。Hev、SingTUN 与 ZepTUN 模式下，Xray 使用 `ProcessBuilder` 启动；Xray 原生 TUN 模式则使用 JNI 启动器将 VPN 文件描述符传递给子进程。
 
 ## 项目定位
 
@@ -56,17 +56,17 @@ SimpleXray 主要负责在 Android 上运行和管理 Xray-core。应用接受�
 
 | 项目 | 上游版本（4c78901） | 本仓库 |
 |-|-|-|
-| **进程与配置传递**  | 使用独立子进程运行 Xray，并通过标准输入传递配置 | Android 应用层（UI 与 VpnService）采用单进程架构，通过标准输入向独立子进程传递配置。Xray 原生 TUN 模式通过 JNI 启动器启动子进程，SingTUN、MipsTUN 与 Hev 模式使用 `ProcessBuilder`。APK 仅打包 `arm64-v8a` |
-| **流量与进程间通信** | 由 `hev-socks5-tunnel` 读取 Android VPN 文件描述符，并通过本地 SOCKS5 入站将流量转发至 Xray。状态统计使用动态分配的本机回环 TCP gRPC 端口 | 数据面由设置页选择的 TUN 后端决定。Xray 原生 TUN 模式通过 JNI 启动器接收 VPN 文件描述符，SingTUN、MipsTUN 与 Hev 模式通过本地 SOCKS5 入站转发流量。内核状态和流量统计使用动态分配的 `127.0.0.1` TCP gRPC 端口 |
+| **进程与配置传递**  | 使用独立子进程运行 Xray，并通过标准输入传递配置 | Android 应用层（UI 与 VpnService）采用单进程架构，通过标准输入向独立子进程传递配置。Xray 原生 TUN 模式通过 JNI 启动器启动子进程，Hev、SingTUN 与 ZepTUN 模式使用 `ProcessBuilder`。APK 仅打包 `arm64-v8a` |
+| **流量与进程间通信** | 由 `hev-socks5-tunnel` 读取 Android VPN 文件描述符，并通过本地 SOCKS5 入站将流量转发至 Xray。状态统计使用动态分配的本机回环 TCP gRPC 端口 | 数据面由设置页选择的 TUN 后端决定。Xray 原生 TUN 模式通过 JNI 启动器接收 VPN 文件描述符，Hev、SingTUN 与 ZepTUN 模式通过本地 SOCKS5 入站转发流量。内核状态和流量统计使用动态分配的 `127.0.0.1` TCP gRPC 端口 |
 | **配置导入**     | 支持 JSON 配置、`vless://` 链接和 `simplexray://config/` 链接 | 仅支持通过 Android Storage Access Framework 或剪贴板导入完整 JSON、YAML 配置，不支持节点分享链接 |
 | **规则文件**     | 内置 `geoip.dat` 和 `geosite.dat`，并支持本地替换及这两个文件的 URL 更新 | 保留标准规则文件管理，并增加任意自定义 `.dat` 文件、`ext:` 文件引用、独立更新地址、文件校验和后台更新 |
 | **配置处理**     | 对 JSON 进行格式化，并删除 `log.access` 和 `log.error` | 使用 SnakeYAML 解析配置，并通过单向 Android 兼容处理流程调整入站、路由规则、DNS 引导主机、日志及部分出站配置 |
 | **构建系统**     | 使用 `ndkBuild` 和 `Android.mk`，配合标准 Gradle 配置 | 使用 CMake 和 `CMakeLists.txt`；原生隧道目标包含 Android 16 KB 内存页对齐链接选项，并使用 Gradle Wrapper `9.7.0`、Android Gradle Plugin `9.3.1`、Version Catalog 和 Plugins DSL |
 | **界面与布局**    | 使用标准 Material 3 界面                                   | 使用 `compose-miuix-ui` 实现 Xiaomi HyperOS / MIUI 风格的界面，并针对手机和平板提供自适应布局                                                           |
 | **数据存储与通信架构** | 使用 ContentProvider 封装的 `SharedPreferences` 和 `Gson` | 直接使用轻量级原生 `SharedPreferences` 与 `kotlinx.serialization`；UI 与后台服务通过内存级 `StateFlow` / `SharedFlow` 实现零拷贝响应式通信 |
-| **核心组件**     | Xray-core `v26.3.27` 和 `hev-socks5-tunnel` `v2.14.3` | Xray-core `v26.9.9`、`sing-tun`（Go 栈）、`mipstack`（Mihomo 纯 Go 栈）和 `hev-socks5-tunnel` `v2.17.0`，包含更新的 `hev-socks5-core`、`hev-task-system` 及 `lwip` 组件 |
+| **核心组件**     | Xray-core `v26.3.27` 和 `hev-socks5-tunnel` `v2.14.3` | Xray-core `v26.9.9`、`sing-tun`（Go 栈）、`hev-socks5-tunnel` `v2.17.0` 和 Zeptun，包含更新的 `hev-socks5-core`、`hev-task-system` 及 `lwip` 组件 |
 | **ABI 打包**     | 提供 `arm64-v8a` 和 `x86_64` 分包 APK，以及通用 APK | 仅提供 `arm64-v8a` APK |
-| **TUN 后端设置** | 不提供 Xray TUN 后端设置 | 可选 `Xray TUN`、`SingTUN`、`MipsTUN` 和 `Hev Socks5 Tunnel`，默认值为 `Hev Socks5 Tunnel`（待 SingTUN 长期生产稳定性成熟后将切换为 SingTUN） |
+| **TUN 后端设置** | 不提供 Xray TUN 后端设置 | 可选 `Xray TUN`、`SingTUN`、`Hev Socks5 Tunnel` 和 `Zeptun`，默认值为 `Hev Socks5 Tunnel` |
 
 </details>
 
@@ -131,8 +131,8 @@ SimpleXray 根据配置传递、VPN 流量、内核日志和状态统计查询�
 * **内核日志**：通过管道读取 Xray 的标准输出和标准错误，经内存流实时广播至 UI 并按需记录。
 * **状态统计**：通过动态分配的 `127.0.0.1` TCP 瞬态端口提供明文 gRPC，用于查询内核状态和流量统计。
 * **SingTUN 模式**：基于 `sing-tun` 自研轻量级 Go 协议栈（Slab 内存池零 GC、分层时间轮与用户态零拷贝转发），读取 Android VPN 文件描述符中的流量，并通过本地 SOCKS5 入站流式泵入 Xray。
-* **MipsTUN 模式**：基于 Mihomo 的 `mipstack`（纯 Go 用户态 TCP/IP 协议栈，支持包含 BBRv3 在内的现代拥塞控制算法、零拷贝数据包缓冲区及低延迟 epoll 事件循环），读取 Android VPN 文件描述符中的流量，并通过本地 SOCKS5 入站转发给 Xray。
-* **Hev 隧道模式**：选中该模式时，由 `hev-socks5-tunnel` 读取 Android VPN 文件描述符中的流量，再通过本地 SOCKS5 入站转发给 Xray。
+* **Hev 模式**：选中该模式时，由 `hev-socks5-tunnel` 读取 Android VPN 文件描述符中的流量，再通过本地 SOCKS5 入站转发给 Xray。
+* **Zeptun 模式**：基于 [Zeptun](https://github.com/Noisemux/zeptun)，这是一个使用 Zig 编写、无依赖的高性能 TUN-to-SOCKS5 引擎。其用户态网络引擎将操作系统路由到 TUN 的数据包转换为 TCP、UDP 和 ICMP 流，并通过 SOCKS5 代理转发；Android 集成使用其 C API 和 mobile 用户态协议栈。
 
 > 实测数据请参阅 [Android TUN 性能基准测试报告](./benchmark/android-tun-benchmark.md)。
 
@@ -334,7 +334,7 @@ SimpleXray 使用或基于以下开源项目开发：
 * [**`SimpleXray`**](https://github.com/lhear/SimpleXray) — 本项目所基于的上游 Android 客户端
 * [**`hev-socks5-tunnel`**](https://github.com/heiher/hev-socks5-tunnel) — 用于 Android 网络流量处理的 SOCKS5 VPN 隧道实现
 * [**`sing-tun`**](https://github.com/SagerNet/sing-tun) — 用于 sing-box 的高性能轻量级自研用户态网络栈与 TUN 驱动实现
-* [**`mipstack`**](https://github.com/MetaCubeX/mipstack) — 为 Mihomo 打造的纯 Go 用户态网络协议栈，支持 BBRv3 等现代拥塞控制算法及零拷贝数据包处理
+* [**`Zeptun`**](https://github.com/Noisemux/zeptun) — 使用 Zig 编写、无依赖的高性能 TUN-to-SOCKS5 用户态网络引擎，支持 TCP、UDP、ICMP、SOCKS5、io_uring 和 C API
 
 ### 致谢
 

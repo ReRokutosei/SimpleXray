@@ -28,8 +28,8 @@ from common.theme import (
     save_dashboard,
 )
 
-BACKENDS = ["hev", "sing", "mips", "xray"]
-LABELS = {"hev": "HEV", "sing": "SingTUN", "mips": "MipsTUN", "xray": "Xray"}
+BACKENDS = ["hev", "sing", "xray"]
+LABELS = {"hev": "HEV", "sing": "SingTUN", "xray": "Xray"}
 NETWORKS = ["tcp", "udp"]
 
 
@@ -115,7 +115,7 @@ def main():
                 fontsize=7.8, color="#9a3412", fontproperties=prop_bold,
             )
             note = ""
-            if b in ("sing", "mips"):
+            if b == "sing":
                 note = " (Go GC steady state)"
             elif b == "xray":
                 note = " (main proc only)"

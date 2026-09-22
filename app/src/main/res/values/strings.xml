@@ -38,8 +38,6 @@
     <string name="tunnel_mode_hev_socks5_summary">Use Hev SOCKS5 Tunnel to forward VPN traffic to Xray</string>
     <string name="tunnel_mode_sing_tun">SingTUN</string>
     <string name="tunnel_mode_sing_tun_summary">Use sing-tun Go stack to forward VPN traffic to Xray</string>
-    <string name="tunnel_mode_mips_tun">MipsTUN</string>
-    <string name="tunnel_mode_mips_tun_summary">Use mihomo IP stack to forward VPN traffic to Xray</string>
     <string name="tunnel_mode_zeptun">Zeptun</string>
     <string name="tunnel_mode_zeptun_summary">Use Zeptun userspace stack to forward VPN traffic to Xray</string>
     <string name="tunnel_mtu_title">TUN Interface MTU</string>

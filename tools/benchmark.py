@@ -110,7 +110,7 @@ def main():
     parser.add_argument("--with-idle", action="store_true",
                         help="Include 0-1000 connection retention idle flows memory test")
     parser.add_argument("--backends", default="all",
-                        help="TUN backends to benchmark (comma-separated: hev,xray,sing,mips,zeptun, or 'all')")
+                        help="TUN backends to benchmark (comma-separated: hev,xray,sing,zeptun, or 'all')")
     parser.add_argument("--skip-baseline", action="store_true",
                         help="Skip running physical baseline (No VPN) tests")
     parser.add_argument("--wifi-server-ip", default="192.168.31.236",

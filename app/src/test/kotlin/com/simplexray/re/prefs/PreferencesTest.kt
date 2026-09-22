@@ -244,10 +244,6 @@ class PreferencesTest {
         assertEquals(TunnelMode.HevSocks5Tunnel, prefs.tunnelMode)
         assertEquals("hev_socks5_tunnel", fakeContext.sharedPrefs.getString(Preferences.TUNNEL_MODE, null))
 
-        prefs.tunnelMode = TunnelMode.MipsTun
-        assertEquals(TunnelMode.MipsTun, prefs.tunnelMode)
-        assertEquals("mips_tun", fakeContext.sharedPrefs.getString(Preferences.TUNNEL_MODE, null))
-
         prefs.tunnelMode = TunnelMode.Zeptun
         assertEquals(TunnelMode.Zeptun, prefs.tunnelMode)
         assertEquals("zeptun", fakeContext.sharedPrefs.getString(Preferences.TUNNEL_MODE, null))

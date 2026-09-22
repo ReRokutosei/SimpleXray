@@ -115,7 +115,7 @@ class AdbRunner:
     def force_reset_app(self):
         """Force-stops the app to reset Go runtime state between different Go-based TUN backends.
 
-        libsingtun.so and libmipstun.so are each compiled as independent Go c-shared libraries.
+        libsingtun.so is compiled as an independent Go c-shared library.
         Loading both sequentially in the same process causes fatal Go runtime conflicts
         (fatal error: unknown caller pc via cgocallbackg). Calling this between backends ensures
         the next backend starts in a fresh process with no Go runtime residue.

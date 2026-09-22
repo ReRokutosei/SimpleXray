@@ -90,25 +90,6 @@ def get_sing_tun_version() -> str:
     return "unknown"
 
 
-def get_mips_tun_version() -> str:
-    go_mod = os.path.join(REPO_ROOT, "third_party", "mips-tun", "go.mod")
-    if not os.path.exists(go_mod):
-        return "unknown"
-    try:
-        with open(go_mod, "r", encoding="utf-8") as f:
-            content = f.read()
-        # Find github.com/metacubex/mipstack v...-<hash>
-        m = re.search(r"github\.com/metacubex/mipstack\s+v[0-9\.\-]+-([0-9a-fA-F]+)", content)
-        if m:
-            return m.group(1)[:12]
-        m_tag = re.search(r"github\.com/metacubex/mipstack\s+(v[0-9\.]+)", content)
-        if m_tag:
-            return m_tag.group(1)
-    except Exception:
-        pass
-    return "unknown"
-
-
 def sync_versions(check_only: bool = False) -> bool:
     current = read_current_properties()
     
@@ -117,7 +98,6 @@ def sync_versions(check_only: bool = False) -> bool:
         "HEV_TUN_VERSION": get_hev_version(),
         "ZEPTUN_VERSION": get_zeptun_version(),
         "SING_TUN_VERSION": get_sing_tun_version(),
-        "MIPS_TUN_VERSION": get_mips_tun_version(),
         "GO_VERSION": current.get("GO_VERSION", "1.27.1"),
         "NDK_VERSION": current.get("NDK_VERSION", "28.2.13676358"),
     }

@@ -55,8 +55,6 @@ def main():
         ("hev", "udp", "HEV (UDP)"),
         ("sing", "tcp", "SingTUN (TCP)"),
         ("sing", "udp", "SingTUN (UDP)"),
-        ("mips", "tcp", "MipsTUN (TCP)"),
-        ("mips", "udp", "MipsTUN (UDP)"),
         ("xray", "tcp", "Xray TUN (TCP)"),
         ("xray", "udp", "Xray TUN (UDP)")
     ]
