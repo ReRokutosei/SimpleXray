@@ -179,6 +179,53 @@
       "cpu_peak": 305.0,
       "rc": 0,
       "stderr": ""
+    },
+    {
+      "backend": "zeptun",
+      "workers": 4,
+      "server": "192.168.31.236:5302",
+      "rc": 0,
+      "stderr": "",
+      "connections": 5000.0,
+      "success": 5000.0,
+      "failed": 0.0,
+      "duration_sec": 14.96,
+      "cps": 336.863,
+      "p50_ms": 10.36,
+      "p95_ms": 21.487,
+      "p99_ms": 28.618,
+      "avg_ms": 11.96,
+      "requested_connections": 5000.0,
+      "cpu_avg": 189.833,
+      "cpu_peak": 236.667
+    },
+    {
+      "backend": "zeptun",
+      "workers": 8,
+      "server": "192.168.31.236:5302",
+      "rc": 0,
+      "stderr": "",
+      "connections": 5000.0,
+      "success": 5000.0,
+      "failed": 0.0,
+      "duration_sec": 13.54,
+      "cps": 369.327,
+      "p50_ms": 20.402,
+      "p95_ms": 31.014,
+      "p99_ms": 37.845,
+      "avg_ms": 21.651,
+      "requested_connections": 5000.0,
+      "cpu_avg": 383.367,
+      "cpu_peak": 451.0
     }
-  ]
+  ],
+  "backends": [
+    "direct_none",
+    "hev",
+    "mips",
+    "sing",
+    "xray",
+    "zeptun"
+  ],
+  "zeptun_source": "docs/benchmark/zeptest/merged/cps.json"
 }

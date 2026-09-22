@@ -1,4 +1,4 @@
-### Round 1 Results
+### Round 1
 
 | Test Case | Backend | MTU | Medium | Upload | Download | Up CPU | Down CPU | Peak CPU | Peak Memory |
 | :--- | :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -20,11 +20,19 @@
 | MipsTUN (MTU 9000) [Single Stream] | mips | 9000 | 5GHz Wi-Fi | 607.41 Mbps | 634.11 Mbps | 79.8% | 194.7% | 207.0% | 131.0 MB |
 | MipsTUN (MTU 1500) [P=8] | mips | 1500 | 5GHz Wi-Fi | 617.91 Mbps | 122.94 Mbps | 128.9% | 184.4% | 287.0% | 132.3 MB |
 | MipsTUN (MTU 9000) [P=8] | mips | 9000 | 5GHz Wi-Fi | 614.26 Mbps | 567.21 Mbps | 73.4% | 223.1% | 281.4% | 134.4 MB |
+| Zeptun (MTU 1500) [Single Stream] | zeptun | 1500 | 5GHz Wi-Fi | 456.23 Mbps | 548.27 Mbps | 49.0% | 93.1% | 98.0% | 173.3 MB |
+| Zeptun (MTU 9000) [Single Stream] | zeptun | 9000 | 5GHz Wi-Fi | 459.96 Mbps | 495.02 Mbps | 47.1% | 88.9% | 96.0% | 173.3 MB |
+| Zeptun (MTU 1500) [P=8] | zeptun | 1500 | 5GHz Wi-Fi | 457.37 Mbps | 520.91 Mbps | 64.1% | 112.4% | 153.4% | 174.7 MB |
+| Zeptun (MTU 9000) [P=8] | zeptun | 9000 | 5GHz Wi-Fi | 459.84 Mbps | 445.43 Mbps | 48.5% | 114.2% | 133.3% | 174.9 MB |
+
+#### Retained Connections vs Memory Growth (Idle Flows)
+
+| Backend | Network | Conns Range | Baseline PSS | 1000 Conns PSS | Memory Slope |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| ZEPTUN | TCP | 0 -> 1000 | 173.4 MB | 174.7 MB | 1.33 KiB/conn |
 
 
----
-
-### Round 2 Results
+### Round 2
 
 | Test Case | Backend | MTU | Medium | Upload | Download | Up CPU | Down CPU | Peak CPU | Peak Memory |
 | :--- | :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -46,11 +54,19 @@
 | MipsTUN (MTU 9000) [Single Stream] | mips | 9000 | 5GHz Wi-Fi | 637.91 Mbps | 637.67 Mbps | 83.5% | 197.5% | 206.0% | 130.6 MB |
 | MipsTUN (MTU 1500) [P=8] | mips | 1500 | 5GHz Wi-Fi | 629.34 Mbps | 112.13 Mbps | 142.4% | 187.6% | 298.0% | 131.6 MB |
 | MipsTUN (MTU 9000) [P=8] | mips | 9000 | 5GHz Wi-Fi | 638.35 Mbps | 573.4 Mbps | 77.7% | 208.2% | 239.8% | 135.0 MB |
+| Zeptun (MTU 1500) [Single Stream] | zeptun | 1500 | 5GHz Wi-Fi | 436.44 Mbps | 520.81 Mbps | 61.5% | 89.9% | 102.0% | 175.0 MB |
+| Zeptun (MTU 9000) [Single Stream] | zeptun | 9000 | 5GHz Wi-Fi | 440.56 Mbps | 536.53 Mbps | 51.8% | 92.0% | 97.0% | 174.5 MB |
+| Zeptun (MTU 1500) [P=8] | zeptun | 1500 | 5GHz Wi-Fi | 446.99 Mbps | 569.45 Mbps | 52.5% | 111.6% | 133.2% | 176.4 MB |
+| Zeptun (MTU 9000) [P=8] | zeptun | 9000 | 5GHz Wi-Fi | 442.06 Mbps | 565.47 Mbps | 46.2% | 106.8% | 125.8% | 176.5 MB |
+
+#### Retained Connections vs Memory Growth (Idle Flows)
+
+| Backend | Network | Conns Range | Baseline PSS | 1000 Conns PSS | Memory Slope |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| ZEPTUN | TCP | 0 -> 1000 | 174.3 MB | 184.3 MB | 10.24 KiB/conn |
 
 
----
-
-### Round 3 Results
+### Round 3
 
 | Test Case | Backend | MTU | Medium | Upload | Download | Up CPU | Down CPU | Peak CPU | Peak Memory |
 | :--- | :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -72,3 +88,14 @@
 | MipsTUN (MTU 9000) [Single Stream] | mips | 9000 | 5GHz Wi-Fi | 639.67 Mbps | 607.6 Mbps | 85.2% | 195.1% | 206.0% | 131.5 MB |
 | MipsTUN (MTU 1500) [P=8] | mips | 1500 | 5GHz Wi-Fi | 641.72 Mbps | 115.7 Mbps | 136.4% | 190.3% | 283.0% | 132.3 MB |
 | MipsTUN (MTU 9000) [P=8] | mips | 9000 | 5GHz Wi-Fi | 648.48 Mbps | 554.39 Mbps | 82.1% | 202.3% | 281.1% | 135.0 MB |
+| Zeptun (MTU 1500) [Single Stream] | zeptun | 1500 | 5GHz Wi-Fi | 441.56 Mbps | 530.06 Mbps | 65.4% | 89.0% | 99.0% | 175.7 MB |
+| Zeptun (MTU 9000) [Single Stream] | zeptun | 9000 | 5GHz Wi-Fi | 440.14 Mbps | 510.53 Mbps | 53.0% | 90.3% | 101.0% | 174.7 MB |
+| Zeptun (MTU 1500) [P=8] | zeptun | 1500 | 5GHz Wi-Fi | 446.38 Mbps | 568.09 Mbps | 57.9% | 115.1% | 151.7% | 176.5 MB |
+| Zeptun (MTU 9000) [P=8] | zeptun | 9000 | 5GHz Wi-Fi | 449.17 Mbps | 567.88 Mbps | 43.5% | 109.4% | 122.1% | 176.8 MB |
+
+#### Retained Connections vs Memory Growth (Idle Flows)
+
+| Backend | Network | Conns Range | Baseline PSS | 1000 Conns PSS | Memory Slope |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| ZEPTUN | TCP | 0 -> 1000 | 175.4 MB | 184.8 MB | 9.63 KiB/conn |
+

@@ -56,11 +56,20 @@ PALETTE = {
         'so_size_mb': 34.00, # 34 MB
         'runtime': 'Go / gVisor Netstack',
         'ipc': 'JNI Fork Child Process (FD Injected)'
+    },
+    'zeptun': {
+        'name': 'Zeptun (Zig/userspace)',
+        'fill': '#d97706',
+        'edge': '#b45309',
+        'light': '#fef3c7',
+        'so_size_mb': 0.26,
+        'runtime': 'Zig userspace stack',
+        'ipc': 'Local SOCKS5 Inbound'
     }
 }
 
-BACKEND_ORDER = ['hev', 'sing', 'mips', 'xray']
-TARGET_ORDER = ['direct_none', 'hev', 'sing', 'mips', 'xray']
+BACKEND_ORDER = ['hev', 'sing', 'mips', 'xray', 'zeptun']
+TARGET_ORDER = ['direct_none', 'hev', 'sing', 'mips', 'xray', 'zeptun']
 
 # Font Discovery
 FONT_DIRS = [
