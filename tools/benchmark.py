@@ -22,6 +22,7 @@ from common.device import (
     DEVICE_PROFILES,
     resolve_device_paths,
 )
+from common.netem import NetemError, get_route_interface
 from common.logging import (
     Colors,
     log_info,
@@ -39,6 +40,8 @@ from suites import (
     render_bufferbloat_chart,
     run_long_run_suite,
     render_long_run_chart,
+    run_weaknet_suite,
+    run_cps_suite,
 )
 
 DEFAULT_DURATION = 10
@@ -98,7 +101,7 @@ def main():
     parser.add_argument(
         "--mode",
         default="wifi,loopback",
-        help="Suites to run: wifi, usb, loopback, idle, bufferbloat, longrun, standard, advanced, all (comma-separated)"
+        help="Suites to run: wifi, usb, loopback, idle, bufferbloat, longrun, weaknet, cps, standard, advanced, all (comma-separated)"
     )
     parser.add_argument("--network", default="all", choices=["tcp", "udp", "all"],
                         help="Network protocols to benchmark ('tcp', 'udp', or 'all', default: all)")
@@ -128,6 +131,26 @@ def main():
                         help="File path to save standard Markdown summary tables (defaults to profile data dir)")
     parser.add_argument("--advanced-json", default=None,
                         help="File path to save advanced benchmark results (defaults to profile data dir)")
+    parser.add_argument("--netem-iface", default=None,
+                        help="Host interface for netem; auto-resolved from --wifi-server-ip when omitted")
+    parser.add_argument("--netem-losses", default="1,3",
+                        help="Comma-separated loss percentages for weaknet mode (default: 1,3)")
+    parser.add_argument("--netem-delay", type=float, default=50.0,
+                        help="Netem delay in milliseconds (default: 50)")
+    parser.add_argument("--weaknet-parallel", type=int, default=8,
+                        help="Parallel streams for weaknet download tests (default: 8)")
+    parser.add_argument("--weaknet-duration", type=int, default=None,
+                        help="Weaknet download duration in seconds (defaults to --duration)")
+    parser.add_argument("--netem-dry-run", action="store_true",
+                        help="Print netem commands without applying them")
+    parser.add_argument("--skip-netem", action="store_true",
+                        help="Run weaknet traffic without applying a netem qdisc")
+    parser.add_argument("--cps-workers", default="1,4,8",
+                        help="Comma-separated worker counts for CPS mode (default: 1,4,8)")
+    parser.add_argument("--cps-connections", type=int, default=5000,
+                        help="Total short-lived connections per CPS case (default: 5000)")
+    parser.add_argument("--cps-timeout", type=int, default=120,
+                        help="Per-CPS-case timeout in seconds (default: 120)")
     parser.add_argument("--no-charts", action="store_true",
                         help="Skip generating visualization charts in the profile chart directory")
     args = parser.parse_args()
@@ -136,6 +159,8 @@ def main():
     args.output_json = args.output_json or profile["bench_json"]
     args.output_md = args.output_md or profile["bench_summary"]
     args.advanced_json = args.advanced_json or profile["advanced_json"]
+    weaknet_json = profile["weaknet_json"]
+    cps_json = profile["cps_json"]
     chart_dir = profile["charts_dir"]
 
     # Parse modes
@@ -182,6 +207,8 @@ def main():
 
     has_standard = any(m in modes for m in ["wifi", "usb", "loopback", "idle"])
     has_advanced = any(m in modes for m in ["bufferbloat", "longrun"])
+    has_weaknet = "weaknet" in modes
+    has_cps = "cps" in modes
 
     # -------------------------------------------------------------
     # 1. Standard Benchmark Suites
@@ -307,6 +334,125 @@ def main():
         with open(adv_json_path, "w", encoding="utf-8") as f:
             json.dump(adv_data, f, indent=2, ensure_ascii=False)
         log_success(f"Advanced benchmark results saved to: {adv_json_path}")
+
+    # -------------------------------------------------------------
+    # 3. Weak-Network Suite (host netem)
+    # -------------------------------------------------------------
+    if has_weaknet:
+        try:
+            losses = [float(x) for x in args.netem_losses.split(",") if x.strip()]
+        except ValueError:
+            log_error(f"Invalid --netem-losses value: {args.netem_losses}")
+            sys.exit(1)
+
+        netem_iface = args.netem_iface
+        if args.skip_netem:
+            netem_iface = netem_iface or "unused"
+        elif not netem_iface:
+            device_ip = adb.get_route_source_ip(args.wifi_server_ip)
+            route_target = device_ip or args.wifi_server_ip
+            try:
+                netem_iface = get_route_interface(route_target)
+                log_info(
+                    f"Auto-detected netem interface: {netem_iface} "
+                    f"(route target: {route_target})"
+                )
+                if netem_iface == "lo":
+                    log_warn(
+                        "Resolved netem interface is loopback; "
+                        "pass --netem-iface explicitly if this is not intended."
+                    )
+            except NetemError as e:
+                log_error(str(e))
+                sys.exit(1)
+
+        weaknet_duration = args.weaknet_duration or args.duration
+        weaknet_backends = [b for b in TARGET_ORDER if b in backends or b == "direct_none"]
+        weaknet_results: List[Dict[str, Any]] = []
+
+        for loss in losses:
+            print(f"\n{Colors.CYAN}{Colors.BOLD}=======================================================")
+            print(f"      STARTING WEAK-NETWORK TEST loss={loss:g}% delay={args.netem_delay:g}ms")
+            print(f"======================================================={Colors.RESET}")
+            try:
+                weaknet_results.extend(run_weaknet_suite(
+                    adb=adb,
+                    app_uid=app_uid,
+                    server_ip=args.wifi_server_ip,
+                    backends=weaknet_backends,
+                    interface=netem_iface,
+                    loss_percent=loss,
+                    delay_ms=args.netem_delay,
+                    duration=weaknet_duration,
+                    parallel=args.weaknet_parallel,
+                    dry_run=args.netem_dry_run,
+                    skip_netem=args.skip_netem,
+                ))
+            except NetemError as e:
+                log_error(str(e))
+                sys.exit(1)
+
+        weaknet_payload = {
+            "timestamp": datetime.now().isoformat(),
+            "device": adb.device,
+            "device_profile": args.device_profile,
+            "server_ip": args.wifi_server_ip,
+            "interface": netem_iface,
+            "delay_ms": args.netem_delay,
+            "loss_percent_list": losses,
+            "parallel": args.weaknet_parallel,
+            "duration": weaknet_duration,
+            "dry_run": args.netem_dry_run,
+            "skip_netem": args.skip_netem,
+            "results": weaknet_results,
+        }
+        os.makedirs(os.path.dirname(os.path.abspath(weaknet_json)), exist_ok=True)
+        with open(os.path.abspath(weaknet_json), "w", encoding="utf-8") as f:
+            json.dump(weaknet_payload, f, indent=2, ensure_ascii=False)
+        log_success(f"Weak-network results saved to: {weaknet_json}")
+
+    # -------------------------------------------------------------
+    # 4. CPS Suite (short-lived TCP connections)
+    # -------------------------------------------------------------
+    if has_cps:
+        try:
+            cps_workers = [int(x) for x in args.cps_workers.split(",") if x.strip()]
+        except ValueError:
+            log_error(f"Invalid --cps-workers value: {args.cps_workers}")
+            sys.exit(1)
+
+        cps_backends = [b for b in TARGET_ORDER if b in backends or b == "direct_none"]
+        print(f"\n{Colors.CYAN}{Colors.BOLD}=======================================================")
+        print(f"      STARTING CPS TEST connections={args.cps_connections} workers={cps_workers}")
+        print(f"======================================================={Colors.RESET}")
+        try:
+            cps_results = run_cps_suite(
+                adb=adb,
+                app_uid=app_uid,
+                server_ip=args.wifi_server_ip,
+                backends=cps_backends,
+                workers_list=cps_workers,
+                connections=args.cps_connections,
+                timeout_sec=args.cps_timeout,
+            )
+        except RuntimeError as e:
+            log_error(str(e))
+            sys.exit(1)
+
+        cps_payload = {
+            "timestamp": datetime.now().isoformat(),
+            "device": adb.device,
+            "device_profile": args.device_profile,
+            "server_ip": args.wifi_server_ip,
+            "connections": args.cps_connections,
+            "workers": cps_workers,
+            "timeout_sec": args.cps_timeout,
+            "results": cps_results,
+        }
+        os.makedirs(os.path.dirname(os.path.abspath(cps_json)), exist_ok=True)
+        with open(os.path.abspath(cps_json), "w", encoding="utf-8") as f:
+            json.dump(cps_payload, f, indent=2, ensure_ascii=False)
+        log_success(f"CPS results saved to: {cps_json}")
 
     log_success("All requested benchmark operations completed successfully!")
 

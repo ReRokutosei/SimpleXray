@@ -22,6 +22,14 @@ from .long_run import (
     run_long_run_suite,
     render_long_run_chart,
 )
+from .weaknet import (
+    run_weaknet_download_case,
+    run_weaknet_suite,
+)
+from .cps import (
+    run_cps_case,
+    run_cps_suite,
+)
 
 __all__ = [
     "run_throughput_case",
@@ -36,4 +44,8 @@ __all__ = [
     "run_long_run_case",
     "run_long_run_suite",
     "render_long_run_chart",
+    "run_weaknet_download_case",
+    "run_weaknet_suite",
+    "run_cps_case",
+    "run_cps_suite",
 ]
