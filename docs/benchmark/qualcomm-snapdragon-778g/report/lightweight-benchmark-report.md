@@ -1,6 +1,6 @@
 # SimpleXray 778G 轻量基准报告
 
-本报告汇集 2026 年 9 月 22 日轻量测试数据，涵盖 Wi-Fi TCP、受载时延、长跑稳定性、CPS、弱网和 Scheme 2 纯栈内存微基准。完整历史数据已归档，本报告只维护当前结论。
+本报告汇集 2026 年 9 月 22 日 Snapdragon 778G 中端机轻量测试数据，涵盖 Wi-Fi TCP、受载时延、长跑稳定性、CPS、弱网和内存斜率。完整历史数据已归档，本报告只维护当前结论。
 
 ## 1. Wi-Fi TCP
 
@@ -28,7 +28,9 @@
 
 ## 2. 受载时延
 
-测试为八流 TCP 下行、MTU 1500、TCP echo 探针。正值表示受载时延增加，负值表示 idle 基线异常。
+测试为八流 TCP 下行、MTU 1500、TCP echo 探针。
+
+> 正值表示受载时延增加，负值表示 idle 基线异常。
 
 | 后端 | 吞吐 | Idle RTT | Loaded RTT | Delta | 有效性 |
 | :--- | ---: | ---: | ---: | ---: | :---: |
@@ -54,27 +56,33 @@
 
 ![Long-run stability](../charts/long_run_stability_dashboard.webp)
 
-HEV 和 MipsTUN 的长跑结果与标准 Wi-Fi P=8 下行一致，数值偏低属于当前数据路径特性，不是测试异常。
+> HEV 和 MipsTUN 的长跑结果与标准 Wi-Fi P=8 下行一致，数值偏低属于当前数据路径特性，非测试异常。
 
 ## 4. CPS 短连接速率
 
-测试为 5000 次短连接、4/8 worker。数值单位为每秒成功连接数。
+测试为 5000 次短连接、4/8 worker，数值单位为每秒成功连接数。
 
 | 后端 | 4 worker | 8 worker |
 | :--- | ---: | ---: |
 | 物理直连 | 198.5 | 769.2 |
-| HEV | 超时 | 超时 |
 | SingTUN | 238.6 | 643.8 |
 | MipsTUN | 191.2 | 391.6 |
 | Xray Native TUN | 360.7 | 525.0 |
 
-HEV 在 120 秒内未完成 5000 次连接。补充测试显示 HEV 在 4 worker 下 100、500、1000 次连接的速率均约 16 CPS，增加并发没有提升。
+HEV 5000 次连接数在 120 秒内未完成，降低连接数后，4 worker 约 16 CPS，8 worker 约 34 CPS。提高并发能改善 CPS，但提升有限。
+
+| 连接数 | 4 worker | 8 worker |
+| :--- | ---: | ---: |
+| 100 | 16.4 | 未测 |
+| 500 | 16.2 | 未测 |
+| 1000 | 16.2 | 34.2 |
+| 2000 | 超时 | 34.7 |
 
 ![CPS connection rate](../charts/cps_connection_rate.webp)
 
 ## 5. 弱网测试
 
-测试为主机 Netem、50ms 延迟、1% 与 3% 丢包、八流 TCP 下行。1% 为三轮平均，3% 为两轮平均。
+测试为主机 Netem、50ms 延迟、1% 与 3% 丢包、八流 TCP 下行。
 
 | 后端 | 1% 丢包 + 50ms | 3% 丢包 + 50ms |
 | :--- | ---: | ---: |
@@ -110,7 +118,7 @@ Scheme 2 为纯栈微基准，Android 端到端为三轮 idle memory 平均。An
 3. SingTUN 多流吞吐和长跑稳定性较好，CPS 也处于中上水平。
 4. MipsTUN 的 UDP 内存斜率最高，八流下行吞吐偏低，弱网 3% 下略有优势。
 5. Xray Native TUN 多流吞吐较高，但 CPS 和弱网表现没有形成绝对优势。
-6. HEV 的短连接 CPS 存在明显瓶颈，约 16 CPS 后不再随并发提升。
+6. HEV 的短连接 CPS 存在明显瓶颈，4 worker 约 16 CPS，8 worker 约 34 到 35 CPS，5000 次仍超时。
 7. Android 端到端空闲内存斜率会被 Go GC 和主进程隔离压低，真实纯栈开销应优先参考 Scheme 2；Xray 的 gVisor 开销仍在子进程中。
 
 ## 8. 原始数据

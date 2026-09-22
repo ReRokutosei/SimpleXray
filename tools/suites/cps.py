@@ -162,9 +162,14 @@ def render_cps_chart(results: List[Dict[str, Any]], output_path: str) -> None:
 
     workers_list = [4, 8]
     backend_order = ["direct_none", "hev", "sing", "mips", "xray"]
-    backends = [b for b in backend_order if any(r.get("backend") == b for r in results)]
+    valid_backends = {
+        r.get("backend")
+        for r in results
+        if r.get("rc") == 0 and r.get("cps") is not None
+    }
+    backends = [b for b in backend_order if b in valid_backends]
     if not backends:
-        raise RuntimeError("No CPS records to render")
+        raise RuntimeError("No valid CPS records to render")
 
     fig = plt.figure(figsize=(16, 9.5), dpi=200)
     ax = fig.add_axes([0.10, 0.13, 0.86, 0.67])

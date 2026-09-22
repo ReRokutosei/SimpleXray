@@ -153,6 +153,8 @@ def main():
                         help="Total short-lived connections per CPS case (default: 5000)")
     parser.add_argument("--cps-timeout", type=int, default=120,
                         help="Per-CPS-case timeout in seconds (default: 120)")
+    parser.add_argument("--cps-json", default=None,
+                        help="Optional CPS JSON output path (defaults to profile cps_results.json)")
     parser.add_argument("--no-charts", action="store_true",
                         help="Skip generating visualization charts in the profile chart directory")
     args = parser.parse_args()
@@ -162,7 +164,7 @@ def main():
     args.output_md = args.output_md or profile["bench_summary"]
     args.advanced_json = args.advanced_json or profile["advanced_json"]
     weaknet_json = profile["weaknet_json"]
-    cps_json = profile["cps_json"]
+    cps_json = args.cps_json or profile["cps_json"]
     chart_dir = profile["charts_dir"]
 
     # Parse modes
@@ -456,7 +458,7 @@ def main():
         os.makedirs(os.path.dirname(os.path.abspath(cps_json)), exist_ok=True)
         with open(os.path.abspath(cps_json), "w", encoding="utf-8") as f:
             json.dump(cps_payload, f, indent=2, ensure_ascii=False)
-        if not args.no_charts:
+        if not args.no_charts and args.cps_json is None:
             render_cps_chart(cps_results, os.path.join(chart_dir, "cps_connection_rate.webp"))
         log_success(f"CPS results saved to: {cps_json}")
 
