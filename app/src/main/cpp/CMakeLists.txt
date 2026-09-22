@@ -7,6 +7,19 @@ add_compile_options(-O3 -DPKGNAME=com/simplexray/re/service)
 # Resolve path to third_party directory
 get_filename_component(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../.." ABSOLUTE)
 set(HEV_DIR "${PROJECT_ROOT}/third_party/hev-socks5-tunnel")
+set(ZEPTUN_DIR "${PROJECT_ROOT}/third_party/zeptun")
+set(ZEPTUN_ANDROID_DIR "${PROJECT_ROOT}/third_party/zeptun-android")
+
+# Zeptun is built by its Zig Android target before the Gradle build. The
+# project currently packages arm64-v8a only, so consume that prebuilt static
+# library here and keep the upstream submodule itself unmodified.
+set(ZEPTUN_STATIC_LIB "${ZEPTUN_DIR}/zig-out/android/prebuilt/arm64-v8a/libzeptun.a")
+if(NOT EXISTS "${ZEPTUN_STATIC_LIB}")
+    message(FATAL_ERROR
+        "Missing Zeptun Android artifact: ${ZEPTUN_STATIC_LIB}. "
+        "Run 'ANDROID_NDK_HOME=<ndk> zig build android -Doptimize=ReleaseSmall "
+        "in third_party/zeptun first.")
+endif()
 
 # -----------------------------------------------------------------------------
 # 1. hev-socks5-tunnel third-party static libraries
@@ -97,7 +110,25 @@ target_link_options(hev-socks5-tunnel PRIVATE
 )
 
 # -----------------------------------------------------------------------------
-# 3. xray-exec shared library
+# 3. Zeptun JNI bridge and static engine
+# -----------------------------------------------------------------------------
+add_library(zeptun-prebuilt STATIC IMPORTED GLOBAL)
+set_target_properties(zeptun-prebuilt PROPERTIES
+    IMPORTED_LOCATION "${ZEPTUN_STATIC_LIB}"
+    INTERFACE_INCLUDE_DIRECTORIES "${ZEPTUN_DIR}/include"
+)
+
+add_library(zeptun-jni SHARED "${ZEPTUN_ANDROID_DIR}/bridge.c")
+target_include_directories(zeptun-jni PRIVATE "${ZEPTUN_DIR}/include")
+target_compile_options(zeptun-jni PRIVATE -O3 -Wall -Wextra -Werror -std=c11)
+target_link_libraries(zeptun-jni zeptun-prebuilt log)
+target_link_options(zeptun-jni PRIVATE
+    -Wl,-z,max-page-size=16384
+    -Wl,-z,common-page-size=16384
+)
+
+# -----------------------------------------------------------------------------
+# 4. xray-exec shared library
 # -----------------------------------------------------------------------------
 add_library(xray-exec SHARED xray_exec.c)
 target_link_libraries(xray-exec log)

@@ -5,3 +5,6 @@
 	path = third_party/miuix
 	url = https://github.com/compose-miuix-ui/miuix.git
 	shallow = true
+[submodule "third_party/zeptun"]
+	path = third_party/zeptun
+	url = https://github.com/Noisemux/zeptun.git

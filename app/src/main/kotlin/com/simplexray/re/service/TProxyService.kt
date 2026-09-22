@@ -59,7 +59,8 @@ class TProxyService : VpnService() {
         NONE,
         HEV,
         SING,
-        MIPS
+        MIPS,
+        ZEPTUN
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -629,6 +630,35 @@ class TProxyService : VpnService() {
                 return false
             }
             activeBackend = NativeBackend.MIPS
+        } else if (prefs.tunnelMode == TunnelMode.Zeptun && !prefs.disableVpn) {
+            val fd = tunFd?.fd
+            if (fd == null) {
+                Log.e(TAG, "tunFd is null after establish()")
+                stopXray()
+                return false
+            }
+            Log.d(TAG, "Starting Zeptun backend on fd=$fd")
+            val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
+            val json = ZeptunConfigBuilder.build(
+                host = host,
+                port = prefs.socksPort,
+                username = prefs.socksUsername,
+                password = prefs.socksPassword,
+                mtu = tunMtu,
+                fd = fd,
+                udpInTcp = prefs.udpInTcp
+            )
+            val result = runCatching {
+                ZeptunNative.nativeStart(this, fd, json)
+            }.onFailure {
+                Log.e(TAG, "Failed to start Zeptun backend", it)
+            }.getOrDefault(-1)
+            if (result != 0) {
+                Log.e(TAG, "Zeptun nativeStart failed: $result")
+                stopXray()
+                return false
+            }
+            activeBackend = NativeBackend.ZEPTUN
         } else {
             val tproxyFile = File(cacheDir, "tproxy.conf")
             try {
@@ -803,6 +833,7 @@ class TProxyService : VpnService() {
                 NativeBackend.SING, NativeBackend.MIPS -> runCatching {
                     goTunBinder?.stop() ?: true
                 }
+                NativeBackend.ZEPTUN -> runCatching { ZeptunNative.nativeStop() }
                 NativeBackend.NONE -> return
             }
             goTunBinder = null

@@ -34,6 +34,8 @@
     <string name="tunnel_mode_sing_tun_summary">使用 sing-tun 自研 Go 协议栈将 VPN 流量转发至 Xray</string>
     <string name="tunnel_mode_mips_tun">MipsTUN</string>
     <string name="tunnel_mode_mips_tun_summary">使用 mihomo 自研 MIPS 协议栈将 VPN 流量转发至 Xray</string>
+    <string name="tunnel_mode_zeptun">Zeptun</string>
+    <string name="tunnel_mode_zeptun_summary">使用 Zeptun 用户空间协议栈将 VPN 流量转发至 Xray</string>
     <string name="tunnel_mtu_title">TUN 接口 MTU</string>
     <string name="tunnel_mtu_summary">系统 VPN 虚拟网卡的最大传输单元。有效范围：1280 至 9000（默认：1500）</string>
     <string name="invalid_mtu">MTU 必须是 1280 到 9000 之间的整数</string>
