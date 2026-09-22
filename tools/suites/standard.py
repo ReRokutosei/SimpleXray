@@ -260,7 +260,8 @@ def run_media_suite(
         "hev": "Hev",
         "xray": "Xray TUN",
         "sing": "SingTUN",
-        "mips": "MipsTUN"
+        "mips": "MipsTUN",
+        "zeptun": "Zeptun"
     }
 
     # Go-based TUN backends that carry an independent Go runtime in their .so
@@ -329,7 +330,13 @@ def run_loopback_suite(
         results.append(run_loopback_case(adb, app_uid, "Loopback Baseline (No VPN)", "direct_none", 0, duration=duration, parallel=8))
 
     GO_BACKENDS = {"sing", "mips", "xray"}
-    name_map = {"hev": "Hev", "xray": "Xray TUN", "sing": "SingTUN", "mips": "MipsTUN"}
+    name_map = {
+        "hev": "Hev",
+        "xray": "Xray TUN",
+        "sing": "SingTUN",
+        "mips": "MipsTUN",
+        "zeptun": "Zeptun",
+    }
 
     prev_backend: Optional[str] = None
     for b in backends:

@@ -44,7 +44,7 @@ python3 tools/benchmark.py --mode all --with-idle --rounds 3
 # Run specific suite
 python3 tools/benchmark.py --mode wifi --wifi-server-ip 10.189.231.200 --duration 10
 python3 tools/benchmark.py --mode loopback --duration 10
-python3 tools/benchmark.py --mode idle --network udp --backends hev,xray,sing,mips
+python3 tools/benchmark.py --mode idle --network udp --backends hev,xray,sing,mips,zeptun
 
 # Weak-network TCP download through host netem (requires root/sudo on the host)
 python3 tools/benchmark.py \
@@ -52,7 +52,7 @@ python3 tools/benchmark.py \
   --device <adb-serial> \
   --device-profile 8-elite-gen-5 \
   --wifi-server-ip 192.168.31.236 \
-  --backends hev,xray,sing,mips \
+  --backends hev,xray,sing,mips,zeptun \
   --netem-losses 1,3 \
   --netem-delay 50 \
   --weaknet-duration 15
@@ -63,7 +63,7 @@ python3 tools/benchmark.py \
   --device <adb-serial> \
   --device-profile 8-elite-gen-5 \
   --wifi-server-ip 192.168.31.236 \
-  --backends hev,xray,sing,mips \
+  --backends hev,xray,sing,mips,zeptun \
   --cps-workers 1,4,8 \
   --cps-connections 5000
 ```
@@ -96,7 +96,7 @@ python3 tools/generate_charts.py \
 | `--mode` | `string` | `wifi,loopback` | Benchmark suite(s) to run (`wifi`, `usb`, `loopback`, `idle`, `all`). |
 | `--network` | `string` | `all` | Network protocols to benchmark (`tcp`, `udp`, `all`). |
 | `--with-idle` | `flag` | `false` | Include 0-1000 retained connections vs memory growth benchmark. |
-| `--backends` | `string` | `all` | TUN backends to test (`hev`, `xray`, `sing`, `mips`, or comma-separated list). |
+| `--backends` | `string` | `all` | TUN backends to test (`hev`, `xray`, `sing`, `mips`, `zeptun`, or comma-separated list). |
 | `--skip-baseline` | `flag` | `false` | Skip running physical baseline (No VPN) tests. |
 | `--wifi-server-ip` | `string` | `10.189.231.200` | Target host IPv4 address in the local Wi-Fi subnet. |
 | `--usb-server-ip` | `string` | `auto` | Target host IPv4 address in the USB tethering subnet. |

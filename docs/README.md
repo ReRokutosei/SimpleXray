@@ -10,7 +10,7 @@
 
 </div>
 
-SimpleXray is an Android proxy client built on [Xray-core](https://github.com/XTLS/Xray-core), Android `VpnService`, `sing-tun`, `mipstack`, and `hev-socks5-tunnel`. The packaged Xray-core executable, `libxray.so`, runs as a separate child process. In SingTUN, MipsTUN, and Hev modes, Xray is started with `ProcessBuilder`; native Xray TUN mode uses a small JNI launcher to pass the VPN file descriptor to the child process.
+SimpleXray is an Android proxy client built on [Xray-core](https://github.com/XTLS/Xray-core), Android `VpnService`, `sing-tun`, `mipstack`, `hev-socks5-tunnel`, and Zeptun. The packaged Xray-core executable, `libxray.so`, runs as a separate child process. In SingTUN, MipsTUN, Hev, and Zeptun modes, Xray is started with `ProcessBuilder`; native Xray TUN mode uses a small JNI launcher to pass the VPN file descriptor to the child process.
 
 ## Scope
 
@@ -183,6 +183,7 @@ The following environment is required to build the project:
 * Android 14 (API level 34) or later.
 * Android SDK with Build Tools and Platform SDK for the configured target SDK (`36`).
 * Android NDK (see `version.properties` for the recommended `NDK_VERSION`).
+* Zig `0.16.0` (required to build the Zeptun Android native library).
 * CMake 3.22.1 or higher.
 * JDK 21.
 * Go (for cross-compiling Xray-core, see `version.properties` for the recommended `GO_VERSION`).
@@ -241,6 +242,20 @@ go build -o xray -trimpath -buildvcs=false -ldflags="-X github.com/xtls/xray-cor
 mkdir -p ../app/src/main/jniLibs/arm64-v8a
 mv xray ../app/src/main/jniLibs/arm64-v8a/libxray.so
 ```
+
+#### Build Zeptun
+
+Zeptun is tracked as the `third_party/zeptun` Git submodule. Build its Android
+static library before invoking Gradle; the project consumes the arm64-v8a
+artifact from the submodule's `zig-out` directory:
+
+```bash
+export ANDROID_NDK_HOME=/path/to/android-ndk
+./third_party/zeptun-android/build_android.sh
+```
+
+The Android integration uses Zeptun's mobile preset with its userspace stack,
+and Android `VpnService.Builder` remains responsible for routes.
 
 ### 3. Local Build and Signing Configuration
 
@@ -307,6 +322,7 @@ SimpleXray incorporates or builds upon the following open-source projects:
 * [**`hev-socks5-tunnel`**](https://github.com/heiher/hev-socks5-tunnel) — A SOCKS5 VPN tunnel implementation used for handling Android network traffic.
 * [**`sing-tun`**](https://github.com/SagerNet/sing-tun) — High-performance lightweight user-space network stack and TUN driver implementation for sing-box.
 * [**`mipstack`**](https://github.com/MetaCubeX/mipstack) — Pure Go user-space network stack with modern congestion control algorithms (BBRv3) and zero-copy packet processing, developed for Mihomo.
+* [**`Zeptun`**](https://github.com/Noisemux/zeptun) — Zig userspace TUN engine with a C API and Android fd integration.
 
 ### Acknowledgements
 

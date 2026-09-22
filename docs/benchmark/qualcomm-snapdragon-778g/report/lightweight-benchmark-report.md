@@ -14,6 +14,7 @@
 | SingTUN | 607.76 | 143.92 | 570.70 | 635.56 |
 | MipsTUN | 528.36 | 197.08 | 629.66 | 116.92 |
 | Xray Native TUN | 536.26 | 198.71 | 645.61 | 527.91 |
+| Zeptun | 456.23 | 548.27 | 457.37 | 520.91 |
 
 ### MTU 9000
 
@@ -23,6 +24,7 @@
 | SingTUN | 640.58 | 538.27 | 635.07 | 663.32 |
 | MipsTUN | 628.33 | 626.46 | 633.70 | 565.00 |
 | Xray Native TUN | 591.52 | 196.65 | 642.94 | 536.63 |
+| Zeptun | 459.96 | 495.02 | 459.84 | 445.43 |
 
 ![Wi-Fi TCP average](../charts/avg_wifi_throughput_dashboard.webp)
 
@@ -39,6 +41,7 @@
 | SingTUN | 829.72 Mbps | 28.63 ms | 100.18 ms | +71.55 ms | 是 |
 | MipsTUN | 125.18 Mbps | 28.33 ms | 12.36 ms | -15.96 ms | 否（idle 基线异常） |
 | Xray Native TUN | 539.85 Mbps | 28.95 ms | 9.59 ms | -19.36 ms | 否（idle 基线异常） |
+| Zeptun | 541.77 Mbps | 22.94 ms | 143.86 ms | +120.92 ms | 是 |
 
 ![Bufferbloat P=8](../charts/bufferbloat_dashboard.webp)
 
@@ -53,6 +56,7 @@
 | SingTUN | 634.03 Mbps | 0.83% | -1.75% |
 | MipsTUN | 115.15 Mbps | 7.37% | +5.56% |
 | Xray Native TUN | 535.11 Mbps | 3.14% | +7.82% |
+| Zeptun | 662.66 Mbps | 10.64% | -10.46% |
 
 ![Long-run stability](../charts/long_run_stability_dashboard.webp)
 
@@ -68,6 +72,7 @@
 | SingTUN | 238.6 | 643.8 |
 | MipsTUN | 191.2 | 391.6 |
 | Xray Native TUN | 360.7 | 525.0 |
+| Zeptun | 336.9 | 369.3 |
 
 HEV 5000 次连接数在 120 秒内未完成，降低连接数后，4 worker 约 16 CPS，8 worker 约 34 CPS。提高并发能改善 CPS，但提升有限。
 
@@ -91,6 +96,7 @@ HEV 5000 次连接数在 120 秒内未完成，降低连接数后，4 worker 约
 | SingTUN | 29.04 Mbps | 13.54 Mbps |
 | MipsTUN | 27.69 Mbps | 15.54 Mbps |
 | Xray Native TUN | 40.81 Mbps | 13.56 Mbps |
+| Zeptun | 39.86 Mbps | 13.35 Mbps |
 
 1% 丢包下 HEV 与 Xray Native TUN 吞吐较高。3% 丢包下各后端差异缩小，吞吐集中在 13.5 到 15.6 Mbps。
 
@@ -106,6 +112,7 @@ Scheme 2 为纯栈微基准，Android 端到端为三轮 idle memory 平均。An
 | SingTUN | 52.14 | 0.31 | 45.84 | 3.99 |
 | MipsTUN | 52.66 | 0.14 | 113.88 | 7.24 |
 | Xray Native TUN | 63.54 | -0.07 | 57.55 | 5.22 |
+| Zeptun | — | 7.07 | — | — |
 
 单位为 KiB/conn。
 
@@ -120,6 +127,7 @@ Scheme 2 为纯栈微基准，Android 端到端为三轮 idle memory 平均。An
 5. Xray Native TUN 多流吞吐较高，但 CPS 和弱网表现没有形成绝对优势。
 6. HEV 的短连接 CPS 存在明显瓶颈，4 worker 约 16 CPS，8 worker 约 34 到 35 CPS，5000 次仍超时。
 7. Android 端到端空闲内存斜率会被 Go GC 和主进程隔离压低，真实纯栈开销应优先参考 Scheme 2；Xray 的 gVisor 开销仍在子进程中。
+8. Zeptun 的额外 R4–R6 idle memory 复测斜率分别为 5.734、7.885、7.578 KiB/conn，均值 7.066 KiB/conn；该复测作为稳定性复核，不改变主体三轮统计口径。
 
 ## 8. 原始数据
 
