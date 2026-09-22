@@ -43,9 +43,48 @@ func main() {
 		runServer(os.Args[2:])
 	case "client":
 		runClient(os.Args[2:])
+	case "rtt":
+		runRTT(os.Args[2:])
 	default:
 		fmt.Printf("Unknown subcommand: %s (expected 'server' or 'client')\n", subcmd)
 		os.Exit(1)
+	}
+}
+
+func runRTT(args []string) {
+	fs := flag.NewFlagSet("rtt", flag.ExitOnError)
+	server := fs.String("server", "127.0.0.1:5301", "Target echo server host:port")
+	count := fs.Int("count", 15, "Number of RTT samples")
+	interval := fs.Duration("interval", 200*time.Millisecond, "Delay between samples")
+	timeout := fs.Duration("timeout", time.Second, "Per-sample I/O timeout")
+	_ = fs.Parse(args)
+
+	conn, err := net.DialTimeout("tcp", *server, *timeout)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "RTT connect failed: %v\n", err)
+		os.Exit(1)
+	}
+	defer conn.Close()
+
+	payload := make([]byte, payloadSize)
+	response := make([]byte, payloadSize)
+	for i := 0; i < *count; i++ {
+		if err := conn.SetDeadline(time.Now().Add(*timeout)); err != nil {
+			os.Exit(1)
+		}
+		started := time.Now()
+		if _, err := conn.Write(payload); err != nil {
+			fmt.Fprintf(os.Stderr, "RTT write failed: %v\n", err)
+			os.Exit(1)
+		}
+		if _, err := io.ReadFull(conn, response); err != nil {
+			fmt.Fprintf(os.Stderr, "RTT read failed: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("{\"rtt_ms\":%.3f}\n", float64(time.Since(started).Microseconds())/1000.0)
+		if i+1 < *count {
+			time.Sleep(*interval)
+		}
 	}
 }
 

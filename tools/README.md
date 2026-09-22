@@ -56,8 +56,15 @@ python3 tools/microbench/microbench.py --rounds 3
 ### 3. Generate Charts & Dashboards
 
 ```bash
-# Regenerate all publication dashboards (including fullstack attribution)
-python3 tools/generate_charts.py
+# Regenerate all publication dashboards for one device.
+python3 tools/generate_charts.py --device 8-elite-gen-5
+
+# Explicit paths and DUT label can still be supplied when needed.
+python3 tools/generate_charts.py \
+  --json docs/benchmark/qualcomm-snapdragon-778g/data/benchmark_results.json \
+  --microbench docs/benchmark/qualcomm-snapdragon-778g/data/microbench_results.json \
+  --output-dir docs/benchmark/qualcomm-snapdragon-778g/charts \
+  --dut "Snapdragon 778G"
 ```
 
 ## Parameters (benchmark.py)
@@ -74,14 +81,16 @@ python3 tools/generate_charts.py
 | `--duration` | `int` | `10` | Test duration in seconds per direction / stream. |
 | `--rounds` | `int` | `3` | Number of test rounds to execute. |
 | `--device` | `string` | `auto` | ADB device serial when multiple devices are connected. |
-| `--output-json` | `string` | `docs/benchmark/benchmark_results.json` | Path to save JSON results. |
-| `--output-md` | `string` | `docs/benchmark/benchmark_summary.md` | Path to save Markdown tables. |
+| `--device-profile` | `string` | `8-elite-gen-5` | Device dataset profile for default paths (`778g` or `8-elite-gen-5`). |
+| `--output-json` | `string` | profile data dir | Path to save JSON results. |
+| `--output-md` | `string` | profile data dir | Path to save Markdown tables. |
+| `--advanced-json` | `string` | profile data dir | Path to save advanced benchmark results. |
 
 ## Outputs
 
 The tools output real-time terminal progress, per-stream throughput (Mbps/Gbps), packet loss/jitter for UDP, CPU utilization (average and peak), PSS memory consumption, and connection retention slopes (KiB/conn). Generated results are structured into:
-- Android End-to-End Dataset: `docs/benchmark/benchmark_results.json`
-- Android End-to-End Markdown Summary: `docs/benchmark/benchmark_summary.md`
-- Standalone Microbenchmark Dataset: `docs/benchmark/microbench_results.json`
-- Standalone Microbenchmark Summary: `docs/benchmark/microbench_summary.md`
-- Visual Dashboards: `docs/images/*_dashboard.webp` (including `fullstack_attribution_dashboard.webp`)
+- Android End-to-End Dataset: `docs/benchmark/<device>/data/benchmark_results.json`
+- Android End-to-End Markdown Summary: `docs/benchmark/<device>/data/benchmark_summary.md`
+- Standalone Microbenchmark Dataset: `docs/benchmark/<device>/data/microbench_results.json`
+- Standalone Microbenchmark Summary: `docs/benchmark/<device>/data/microbench_summary.md`
+- Visual Dashboards: `docs/benchmark/<device>/charts/*_dashboard.webp`

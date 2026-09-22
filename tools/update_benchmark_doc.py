@@ -1,25 +1,27 @@
 #!/usr/bin/env python3
 """
 SimpleXray Benchmark Document In-Place Table Synchronizer
-Safely updates Section 3.1 tables in docs/benchmark/android-tun-benchmark.md
+Safely updates Section 3.1 tables in a device benchmark report
 without overwriting or modifying other sections, analyses, or conclusions.
 """
 
+import argparse
 import os
 import re
 import sys
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
 sys.path.insert(0, SCRIPT_DIR)
 
 from common.dataset import (
-    DEFAULT_BENCH_JSON,
     load_datasets,
     compute_clean_averages,
 )
-
-DOC_PATH = os.path.join(PROJECT_ROOT, "docs", "benchmark", "android-tun-benchmark.md")
+from common.device import (
+    DEFAULT_DEVICE,
+    DEVICE_PROFILES,
+    resolve_device_paths,
+)
 
 
 def render_table(cases, is_loopback=False) -> str:
@@ -105,19 +107,37 @@ def build_section_3_1_content(avg_cases) -> str:
 
 
 def main():
-    bench_root, _, _ = load_datasets()
+    parser = argparse.ArgumentParser(description="Synchronize Section 3.1 tables in a device benchmark report")
+    parser.add_argument(
+        "--device",
+        default=DEFAULT_DEVICE,
+        choices=sorted(DEVICE_PROFILES),
+        help=f"Device profile used for default dataset and report paths (default: {DEFAULT_DEVICE})",
+    )
+    parser.add_argument(
+        "--doc",
+        default=None,
+        help="Optional Markdown report path. Defaults to the selected device report directory.",
+    )
+    args = parser.parse_args()
+
+    profile = resolve_device_paths(args.device)
+    doc_path = args.doc or os.path.join(profile["report_dir"], "android-tun-benchmark.md")
+    bench_path = profile["bench_json"]
+
+    bench_root, _, _ = load_datasets(bench_path=bench_path)
     if not bench_root.get("rounds"):
-        print(f"[Error] No rounds found in {DEFAULT_BENCH_JSON}")
+        print(f"[Error] No rounds found in {bench_path}")
         sys.exit(1)
 
     avg_cases = compute_clean_averages(bench_root)
     new_section_3_1 = build_section_3_1_content(avg_cases)
 
-    if not os.path.exists(DOC_PATH):
-        print(f"[Error] Markdown doc not found: {DOC_PATH}")
+    if not os.path.exists(doc_path):
+        print(f"[Error] Markdown doc not found: {doc_path}")
         sys.exit(1)
 
-    with open(DOC_PATH, "r", encoding="utf-8") as f:
+    with open(doc_path, "r", encoding="utf-8") as f:
         doc_text = f.read()
 
     # In-place regex substitution of Section 3.1
@@ -132,10 +152,10 @@ def main():
 
     updated_doc = pattern.sub(new_section_3_1, doc_text)
 
-    with open(DOC_PATH, "w", encoding="utf-8") as f:
+    with open(doc_path, "w", encoding="utf-8") as f:
         f.write(updated_doc)
 
-    print(f"[Success] In-place updated Section 3.1 tables in: {DOC_PATH}")
+    print(f"[Success] In-place updated Section 3.1 tables in: {doc_path}")
 
 
 if __name__ == "__main__":

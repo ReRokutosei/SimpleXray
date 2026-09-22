@@ -1,0 +1,1040 @@
+{
+  "metadata": {
+    "timestamp": "2026-09-20T00:16:38.264786",
+    "target": "Linux x86_64 User Namespace (Pure Stack Microbenchmark)",
+    "rounds": 3,
+    "steps": [
+      0,
+      250,
+      500,
+      750,
+      1000
+    ],
+    "backends": [
+      "hev",
+      "xray",
+      "sing",
+      "mips"
+    ],
+    "networks": [
+      "tcp",
+      "udp"
+    ]
+  },
+  "rounds": {
+    "round_1": [
+      {
+        "backend": "hev",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 2.13,
+            "rss_mb": 3.62,
+            "private_dirty_mb": 1.81,
+            "threads": 1
+          },
+          {
+            "conns": 250,
+            "pss_mb": 5.24,
+            "rss_mb": 6.79,
+            "private_dirty_mb": 4.91,
+            "threads": 1
+          },
+          {
+            "conns": 500,
+            "pss_mb": 8.3,
+            "rss_mb": 9.85,
+            "private_dirty_mb": 7.98,
+            "threads": 1
+          },
+          {
+            "conns": 750,
+            "pss_mb": 11.36,
+            "rss_mb": 12.91,
+            "private_dirty_mb": 11.04,
+            "threads": 1
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 14.43,
+            "rss_mb": 15.98,
+            "private_dirty_mb": 14.11,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 12.6
+      },
+      {
+        "backend": "hev",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 2.13,
+            "rss_mb": 3.48,
+            "private_dirty_mb": 1.81,
+            "threads": 1
+          },
+          {
+            "conns": 250,
+            "pss_mb": 6.2,
+            "rss_mb": 7.61,
+            "private_dirty_mb": 5.88,
+            "threads": 1
+          },
+          {
+            "conns": 500,
+            "pss_mb": 10.24,
+            "rss_mb": 11.65,
+            "private_dirty_mb": 9.92,
+            "threads": 1
+          },
+          {
+            "conns": 750,
+            "pss_mb": 14.28,
+            "rss_mb": 15.7,
+            "private_dirty_mb": 13.96,
+            "threads": 1
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 18.33,
+            "rss_mb": 19.74,
+            "private_dirty_mb": 18.01,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 16.59
+      },
+      {
+        "backend": "xray",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 37.67,
+            "rss_mb": 37.68,
+            "private_dirty_mb": 9.95,
+            "threads": 19
+          },
+          {
+            "conns": 250,
+            "pss_mb": 59.48,
+            "rss_mb": 59.49,
+            "private_dirty_mb": 30.67,
+            "threads": 23
+          },
+          {
+            "conns": 500,
+            "pss_mb": 69.84,
+            "rss_mb": 69.85,
+            "private_dirty_mb": 41.03,
+            "threads": 23
+          },
+          {
+            "conns": 750,
+            "pss_mb": 86.21,
+            "rss_mb": 86.22,
+            "private_dirty_mb": 57.4,
+            "threads": 23
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 98.54,
+            "rss_mb": 98.55,
+            "private_dirty_mb": 69.73,
+            "threads": 23
+          }
+        ],
+        "slope_kib_per_conn": 62.33
+      },
+      {
+        "backend": "xray",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 37.12,
+            "rss_mb": 37.12,
+            "private_dirty_mb": 9.29,
+            "threads": 14
+          },
+          {
+            "conns": 250,
+            "pss_mb": 57.36,
+            "rss_mb": 57.37,
+            "private_dirty_mb": 28.78,
+            "threads": 22
+          },
+          {
+            "conns": 500,
+            "pss_mb": 69.91,
+            "rss_mb": 69.92,
+            "private_dirty_mb": 41.32,
+            "threads": 22
+          },
+          {
+            "conns": 750,
+            "pss_mb": 83.79,
+            "rss_mb": 83.8,
+            "private_dirty_mb": 55.21,
+            "threads": 22
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 92.4,
+            "rss_mb": 92.41,
+            "private_dirty_mb": 63.81,
+            "threads": 22
+          }
+        ],
+        "slope_kib_per_conn": 56.61
+      },
+      {
+        "backend": "sing",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 9.48,
+            "rss_mb": 10.85,
+            "private_dirty_mb": 4.52,
+            "threads": 7
+          },
+          {
+            "conns": 250,
+            "pss_mb": 29.32,
+            "rss_mb": 30.69,
+            "private_dirty_mb": 23.74,
+            "threads": 22
+          },
+          {
+            "conns": 500,
+            "pss_mb": 38.62,
+            "rss_mb": 39.98,
+            "private_dirty_mb": 33.04,
+            "threads": 22
+          },
+          {
+            "conns": 750,
+            "pss_mb": 50.33,
+            "rss_mb": 51.7,
+            "private_dirty_mb": 44.75,
+            "threads": 22
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 62.61,
+            "rss_mb": 63.98,
+            "private_dirty_mb": 57.03,
+            "threads": 22
+          }
+        ],
+        "slope_kib_per_conn": 54.41
+      },
+      {
+        "backend": "sing",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 9.54,
+            "rss_mb": 10.96,
+            "private_dirty_mb": 4.52,
+            "threads": 7
+          },
+          {
+            "conns": 250,
+            "pss_mb": 33.37,
+            "rss_mb": 34.79,
+            "private_dirty_mb": 27.79,
+            "threads": 22
+          },
+          {
+            "conns": 500,
+            "pss_mb": 39.76,
+            "rss_mb": 41.18,
+            "private_dirty_mb": 34.18,
+            "threads": 22
+          },
+          {
+            "conns": 750,
+            "pss_mb": 48.41,
+            "rss_mb": 49.83,
+            "private_dirty_mb": 42.83,
+            "threads": 22
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 51.06,
+            "rss_mb": 52.48,
+            "private_dirty_mb": 45.48,
+            "threads": 22
+          }
+        ],
+        "slope_kib_per_conn": 42.52
+      },
+      {
+        "backend": "mips",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 13.02,
+            "rss_mb": 14.38,
+            "private_dirty_mb": 9.02,
+            "threads": 13
+          },
+          {
+            "conns": 250,
+            "pss_mb": 30.22,
+            "rss_mb": 31.59,
+            "private_dirty_mb": 25.79,
+            "threads": 22
+          },
+          {
+            "conns": 500,
+            "pss_mb": 40.2,
+            "rss_mb": 41.56,
+            "private_dirty_mb": 35.77,
+            "threads": 22
+          },
+          {
+            "conns": 750,
+            "pss_mb": 54.53,
+            "rss_mb": 55.9,
+            "private_dirty_mb": 50.1,
+            "threads": 22
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 61.86,
+            "rss_mb": 63.23,
+            "private_dirty_mb": 57.43,
+            "threads": 22
+          }
+        ],
+        "slope_kib_per_conn": 50.01
+      },
+      {
+        "backend": "mips",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 12.8,
+            "rss_mb": 14.29,
+            "private_dirty_mb": 8.99,
+            "threads": 11
+          },
+          {
+            "conns": 250,
+            "pss_mb": 54.8,
+            "rss_mb": 56.28,
+            "private_dirty_mb": 50.48,
+            "threads": 22
+          },
+          {
+            "conns": 500,
+            "pss_mb": 91.3,
+            "rss_mb": 92.79,
+            "private_dirty_mb": 86.99,
+            "threads": 23
+          },
+          {
+            "conns": 750,
+            "pss_mb": 117.64,
+            "rss_mb": 119.12,
+            "private_dirty_mb": 113.32,
+            "threads": 23
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 125.44,
+            "rss_mb": 126.92,
+            "private_dirty_mb": 121.12,
+            "threads": 23
+          }
+        ],
+        "slope_kib_per_conn": 115.34
+      }
+    ],
+    "round_2": [
+      {
+        "backend": "hev",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 2.14,
+            "rss_mb": 3.56,
+            "private_dirty_mb": 1.82,
+            "threads": 1
+          },
+          {
+            "conns": 250,
+            "pss_mb": 5.24,
+            "rss_mb": 6.72,
+            "private_dirty_mb": 4.92,
+            "threads": 1
+          },
+          {
+            "conns": 500,
+            "pss_mb": 8.3,
+            "rss_mb": 9.79,
+            "private_dirty_mb": 7.98,
+            "threads": 1
+          },
+          {
+            "conns": 750,
+            "pss_mb": 11.37,
+            "rss_mb": 12.85,
+            "private_dirty_mb": 11.05,
+            "threads": 1
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 14.43,
+            "rss_mb": 15.91,
+            "private_dirty_mb": 14.11,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 12.58
+      },
+      {
+        "backend": "hev",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 2.14,
+            "rss_mb": 3.6,
+            "private_dirty_mb": 1.82,
+            "threads": 1
+          },
+          {
+            "conns": 250,
+            "pss_mb": 6.21,
+            "rss_mb": 7.73,
+            "private_dirty_mb": 5.89,
+            "threads": 1
+          },
+          {
+            "conns": 500,
+            "pss_mb": 10.25,
+            "rss_mb": 11.77,
+            "private_dirty_mb": 9.93,
+            "threads": 1
+          },
+          {
+            "conns": 750,
+            "pss_mb": 14.29,
+            "rss_mb": 15.82,
+            "private_dirty_mb": 13.97,
+            "threads": 1
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 18.33,
+            "rss_mb": 19.86,
+            "private_dirty_mb": 18.02,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 16.58
+      },
+      {
+        "backend": "xray",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 37.54,
+            "rss_mb": 37.54,
+            "private_dirty_mb": 9.53,
+            "threads": 15
+          },
+          {
+            "conns": 250,
+            "pss_mb": 60.11,
+            "rss_mb": 60.12,
+            "private_dirty_mb": 31.12,
+            "threads": 23
+          },
+          {
+            "conns": 500,
+            "pss_mb": 72.53,
+            "rss_mb": 72.54,
+            "private_dirty_mb": 43.48,
+            "threads": 23
+          },
+          {
+            "conns": 750,
+            "pss_mb": 84.91,
+            "rss_mb": 84.92,
+            "private_dirty_mb": 55.87,
+            "threads": 23
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 101.29,
+            "rss_mb": 101.3,
+            "private_dirty_mb": 72.25,
+            "threads": 23
+          }
+        ],
+        "slope_kib_per_conn": 65.28
+      },
+      {
+        "backend": "xray",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 36.26,
+            "rss_mb": 36.27,
+            "private_dirty_mb": 8.0,
+            "threads": 15
+          },
+          {
+            "conns": 250,
+            "pss_mb": 54.64,
+            "rss_mb": 54.64,
+            "private_dirty_mb": 25.79,
+            "threads": 22
+          },
+          {
+            "conns": 500,
+            "pss_mb": 69.43,
+            "rss_mb": 69.44,
+            "private_dirty_mb": 40.59,
+            "threads": 22
+          },
+          {
+            "conns": 750,
+            "pss_mb": 83.91,
+            "rss_mb": 83.92,
+            "private_dirty_mb": 55.07,
+            "threads": 22
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 94.32,
+            "rss_mb": 94.33,
+            "private_dirty_mb": 65.48,
+            "threads": 22
+          }
+        ],
+        "slope_kib_per_conn": 59.45
+      },
+      {
+        "backend": "sing",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 9.56,
+            "rss_mb": 11.02,
+            "private_dirty_mb": 4.54,
+            "threads": 8
+          },
+          {
+            "conns": 250,
+            "pss_mb": 29.46,
+            "rss_mb": 30.92,
+            "private_dirty_mb": 23.88,
+            "threads": 23
+          },
+          {
+            "conns": 500,
+            "pss_mb": 37.46,
+            "rss_mb": 38.92,
+            "private_dirty_mb": 31.88,
+            "threads": 23
+          },
+          {
+            "conns": 750,
+            "pss_mb": 49.16,
+            "rss_mb": 50.62,
+            "private_dirty_mb": 43.58,
+            "threads": 23
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 57.91,
+            "rss_mb": 59.37,
+            "private_dirty_mb": 52.32,
+            "threads": 23
+          }
+        ],
+        "slope_kib_per_conn": 49.51
+      },
+      {
+        "backend": "sing",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 9.5,
+            "rss_mb": 10.92,
+            "private_dirty_mb": 4.54,
+            "threads": 8
+          },
+          {
+            "conns": 250,
+            "pss_mb": 32.43,
+            "rss_mb": 33.85,
+            "private_dirty_mb": 26.85,
+            "threads": 22
+          },
+          {
+            "conns": 500,
+            "pss_mb": 39.46,
+            "rss_mb": 40.88,
+            "private_dirty_mb": 33.88,
+            "threads": 23
+          },
+          {
+            "conns": 750,
+            "pss_mb": 52.21,
+            "rss_mb": 53.63,
+            "private_dirty_mb": 46.63,
+            "threads": 23
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 55.37,
+            "rss_mb": 56.79,
+            "private_dirty_mb": 49.79,
+            "threads": 23
+          }
+        ],
+        "slope_kib_per_conn": 46.97
+      },
+      {
+        "backend": "mips",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 10.98,
+            "rss_mb": 12.41,
+            "private_dirty_mb": 7.11,
+            "threads": 13
+          },
+          {
+            "conns": 250,
+            "pss_mb": 28.09,
+            "rss_mb": 29.52,
+            "private_dirty_mb": 23.66,
+            "threads": 21
+          },
+          {
+            "conns": 500,
+            "pss_mb": 39.04,
+            "rss_mb": 40.46,
+            "private_dirty_mb": 34.61,
+            "threads": 21
+          },
+          {
+            "conns": 750,
+            "pss_mb": 49.89,
+            "rss_mb": 51.31,
+            "private_dirty_mb": 45.45,
+            "threads": 21
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 60.89,
+            "rss_mb": 62.31,
+            "private_dirty_mb": 56.39,
+            "threads": 22
+          }
+        ],
+        "slope_kib_per_conn": 51.11
+      },
+      {
+        "backend": "mips",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 10.79,
+            "rss_mb": 12.19,
+            "private_dirty_mb": 6.98,
+            "threads": 10
+          },
+          {
+            "conns": 250,
+            "pss_mb": 51.6,
+            "rss_mb": 53.0,
+            "private_dirty_mb": 47.29,
+            "threads": 22
+          },
+          {
+            "conns": 500,
+            "pss_mb": 86.12,
+            "rss_mb": 87.52,
+            "private_dirty_mb": 81.82,
+            "threads": 22
+          },
+          {
+            "conns": 750,
+            "pss_mb": 107.66,
+            "rss_mb": 109.05,
+            "private_dirty_mb": 103.35,
+            "threads": 22
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 118.21,
+            "rss_mb": 119.6,
+            "private_dirty_mb": 113.9,
+            "threads": 22
+          }
+        ],
+        "slope_kib_per_conn": 110.0
+      }
+    ],
+    "round_3": [
+      {
+        "backend": "hev",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 2.13,
+            "rss_mb": 3.47,
+            "private_dirty_mb": 1.82,
+            "threads": 1
+          },
+          {
+            "conns": 250,
+            "pss_mb": 5.24,
+            "rss_mb": 6.64,
+            "private_dirty_mb": 4.92,
+            "threads": 1
+          },
+          {
+            "conns": 500,
+            "pss_mb": 8.3,
+            "rss_mb": 9.7,
+            "private_dirty_mb": 7.98,
+            "threads": 1
+          },
+          {
+            "conns": 750,
+            "pss_mb": 11.37,
+            "rss_mb": 12.76,
+            "private_dirty_mb": 11.05,
+            "threads": 1
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 14.43,
+            "rss_mb": 15.82,
+            "private_dirty_mb": 14.11,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 12.6
+      },
+      {
+        "backend": "hev",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 2.13,
+            "rss_mb": 3.47,
+            "private_dirty_mb": 1.82,
+            "threads": 1
+          },
+          {
+            "conns": 250,
+            "pss_mb": 6.2,
+            "rss_mb": 7.6,
+            "private_dirty_mb": 5.88,
+            "threads": 1
+          },
+          {
+            "conns": 500,
+            "pss_mb": 10.24,
+            "rss_mb": 11.64,
+            "private_dirty_mb": 9.93,
+            "threads": 1
+          },
+          {
+            "conns": 750,
+            "pss_mb": 14.29,
+            "rss_mb": 15.68,
+            "private_dirty_mb": 13.97,
+            "threads": 1
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 18.33,
+            "rss_mb": 19.73,
+            "private_dirty_mb": 18.01,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 16.59
+      },
+      {
+        "backend": "xray",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 37.59,
+            "rss_mb": 37.6,
+            "private_dirty_mb": 9.57,
+            "threads": 15
+          },
+          {
+            "conns": 250,
+            "pss_mb": 60.05,
+            "rss_mb": 60.06,
+            "private_dirty_mb": 31.06,
+            "threads": 22
+          },
+          {
+            "conns": 500,
+            "pss_mb": 70.43,
+            "rss_mb": 70.44,
+            "private_dirty_mb": 41.44,
+            "threads": 22
+          },
+          {
+            "conns": 750,
+            "pss_mb": 86.78,
+            "rss_mb": 86.79,
+            "private_dirty_mb": 57.79,
+            "threads": 22
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 99.12,
+            "rss_mb": 99.13,
+            "private_dirty_mb": 70.13,
+            "threads": 22
+          }
+        ],
+        "slope_kib_per_conn": 63.01
+      },
+      {
+        "backend": "xray",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 37.12,
+            "rss_mb": 37.13,
+            "private_dirty_mb": 9.52,
+            "threads": 14
+          },
+          {
+            "conns": 250,
+            "pss_mb": 55.62,
+            "rss_mb": 55.63,
+            "private_dirty_mb": 27.08,
+            "threads": 22
+          },
+          {
+            "conns": 500,
+            "pss_mb": 70.1,
+            "rss_mb": 70.11,
+            "private_dirty_mb": 41.55,
+            "threads": 22
+          },
+          {
+            "conns": 750,
+            "pss_mb": 84.57,
+            "rss_mb": 84.58,
+            "private_dirty_mb": 56.02,
+            "threads": 22
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 92.38,
+            "rss_mb": 92.39,
+            "private_dirty_mb": 63.84,
+            "threads": 22
+          }
+        ],
+        "slope_kib_per_conn": 56.59
+      },
+      {
+        "backend": "sing",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 9.5,
+            "rss_mb": 10.87,
+            "private_dirty_mb": 4.54,
+            "threads": 8
+          },
+          {
+            "conns": 250,
+            "pss_mb": 28.92,
+            "rss_mb": 30.29,
+            "private_dirty_mb": 23.34,
+            "threads": 21
+          },
+          {
+            "conns": 500,
+            "pss_mb": 39.17,
+            "rss_mb": 40.54,
+            "private_dirty_mb": 33.59,
+            "threads": 21
+          },
+          {
+            "conns": 750,
+            "pss_mb": 49.34,
+            "rss_mb": 50.71,
+            "private_dirty_mb": 43.76,
+            "threads": 21
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 60.77,
+            "rss_mb": 62.13,
+            "private_dirty_mb": 55.19,
+            "threads": 21
+          }
+        ],
+        "slope_kib_per_conn": 52.5
+      },
+      {
+        "backend": "sing",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 9.55,
+            "rss_mb": 10.94,
+            "private_dirty_mb": 4.53,
+            "threads": 8
+          },
+          {
+            "conns": 250,
+            "pss_mb": 32.05,
+            "rss_mb": 33.44,
+            "private_dirty_mb": 26.47,
+            "threads": 22
+          },
+          {
+            "conns": 500,
+            "pss_mb": 43.28,
+            "rss_mb": 44.67,
+            "private_dirty_mb": 37.7,
+            "threads": 22
+          },
+          {
+            "conns": 750,
+            "pss_mb": 50.0,
+            "rss_mb": 51.39,
+            "private_dirty_mb": 44.42,
+            "threads": 23
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 56.44,
+            "rss_mb": 57.83,
+            "private_dirty_mb": 50.86,
+            "threads": 23
+          }
+        ],
+        "slope_kib_per_conn": 48.02
+      },
+      {
+        "backend": "mips",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 10.83,
+            "rss_mb": 12.32,
+            "private_dirty_mb": 7.02,
+            "threads": 13
+          },
+          {
+            "conns": 250,
+            "pss_mb": 31.06,
+            "rss_mb": 32.54,
+            "private_dirty_mb": 26.62,
+            "threads": 22
+          },
+          {
+            "conns": 500,
+            "pss_mb": 40.94,
+            "rss_mb": 42.43,
+            "private_dirty_mb": 36.51,
+            "threads": 22
+          },
+          {
+            "conns": 750,
+            "pss_mb": 52.36,
+            "rss_mb": 53.84,
+            "private_dirty_mb": 47.93,
+            "threads": 22
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 66.35,
+            "rss_mb": 67.84,
+            "private_dirty_mb": 61.92,
+            "threads": 22
+          }
+        ],
+        "slope_kib_per_conn": 56.85
+      },
+      {
+        "backend": "mips",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 13.01,
+            "rss_mb": 14.49,
+            "private_dirty_mb": 9.01,
+            "threads": 13
+          },
+          {
+            "conns": 250,
+            "pss_mb": 52.75,
+            "rss_mb": 54.23,
+            "private_dirty_mb": 48.44,
+            "threads": 22
+          },
+          {
+            "conns": 500,
+            "pss_mb": 89.23,
+            "rss_mb": 90.72,
+            "private_dirty_mb": 84.93,
+            "threads": 22
+          },
+          {
+            "conns": 750,
+            "pss_mb": 117.76,
+            "rss_mb": 119.24,
+            "private_dirty_mb": 113.45,
+            "threads": 23
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 126.57,
+            "rss_mb": 128.05,
+            "private_dirty_mb": 122.26,
+            "threads": 23
+          }
+        ],
+        "slope_kib_per_conn": 116.29
+      }
+    ]
+  }
+}
