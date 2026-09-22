@@ -49,6 +49,27 @@ def get_hev_version() -> str:
         return "2.17.1 (b514150)"
 
 
+def get_zeptun_version() -> str:
+    """Return the checked-out Zeptun tag and short commit."""
+    zeptun_dir = os.path.join(REPO_ROOT, "third_party", "zeptun")
+    if not os.path.exists(zeptun_dir):
+        return "unknown"
+    try:
+        desc = subprocess.check_output(
+            ["git", "-C", zeptun_dir, "describe", "--tags", "--always"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+        commit = subprocess.check_output(
+            ["git", "-C", zeptun_dir, "rev-parse", "--short", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            text=True,
+        ).strip()
+        return f"{desc} ({commit})"
+    except Exception:
+        return "unknown"
+
+
 def get_sing_tun_version() -> str:
     go_mod = os.path.join(REPO_ROOT, "third_party", "sing-tun", "go.mod")
     if not os.path.exists(go_mod):
@@ -94,6 +115,7 @@ def sync_versions(check_only: bool = False) -> bool:
     expected = {
         "XRAY_CORE_VERSION": current.get("XRAY_CORE_VERSION", "v26.9.9"),
         "HEV_TUN_VERSION": get_hev_version(),
+        "ZEPTUN_VERSION": get_zeptun_version(),
         "SING_TUN_VERSION": get_sing_tun_version(),
         "MIPS_TUN_VERSION": get_mips_tun_version(),
         "GO_VERSION": current.get("GO_VERSION", "1.27.1"),

@@ -62,6 +62,7 @@ class BenchmarkService : Service() {
                         "xray", "xray_tun" -> prefs.tunnelMode = TunnelMode.XrayTun
                         "sing", "sing_tun", "singtun" -> prefs.tunnelMode = TunnelMode.SingTun
                         "mips", "mips_tun", "mipstun" -> prefs.tunnelMode = TunnelMode.MipsTun
+                        "zeptun", "zep" -> prefs.tunnelMode = TunnelMode.Zeptun
                     }
                 }
                 prefs.tunnelMtu = mtu
