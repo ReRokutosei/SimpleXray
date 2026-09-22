@@ -8,8 +8,20 @@ import subprocess
 import time
 from typing import Any, Dict, List
 
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
+
 from common.adb import CpuProfiler
 from common.logging import log_info, log_success, log_warn
+from common.theme import (
+    setup_fonts,
+    apply_global_theme,
+    add_dashboard_header,
+    create_top_legend,
+    save_dashboard,
+)
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 TOOLS_DIR = os.path.abspath(os.path.join(SCRIPT_DIR, ".."))
@@ -141,3 +153,87 @@ def run_cps_suite(
             )
 
     return results
+
+
+def render_cps_chart(results: List[Dict[str, Any]], output_path: str) -> None:
+    """Renders a grouped CPS bar chart for 4 and 8 worker cases."""
+    apply_global_theme()
+    prop_regular, prop_bold, prop_medium = setup_fonts()
+
+    workers_list = [4, 8]
+    backend_order = ["direct_none", "hev", "sing", "mips", "xray"]
+    backends = [b for b in backend_order if any(r.get("backend") == b for r in results)]
+    if not backends:
+        raise RuntimeError("No CPS records to render")
+
+    fig = plt.figure(figsize=(16, 9.5), dpi=200)
+    ax = fig.add_axes([0.10, 0.13, 0.86, 0.67])
+    add_dashboard_header(
+        fig,
+        "TCP Connection Rate (CPS) (Higher is Better)",
+        "Short-lived TCP connections through Android/TUN backends (5GHz Wi-Fi)",
+        prop_bold=prop_bold,
+        prop_regular=prop_regular,
+    )
+
+    x = np.arange(len(backends))
+    width = 0.36
+    colors = {4: "#F08080", 8: "#CD5C5C"}
+    edges = {4: "#D96C6C", 8: "#A94442"}
+
+    for idx, workers in enumerate(workers_list):
+        vals = []
+        labels = []
+        for b in backends:
+            rec = next((r for r in results if r.get("backend") == b and r.get("workers") == workers), None)
+            if rec is None or rec.get("rc") != 0 or rec.get("cps") is None:
+                vals.append(0.0)
+                labels.append("N/A")
+            else:
+                vals.append(float(rec.get("cps") or 0.0))
+                labels.append(f"{float(rec.get('cps') or 0.0):.1f}")
+
+        bars = ax.bar(x + (idx - 0.5) * width, vals, width,
+                      label=f"{workers} worker", color=colors[workers],
+                      edgecolor=edges[workers], linewidth=0.8, zorder=3)
+        for bar, label, val in zip(bars, labels, vals):
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + max(vals + [1.0]) * 0.02,
+                label,
+                ha="center",
+                va="bottom",
+                fontsize=8.5,
+                color="#1e293b",
+                fontproperties=prop_bold,
+            )
+
+    ax.set_ylabel("Connections per second", fontsize=10, color="#475569",
+                  fontproperties=prop_regular)
+    ax.set_xticks(x)
+    display_names = {
+        "direct_none": "Baseline",
+        "hev": "HEV",
+        "sing": "SingTUN",
+        "mips": "MipsTUN",
+        "xray": "Xray",
+    }
+    ax.set_xticklabels(
+        [display_names[b] for b in backends],
+        fontsize=10,
+        color="#334155",
+        fontproperties=prop_medium,
+    )
+    ax.grid(True, axis="y", color="#f1f5f9", linewidth=0.8, zorder=0)
+    legend_handles = [
+        plt.Rectangle((0, 0), 1, 1, facecolor=colors[w], edgecolor=edges[w])
+        for w in workers_list
+    ]
+    create_top_legend(
+        fig,
+        legend_handles,
+        [f"{w} worker" for w in workers_list],
+        y_pos=0.895,
+        prop_medium=prop_medium,
+    )
+    save_dashboard(fig, output_path, dpi=200)

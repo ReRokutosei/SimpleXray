@@ -41,7 +41,9 @@ from suites import (
     run_long_run_suite,
     render_long_run_chart,
     run_weaknet_suite,
+    render_weaknet_chart,
     run_cps_suite,
+    render_cps_chart,
 )
 
 DEFAULT_DURATION = 10
@@ -409,6 +411,8 @@ def main():
         os.makedirs(os.path.dirname(os.path.abspath(weaknet_json)), exist_ok=True)
         with open(os.path.abspath(weaknet_json), "w", encoding="utf-8") as f:
             json.dump(weaknet_payload, f, indent=2, ensure_ascii=False)
+        if not args.no_charts:
+            render_weaknet_chart(weaknet_results, os.path.join(chart_dir, "weaknet_throughput.webp"))
         log_success(f"Weak-network results saved to: {weaknet_json}")
 
     # -------------------------------------------------------------
@@ -452,6 +456,8 @@ def main():
         os.makedirs(os.path.dirname(os.path.abspath(cps_json)), exist_ok=True)
         with open(os.path.abspath(cps_json), "w", encoding="utf-8") as f:
             json.dump(cps_payload, f, indent=2, ensure_ascii=False)
+        if not args.no_charts:
+            render_cps_chart(cps_results, os.path.join(chart_dir, "cps_connection_rate.webp"))
         log_success(f"CPS results saved to: {cps_json}")
 
     log_success("All requested benchmark operations completed successfully!")

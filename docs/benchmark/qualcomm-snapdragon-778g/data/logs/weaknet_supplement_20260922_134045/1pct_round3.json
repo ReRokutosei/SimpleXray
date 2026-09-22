@@ -1,0 +1,87 @@
+{
+  "timestamp": "2026-09-22T13:44:34.728147",
+  "device": "R52W206X0WL",
+  "device_profile": "778g",
+  "server_ip": "192.168.31.236",
+  "interface": "eno1",
+  "delay_ms": 50.0,
+  "loss_percent_list": [
+    1.0
+  ],
+  "parallel": 8,
+  "duration": 15,
+  "dry_run": false,
+  "skip_netem": false,
+  "results": [
+    {
+      "backend": "direct_none",
+      "parallel": 8,
+      "duration": 15,
+      "download_mbps": 25.79,
+      "download_cpu_avg": 0.7,
+      "download_cpu_peak": 2.0,
+      "peak_mem_mb": 158.8,
+      "rc": 0,
+      "stderr": "",
+      "loss_percent": 1.0,
+      "delay_ms": 50.0,
+      "netem_interface": "eno1"
+    },
+    {
+      "backend": "hev",
+      "parallel": 8,
+      "duration": 15,
+      "download_mbps": 37.36,
+      "download_cpu_avg": 57.3,
+      "download_cpu_peak": 88.0,
+      "peak_mem_mb": 163.8,
+      "rc": 0,
+      "stderr": "",
+      "loss_percent": 1.0,
+      "delay_ms": 50.0,
+      "netem_interface": "eno1"
+    },
+    {
+      "backend": "sing",
+      "parallel": 8,
+      "duration": 15,
+      "download_mbps": 30.34,
+      "download_cpu_avg": 105.5,
+      "download_cpu_peak": 125.0,
+      "peak_mem_mb": 125.8,
+      "rc": 0,
+      "stderr": "",
+      "loss_percent": 1.0,
+      "delay_ms": 50.0,
+      "netem_interface": "eno1"
+    },
+    {
+      "backend": "mips",
+      "parallel": 8,
+      "duration": 15,
+      "download_mbps": 27.96,
+      "download_cpu_avg": 120.2,
+      "download_cpu_peak": 142.0,
+      "peak_mem_mb": 125.6,
+      "rc": 0,
+      "stderr": "",
+      "loss_percent": 1.0,
+      "delay_ms": 50.0,
+      "netem_interface": "eno1"
+    },
+    {
+      "backend": "xray",
+      "parallel": 8,
+      "duration": 15,
+      "download_mbps": 45.64,
+      "download_cpu_avg": 94.5,
+      "download_cpu_peak": 143.0,
+      "peak_mem_mb": 156.1,
+      "rc": 0,
+      "stderr": "",
+      "loss_percent": 1.0,
+      "delay_ms": 50.0,
+      "netem_interface": "eno1"
+    }
+  ]
+}

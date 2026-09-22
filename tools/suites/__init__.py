@@ -25,10 +25,12 @@ from .long_run import (
 from .weaknet import (
     run_weaknet_download_case,
     run_weaknet_suite,
+    render_weaknet_chart,
 )
 from .cps import (
     run_cps_case,
     run_cps_suite,
+    render_cps_chart,
 )
 
 __all__ = [
@@ -46,6 +48,8 @@ __all__ = [
     "render_long_run_chart",
     "run_weaknet_download_case",
     "run_weaknet_suite",
+    "render_weaknet_chart",
     "run_cps_case",
     "run_cps_suite",
+    "render_cps_chart",
 ]
