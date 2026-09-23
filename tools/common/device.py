@@ -8,17 +8,17 @@ from typing import Dict
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 
-DEFAULT_DEVICE = "8-elite-gen-5"
+DEFAULT_DEVICE = "778g"
 
 DEVICE_PROFILES: Dict[str, Dict[str, str]] = {
     "778g": {
         "name": "Snapdragon 778G",
-        "dir": os.path.join(PROJECT_ROOT, "docs", "benchmark", "qualcomm-snapdragon-778g"),
+        "dir": os.path.join(PROJECT_ROOT, "docs", "benchmark", "778g"),
         "dut_footer": "Qualcomm Snapdragon 778G, Android 14, Wi-Fi 6",
     },
     "8-elite-gen-5": {
         "name": "Snapdragon 8 Elite Gen 5",
-        "dir": os.path.join(PROJECT_ROOT, "docs", "benchmark", "qualcomm-snapdragon-8-elite-gen-5"),
+        "dir": os.path.join(PROJECT_ROOT, "docs", "benchmark", "8-elite-gen-5"),
         "dut_footer": "Qualcomm Snapdragon 8 Elite Gen 5 (2×Prime + 6×Performance, up to 4.6 GHz), Android 16, Wi-Fi 7",
     },
 }
@@ -34,6 +34,8 @@ def resolve_device_paths(device: str = DEFAULT_DEVICE) -> Dict[str, str]:
     base_dir = profile["dir"]
     data_dir = os.path.join(base_dir, "data")
     charts_dir = os.path.join(base_dir, "charts")
+    report_dir = os.path.join(base_dir, "report")
+
     return {
         "key": device,
         "name": profile["name"],
@@ -41,12 +43,13 @@ def resolve_device_paths(device: str = DEFAULT_DEVICE) -> Dict[str, str]:
         "root_dir": base_dir,
         "data_dir": data_dir,
         "charts_dir": charts_dir,
-        "report_dir": os.path.join(base_dir, "report"),
-        "bench_json": os.path.join(data_dir, "benchmark_results.json"),
-        "bench_summary": os.path.join(data_dir, "benchmark_summary.md"),
-        "microbench_json": os.path.join(data_dir, "microbench_results.json"),
-        "advanced_json": os.path.join(data_dir, "advanced_benchmark_results.json"),
-        "weaknet_json": os.path.join(data_dir, "weaknet_results.json"),
-        "cps_json": os.path.join(data_dir, "cps_results.json"),
-        "idle_json": os.path.join(data_dir, "idle_memory_results.json"),
+        "report_dir": report_dir,
+        # Standardized symmetric data files
+        "throughput_json": os.path.join(data_dir, "throughput.json"),
+        "idle_memory_json": os.path.join(data_dir, "idle_memory.json"),
+        "bufferbloat_json": os.path.join(data_dir, "bufferbloat.json"),
+        "stability_json": os.path.join(data_dir, "stability.json"),
+        "cps_json": os.path.join(data_dir, "cps.json"),
+        "weaknet_json": os.path.join(data_dir, "weaknet.json"),
+        "microbench_json": os.path.join(data_dir, "microbench.json"),
     }

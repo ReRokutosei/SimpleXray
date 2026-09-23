@@ -107,17 +107,22 @@ def run_long_run_case(
     }
 
 
-def run_long_run_suite(
+def run_stability_suite(
     adb: AdbRunner,
     server_ip: str,
     backends: List[str] = TARGET_ORDER,
     duration: int = 60
 ) -> List[Dict[str, Any]]:
-    """Runs 60s long run stability test for all backends."""
+    """Runs 60s sustained stability test for all backends."""
     results = []
     for b in backends:
         results.append(run_long_run_case(adb, server_ip, b, duration=duration))
     return results
+
+
+# Backward-compatible alias
+run_long_run_suite = run_stability_suite
+run_stability_case = run_long_run_case
 
 
 def render_long_run_chart(results: List[Dict[str, Any]], output_path: str):

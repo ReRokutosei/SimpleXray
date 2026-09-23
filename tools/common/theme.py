@@ -23,18 +23,18 @@ PALETTE = {
     },
     'hev': {
         'name': 'Hev (C/lwIP)',
-        'fill': '#0d9488',   # Teal 600
-        'edge': '#0f766e',   # Teal 700
-        'light': '#ccfbf1',  # Teal 100
+        'fill': '#555555',
+        'edge': '#333333',
+        'light': '#f1f5f9',
         'so_size_mb': 0.34,  # 346 KB
         'runtime': 'C (Single-threaded lwIP)',
         'ipc': 'Local SOCKS5 Inbound'
     },
     'sing': {
         'name': 'SingTUN (Go/sing-box)',
-        'fill': '#2563eb',   # Blue 600
-        'edge': '#1d4ed8',   # Blue 700
-        'light': '#dbeafe',  # Blue 100
+        'fill': '#00ADD8',
+        'edge': '#008bb3',
+        'light': '#e0f7fa',
         'so_size_mb': 6.30,  # 6.3 MB
         'runtime': 'Go 1.26 (pure user-space sing-tun)',
         'ipc': 'Local SOCKS5 Inbound'
@@ -50,8 +50,8 @@ PALETTE = {
     },
     'zeptun': {
         'name': 'Zeptun (Zig/userspace)',
-        'fill': '#d97706',
-        'edge': '#b45309',
+        'fill': '#F7A41D',
+        'edge': '#d97706',
         'light': '#fef3c7',
         'so_size_mb': 0.26,
         'runtime': 'Zig userspace stack',
