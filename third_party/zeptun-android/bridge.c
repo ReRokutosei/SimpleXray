@@ -133,20 +133,16 @@ static jint native_start(JNIEnv *env, jclass klass, jobject service, jint fd, js
 }
 
 static jint native_stop(JNIEnv *env, jclass klass) {
-    (void)env;
     (void)klass;
 
     pthread_mutex_lock(&context_mutex);
-    Zeptun *tun = context.tun;
-    pthread_t thread = context.thread;
-    int running = context.running;
-    pthread_mutex_unlock(&context_mutex);
+    if (context.tun == NULL) {
+        pthread_mutex_unlock(&context_mutex);
+        return ZEPTUN_OK;
+    }
 
-    if (tun == NULL) return ZEPTUN_OK;
-    int rc = zeptun_stop(tun);
-    if (running) pthread_join(thread, NULL);
-
-    pthread_mutex_lock(&context_mutex);
+    int rc = zeptun_stop(context.tun);
+    if (context.running) pthread_join(context.thread, NULL);
     zeptun_destroy(context.tun);
     if (context.service != NULL) {
         (*env)->DeleteGlobalRef(env, context.service);
@@ -167,12 +163,15 @@ static jlong native_counter(JNIEnv *env, jclass klass, jint index) {
     if (index < 0) return -1;
 
     pthread_mutex_lock(&context_mutex);
-    Zeptun *tun = context.tun;
-    pthread_mutex_unlock(&context_mutex);
-    if (tun == NULL) return -1;
+    if (context.tun == NULL) {
+        pthread_mutex_unlock(&context_mutex);
+        return -1;
+    }
 
     ZeptunStats stats;
-    if (zeptun_stats(tun, &stats) != ZEPTUN_OK) return -1;
+    int rc = zeptun_stats(context.tun, &stats);
+    pthread_mutex_unlock(&context_mutex);
+    if (rc != ZEPTUN_OK) return -1;
     const uint64_t *fields = &stats.rx_packets;
     const size_t count = (sizeof(ZeptunStats) - offsetof(ZeptunStats, rx_packets)) / sizeof(uint64_t);
     if ((size_t)index >= count) return -1;
