@@ -13,7 +13,7 @@ This file provides the necessary context and constraints for AI agents interacti
 - **Architecture**: MVVM with Android ViewModels.
 - **Data Persistence**: Direct Android `SharedPreferences`.
 - **Communication/RPC**: gRPC with Protocol Buffers (protobuf) to query Xray core status and traffic statistics through a dynamically allocated `127.0.0.1` TCP port. Service status and process logs are communicated reactively via in-memory `VpnStateHub` (`StateFlow` and `SharedFlow`).
-- **Native Components & TUN Backends**: Uses CMake to build `hev-socks5-tunnel` (C/lwIP) and dependencies as native JNI libraries, integrates `sing-tun` (Go stack), and integrates `mipstack` (Mihomo pure Go stack). Supports 4 TUN backends: Hev (default, C/lwIP for optimal throughput and low power consumption), SingTUN (Go/sing-box), MipsTUN (Go/mipstack with BBRv3), and native Xray TUN (Go/gVisor). In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. In Hev, SingTUN, and MipsTUN modes, the tunnel forwards traffic to Xray through its local SOCKS5 inbound.
+- **Native Components & TUN Backends**: Uses CMake to build `hev-socks5-tunnel` (C/lwIP) and dependencies as native JNI libraries, integrates `sing-tun` (Go stack), `zeptun` (Zig userspace stack), and integrates `mipstack` (Mihomo pure Go stack). Supports 4 primary TUN backends: Hev (default, C/lwIP for optimal throughput and low power consumption), SingTUN (Go/sing-box), Zeptun (Zig userspace stack), and native Xray TUN (Go/gVisor). In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. In Hev, SingTUN, and Zeptun modes, the tunnel forwards traffic to Xray through its local SOCKS5 inbound.
 
 ## Project Structure
 - `app/src/main/kotlin/com/simplexray/re/`:
@@ -27,20 +27,20 @@ This file provides the necessary context and constraints for AI agents interacti
 - `app/src/main/jni/`: C/C++ source code for native tunnels built via CMake.
 - `app/src/main/proto/`: Protobuf definitions for gRPC.
 - `third_party/miuix/`: Submodule containing the Miuix UI component library used for the application's design system. See `third_party/miuix/AGENTS.md` for specific UI constraints.
-- `docs/benchmark/`: Benchmark whitepaper (`android-tun-benchmark.md`), raw JSON datasets, and statistical summaries.
+- `docs/benchmark/`: Benchmark whitepaper (`android-tun-benchmark.md`), device dataset directories (`docs/benchmark/<profile>/data/`), and generated chart dashboards (`docs/benchmark/<profile>/charts/`).
 - `docs/images/`: Standardized 16:9 light-theme WebP dashboards, master infographic (`mega_benchmark_infographic.webp`), and architectural diagrams.
 - `version.properties`: Root version contract tracking live core (`XRAY_CORE_VERSION`) and tunnel backend commits/hashes (`HEV_TUN_VERSION`, `SING_TUN_VERSION`, `MIPS_TUN_VERSION`, `GO_VERSION`, `NDK_VERSION`).
 - `tools/`: Automated benchmarking tools & modular pipeline:
-  - `benchmark.py`: Unified master CLI runner orchestrating throughput (Wi-Fi, USB, Loopback), idle flow retention, and advanced suites (Bufferbloat, 60s stability).
-  - `advanced_bench.py`: Backward-compatible wrapper delegating to `benchmark.py`.
-  - `common/`: Core shared libraries (`adb.py`, `iperf.py`, `dataset.py`, `theme.py`, `logging.py`).
-  - `suites/`: High-cohesion benchmark suites (`standard.py`, `idle.py`, `bufferbloat.py`, `long_run.py`).
-  - `generate_charts.py`: Publication dashboard generator adhering to modern light theme (`#F8FAFC`).
+  - `benchmark.py`: Unified master CLI runner orchestrating throughput, idle memory, bufferbloat, stability, weaknet, and CPS suites. Supports `--preset light` and `--preset full`.
+  - `presets.py`: Formal benchmark contract definitions (`light` vs `full`).
+  - `generate_charts.py`: Unified publication dashboard generator producing standardized 16:9 WebP charts (Wi-Fi, Bufferbloat, Stability, Idle Memory, CPS, Weaknet, Scheme 2 Memory Attribution).
   - `generate_mega_dashboard.py`: 8-archetype 3-row master infographic generator.
+  - `common/`: Core shared libraries (`adb.py`, `device.py`, `iperf.py`, `dataset.py`, `theme.py`, `netem.py`, `logging.py`).
+  - `suites/`: High-cohesion benchmark suites (`throughput.py`, `idle_memory.py`, `bufferbloat.py`, `stability.py`, `weaknet.py`, `cps.py`).
   - `update_benchmark_doc.py`: Precise, in-place non-destructive markdown table synchronizer for `android-tun-benchmark.md`.
   - `sync_versions.py`: Automated submodule and go.mod dependency inspector and `version.properties` synchronizer.
   - `idle_bench/`: Low-overhead Go connection retention and PSS memory sampling probe (cross-compiled for `amd64` and `arm64`).
-  - `microbench/`: Standalone Linux user-namespace microbench harness (`unshare -r -n`) testing pure user-space TUN stacks in isolation.
+  - `microbench/`: Standalone Linux user-namespace microbench harness (`unshare -r -n`) testing pure user-space TUN stacks in isolation (Scheme 2).
 
 ## Build and Execution
 - **Build System**: Gradle with Kotlin DSL/Groovy.

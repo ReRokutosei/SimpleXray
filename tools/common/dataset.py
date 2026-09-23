@@ -12,9 +12,9 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", ".."))
 
 _DEFAULT_DEVICE_PATHS = resolve_device_paths(DEFAULT_DEVICE)
-DEFAULT_BENCH_JSON = _DEFAULT_DEVICE_PATHS["bench_json"]
+DEFAULT_BENCH_JSON = _DEFAULT_DEVICE_PATHS["throughput_json"]
 DEFAULT_MICRO_JSON = _DEFAULT_DEVICE_PATHS["microbench_json"]
-DEFAULT_ADVANCED_JSON = _DEFAULT_DEVICE_PATHS["advanced_json"]
+DEFAULT_ADVANCED_JSON = _DEFAULT_DEVICE_PATHS["stability_json"]
 VERSION_PROPS_PATH = os.path.join(PROJECT_ROOT, "version.properties")
 
 

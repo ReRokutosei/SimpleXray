@@ -4,21 +4,25 @@ This directory contains automated testing scripts and profiling tools for benchm
 
 ## Files & Architecture
 
-- `benchmark.py`: Unified master CLI runner orchestrating physical throughput (Wi-Fi, USB, Loopback), idle flow retention, and advanced suites (Bufferbloat, 60s stability).
-- `advanced_bench.py`: Backward-compatibility wrapper delegating directly to `benchmark.py`.
+- `benchmark.py`: Unified master CLI runner orchestrating physical throughput (Wi-Fi, USB, Loopback), idle flow retention, and advanced suites (Bufferbloat, 60s stability, CPS, Weaknet). Supports `--preset light` and `--preset full`.
+- `presets.py`: Formal benchmark contract definitions (`light` vs `full`).
+- `generate_charts.py`: Unified publication-grade 16:9 dashboard generator (Wi-Fi, Bufferbloat, Stability, Idle Memory, CPS, Weaknet, Scheme 2 Memory Attribution).
+- `generate_mega_dashboard.py`: Master 8-archetype 3-row mega infographic generator.
 - `common/`: Core shared libraries:
   - `adb.py`: ADB communication, device discovery, `BenchmarkService` headless control, `tun0` interface verification, CPU/PSS sampling.
+  - `device.py`: Symmetric profile path resolution (`778g`, `8-elite-gen-5`) mapping data, chart, and report locations.
   - `iperf.py`: Host/device iPerf3 server management, arguments builder, JSON parsing.
   - `dataset.py`: JSON dataset loading, multi-round arithmetic clean averaging, `version.properties` extraction.
   - `theme.py`: Unified `PALETTE`, JetBrains Mono typography, standard light theme styling.
+  - `netem.py`: Linux host `tc netem` delay/loss network condition emulator.
   - `logging.py`: Terminal colors, logger utilities, and subprocess wrapper.
 - `suites/`: High-cohesion benchmark test suites:
-  - `standard.py`: Physical media throughput (Wi-Fi, USB, Loopback; MTU 1500/9000, P=1/P=8, TCP/UDP).
-  - `idle.py`: Stepped 0 -> 1000 idle connection retention and memory slope probe.
-  - `bufferbloat.py`: Saturated TCP download with concurrent ICMP ping probing.
-  - `long_run.py`: 60s continuous 8-stream TCP download stability, decay rate, and CV%.
-- `generate_charts.py`: Generates standardized 16:9 individual WebP publication dashboards.
-- `generate_mega_dashboard.py`: Master 8-archetype 3-row mega infographic generator.
+  - `throughput.py`: Physical media throughput (Wi-Fi, USB, Loopback; MTU 1500/9000, P=1/P=8, TCP/UDP).
+  - `idle_memory.py`: Stepped 0 -> 1000 idle connection retention and memory slope probe.
+  - `bufferbloat.py`: Saturated TCP download with concurrent TCP echo probe.
+  - `stability.py`: 60s continuous 8-stream TCP download stability, decay rate, and CV%.
+  - `weaknet.py`: Bidirectional TCP throughput under host netem delay and packet loss.
+  - `cps.py`: Short-lived TCP connection-per-second handshake stress suite.
 - `update_benchmark_doc.py`: Non-destructive, in-place synchronizer for Section 3.1 tables in `android-tun-benchmark.md`.
 - `sync_versions.py`: Automated submodule and dependency commit hash synchronizer for `version.properties`.
 - `idle_bench/`: High-performance, zero-external-dependency Go probe (cross-compiled for Linux `amd64` and Android `arm64`).
@@ -35,122 +39,58 @@ This directory contains automated testing scripts and profiling tools for benchm
 
 ## Usage
 
-### 1. Android End-to-End Benchmark (Scheme 1)
+### 1. Preset-Driven Benchmark (Recommended)
+
+#### Light Preset (Hev, SingTUN, Zeptun on Wi-Fi MTU 1500, no baseline)
+```bash
+python3 tools/benchmark.py \
+  --preset light \
+  --device <adb-serial> \
+  --device-profile 778g \
+  --wifi-server-ip 192.168.31.236
+```
+
+#### Full Preset (All backends, physical baseline, Wi-Fi / USB / Loopback, MTU 1500 & 9000)
+```bash
+python3 tools/benchmark.py \
+  --preset full \
+  --device <adb-serial> \
+  --device-profile 8-elite-gen-5 \
+  --wifi-server-ip 192.168.31.236
+```
+
+### 2. Manual Suite Invocation
 
 ```bash
-# Run all benchmark suites (5GHz Wi-Fi, USB Tethering, On-Device Loopback, and Idle Flows)
-python3 tools/benchmark.py --mode all --with-idle --rounds 3
-
 # Run specific suite
-python3 tools/benchmark.py --mode wifi --wifi-server-ip 10.189.231.200 --duration 10
-python3 tools/benchmark.py --mode loopback --duration 10
-python3 tools/benchmark.py --mode idle --network udp --backends hev,xray,sing,zeptun
+python3 tools/benchmark.py --mode throughput --wifi-server-ip 192.168.31.236 --duration 10
+python3 tools/benchmark.py --mode idle_memory --network tcp --backends hev,sing,zeptun
 
 # Weak-network TCP download through host netem (requires root/sudo on the host)
 python3 tools/benchmark.py \
   --mode weaknet \
   --device <adb-serial> \
-  --device-profile 8-elite-gen-5 \
+  --device-profile 778g \
   --wifi-server-ip 192.168.31.236 \
-  --backends hev,xray,sing,zeptun \
-  --netem-losses 1,3 \
+  --backends hev,sing,zeptun \
+  --netem-losses 3,5,8 \
   --netem-delay 50 \
-  --weaknet-duration 15
+  --weaknet-duration 10
 
 # Short-lived TCP connection rate (CPS)
 python3 tools/benchmark.py \
   --mode cps \
   --device <adb-serial> \
-  --device-profile 8-elite-gen-5 \
+  --device-profile 778g \
   --wifi-server-ip 192.168.31.236 \
-  --backends hev,xray,sing,zeptun \
-  --cps-workers 1,4,8 \
+  --backends hev,sing,zeptun \
+  --cps-workers 4,8 \
   --cps-connections 5000
 ```
 
-### 2. Standalone Pure Stack Microbenchmark (Scheme 2)
+### 3. Publication Dashboard Generation
 
 ```bash
-# Run 3-round standalone Linux unshare microbenchmark
-python3 tools/microbench/microbench.py --rounds 3
+# Generate all standardized 16:9 WebP charts directly into docs/benchmark/<profile>/charts/
+python3 tools/generate_charts.py --device-profile 778g --preset light
 ```
-
-### 3. Generate Charts & Dashboards
-
-```bash
-# Regenerate all publication dashboards for one device.
-python3 tools/generate_charts.py --device 8-elite-gen-5
-
-# Explicit paths and DUT label can still be supplied when needed.
-python3 tools/generate_charts.py \
-  --json docs/benchmark/qualcomm-snapdragon-778g/data/benchmark_results.json \
-  --microbench docs/benchmark/qualcomm-snapdragon-778g/data/microbench_results.json \
-  --output-dir docs/benchmark/qualcomm-snapdragon-778g/charts \
-  --dut "Snapdragon 778G"
-```
-
-## Parameters (benchmark.py)
-
-| Parameter | Type | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `--mode` | `string` | `wifi,loopback` | Benchmark suite(s) to run (`wifi`, `usb`, `loopback`, `idle`, `all`). |
-| `--network` | `string` | `all` | Network protocols to benchmark (`tcp`, `udp`, `all`). |
-| `--with-idle` | `flag` | `false` | Include 0-1000 retained connections vs memory growth benchmark. |
-| `--backends` | `string` | `all` | TUN backends to test (`hev`, `xray`, `sing`, `zeptun`, or comma-separated list). |
-| `--skip-baseline` | `flag` | `false` | Skip running physical baseline (No VPN) tests. |
-| `--wifi-server-ip` | `string` | `10.189.231.200` | Target host IPv4 address in the local Wi-Fi subnet. |
-| `--usb-server-ip` | `string` | `auto` | Target host IPv4 address in the USB tethering subnet. |
-| `--duration` | `int` | `10` | Test duration in seconds per direction / stream. |
-| `--rounds` | `int` | `3` | Number of test rounds to execute. |
-| `--device` | `string` | `auto` | ADB device serial when multiple devices are connected. |
-| `--device-profile` | `string` | `8-elite-gen-5` | Device dataset profile for default paths (`778g` or `8-elite-gen-5`). |
-| `--output-json` | `string` | profile data dir | Path to save JSON results. |
-| `--output-md` | `string` | profile data dir | Path to save Markdown tables. |
-| `--advanced-json` | `string` | profile data dir | Path to save advanced benchmark results. |
-
-## Outputs
-
-The tools output real-time terminal progress, per-stream throughput (Mbps/Gbps), packet loss/jitter for UDP, CPU utilization (average and peak), PSS memory consumption, and connection retention slopes (KiB/conn). Generated results are structured into:
-- Android End-to-End Dataset: `docs/benchmark/<device>/data/benchmark_results.json`
-- Android End-to-End Markdown Summary: `docs/benchmark/<device>/data/benchmark_summary.md`
-- Standalone Microbenchmark Dataset: `docs/benchmark/<device>/data/microbench_results.json`
-- Standalone Microbenchmark Summary: `docs/benchmark/<device>/data/microbench_summary.md`
-- Visual Dashboards: `docs/benchmark/<device>/charts/*_dashboard.webp`
-
-### Lightweight three-backend benchmark
-
-Edit `DEVICE`, `DEVICE_PROFILE`, `WIFI_SERVER_IP`, and `OUTPUT_DIR` at the top of
-`tools/run_light_benchmark.sh` (or pass them as environment variables), then run
-`bash tools/run_light_benchmark.sh`. Use an empty output directory for each phone;
-run the script separately for `778g` and `8-elite-gen-5`. The script runs only
-Hev, SingTUN, and Zeptun: three rounds of Wi-Fi TCP/UDP at MTU 1500 with P=1/8
-in both directions; three rounds of TCP idle memory (0–1000 connections) and
-loaded latency (TCP downlink P=8); one 60-second TCP downlink P=8 run; and three
-rounds of CPS at workers 4/8 with 5000 connections and a 120-second timeout.
-Existing host and Android `idle_bench` binaries, an installed debug app, adb,
-and iPerf3 on both host and device are required. Raw JSON is saved in `OUTPUT_DIR`;
-no charts or baseline measurements are generated.
-
-
-### Light benchmark charts and report
-
-```bash
-python3 tools/generate_light_benchmark.py \
-  --input-dir docs/benchmark/778g \
-  --output-dir docs/benchmark/778g/light
-```
-
-The Scheme 2 runner now accepts `zeptun` when a Linux CLI binary exists at
-`third_party/zeptun/zig-out/bin/zeptun` (or `ZEPTUN_BIN` is set):
-
-```bash
-(cd third_party/zeptun && zig build)
-python3 tools/microbench/microbench.py \
-  --backends hev,sing,zeptun --network all --rounds 3 \
-  --output-json docs/benchmark/778g/microbench_results.json \
-  --output-md docs/benchmark/778g/microbench_summary.md
-```
-
-Scheme 2 requires Linux user/network namespaces and the corresponding host
-stack binaries. It measures pure stack process PSS separately from the Android
-Scheme 1 results.
