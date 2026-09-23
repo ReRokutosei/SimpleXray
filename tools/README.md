@@ -116,3 +116,41 @@ The tools output real-time terminal progress, per-stream throughput (Mbps/Gbps),
 - Standalone Microbenchmark Dataset: `docs/benchmark/<device>/data/microbench_results.json`
 - Standalone Microbenchmark Summary: `docs/benchmark/<device>/data/microbench_summary.md`
 - Visual Dashboards: `docs/benchmark/<device>/charts/*_dashboard.webp`
+
+### Lightweight three-backend benchmark
+
+Edit `DEVICE`, `DEVICE_PROFILE`, `WIFI_SERVER_IP`, and `OUTPUT_DIR` at the top of
+`tools/run_light_benchmark.sh` (or pass them as environment variables), then run
+`bash tools/run_light_benchmark.sh`. Use an empty output directory for each phone;
+run the script separately for `778g` and `8-elite-gen-5`. The script runs only
+Hev, SingTUN, and Zeptun: three rounds of Wi-Fi TCP/UDP at MTU 1500 with P=1/8
+in both directions; three rounds of TCP idle memory (0–1000 connections) and
+loaded latency (TCP downlink P=8); one 60-second TCP downlink P=8 run; and three
+rounds of CPS at workers 4/8 with 5000 connections and a 120-second timeout.
+Existing host and Android `idle_bench` binaries, an installed debug app, adb,
+and iPerf3 on both host and device are required. Raw JSON is saved in `OUTPUT_DIR`;
+no charts or baseline measurements are generated.
+
+
+### Light benchmark charts and report
+
+```bash
+python3 tools/generate_light_benchmark.py \
+  --input-dir docs/benchmark/778g \
+  --output-dir docs/benchmark/778g/light
+```
+
+The Scheme 2 runner now accepts `zeptun` when a Linux CLI binary exists at
+`third_party/zeptun/zig-out/bin/zeptun` (or `ZEPTUN_BIN` is set):
+
+```bash
+(cd third_party/zeptun && zig build)
+python3 tools/microbench/microbench.py \
+  --backends hev,sing,zeptun --network all --rounds 3 \
+  --output-json docs/benchmark/778g/microbench_results.json \
+  --output-md docs/benchmark/778g/microbench_summary.md
+```
+
+Scheme 2 requires Linux user/network namespaces and the corresponding host
+stack binaries. It measures pure stack process PSS separately from the Android
+Scheme 1 results.

@@ -125,6 +125,8 @@ def main():
                         help=f"Device profile used for default output paths (default: {DEFAULT_DEVICE})")
     parser.add_argument("--rounds", type=int, default=3,
                         help="Number of test rounds to execute (default: 3)")
+    parser.add_argument("--no-jumbo", action="store_true",
+                        help="Skip MTU 9000 throughput cases")
     parser.add_argument("--merge", action="store_true",
                         help="Merge new benchmark results into existing JSON file")
     parser.add_argument("--output-json", default=None,
@@ -135,7 +137,7 @@ def main():
                         help="File path to save advanced benchmark results (defaults to profile data dir)")
     parser.add_argument("--netem-iface", default=None,
                         help="Host interface for netem; auto-resolved from --wifi-server-ip when omitted")
-    parser.add_argument("--netem-losses", default="1,3",
+    parser.add_argument("--netem-losses", default="3,5,8",
                         help="Comma-separated loss percentages for weaknet mode (default: 1,3)")
     parser.add_argument("--netem-delay", type=float, default=50.0,
                         help="Netem delay in milliseconds (default: 50)")
@@ -244,14 +246,16 @@ def main():
                 round_results.extend(run_media_suite(
                     adb, app_uid, "5GHz Wi-Fi", args.wifi_server_ip,
                     backends=backends, networks=networks,
-                    skip_baseline=args.skip_baseline, duration=args.duration
+                    skip_baseline=args.skip_baseline, duration=args.duration,
+                    include_jumbo=not args.no_jumbo
                 ))
 
             if "usb" in modes:
                 round_results.extend(run_media_suite(
                     adb, app_uid, "USB 3.2 / 4.0", usb_server_ip,
                     backends=backends, networks=networks,
-                    skip_baseline=args.skip_baseline, duration=args.duration
+                    skip_baseline=args.skip_baseline, duration=args.duration,
+                    include_jumbo=not args.no_jumbo
                 ))
 
             if "loopback" in modes:
@@ -310,7 +314,7 @@ def main():
             except Exception:
                 pass
 
-        adv_backends = [b for b in TARGET_ORDER if b in backends or b == "direct_none"]
+        adv_backends = [b for b in TARGET_ORDER if b in backends or (b == "direct_none" and not args.skip_baseline)]
 
         if "bufferbloat" in modes:
             print(f"\n{Colors.CYAN}{Colors.BOLD}=======================================================")
@@ -371,7 +375,7 @@ def main():
                 sys.exit(1)
 
         weaknet_duration = args.weaknet_duration or args.duration
-        weaknet_backends = [b for b in TARGET_ORDER if b in backends or b == "direct_none"]
+        weaknet_backends = [b for b in TARGET_ORDER if b in backends or (b == "direct_none" and not args.skip_baseline)]
         weaknet_results: List[Dict[str, Any]] = []
 
         for loss in losses:
@@ -427,7 +431,7 @@ def main():
             log_error(f"Invalid --cps-workers value: {args.cps_workers}")
             sys.exit(1)
 
-        cps_backends = [b for b in TARGET_ORDER if b in backends or b == "direct_none"]
+        cps_backends = [b for b in TARGET_ORDER if b in backends or (b == "direct_none" and not args.skip_baseline)]
         print(f"\n{Colors.CYAN}{Colors.BOLD}=======================================================")
         print(f"      STARTING CPS TEST connections={args.cps_connections} workers={cps_workers}")
         print(f"======================================================={Colors.RESET}")
