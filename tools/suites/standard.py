@@ -228,7 +228,8 @@ def run_media_suite(
     backends: List[str],
     networks: List[str],
     skip_baseline: bool,
-    duration: int
+    duration: int,
+    include_jumbo: bool = True
 ) -> List[Dict[str, Any]]:
     """Runs standard media throughput matrix for Wi-Fi or USB."""
     results = []
@@ -285,20 +286,21 @@ def run_media_suite(
                 adb, app_uid, f"{b_name} (MTU 1500)", b, 1500, server_ip,
                 duration=duration, parallel=1, medium=medium, network="tcp"
             ))
-            # Jumbo Frames
-            results.append(run_throughput_case(
-                adb, app_uid, f"{b_name} (MTU 9000)", b, 9000, server_ip,
-                duration=duration, parallel=1, medium=medium, network="tcp"
-            ))
+            if include_jumbo:
+                results.append(run_throughput_case(
+                    adb, app_uid, f"{b_name} (MTU 9000)", b, 9000, server_ip,
+                    duration=duration, parallel=1, medium=medium, network="tcp"
+                ))
             # Multi-stream P=8
             results.append(run_throughput_case(
                 adb, app_uid, f"{b_name} (MTU 1500)", b, 1500, server_ip,
                 duration=duration, parallel=8, medium=medium, network="tcp"
             ))
-            results.append(run_throughput_case(
-                adb, app_uid, f"{b_name} (MTU 9000)", b, 9000, server_ip,
-                duration=duration, parallel=8, medium=medium, network="tcp"
-            ))
+            if include_jumbo:
+                results.append(run_throughput_case(
+                    adb, app_uid, f"{b_name} (MTU 9000)", b, 9000, server_ip,
+                    duration=duration, parallel=8, medium=medium, network="tcp"
+                ))
 
         # UDP MTU 1500
         if "udp" in networks:

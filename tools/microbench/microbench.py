@@ -22,6 +22,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../.."))
 # Binary paths
 HEV_BIN = os.path.join(PROJECT_ROOT, "third_party/hev-socks5-tunnel/bin/hev-socks5-tunnel")
 SING_BIN = os.path.join(PROJECT_ROOT, "third_party/sing-tun/bin/sing-tun")
+ZEPTUN_BIN = os.environ.get("ZEPTUN_BIN", os.path.join(PROJECT_ROOT, "third_party/zeptun/zig-out/bin/zeptun"))
 XRAY_BIN = "/home/vanitas/Downloads/Xray-linux-64/xray"
 SOCKS5_SINK_BIN = os.path.join(SCRIPT_DIR, "socks5_sink")
 IDLE_BENCH_BIN = os.path.join(PROJECT_ROOT, "tools/idle_bench/idle_bench_linux_amd64")
@@ -130,6 +131,15 @@ misc:
             ]
             self.proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+        elif self.backend == "zeptun":
+            cmd = [
+                ZEPTUN_BIN, "run", "--tun", self.tun_name,
+                "--mtu", str(self.mtu), "--handler", "socks5",
+                "--socks5", f"127.0.0.1:{self.socks_port}",
+                "--address", "172.16.0.1/30",
+            ]
+            self.proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
         elif self.backend == "xray":
             self.tmp_cfg = f"/tmp/xray_micro_{os.getpid()}.json"
             cfg = {
@@ -191,6 +201,12 @@ def run_case_in_namespace(backend: str, network: str, steps: List[int], settle_s
     """
     Executes a single test case inside a dedicated unshare user/network namespace.
     """
+    if backend == "zeptun" and not os.path.isfile(ZEPTUN_BIN):
+        raise RuntimeError(
+            f"Zeptun CLI not found: {ZEPTUN_BIN}. Build it with "
+            "(cd third_party/zeptun && zig build), or set ZEPTUN_BIN."
+        )
+
     # Orchestrator script run inside namespace
     steps_str = ",".join(str(s) for s in steps)
     socks_port = 10800
@@ -230,6 +246,8 @@ misc:
 elif backend == "sing":
     tun_proc = subprocess.Popen(["{SING_BIN}", "-tun", "tun0", "-socks-host", "127.0.0.1", "-socks-port", "{socks_port}", "-mtu", "1500"],
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+elif backend == "zeptun":
+    tun_proc = subprocess.Popen(["{ZEPTUN_BIN}", "run", "--tun", "tun0", "--mtu", "1500", "--handler", "socks5", "--socks5", "127.0.0.1:{socks_port}", "--address", "172.16.0.1/30"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 elif backend == "xray":
     cfg_file = "/tmp/xray_inner_{os.getpid()}.json"
     with open(cfg_file, "w") as f:
@@ -415,7 +433,7 @@ def format_markdown(all_data: Dict[str, Any]) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="SimpleXray Standalone TUN Microbenchmark (Scheme 2)")
-    parser.add_argument("--backends", default="hev,xray,sing", help="Comma-separated backends: hev,xray,sing")
+    parser.add_argument("--backends", default="hev,xray,sing", help="Comma-separated backends: hev,xray,sing,zeptun")
     parser.add_argument("--network", default="all", help="'tcp', 'udp', or 'all'")
     parser.add_argument("--rounds", type=int, default=3, help="Number of test rounds")
     parser.add_argument("--output-json", default="docs/benchmark/microbench_results.json", help="JSON output file")

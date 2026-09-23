@@ -31,3 +31,4 @@ third_party/*/bin/
 tools/merge_all_benchmarks.py
 tools/track.md
 *.log
+tools/run_light_benchmark.sh

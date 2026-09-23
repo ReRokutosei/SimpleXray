@@ -35,15 +35,16 @@ from common.theme import (
 GO_BACKENDS = {"sing", "xray"}
 
 
-def run_weaknet_download_case(
+def run_weaknet_case(
     adb,
     app_uid: str,
     server_ip: str,
     backend: str,
     duration: int = 10,
     parallel: int = 8,
+    reverse: bool = True,
 ) -> Dict[str, Any]:
-    """Runs one reverse-mode TCP download through a selected backend."""
+    """Runs one TCP upload or download through a selected backend."""
     adb.wake_device()
     adb.set_app_state(backend, 1500, cmd="stop")
     adb.wait_for_no_tun0()
@@ -58,15 +59,16 @@ def run_weaknet_download_case(
     profiler = CpuProfiler(adb, app_uid, duration)
     profiler.start()
 
+    direction = "download" if reverse else "upload"
     client_cmd = build_client_args(
         server_ip=server_ip,
         port=DEFAULT_PORT,
         network="tcp",
         parallel=parallel,
         duration=duration,
-        reverse=True,
+        reverse=reverse,
     )
-    log_info(f"[weaknet] {backend} P={parallel} TCP download {duration}s")
+    log_info(f"[weaknet] {backend} P={parallel} TCP {direction} {duration}s")
     rc, out, err = adb.shell(client_cmd, timeout=duration + 20)
 
     avg_cpu, peak_cpu = profiler.stop()
@@ -86,13 +88,20 @@ def run_weaknet_download_case(
         "backend": backend,
         "parallel": parallel,
         "duration": duration,
-        "download_mbps": metrics["mbps"],
+        "direction": direction,
+        "throughput_mbps": metrics["mbps"],
+        "download_mbps": metrics["mbps"] if reverse else 0.0,
+        "upload_mbps": metrics["mbps"] if not reverse else 0.0,
         "download_cpu_avg": avg_cpu,
         "download_cpu_peak": peak_cpu,
         "peak_mem_mb": mem_mb,
         "rc": rc,
         "stderr": err.strip()[-300:],
     }
+
+
+# Backward-compatible alias
+run_weaknet_download_case = run_weaknet_case
 
 
 def run_weaknet_suite(
@@ -130,21 +139,28 @@ def run_weaknet_suite(
                 adb.force_reset_app()
             prev_backend = backend
 
-            rec = run_weaknet_download_case(
+            rec = run_weaknet_case(
                 adb=adb,
                 app_uid=app_uid,
                 server_ip=server_ip,
                 backend=backend,
                 duration=duration,
                 parallel=parallel,
+                reverse=False,
             )
-            rec["loss_percent"] = loss_percent
-            rec["delay_ms"] = delay_ms
-            rec["netem_interface"] = interface
-            results.append(rec)
+            upload_rec = rec
+            rec = run_weaknet_case(
+                adb=adb, app_uid=app_uid, server_ip=server_ip, backend=backend,
+                duration=duration, parallel=parallel, reverse=True,
+            )
+            for item in (upload_rec, rec):
+                item["loss_percent"] = loss_percent
+                item["delay_ms"] = delay_ms
+                item["netem_interface"] = interface
+                results.append(item)
             log_success(
-                f"[weaknet] {backend} loss={loss_percent:g}% delay={delay_ms:g}ms "
-                f"download={rec['download_mbps']:.1f} Mbps"
+                f"[weaknet] {backend} loss={loss_percent:g}% delay={delay_ms:g}ms | "
+                f"Upload: {upload_rec['upload_mbps']:.1f} Mbps | Download: {rec['download_mbps']:.1f} Mbps"
             )
     finally:
         if not skip_netem:
@@ -154,7 +170,7 @@ def run_weaknet_suite(
 
 
 def render_weaknet_chart(results: List[Dict[str, Any]], output_path: str) -> None:
-    """Renders a grouped weak-network throughput chart for the available loss rates."""
+    """Renders grouped weak-network throughput charts for Upload and Download across loss rates."""
     apply_global_theme()
     prop_regular, prop_bold, prop_medium = setup_fonts()
 
@@ -165,59 +181,91 @@ def render_weaknet_chart(results: List[Dict[str, Any]], output_path: str) -> Non
         raise RuntimeError("No weak-network records to render")
 
     fig = plt.figure(figsize=(16, 9.5), dpi=200)
-    ax = fig.add_axes([0.10, 0.13, 0.86, 0.67])
+    axes = fig.subplots(1, 2)
+    fig.subplots_adjust(left=0.08, right=0.96, top=0.78, bottom=0.12, wspace=0.18)
+
     add_dashboard_header(
         fig,
-        "Weak-Network TCP Download Throughput (Higher is Better)",
-        "Host netem delay 50 ms with 1% and 3% random loss (5GHz Wi-Fi)",
+        "Weak-Network TCP Throughput (Higher is Better)",
+        "Host netem delay 50 ms across loss rates (5GHz Wi-Fi P=8)",
         prop_bold=prop_bold,
         prop_regular=prop_regular,
     )
 
-    x = np.arange(len(backends))
-    width = 0.36
-    loss_colors = {
-        losses[0]: "#fdba74",
-        losses[-1]: "#ea580c",
-    }
-    loss_edges = {
-        losses[0]: "#fb923c",
-        losses[-1]: "#c2410c",
-    }
+    num_losses = len(losses)
+    width = 0.8 / max(num_losses, 1)
 
+    # Dynamic color palette for loss rates using orange gradients
+    cmap = plt.cm.Oranges
+    loss_colors = {}
+    loss_edges = {}
     for idx, loss in enumerate(losses):
-        vals = []
-        for b in backends:
-            rec = next((r for r in results if r.get("backend") == b and float(r.get("loss_percent", 0.0)) == loss), None)
-            vals.append(float(rec.get("download_mbps", 0.0)) if rec else 0.0)
-        bars = ax.bar(x + (idx - 0.5) * width, vals, width,
-                      label=f"{loss:g}% loss", color=loss_colors.get(loss, "#64748b"),
-                      edgecolor=loss_edges.get(loss, "#475569"), linewidth=0.8, zorder=3)
-        for bar, val in zip(bars, vals):
-            ax.text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + max(vals + [1.0]) * 0.02,
-                f"{val:.1f}",
-                ha="center",
-                va="bottom",
-                fontsize=8.5,
-                color="#1e293b",
-                fontproperties=prop_bold,
-            )
+        factor = 0.35 + 0.55 * (idx / max(num_losses - 1, 1))
+        loss_colors[loss] = cmap(factor)
+        loss_edges[loss] = cmap(min(factor + 0.15, 1.0))
 
     display_names = {
         "direct_none": "Baseline",
-        "hev": "HEV",
+        "hev": "Hev",
         "sing": "SingTUN",
         "xray": "Xray",
         "zeptun": "Zeptun",
     }
-    ax.set_ylabel("Download Throughput (Mbps)", fontsize=10, color="#475569",
-                  fontproperties=prop_regular)
-    ax.set_xticks(x)
-    ax.set_xticklabels([display_names[b] for b in backends], fontsize=10,
-                       color="#334155", fontproperties=prop_medium)
-    ax.grid(True, axis="y", color="#f1f5f9", linewidth=0.8, zorder=0)
+
+    directions = [("upload", "TCP Upload (Android → Host)", "upload_mbps"),
+                  ("download", "TCP Download (Host → Android)", "download_mbps")]
+
+    x = np.arange(len(backends))
+
+    for axis, (dir_key, dir_title, metric_key) in zip(axes, directions):
+        all_vals = []
+        for idx, loss in enumerate(losses):
+            vals = []
+            for b in backends:
+                rec = next((
+                    r for r in results
+                    if r.get("backend") == b
+                    and float(r.get("loss_percent", 0.0)) == loss
+                    and (r.get("direction") == dir_key or (dir_key == "download" and "direction" not in r))
+                ), None)
+                if rec:
+                    v = float(rec.get(metric_key, rec.get("throughput_mbps", 0.0)))
+                else:
+                    v = 0.0
+                vals.append(v)
+            all_vals.extend(vals)
+
+            offset = (idx - (num_losses - 1) / 2.0) * width
+            bars = axis.bar(
+                x + offset, vals, width,
+                color=loss_colors[loss],
+                edgecolor=loss_edges[loss],
+                linewidth=0.8,
+                zorder=3
+            )
+            for bar, val in zip(bars, vals):
+                if val > 0:
+                    axis.text(
+                        bar.get_x() + bar.get_width() / 2,
+                        bar.get_height() + max(all_vals + [1.0]) * 0.02,
+                        f"{val:.1f}",
+                        ha="center", va="bottom",
+                        fontsize=7.5,
+                        color="#1e293b",
+                        fontproperties=prop_bold,
+                        zorder=5,
+                    )
+
+        axis.set_title(dir_title, fontproperties=prop_bold, fontsize=12, pad=12, color="#0f172a")
+        axis.set_ylabel("Throughput (Mbps)", fontsize=10, color="#64748b", fontproperties=prop_regular)
+        axis.set_xticks(x)
+        axis.set_xticklabels([display_names.get(b, b) for b in backends], fontsize=10,
+                             color="#334155", fontproperties=prop_medium)
+        max_y = max(all_vals + [10.0]) * 1.25
+        axis.set_ylim(0, max_y)
+        axis.grid(True, axis="y", color="#f1f5f9", linewidth=0.8, zorder=0)
+        axis.set_axisbelow(True)
+
     legend_handles = [
         plt.Rectangle((0, 0), 1, 1, facecolor=loss_colors[loss], edgecolor=loss_edges[loss])
         for loss in losses
@@ -225,8 +273,9 @@ def render_weaknet_chart(results: List[Dict[str, Any]], output_path: str) -> Non
     create_top_legend(
         fig,
         legend_handles,
-        [f"{loss:g}% loss" for loss in losses],
+        [f"{loss:g}% Loss" for loss in losses],
         y_pos=0.895,
         prop_medium=prop_medium,
     )
     save_dashboard(fig, output_path, dpi=200)
+
