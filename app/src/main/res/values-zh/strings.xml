@@ -182,7 +182,7 @@
     <string name="geo_update_interval_title">自动更新间隔</string>
     <string name="geo_update_interval_summary">规则文件自动更新间隔（小时），设为 0 可关闭自动更新。有效值：0 或 1–168</string>
     <string name="geo_update_disabled">已关闭</string>
-    <string name="geo_last_update_format">每 %1$d 小时 · 上次更新：%2$s</string>
+    <string name="geo_last_update_format">每 %1$d 小时 | 上次更新：%2$s</string>
     <string name="geo_never_updated">尚未更新</string>
     <string name="geo_update_dialog_supporting_text">输入 0 可关闭自动更新，有效范围 1–168 小时。\n当到达更新周期或连接 VPN 后发现已超出更新间隔时，将在后台静默下载并原子替换规则文件。若更新未完成将保留原规则，不影响正常使用。</string>
     <string name="geo_update_failed_title">规则文件自动更新失败</string>

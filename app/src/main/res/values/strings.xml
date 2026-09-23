@@ -188,7 +188,7 @@
     <string name="geo_update_interval_title">Auto-update Interval</string>
     <string name="geo_update_interval_summary">Interval in hours between automatic rule updates. Set to 0 to disable. Valid: 0 or 1–168</string>
     <string name="geo_update_disabled">Disabled</string>
-    <string name="geo_last_update_format">Every %1$d hrs · Last updated: %2$s</string>
+    <string name="geo_last_update_format">Every %1$d hrs | Last updated: %2$s</string>
     <string name="geo_never_updated">Never</string>
     <string name="geo_update_dialog_supporting_text">Enter 0 to disable auto-update, valid range: 1–168 hours.\nWhen the update interval is reached or when connecting to VPN after exceeding the interval, rule files will be silently downloaded and atomically replaced in the background. If the update fails, existing rule files are kept untouched.</string>
     <string name="geo_update_failed_title">Rule Files Auto-update Failed</string>
