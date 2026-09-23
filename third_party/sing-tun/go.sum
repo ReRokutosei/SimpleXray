@@ -36,6 +36,8 @@ github.com/sagernet/sing-tun v0.9.5 h1:Kzprh1wjR2WzS+nh0gAPa4xKSqEc6AYG+Wcz1gR4f
 github.com/sagernet/sing-tun v0.9.5/go.mod h1:3EgPst7agntRO7D6GOsiZ1l9FoqdLeuWmKT5TnWkmf0=
 github.com/sagernet/sing-tun v0.9.6-0.20260919141142-a39eab51450b h1:zmKsY/49zuQl9ZdbGGwbs62fb3dHdKguH9RX6RcgO4g=
 github.com/sagernet/sing-tun v0.9.6-0.20260919141142-a39eab51450b/go.mod h1:liMb9HPIWcFWqF6VJ/ttIY8fTSRPdRltBeSeEcXt1Dk=
+github.com/sagernet/sing-tun v0.9.6-0.20260922105247-aff4131a9e9e h1:kpRnyeXZJnY5Mv4hsJOAYiNbuhPuTCa0LoiUVR5eI7g=
+github.com/sagernet/sing-tun v0.9.6-0.20260922105247-aff4131a9e9e/go.mod h1:liMb9HPIWcFWqF6VJ/ttIY8fTSRPdRltBeSeEcXt1Dk=
 github.com/stretchr/testify v1.11.1 h1:7s2iGBzp5EwR7/aIZr8ao5+dra3wiQyKjjFuvgVKu7U=
 github.com/stretchr/testify v1.11.1/go.mod h1:wZwfW3scLgRK+23gO65QZefKpKQRnfz6sD981Nm4B6U=
 github.com/vishvananda/netns v0.0.5 h1:DfiHV+j8bA32MFM7bfEunvT8IAqQ/NzSJHtcmW5zdEY=
