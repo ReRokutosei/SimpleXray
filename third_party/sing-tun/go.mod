@@ -4,7 +4,7 @@ go 1.26.0
 
 require (
 	github.com/sagernet/sing v0.9.5-0.20260917142815-f37989cadbf0
-	github.com/sagernet/sing-tun v0.9.6-0.20260919141142-a39eab51450b
+	github.com/sagernet/sing-tun v0.9.6-0.20260922105247-aff4131a9e9e
 )
 
 require (
