@@ -31,7 +31,7 @@ PALETTE = {
         'ipc': 'Local SOCKS5 Inbound'
     },
     'sing': {
-        'name': 'SingTUN (Go/sing-box)',
+        'name': 'SingTUN (Go/userspace)',
         'fill': '#00ADD8',
         'edge': '#008bb3',
         'light': '#e0f7fa',

@@ -58,7 +58,7 @@ def run_throughput_case(
     else:
         adb.ensure_no_tun0()
 
-    bitrate = udp_bitrate or ("25M" if parallel > 1 else "200M")
+    bitrate = udp_bitrate or ("75M" if parallel > 1 else "600M")
 
     # 1. Upload Test (Android -> Host)
     log_info(f">>> [1/2] Testing {network.upper()} UPLOAD (Android -> Host, duration: {duration}s)...")
