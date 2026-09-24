@@ -43,7 +43,12 @@ target_include_directories(lwip PUBLIC
     ${HEV_DIR}/third-part/lwip/src/include
     ${HEV_DIR}/third-part/lwip/src/ports/include
 )
-target_compile_definitions(lwip PRIVATE FD_SET_DEFINED SOCKLEN_T_DEFINED)
+target_compile_definitions(lwip PRIVATE
+    FD_SET_DEFINED
+    SOCKLEN_T_DEFINED
+    LWIP_WND_SCALE=1
+    TCP_RCV_SCALE=3
+)
 
 # hev-task-system static lib (arm64-v8a dedicated assembly & architecture header)
 file(GLOB_RECURSE TASK_SYS_C_SOURCES ${HEV_DIR}/third-part/hev-task-system/src/*.c)
@@ -95,6 +100,8 @@ target_compile_definitions(hev-socks5-tunnel PRIVATE
     SOCKLEN_T_DEFINED
     ENABLE_LIBRARY
     COMMIT_ID="git"
+    LWIP_WND_SCALE=1
+    TCP_RCV_SCALE=3
 )
 
 target_link_libraries(hev-socks5-tunnel
