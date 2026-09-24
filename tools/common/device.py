@@ -46,6 +46,7 @@ def resolve_device_paths(device: str = DEFAULT_DEVICE) -> Dict[str, str]:
         "report_dir": report_dir,
         # Standardized symmetric data files
         "throughput_json": os.path.join(data_dir, "throughput.json"),
+        "bench_json": os.path.join(data_dir, "throughput.json"),
         "idle_memory_json": os.path.join(data_dir, "idle_memory.json"),
         "bufferbloat_json": os.path.join(data_dir, "bufferbloat.json"),
         "stability_json": os.path.join(data_dir, "stability.json"),

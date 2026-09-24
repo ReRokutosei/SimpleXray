@@ -118,6 +118,8 @@ def main():
                         help="ADB device serial if multiple devices are connected")
     parser.add_argument("--device-profile", default=DEFAULT_DEVICE, choices=sorted(DEVICE_PROFILES),
                         help=f"Device profile used for default output paths (default: {DEFAULT_DEVICE})")
+    parser.add_argument("--throughput-output", default=None,
+                        help="Custom path to save throughput JSON results instead of profile default")
     parser.add_argument("--rounds", type=int, default=None,
                         help="Number of test rounds to execute (default: 3)")
     parser.add_argument("--no-jumbo", action="store_true", default=None,
@@ -275,9 +277,10 @@ def main():
                 ))
 
             tp_data["rounds"][round_key] = round_res
-            with open(profile["throughput_json"], "w", encoding="utf-8") as f:
+            tp_output_path = args.throughput_output or profile["throughput_json"]
+            with open(tp_output_path, "w", encoding="utf-8") as f:
                 json.dump(tp_data, f, indent=2, ensure_ascii=False)
-            log_success(f"Throughput round {round_idx} saved to: {profile['throughput_json']}")
+            log_success(f"Throughput round {round_idx} saved to: {tp_output_path}")
 
     # -------------------------------------------------------------
     # 2. Idle Memory Retention Suite
