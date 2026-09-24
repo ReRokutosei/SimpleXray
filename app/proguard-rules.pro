@@ -1,10 +1,11 @@
--keep class com.simplexray.an.service.TProxyService {
+# Keep all native methods and JNI bindings completely intact across all classes
+-keepclasseswithmembers class * {
     native <methods>;
-    *;
 }
 
--keepclasseswithmembernames class * {
-    native <methods>;
+# Keep service classes and all their members (protect JNI calls, callbacks, and reflection)
+-keep class com.simplexray.re.service.** {
+    *;
 }
 
 # Keep Protobuf Generated Message Classes & Reflective Methods
