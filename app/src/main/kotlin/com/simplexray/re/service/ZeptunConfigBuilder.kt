@@ -22,6 +22,7 @@ internal object ZeptunConfigBuilder {
             .put("udp_mode", if (udpInTcp) "tcp" else "udp")
         return JSONObject()
             .put("preset", "mobile")
+            .put("memory", JSONObject().put("budget_bytes", 16L * 1024 * 1024))
             // Supplying fd in the document makes Zeptun select its Android fd
             // device path before Engine.create() validates the configuration.
             .put("tun", JSONObject().put("fd", fd).put("mtu", mtu).put("configure", false))
