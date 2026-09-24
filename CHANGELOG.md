@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0-alpha.2](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0-alpha.1...v2.3.0-alpha.2) (2026-09-24)
+
+
+### Bug Fixes
+
+* **vpn:** fix start mutex deadlock on failure ([4814e2c](https://github.com/ReRokutosei/SimpleXray/commit/4814e2c38c606244819743259e9a2340aa99af81))
+* **vpn:** retain JNI symbols in R8 ([caa5530](https://github.com/ReRokutosei/SimpleXray/commit/caa5530ceb148e8acf3a859ce50da07f080ad2f9))
+
 ## [2.3.0-alpha.1](https://github.com/ReRokutosei/SimpleXray/compare/v2.2.0-beta.1...v2.3.0-alpha.1) (2026-09-24)
 
 
