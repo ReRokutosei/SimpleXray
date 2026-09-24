@@ -1,0 +1,327 @@
+{
+  "metadata": {
+    "timestamp": "2026-09-23T13:20:31.423785",
+    "mode": [
+      "idle"
+    ],
+    "duration": 10,
+    "wifi_server_ip": "192.168.31.236",
+    "usb_server_ip": "192.168.232.59",
+    "device": "adb-R52W206X0WL-Hchwuy._adb-tls-connect._tcp",
+    "rounds": 3
+  },
+  "rounds": {
+    "round_1": [
+      {
+        "name": "HEV TCP Idle Flows (0-1000)",
+        "backend": "hev",
+        "network": "tcp",
+        "type": "idle_memory",
+        "idle_flows": [
+          {
+            "connections": 0,
+            "pss_mb": 168.0,
+            "delta_mb": 0.0
+          },
+          {
+            "connections": 250,
+            "pss_mb": 173.4,
+            "delta_mb": 5.4
+          },
+          {
+            "connections": 500,
+            "pss_mb": 176.6,
+            "delta_mb": 8.6
+          },
+          {
+            "connections": 750,
+            "pss_mb": 179.7,
+            "delta_mb": 11.7
+          },
+          {
+            "connections": 1000,
+            "pss_mb": 182.0,
+            "delta_mb": 14.0
+          }
+        ],
+        "slope_kib_per_conn": 14.336
+      },
+      {
+        "name": "SING TCP Idle Flows (0-1000)",
+        "backend": "sing",
+        "network": "tcp",
+        "type": "idle_memory",
+        "idle_flows": [
+          {
+            "connections": 0,
+            "pss_mb": 138.3,
+            "delta_mb": 0.0
+          },
+          {
+            "connections": 250,
+            "pss_mb": 143.7,
+            "delta_mb": 5.4
+          },
+          {
+            "connections": 500,
+            "pss_mb": 144.6,
+            "delta_mb": 6.3
+          },
+          {
+            "connections": 750,
+            "pss_mb": 143.3,
+            "delta_mb": 5.0
+          },
+          {
+            "connections": 1000,
+            "pss_mb": 142.4,
+            "delta_mb": 4.1
+          }
+        ],
+        "slope_kib_per_conn": 4.198
+      },
+      {
+        "name": "ZEPTUN TCP Idle Flows (0-1000)",
+        "backend": "zeptun",
+        "network": "tcp",
+        "type": "idle_memory",
+        "idle_flows": [
+          {
+            "connections": 0,
+            "pss_mb": 168.5,
+            "delta_mb": 0.0
+          },
+          {
+            "connections": 250,
+            "pss_mb": 170.2,
+            "delta_mb": 1.7
+          },
+          {
+            "connections": 500,
+            "pss_mb": 170.3,
+            "delta_mb": 1.8
+          },
+          {
+            "connections": 750,
+            "pss_mb": 170.3,
+            "delta_mb": 1.8
+          },
+          {
+            "connections": 1000,
+            "pss_mb": 177.2,
+            "delta_mb": 8.7
+          }
+        ],
+        "slope_kib_per_conn": 8.909
+      }
+    ],
+    "round_2": [
+      {
+        "name": "HEV TCP Idle Flows (0-1000)",
+        "backend": "hev",
+        "network": "tcp",
+        "type": "idle_memory",
+        "idle_flows": [
+          {
+            "connections": 0,
+            "pss_mb": 169.0,
+            "delta_mb": 0.0
+          },
+          {
+            "connections": 250,
+            "pss_mb": 174.5,
+            "delta_mb": 5.5
+          },
+          {
+            "connections": 500,
+            "pss_mb": 177.3,
+            "delta_mb": 8.3
+          },
+          {
+            "connections": 750,
+            "pss_mb": 180.5,
+            "delta_mb": 11.5
+          },
+          {
+            "connections": 1000,
+            "pss_mb": 183.4,
+            "delta_mb": 14.4
+          }
+        ],
+        "slope_kib_per_conn": 14.746
+      },
+      {
+        "name": "SING TCP Idle Flows (0-1000)",
+        "backend": "sing",
+        "network": "tcp",
+        "type": "idle_memory",
+        "idle_flows": [
+          {
+            "connections": 0,
+            "pss_mb": 138.4,
+            "delta_mb": 0.0
+          },
+          {
+            "connections": 250,
+            "pss_mb": 145.9,
+            "delta_mb": 7.5
+          },
+          {
+            "connections": 500,
+            "pss_mb": 145.0,
+            "delta_mb": 6.6
+          },
+          {
+            "connections": 750,
+            "pss_mb": 144.4,
+            "delta_mb": 6.0
+          },
+          {
+            "connections": 1000,
+            "pss_mb": 142.1,
+            "delta_mb": 3.7
+          }
+        ],
+        "slope_kib_per_conn": 3.789
+      },
+      {
+        "name": "ZEPTUN TCP Idle Flows (0-1000)",
+        "backend": "zeptun",
+        "network": "tcp",
+        "type": "idle_memory",
+        "idle_flows": [
+          {
+            "connections": 0,
+            "pss_mb": 169.1,
+            "delta_mb": 0.0
+          },
+          {
+            "connections": 250,
+            "pss_mb": 178.0,
+            "delta_mb": 8.9
+          },
+          {
+            "connections": 500,
+            "pss_mb": 170.2,
+            "delta_mb": 1.1
+          },
+          {
+            "connections": 750,
+            "pss_mb": 171.0,
+            "delta_mb": 1.9
+          },
+          {
+            "connections": 1000,
+            "pss_mb": 177.7,
+            "delta_mb": 8.6
+          }
+        ],
+        "slope_kib_per_conn": 8.806
+      }
+    ],
+    "round_3": [
+      {
+        "name": "HEV TCP Idle Flows (0-1000)",
+        "backend": "hev",
+        "network": "tcp",
+        "type": "idle_memory",
+        "idle_flows": [
+          {
+            "connections": 0,
+            "pss_mb": 169.2,
+            "delta_mb": 0.0
+          },
+          {
+            "connections": 250,
+            "pss_mb": 175.0,
+            "delta_mb": 5.8
+          },
+          {
+            "connections": 500,
+            "pss_mb": 178.1,
+            "delta_mb": 8.9
+          },
+          {
+            "connections": 750,
+            "pss_mb": 180.9,
+            "delta_mb": 11.7
+          },
+          {
+            "connections": 1000,
+            "pss_mb": 183.8,
+            "delta_mb": 14.6
+          }
+        ],
+        "slope_kib_per_conn": 14.95
+      },
+      {
+        "name": "SING TCP Idle Flows (0-1000)",
+        "backend": "sing",
+        "network": "tcp",
+        "type": "idle_memory",
+        "idle_flows": [
+          {
+            "connections": 0,
+            "pss_mb": 139.7,
+            "delta_mb": 0.0
+          },
+          {
+            "connections": 250,
+            "pss_mb": 145.4,
+            "delta_mb": 5.7
+          },
+          {
+            "connections": 500,
+            "pss_mb": 144.5,
+            "delta_mb": 4.8
+          },
+          {
+            "connections": 750,
+            "pss_mb": 144.5,
+            "delta_mb": 4.8
+          },
+          {
+            "connections": 1000,
+            "pss_mb": 143.3,
+            "delta_mb": 3.6
+          }
+        ],
+        "slope_kib_per_conn": 3.686
+      },
+      {
+        "name": "ZEPTUN TCP Idle Flows (0-1000)",
+        "backend": "zeptun",
+        "network": "tcp",
+        "type": "idle_memory",
+        "idle_flows": [
+          {
+            "connections": 0,
+            "pss_mb": 170.0,
+            "delta_mb": 0.0
+          },
+          {
+            "connections": 250,
+            "pss_mb": 178.8,
+            "delta_mb": 8.8
+          },
+          {
+            "connections": 500,
+            "pss_mb": 178.3,
+            "delta_mb": 8.3
+          },
+          {
+            "connections": 750,
+            "pss_mb": 171.2,
+            "delta_mb": 1.2
+          },
+          {
+            "connections": 1000,
+            "pss_mb": 177.9,
+            "delta_mb": 7.9
+          }
+        ],
+        "slope_kib_per_conn": 8.09
+      }
+    ]
+  }
+}
