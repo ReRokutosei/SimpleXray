@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0-alpha.1](https://github.com/ReRokutosei/SimpleXray/compare/v2.2.0-beta.1...v2.3.0-alpha.1) (2026-09-24)
+
+
+### Features
+
+* **tun:** add ZepTUN backend powered by Noisemux ([e4fb51e](https://github.com/ReRokutosei/SimpleXray/commit/e4fb51e41f33c6de0bfc66571072143b41d3a57d))
+
+
+### Bug Fixes
+
+* **deps:** update dependency androidx.core:core-ktx to v1.19.1 ([#40](https://github.com/ReRokutosei/SimpleXray/issues/40)) ([999207a](https://github.com/ReRokutosei/SimpleXray/commit/999207ad5f3f79803c869df6e86d184c41914c49))
+* **service:** synchronize native backend start with lifecycle lock ([1654d4c](https://github.com/ReRokutosei/SimpleXray/commit/1654d4c6b33e529b8c44f0363f03ef367a65b6c0))
+* **tun:** isolate Go backends in worker processes ([b3e2794](https://github.com/ReRokutosei/SimpleXray/commit/b3e27949f3f3eaf2f303f76be45a08b68989268d))
+
 ## [2.2.0-beta.1](https://github.com/ReRokutosei/SimpleXray/compare/v2.1.1-alpha.3...v2.2.0-beta.1) (2026-09-20)
 
 
