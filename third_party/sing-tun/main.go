@@ -13,6 +13,7 @@ import (
 	"net/netip"
 	"os"
 	"os/signal"
+	"runtime"
 	"runtime/debug"
 	"sync"
 	"sync/atomic"
@@ -58,7 +59,8 @@ func singTunStart(
 		return 0
 	}
 
-	debug.SetGCPercent(50)
+	runtime.GOMAXPROCS(4)
+	debug.SetGCPercent(100)
 
 	host := C.GoString(socksHost)
 	port := uint16(socksPort)
