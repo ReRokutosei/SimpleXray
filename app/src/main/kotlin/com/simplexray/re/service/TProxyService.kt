@@ -481,7 +481,7 @@ class TProxyService : VpnService() {
         }
         if (xrayStarted) {
             Log.e(TAG, "Xray process exited unexpectedly, stopping service.")
-            exit()
+            stopXray()
             return
         }
         if (xrayStartAttempt < MAX_START_ATTEMPTS) {
@@ -490,10 +490,10 @@ class TProxyService : VpnService() {
             launchXrayProcess()
         } else {
             Log.e(TAG, "Xray failed to start after $MAX_START_ATTEMPTS attempts, stopping service.")
+            stopXray()
             VpnStateHub.updateState(
                 VpnRunningState.Failed(applicationContext.getString(R.string.core_start_failed))
             )
-            exit()
         }
     }
 
@@ -850,6 +850,7 @@ class TProxyService : VpnService() {
     }
 
     private fun exit() {
+        isStartingLock.set(false)
         VpnStateHub.updateState(VpnRunningState.Disconnected)
         stopSelf()
     }
