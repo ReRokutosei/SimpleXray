@@ -1,0 +1,132 @@
+{
+  "metadata": {
+    "timestamp": "2026-09-23T13:22:52.646464",
+    "wifi_server_ip": "192.168.31.236",
+    "rounds": 3
+  },
+  "rounds": {
+    "round_1": [
+      {
+        "backend": "hev",
+        "parallel": 8,
+        "duration": 10,
+        "throughput_mbps": 268.82,
+        "idle_rtt_ms": 29.05,
+        "loaded_rtt_ms": 42.64,
+        "delta_rtt_ms": 13.59,
+        "valid": true,
+        "probe": "tcp_echo",
+        "probe_samples_idle": 15,
+        "probe_samples_loaded": 44
+      },
+      {
+        "backend": "sing",
+        "parallel": 8,
+        "duration": 10,
+        "throughput_mbps": 780.27,
+        "idle_rtt_ms": 28.69,
+        "loaded_rtt_ms": 104.35,
+        "delta_rtt_ms": 75.66,
+        "valid": true,
+        "probe": "tcp_echo",
+        "probe_samples_idle": 15,
+        "probe_samples_loaded": 38
+      },
+      {
+        "backend": "zeptun",
+        "parallel": 8,
+        "duration": 10,
+        "throughput_mbps": 796.61,
+        "idle_rtt_ms": 17.32,
+        "loaded_rtt_ms": 103.58,
+        "delta_rtt_ms": 86.26,
+        "valid": true,
+        "probe": "tcp_echo",
+        "probe_samples_idle": 15,
+        "probe_samples_loaded": 37
+      }
+    ],
+    "round_2": [
+      {
+        "backend": "hev",
+        "parallel": 8,
+        "duration": 10,
+        "throughput_mbps": 374.25,
+        "idle_rtt_ms": 28.63,
+        "loaded_rtt_ms": 42.89,
+        "delta_rtt_ms": 14.26,
+        "valid": true,
+        "probe": "tcp_echo",
+        "probe_samples_idle": 15,
+        "probe_samples_loaded": 43
+      },
+      {
+        "backend": "sing",
+        "parallel": 8,
+        "duration": 10,
+        "throughput_mbps": 797.49,
+        "idle_rtt_ms": 27.83,
+        "loaded_rtt_ms": 104.54,
+        "delta_rtt_ms": 76.72,
+        "valid": true,
+        "probe": "tcp_echo",
+        "probe_samples_idle": 15,
+        "probe_samples_loaded": 38
+      },
+      {
+        "backend": "zeptun",
+        "parallel": 8,
+        "duration": 10,
+        "throughput_mbps": 790.64,
+        "idle_rtt_ms": 28.2,
+        "loaded_rtt_ms": 100.21,
+        "delta_rtt_ms": 72.01,
+        "valid": true,
+        "probe": "tcp_echo",
+        "probe_samples_idle": 15,
+        "probe_samples_loaded": 39
+      }
+    ],
+    "round_3": [
+      {
+        "backend": "hev",
+        "parallel": 8,
+        "duration": 10,
+        "throughput_mbps": 295.56,
+        "idle_rtt_ms": 28.16,
+        "loaded_rtt_ms": 38.21,
+        "delta_rtt_ms": 10.05,
+        "valid": true,
+        "probe": "tcp_echo",
+        "probe_samples_idle": 15,
+        "probe_samples_loaded": 44
+      },
+      {
+        "backend": "sing",
+        "parallel": 8,
+        "duration": 10,
+        "throughput_mbps": 781.19,
+        "idle_rtt_ms": 28.48,
+        "loaded_rtt_ms": 104.54,
+        "delta_rtt_ms": 76.06,
+        "valid": true,
+        "probe": "tcp_echo",
+        "probe_samples_idle": 15,
+        "probe_samples_loaded": 39
+      },
+      {
+        "backend": "zeptun",
+        "parallel": 8,
+        "duration": 10,
+        "throughput_mbps": 795.36,
+        "idle_rtt_ms": 26.55,
+        "loaded_rtt_ms": 105.26,
+        "delta_rtt_ms": 78.7,
+        "valid": true,
+        "probe": "tcp_echo",
+        "probe_samples_idle": 15,
+        "probe_samples_loaded": 37
+      }
+    ]
+  }
+}

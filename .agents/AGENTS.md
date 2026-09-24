@@ -64,6 +64,30 @@ This file provides the necessary context and constraints for AI agents interacti
 - **Android 14+ Foreground Service Limits**: Calling `ContextCompat.startForegroundService()` from background components (such as `BroadcastReceiver`) will throw `ForegroundServiceStartNotAllowedException` on Android 14+ unless an activity is brought to the foreground first (e.g. `startActivity` with `FLAG_ACTIVITY_NEW_TASK`).
 - **Rule File Background Updates**: Rule files (geoip/geosite) default to GitHub URLs. In mainland network environments, downloading from GitHub requires an active proxy; additionally, Chinese OEM ROMs (e.g. HyperOS/MIUI) restrict background WorkManager execution. Retain the in-service periodic check coroutine (`startPeriodicGeoUpdateCheck`) in `TProxyService`—it executes while the VPN is active as a foreground service with guaranteed local proxy availability.
 
+## Benchmark Visualization & Chart Design Guidelines
+1. **Visual Encoding & Cognitive Load**:
+   - **Zero-Legend Overhead when Self-Describing (Context-Aware)**: For categorical horizontal bar charts where category names, brand colors, and flow directions are embedded directly on the Y-axis or adjacent to bars, omit top legends entirely. For continuous line charts (e.g. `sustained_stability.webp`, `idle_memory.webp`, `weaknet_throughput.webp`) where multiple backend curves share the same coordinate space, retain a clean, centered top legend using strictly standard brand colors.
+   - **Brand Color Binding**: Always bind backend labels and elements strictly to project brand colors:
+     - `Hev`: `#555555`
+     - `SingTUN`: `#00ADD8`
+     - `Zeptun`: `#F7A41D`
+   - **Y-Axis Hierarchy & Symmetry**: For multi-panel comparisons (e.g. 1×2 layouts), render Y-axis ticks and category labels on the left panel only; omit redundant labels and ticks on the right panel. Category headers (e.g. Backend name) should be vertically centered across their sub-items (e.g. between 4W and 8W).
+   - **Natural Ordering**: Order concurrent workloads progressively (e.g. top-to-bottom: 4 Workers before 8 Workers).
+   - **No Meaningless Spacers**: If a backend is not applicable to a workload (e.g. Hev exceeding PCB limits on 5,000 CPS), do not allocate empty bar rows that break layout continuity; annotate via a concise, centered bottom footnote instead.
+   - **Title Conventions**: Do NOT use ` · ` in chart titles or subtitles. Always suffix metrics with direction indicators where appropriate: `(Higher is Better)` or `(Lower is Better)`.
+   - **Typography**: Strictly use JetBrains Mono via `prop_regular`, `prop_bold`, `prop_medium`.
+
+## Benchmark Technical Report Guidelines
+1. **Engineering Neutrality & Factuality**:
+   - Write in an objective, factual, reproducible, and neutral tone.
+   - Avoid subjective or promotional superlatives (e.g. `excellent`, `superior`, `best`, `amazing`). Prefer descriptive measurements: `achieved`, `recorded`, `measured`, `decreased to`, `exceeded`.
+   - Differentiate strictly between **measured facts** and **hypothesized mechanisms**. Do not state correlation as causation without profiling proof.
+2. **Structure & Density (High Signal-to-Noise Ratio)**:
+   - Follow standard technical paper structure: `Test Environment -> Methodology -> Results -> Discussion -> Limitations -> Summary`.
+   - **Privacy & Noise Filtering**: In environment tables, omit private or redundant local network noise (e.g. SSIDs, internal LAN IPs, retail branding suffixes, full kernel hashes). Keep only essential technical variables: SoC platform/cores, OS version, kernel release, network band/type, baseline RTT.
+   - **Results Writing**: Charts and tables present the raw data; body text should summarize key findings, trends, and relative ratios using concise bullet points (`-`). Do NOT mechanically recite every cell of the tables in prose.
+   - **Limitations & Scope**: Always state the hardware, network, and software boundaries. Avoid extrapolating single-device lab findings into universal conclusions.
+
 ## Device Testing and Commits
 - For Android/VPN/TUN or other device-dependent changes, do not create a commit until the user confirms that the change has passed real-device testing.
 - Keep such changes uncommitted in the working tree while waiting for real-device verification.

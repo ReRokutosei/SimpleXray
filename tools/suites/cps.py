@@ -137,19 +137,31 @@ def run_cps_suite(
         prev_backend = backend
 
         for workers in workers_list:
-            rec = run_cps_case(
-                adb=adb,
-                app_uid=app_uid,
-                server_ip=server_ip,
-                backend=backend,
-                workers=workers,
-                connections=connections,
-                timeout_sec=timeout_sec,
-            )
+            if backend == "hev" and connections >= 5000:
+                log_info(f"[cps] {backend} workers={workers} connections={connections}: Skipping known lwIP PCB limit")
+                rec = {
+                    "backend": "hev",
+                    "workers": workers,
+                    "requested_connections": connections,
+                    "cpu_avg": None,
+                    "cpu_peak": None,
+                    "rc": -1,
+                    "stderr": "Skipped: Exceeds lwIP PCB capacity (Known limitation)",
+                }
+            else:
+                rec = run_cps_case(
+                    adb=adb,
+                    app_uid=app_uid,
+                    server_ip=server_ip,
+                    backend=backend,
+                    workers=workers,
+                    connections=connections,
+                    timeout_sec=timeout_sec,
+                )
             results.append(rec)
             log_success(
                 f"[cps] {backend} workers={workers} "
-                f"cps={rec.get('cps', 0):.1f} success={rec.get('success', 0)}"
+                f"cps={rec.get('cps') or 0:.1f} success={rec.get('success', 0)}"
             )
 
     return results

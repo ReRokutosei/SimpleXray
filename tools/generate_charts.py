@@ -200,7 +200,10 @@ def render_bufferbloat(
         zorder=3
     )
     ax.set_yticks(y_pos)
-    ax.set_yticklabels([NAMES[b] for b in backends], fontproperties=prop_medium, fontsize=10)
+    ax.set_yticklabels([NAMES[b] for b in backends], fontproperties=prop_bold, fontsize=10)
+    for tick_label, b in zip(ax.get_yticklabels(), backends):
+        tick_label.set_color(COLORS[b])
+
     ax.set_xlabel("Latency Inflation Delta (ms)", fontproperties=prop_regular, fontsize=10, color="#64748b")
     ax.set_xlim(0, max_val * 1.45)
     ax.grid(axis="x", color="#f1f5f9", zorder=0)
@@ -223,11 +226,6 @@ def render_bufferbloat(
             zorder=5,
         )
 
-    legend_handles = [
-        plt.Rectangle((0, 0), 1, 1, facecolor=COLORS[b])
-        for b in backends
-    ]
-    create_top_legend(fig, legend_handles, [NAMES[b] for b in backends], y_pos=0.895, prop_medium=prop_medium)
     save_dashboard(fig, output_path, dpi=200)
 
 
@@ -374,73 +372,325 @@ def render_idle_memory(
 
 
 # ----------------------------------------------------------------------
-# 5. Short-Lived Connection Rate Dashboard (CPS)
+# 5. CPS Performance Dashboard (Rate & Latency 1x2 Dual Panels)
 # ----------------------------------------------------------------------
 def render_cps(
     cps_rows: List[Dict[str, Any]],
     output_path: str,
     backends: List[str]
 ) -> None:
+    """
+    Renders human-centric 1x2 dashboard:
+    - Omit Hev from main plot rows and provide clear bottom footnote.
+    - Hierarchical Y-axis with explicit Backend headers and 8W / 4W rows.
+    - Zero legend overhead: self-describing rows and colors.
+    - Left: Connection Rate (integer conn/s).
+    - Right: Handshake Latency (P50 bar + P95 whisker with 'P50 -> P95 ms' label).
+    """
     if not cps_rows:
         return
 
-    workers_list = [4, 8]
+    # Filter out backends with no valid CPS data (e.g. Hev on 5000 conns)
+    active_backends = [
+        b for b in backends
+        if any(r.get("backend") == b and r.get("rc") == 0 and r.get("cps") is not None for r in cps_rows)
+    ]
+    if not active_backends:
+        return
+
+    # Order from top to bottom: 4W first, then 8W
+    # In matplotlib Y-axis: higher Y is top, lower Y is bottom.
+    # So 4W gets the higher Y, 8W gets the lower Y.
+    workers_display_order = [4, 8]  # from top to bottom
+
+    row_configs = []
+    current_y = 0.0
+    backend_centers = {}
+
+    for b in reversed(active_backends):
+        b_y_list = []
+        for w in reversed(workers_display_order):
+            row_configs.append({
+                "backend": b,
+                "worker": w,
+                "y": current_y,
+            })
+            b_y_list.append(current_y)
+            current_y += 0.8
+        backend_centers[b] = statistics.mean(b_y_list)
+        current_y += 0.6  # Separation gap between backends
+
     fig, prop_regular, prop_bold, prop_medium = setup_dashboard(
-        "Short-Lived TCP Connection Rate (CPS) (Higher is Better)",
-        "5000 connections across worker counts 4 and 8 in three rounds",
+        "Short-Lived TCP Performance (5,000 Connections)",
+        "Connection establishment rate and handshake latency distribution across 4W and 8W",
+        figsize=(16, 9.5),
+    )
+    axes = fig.subplots(1, 2)
+    fig.subplots_adjust(left=0.18, right=0.95, top=0.84, bottom=0.14, wspace=0.18)
+
+    bar_h = 0.52
+
+    # ------------------ Left: Connection Rate ------------------
+    ax_rate = axes[0]
+    rate_map = {}
+    for r in row_configs:
+        b = r["backend"]
+        w = r["worker"]
+        matched = [
+            float(row["cps"])
+            for row in cps_rows
+            if row.get("backend") == b
+            and row.get("workers") == w
+            and row.get("rc") == 0
+            and row.get("cps") is not None
+        ]
+        rate_map[(b, w)] = statistics.mean(matched) if matched else 0.0
+
+    max_rate = max(list(rate_map.values()) + [100.0]) * 1.32
+    ax_rate.set_xlim(0, max_rate)
+
+    for r in row_configs:
+        b = r["backend"]
+        w = r["worker"]
+        val = rate_map[(b, w)]
+        y_pos = r["y"]
+        color = COLORS[b]
+        alpha = 0.95 if w == 8 else 0.65
+
+        ax_rate.barh(
+            y_pos, val, height=bar_h,
+            color=color, alpha=alpha,
+            edgecolor=color, linewidth=1.0,
+            zorder=3
+        )
+        if val > 0:
+            ax_rate.text(
+                val + max_rate * 0.02, y_pos,
+                f"{round(val)} conn/s",
+                va="center", ha="left",
+                fontsize=8.5,
+                color="#1e293b",
+                fontproperties=prop_bold,
+                bbox=dict(boxstyle="round,pad=0.12", facecolor="#ffffff", edgecolor="none", alpha=0.85),
+                zorder=5,
+            )
+
+    ax_rate.set_title("Connection Rate (Higher is Better)", fontproperties=prop_bold, fontsize=12, pad=12, color="#0f172a")
+    ax_rate.set_xlabel("Connections / Second", fontproperties=prop_regular, fontsize=10, color="#64748b")
+    ax_rate.grid(axis="x", color="#f1f5f9", zorder=0)
+    ax_rate.set_axisbelow(True)
+
+    # ------------------ Right: Handshake Latency (P50 -> P95) ------------------
+    ax_lat = axes[1]
+    p50_map = {}
+    p95_map = {}
+    for r in row_configs:
+        b = r["backend"]
+        w = r["worker"]
+        matched = [
+            row for row in cps_rows
+            if row.get("backend") == b
+            and row.get("workers") == w
+            and row.get("rc") == 0
+            and row.get("p50_ms") is not None
+        ]
+        p50_map[(b, w)] = statistics.mean([float(x["p50_ms"]) for x in matched]) if matched else None
+        p95_map[(b, w)] = statistics.mean([float(x["p95_ms"]) for x in matched]) if matched else None
+
+    all_p95 = [v for v in p95_map.values() if v is not None]
+    max_lat = max(all_p95 + [25.0]) * 1.35
+    ax_lat.set_xlim(0, max_lat)
+
+    for r in row_configs:
+        b = r["backend"]
+        w = r["worker"]
+        p50 = p50_map.get((b, w))
+        p95 = p95_map.get((b, w))
+        y_pos = r["y"]
+        color = COLORS[b]
+        alpha = 0.95 if w == 8 else 0.65
+
+        if p50 is not None:
+            # Main bar reaches P50
+            ax_lat.barh(
+                y_pos, p50, height=bar_h,
+                color=color, alpha=alpha,
+                edgecolor=color, linewidth=1.0,
+                zorder=3
+            )
+            if p95 is not None:
+                # Whisker line to P95
+                ax_lat.plot([p50, p95], [y_pos, y_pos], color=color, linewidth=2.0, alpha=0.9, zorder=4)
+                # End cap on P95
+                ax_lat.plot([p95, p95], [y_pos - bar_h * 0.35, y_pos + bar_h * 0.35], color=color, linewidth=2.2, alpha=0.9, zorder=4)
+
+                txt = f"{p50:.1f} → {p95:.1f} ms"
+                ax_lat.text(
+                    p95 + max_lat * 0.02, y_pos,
+                    txt,
+                    va="center", ha="left",
+                    fontsize=8.5,
+                    color="#1e293b",
+                    fontproperties=prop_bold,
+                    bbox=dict(boxstyle="round,pad=0.12", facecolor="#ffffff", edgecolor="none", alpha=0.85),
+                    zorder=5,
+                )
+
+    ax_lat.set_title("Handshake Latency (Lower is Better)", fontproperties=prop_bold, fontsize=12, pad=12, color="#0f172a")
+    ax_lat.set_xlabel("Latency (P50 Median → P95 Tail, ms)", fontproperties=prop_regular, fontsize=10, color="#64748b")
+    ax_lat.grid(axis="x", color="#f1f5f9", zorder=0)
+    ax_lat.set_axisbelow(True)
+
+    # ------------------ Y-Axis Formatting ------------------
+    # Align vertical limits on both panels
+    for ax in [ax_rate, ax_lat]:
+        ax.set_ylim(-0.6, current_y - 0.2)
+
+    # Left subplot: show 4W / 8W tick labels and centered Backend group labels
+    ax_rate.set_yticks([r["y"] for r in row_configs])
+    ax_rate.set_yticklabels([f"{r['worker']}W" for r in row_configs], fontproperties=prop_bold, fontsize=9.5, color="#475569")
+
+    for b, center_y in backend_centers.items():
+        ax_rate.text(
+            -max_rate * 0.09,
+            center_y,
+            NAMES[b],
+            va="center", ha="right",
+            fontsize=11.5,
+            color=COLORS[b],
+            fontproperties=prop_bold,
+        )
+
+    # Right subplot: clean, omit redundant Y-axis ticks and labels completely
+    ax_lat.set_yticks([r["y"] for r in row_configs])
+    ax_lat.set_yticklabels([])
+    ax_lat.tick_params(left=False)
+
+    # Footnote at bottom explaining Hev omission
+    fig.text(
+        0.50, 0.045,
+        "Note: Hev omitted from 5,000-connection test (exceeds lwIP PCB limits; historical: ~16 CPS @ 4W, ~34 CPS @ 8W).",
+        ha="center", va="center",
+        fontsize=9.0,
+        color="#64748b",
+        fontproperties=prop_regular,
+    )
+
+    save_dashboard(fig, output_path, dpi=200)
+
+
+# ----------------------------------------------------------------------
+# 5c. CPU Efficiency / Compute Cost Dashboard (CPU% per 100 Mbps)
+# ----------------------------------------------------------------------
+def render_cpu_efficiency(
+    tp_rows: List[Dict[str, Any]],
+    output_path: str,
+    backends: List[str]
+) -> None:
+    """
+    Renders CPU Compute Cost per 100 Mbps throughput (Lower is Better).
+    Left Subplot: Single Stream (P=1) TCP & UDP Upload / Download.
+    Right Subplot: Multi-Stream (P=8) TCP & UDP Upload / Download.
+    """
+    if not tp_rows:
+        return
+
+    # Compute average CPU cost per 100 Mbps for (direction, network, parallel, backend)
+    # cost = (cpu_avg / (mbps / 100))
+    scenarios = [
+        ("P=1 (Single Stream)", 1),
+        ("P=8 (Multi-Stream)", 8),
+    ]
+
+    fig, prop_regular, prop_bold, prop_medium = setup_dashboard(
+        "CPU Cost per 100 Mbps Throughput (Lower is Better)",
+        "Normalized processor compute cost across 5GHz Wi-Fi transmission scenarios",
         figsize=(16, 9.5),
     )
     axes = fig.subplots(1, 2)
     fig.subplots_adjust(left=0.14, right=0.96, top=0.78, bottom=0.12, wspace=0.22)
 
-    legend_handles = [
-        plt.Rectangle((0, 0), 1, 1, facecolor=COLORS[b])
-        for b in backends
-    ]
-    legend_labels = [NAMES[b] for b in backends]
+    y = np.arange(len(backends))[::-1]
+    bar_h = 0.20
 
-    for axis, worker_count in zip(axes, workers_list):
-        values = {}
-        for backend in backends:
-            valid = [
-                float(row["cps"])
-                for row in cps_rows
-                if row.get("backend") == backend
-                and row.get("workers") == worker_count
-                and row.get("rc") == 0
-                and row.get("cps") is not None
+    for ax_idx, (axis, (scen_title, parallel_val)) in enumerate(zip(axes, scenarios)):
+        # We evaluate: TCP Download & TCP Upload
+        tcp_down_costs = {}
+        tcp_up_costs = {}
+        for b in backends:
+            matched = [
+                r for r in tp_rows
+                if r.get("backend") == b
+                and r.get("parallel") == parallel_val
+                and r.get("network") == "tcp"
+                and r.get("mtu") == 1500
             ]
-            values[backend] = statistics.mean(valid) if valid else None
+            if matched:
+                d_costs = [
+                    (float(r["download_cpu_avg"]) / (float(r["download_mbps"]) / 100.0))
+                    for r in matched
+                    if float(r.get("download_mbps", 0.0)) > 1.0 and r.get("download_cpu_avg") is not None
+                ]
+                u_costs = [
+                    (float(r["upload_cpu_avg"]) / (float(r["upload_mbps"]) / 100.0))
+                    for r in matched
+                    if float(r.get("upload_mbps", 0.0)) > 1.0 and r.get("upload_cpu_avg") is not None
+                ]
+                tcp_down_costs[b] = statistics.mean(d_costs) if d_costs else None
+                tcp_up_costs[b] = statistics.mean(u_costs) if u_costs else None
+            else:
+                tcp_down_costs[b] = None
+                tcp_up_costs[b] = None
 
-        y = np.arange(len(backends))[::-1]
-        plotted = [values[b] if values[b] is not None else 0.0 for b in backends]
-        bars = axis.barh(y, plotted, height=0.42, color=[COLORS[b] for b in backends], zorder=3)
-        upper = max(plotted + [100.0])
-        axis.set_xlim(0, upper * 1.30)
+        all_vals = [v for v in list(tcp_down_costs.values()) + list(tcp_up_costs.values()) if v is not None]
+        max_x = max(all_vals + [30.0]) * 1.35
+        axis.set_xlim(0, max_x)
 
-        for bar, backend in zip(bars, backends):
-            val = values[backend]
-            text = "N/A" if val is None else f"{val:.1f} conn/s"
-            axis.text(
-                (val or 0.0) + upper * 0.02,
-                bar.get_y() + bar.get_height() / 2,
-                text,
-                va="center", ha="left",
-                fontsize=8.5,
-                color="#1e293b",
-                fontproperties=prop_bold,
-                bbox=dict(boxstyle="round,pad=0.15", facecolor="#ffffff", edgecolor="none", alpha=0.85),
-                zorder=5,
+        current_flow_configs = [
+            ("TCP Upload", tcp_up_costs, bar_h / 2 + 0.02, 0.60),
+            ("TCP Download", tcp_down_costs, -(bar_h / 2 + 0.02), 0.95),
+        ]
+
+        for flow_label, flow_map, offset, alpha in current_flow_configs:
+            vals = [flow_map[b] if flow_map[b] is not None else 0.0 for b in backends]
+            bars = axis.barh(
+                y + offset, vals, height=bar_h,
+                color=[COLORS[b] for b in backends],
+                alpha=alpha,
+                edgecolor=[COLORS[b] for b in backends],
+                linewidth=1.0,
+                zorder=3
             )
+            for bar, b in zip(bars, backends):
+                val = flow_map[b]
+                if val is not None:
+                    txt = f"{val:.1f}% ({flow_label.split()[-1]})"
+                    axis.text(
+                        bar.get_width() + max_x * 0.02,
+                        bar.get_y() + bar.get_height() / 2,
+                        txt,
+                        va="center", ha="left",
+                        fontsize=7.8,
+                        color="#1e293b",
+                        fontproperties=prop_bold,
+                        bbox=dict(boxstyle="round,pad=0.12", facecolor="#ffffff", edgecolor="none", alpha=0.85),
+                        zorder=5,
+                    )
 
         axis.set_yticks(y)
-        axis.set_yticklabels([NAMES[b] for b in backends], fontproperties=prop_medium, fontsize=10)
-        axis.set_xlabel("Connections / Second", fontproperties=prop_regular, fontsize=10, color="#64748b")
-        axis.set_title(f"{worker_count} Workers", fontproperties=prop_bold, fontsize=12, pad=12, color="#0f172a")
+        if ax_idx == 0:
+            axis.set_yticklabels([NAMES[b] for b in backends], fontproperties=prop_bold, fontsize=10)
+            for tick_label, b in zip(axis.get_yticklabels(), backends):
+                tick_label.set_color(COLORS[b])
+        else:
+            axis.set_yticklabels([])
+            axis.tick_params(left=False)
+
+        axis.set_xlabel("CPU Load (%) per 100 Mbps", fontproperties=prop_regular, fontsize=10, color="#64748b")
+        axis.set_title(scen_title, fontproperties=prop_bold, fontsize=12, pad=12, color="#0f172a")
         axis.grid(axis="x", color="#f1f5f9", zorder=0)
         axis.set_axisbelow(True)
 
-    create_top_legend(fig, legend_handles, legend_labels, y_pos=0.895, prop_medium=prop_medium)
     save_dashboard(fig, output_path, dpi=200)
 
 
@@ -611,7 +861,10 @@ def render_memory_attribution(
             zorder=5,
         )
     ax_base.set_yticks(y)
-    ax_base.set_yticklabels([NAMES[b] for b in backends], fontproperties=prop_medium, fontsize=10)
+    ax_base.set_yticklabels([NAMES[b] for b in backends], fontproperties=prop_bold, fontsize=10)
+    for tick_label, b in zip(ax_base.get_yticklabels(), backends):
+        tick_label.set_color(COLORS[b])
+
     ax_base.set_xlabel("Base Process Memory PSS (MB)", fontproperties=prop_regular, fontsize=10, color="#64748b")
     ax_base.set_title("Fixed Baseline Process Footprint (0 Conns)", fontproperties=prop_bold, fontsize=12, pad=12, color="#0f172a")
     ax_base.grid(axis="x", color="#f1f5f9", zorder=0)
@@ -650,22 +903,13 @@ def render_memory_attribution(
             )
 
     ax_slope.set_yticks(y)
-    ax_slope.set_yticklabels([NAMES[b] for b in backends], fontproperties=prop_medium, fontsize=10)
+    ax_slope.set_yticklabels([])
+    ax_slope.tick_params(left=False)
     ax_slope.set_xlabel("Incremental Footprint (KiB / connection)", fontproperties=prop_regular, fontsize=10, color="#64748b")
     ax_slope.set_title("Incremental Retention Slope (0 to 1000 Conns)", fontproperties=prop_bold, fontsize=12, pad=12, color="#0f172a")
     ax_slope.grid(axis="x", color="#f1f5f9", zorder=0)
     ax_slope.set_axisbelow(True)
 
-    legend_handles = [
-        plt.Rectangle((0, 0), 1, 1, facecolor=COLORS[b])
-        for b in backends
-    ] + [
-        plt.Rectangle((0, 0), 1, 1, facecolor="#64748b", alpha=0.95),
-        plt.Rectangle((0, 0), 1, 1, facecolor="#64748b", alpha=0.55),
-    ]
-    legend_labels = [NAMES[b] for b in backends] + ["TCP Slope", "UDP Slope"]
-
-    create_top_legend(fig, legend_handles, legend_labels, y_pos=0.895, prop_medium=prop_medium)
     save_dashboard(fig, output_path, dpi=200)
 
 
@@ -719,6 +963,10 @@ def main() -> None:
     mb_payload = load_json(profile["microbench_json"])
     if mb_payload:
         render_memory_attribution(mb_payload, os.path.join(charts_dir, "memory_attribution.webp"), backends)
+
+    # 8. CPU Efficiency
+    if tp_payload:
+        render_cpu_efficiency(flat_rounds(tp_payload), os.path.join(charts_dir, "cpu_efficiency.webp"), backends)
 
     print(f"[Generator] All charts successfully generated in: {charts_dir}")
 
