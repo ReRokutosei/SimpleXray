@@ -592,20 +592,25 @@ class TProxyService : VpnService() {
             }
             Log.d(TAG, "Starting SingTUN backend on fd=$fd")
             val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
-            val ok = startGoTunService(
-                serviceClass = SingTunService::class.java,
-                socksHost = host,
-                socksPort = prefs.socksPort,
-                mtu = tunMtu,
-                username = prefs.socksUsername,
-                password = prefs.socksPassword
-            )
+            val ok = synchronized(nativeLifecycleLock) {
+                val started = startGoTunService(
+                    serviceClass = SingTunService::class.java,
+                    socksHost = host,
+                    socksPort = prefs.socksPort,
+                    mtu = tunMtu,
+                    username = prefs.socksUsername,
+                    password = prefs.socksPassword
+                )
+                if (started) {
+                    activeBackend = NativeBackend.SING
+                }
+                started
+            }
             if (!ok) {
                 Log.e(TAG, "SingTunStartService failed")
                 stopXray()
                 return false
             }
-            activeBackend = NativeBackend.SING
         } else if (prefs.tunnelMode == TunnelMode.Zeptun && !prefs.disableVpn) {
             val fd = tunFd?.fd
             if (fd == null) {
@@ -624,17 +629,22 @@ class TProxyService : VpnService() {
                 fd = fd,
                 udpInTcp = prefs.udpInTcp
             )
-            val result = runCatching {
-                ZeptunNative.nativeStart(this, fd, json)
-            }.onFailure {
-                Log.e(TAG, "Failed to start Zeptun backend", it)
-            }.getOrDefault(-1)
+            val result = synchronized(nativeLifecycleLock) {
+                val res = runCatching {
+                    ZeptunNative.nativeStart(this, fd, json)
+                }.onFailure {
+                    Log.e(TAG, "Failed to start Zeptun backend", it)
+                }.getOrDefault(-1)
+                if (res == 0) {
+                    activeBackend = NativeBackend.ZEPTUN
+                }
+                res
+            }
             if (result != 0) {
                 Log.e(TAG, "Zeptun nativeStart failed: $result")
                 stopXray()
                 return false
             }
-            activeBackend = NativeBackend.ZEPTUN
         } else {
             val tproxyFile = File(cacheDir, "tproxy.conf")
             try {
@@ -649,15 +659,21 @@ class TProxyService : VpnService() {
                 return false
             }
 
-            tunFd?.fd?.let { fd ->
-                if (!TProxyStartService(tproxyFile.absolutePath, fd)) {
-                    Log.e(TAG, "TProxyStartService failed")
-                    stopXray()
-                    return false
+            val started = tunFd?.fd?.let { fd ->
+                synchronized(nativeLifecycleLock) {
+                    if (TProxyStartService(tproxyFile.absolutePath, fd)) {
+                        activeBackend = NativeBackend.HEV
+                        true
+                    } else {
+                        Log.e(TAG, "TProxyStartService failed")
+                        false
+                    }
                 }
-                activeBackend = NativeBackend.HEV
             } ?: run {
                 Log.e(TAG, "tunFd is null after establish()")
+                false
+            }
+            if (!started) {
                 stopXray()
                 return false
             }
