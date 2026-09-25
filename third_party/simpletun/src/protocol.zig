@@ -147,7 +147,9 @@ pub fn calculateTcpChecksum(src_ip: u32, dst_ip: u32, tcp_len: u16, tcp_packet: 
     while ((sum >> 16) != 0) {
         sum = (sum & 0xffff) + (sum >> 16);
     }
-    return std.mem.nativeToBig(u16, ~@as(u16, @intCast(sum)));
+    const res = ~@as(u16, @intCast(sum));
+    if (res == 0) return std.mem.nativeToBig(u16, 0xffff);
+    return std.mem.nativeToBig(u16, res);
 }
 
 pub const UdpHeader = extern struct {

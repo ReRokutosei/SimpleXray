@@ -63,11 +63,15 @@ pub const FlowTable = struct {
     pub const CAPACITY: usize = 512;
     flows: [CAPACITY]Flow,
 
-    pub fn init() FlowTable {
-        var table: FlowTable = undefined;
-        for (&table.flows) |*flow| {
+    pub fn initInto(self: *FlowTable) void {
+        for (&self.flows) |*flow| {
             flow.reset();
         }
+    }
+
+    pub fn init() FlowTable {
+        var table: FlowTable = undefined;
+        table.initInto();
         return table;
     }
 
@@ -91,7 +95,7 @@ pub const FlowTable = struct {
     }
 
     pub fn allocate(self: *FlowTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) ?*Flow {
-        // First try to find a completely free slot
+        // First pass: try to find a completely free slot
         for (&self.flows) |*flow| {
             if (flow.state == .free) {
                 flow.reset();
@@ -106,19 +110,39 @@ pub const FlowTable = struct {
 
         // Second pass: evict expired tombstones
         const now = sys.monotonicMs();
+        var oldest_tombstone: ?*Flow = null;
+        var oldest_tombstone_time: i64 = std.math.maxInt(i64);
+
         for (&self.flows) |*flow| {
-            if (flow.state == .tombstone and now >= flow.tombstone_until_ms) {
-                flow.reset();
-                flow.src_ip = src_ip;
-                flow.dst_ip = dst_ip;
-                flow.src_port = src_port;
-                flow.dst_port = dst_port;
-                flow.state = .upstream_connect;
-                return flow;
+            if (flow.state == .tombstone) {
+                if (now >= flow.tombstone_until_ms) {
+                    flow.reset();
+                    flow.src_ip = src_ip;
+                    flow.dst_ip = dst_ip;
+                    flow.src_port = src_port;
+                    flow.dst_port = dst_port;
+                    flow.state = .upstream_connect;
+                    return flow;
+                }
+                if (flow.tombstone_until_ms < oldest_tombstone_time) {
+                    oldest_tombstone_time = flow.tombstone_until_ms;
+                    oldest_tombstone = flow;
+                }
             }
         }
 
-        return null; // Table full
+        // Third pass: under high CPS pressure, forcibly evict the oldest tombstone
+        if (oldest_tombstone) |flow| {
+            flow.reset();
+            flow.src_ip = src_ip;
+            flow.dst_ip = dst_ip;
+            flow.src_port = src_port;
+            flow.dst_port = dst_port;
+            flow.state = .upstream_connect;
+            return flow;
+        }
+
+        return null; // Table completely full with active non-tombstone flows
     }
 
     pub fn markTombstone(self: *FlowTable, flow: *Flow, duration_ms: i64) void {
@@ -149,16 +173,61 @@ pub const UdpSession = struct {
     }
 };
 
+pub const DnsQuery = struct {
+    src_ip: u32,
+    src_port: u16,
+    dst_ip: u32,
+    dst_port: u16,
+    dns_tx_id: u16,
+    active: bool,
+};
+
 pub const UdpTable = struct {
     pub const CAPACITY: usize = 256;
+    pub const DNS_QUERY_CAPACITY: usize = 64;
+
     sessions: [CAPACITY]UdpSession,
+    dns_queries: [DNS_QUERY_CAPACITY]DnsQuery,
+    dns_query_head: usize,
+
+    pub fn initInto(self: *UdpTable) void {
+        for (&self.sessions) |*s| {
+            s.active = false;
+        }
+        for (&self.dns_queries) |*q| {
+            q.active = false;
+        }
+        self.dns_query_head = 0;
+    }
 
     pub fn init() UdpTable {
         var table: UdpTable = undefined;
-        for (&table.sessions) |*s| {
-            s.active = false;
-        }
+        table.initInto();
         return table;
+    }
+
+    pub fn recordDnsQuery(self: *UdpTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16, dns_tx_id: u16) void {
+        const slot = &self.dns_queries[self.dns_query_head];
+        slot.src_ip = src_ip;
+        slot.dst_ip = dst_ip;
+        slot.src_port = src_port;
+        slot.dst_port = dst_port;
+        slot.dns_tx_id = dns_tx_id;
+        slot.active = true;
+        self.dns_query_head = (self.dns_query_head + 1) % DNS_QUERY_CAPACITY;
+    }
+
+    pub fn findDnsQuery(self: *UdpTable, dst_ip: u32, dst_port: u16, dns_tx_id: u16) ?DnsQuery {
+        var i: usize = 0;
+        while (i < DNS_QUERY_CAPACITY) : (i += 1) {
+            const idx = (self.dns_query_head + DNS_QUERY_CAPACITY - 1 - i) % DNS_QUERY_CAPACITY;
+            const q = &self.dns_queries[idx];
+            if (q.active and q.dst_ip == dst_ip and q.dst_port == dst_port and q.dns_tx_id == dns_tx_id) {
+                q.active = false; // Consumed
+                return q.*;
+            }
+        }
+        return null;
     }
 
     pub fn touchOrAllocate(self: *UdpTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) ?*UdpSession {
@@ -204,17 +273,21 @@ pub const UdpTable = struct {
     }
 
     pub fn findByTarget(self: *UdpTable, dst_ip: u32, dst_port: u16) ?*UdpSession {
+        var latest: ?*UdpSession = null;
         for (&self.sessions) |*s| {
             if (s.active and s.dst_ip == dst_ip and s.dst_port == dst_port) {
-                return s;
+                if (latest == null or s.last_active_ms > latest.?.last_active_ms) {
+                    latest = s;
+                }
             }
         }
-        return null;
+        return latest;
     }
 };
 
 test "FlowTable allocation and tombstone eviction" {
-    var table = FlowTable.init();
+    var table: FlowTable = undefined;
+    table.initInto();
     const flow1 = table.allocate(1, 2, 3, 4);
     try std.testing.expect(flow1 != null);
     try std.testing.expectEqual(State.upstream_connect, flow1.?.state);

@@ -26,7 +26,19 @@ pub fn read(fd: fd_t, buf: []u8) !usize {
     };
 }
 
-pub fn write(fd: fd_t, buf: []const u8) !usize {
+pub fn writeSocket(fd: fd_t, buf: []const u8) !usize {
+    const rc = linux.sendto(fd, buf.ptr, buf.len, linux.MSG.NOSIGNAL, null, 0);
+    return switch (linux.errno(rc)) {
+        .SUCCESS => @intCast(rc),
+        .AGAIN => error.WouldBlock,
+        .INTR => error.WouldBlock,
+        .PIPE => error.BrokenPipe,
+        .CONNRESET => error.ConnectionReset,
+        else => error.WriteFailed,
+    };
+}
+
+pub fn writeTun(fd: fd_t, buf: []const u8) !usize {
     const rc = linux.write(fd, buf.ptr, buf.len);
     return switch (linux.errno(rc)) {
         .SUCCESS => @intCast(rc),
@@ -36,6 +48,10 @@ pub fn write(fd: fd_t, buf: []const u8) !usize {
         .CONNRESET => error.ConnectionReset,
         else => error.WriteFailed,
     };
+}
+
+pub fn write(fd: fd_t, buf: []const u8) !usize {
+    return writeSocket(fd, buf);
 }
 
 pub fn createTcpSocket() !fd_t {

@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
+#include <signal.h>
 #include <arpa/inet.h>
 #include <android/log.h>
 
@@ -30,6 +31,11 @@ static void *run_engine(void *arg) {
     LOGI("SimpleTUN worker thread started (tun_fd=%d, socks_port=%u)", ctx->tun_fd, ctx->socks_port);
     int rc = simpletun_start(ctx->tun_fd, ctx->socks_ip, ctx->socks_port);
     LOGI("SimpleTUN worker thread finished with rc=%d", rc);
+
+    pthread_mutex_lock(&context_mutex);
+    context.running = 0;
+    pthread_mutex_unlock(&context_mutex);
+
     return NULL;
 }
 
@@ -38,6 +44,8 @@ static jint native_start(JNIEnv *env, jclass klass, jint fd, jstring socks_host,
     if (fd < 0 || socks_port <= 0 || socks_port > 65535) {
         return -1;
     }
+
+    signal(SIGPIPE, SIG_IGN);
 
     pthread_mutex_lock(&context_mutex);
     if (context.running) {

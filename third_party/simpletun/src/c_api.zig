@@ -1,7 +1,8 @@
 const std = @import("std");
 const engine = @import("engine.zig");
 
-var global_engine: ?engine.Engine = null;
+var global_engine_storage: engine.Engine = undefined;
+var global_engine: ?*engine.Engine = null;
 var global_lock: std.atomic.Value(bool) = std.atomic.Value(bool).init(false);
 
 fn acquireLock() void {
@@ -14,6 +15,12 @@ fn releaseLock() void {
     global_lock.store(false, .release);
 }
 
+pub fn logMsg(prio: c_int, comptime fmt: []const u8, args: anytype) void {
+    _ = prio;
+    _ = fmt;
+    _ = args;
+}
+
 export fn simpletun_start(tun_fd: c_int, socks_ip: u32, socks_port: u16) c_int {
     acquireLock();
     if (global_engine != null) {
@@ -21,26 +28,30 @@ export fn simpletun_start(tun_fd: c_int, socks_ip: u32, socks_port: u16) c_int {
         return -1; // already running
     }
 
-    const eng = engine.Engine.init(.{
+    global_engine_storage.initInto(.{
         .tun_fd = tun_fd,
         .socks_ip = socks_ip,
         .socks_port = socks_port,
         .mtu = 1500,
-    }) catch {
+    }) catch |err| {
         releaseLock();
+        logMsg(6, "Engine.init failed: {s}", .{@errorName(err)});
         return -2;
     };
 
-    global_engine = eng;
+    global_engine = &global_engine_storage;
     releaseLock();
 
     // Block calling thread until stopped
-    if (global_engine) |*e| {
-        e.run() catch {};
+    if (global_engine) |e| {
+        e.run() catch |err| {
+            logMsg(6, "Engine.run returned error: {s}", .{@errorName(err)});
+        };
+        logMsg(4, "Engine.run exited, running={}", .{e.running});
     }
 
     acquireLock();
-    if (global_engine) |*e| {
+    if (global_engine) |e| {
         e.deinit();
         global_engine = null;
     }
@@ -49,10 +60,11 @@ export fn simpletun_start(tun_fd: c_int, socks_ip: u32, socks_port: u16) c_int {
 }
 
 export fn simpletun_stop() c_int {
+    logMsg(4, "simpletun_stop() called from C/JNI", .{});
     acquireLock();
     defer releaseLock();
 
-    if (global_engine) |*e| {
+    if (global_engine) |e| {
         e.stop();
         return 0;
     }

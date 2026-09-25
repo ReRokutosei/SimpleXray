@@ -74,14 +74,16 @@ pub fn main(init: std.process.Init.Minimal) !u8 {
     const tun_fd = try openTunDevice(tun_name);
     defer sys.close(tun_fd);
 
-    var eng = try engine.Engine.init(.{
+    try global_main_engine.initInto(.{
         .tun_fd = tun_fd,
         .socks_ip = 0x7f000001,
         .socks_port = socks_port,
         .mtu = 1500,
     });
-    defer eng.deinit();
+    defer global_main_engine.deinit();
 
-    try eng.run();
+    try global_main_engine.run();
     return 0;
 }
+
+var global_main_engine: engine.Engine = undefined;
