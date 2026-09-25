@@ -169,6 +169,10 @@ class Preferences(context: Context) {
     val tunnelIpv6Address: String get() = TUNNEL_IPV6_ADDRESS
     val tunnelIpv6Prefix: Int get() = TUNNEL_IPV6_PREFIX
     val taskStackSize: Int get() = TASK_STACK_SIZE
+    val tcpReadWriteTimeout: Int get() = TCP_READ_WRITE_TIMEOUT
+    val udpReadWriteTimeout: Int get() = UDP_READ_WRITE_TIMEOUT
+    val udpRecvBufferSize: Int get() = UDP_RECV_BUFFER_SIZE
+    val tcpConnectTimeout: Int get() = TCP_CONNECT_TIMEOUT
 
     var selectedConfigPath: String? by nullableStringPref(SELECTED_CONFIG_PATH)
     var bypassLan: Boolean by booleanPref(BYPASS_LAN, true)
@@ -287,6 +291,10 @@ class Preferences(context: Context) {
         const val TUNNEL_IPV6_ADDRESS: String = "fc00::1"
         const val TUNNEL_IPV6_PREFIX: Int = 126
         const val TASK_STACK_SIZE: Int = 81920
+        const val TCP_READ_WRITE_TIMEOUT: Int = 300000
+        const val UDP_READ_WRITE_TIMEOUT: Int = 60000
+        const val UDP_RECV_BUFFER_SIZE: Int = 1048576
+        const val TCP_CONNECT_TIMEOUT: Int = 10000
         private const val TAG = "Preferences"
     }
 }
