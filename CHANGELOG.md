@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0-alpha.3](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0-alpha.2...v2.3.0-alpha.3) (2026-09-25)
+
+
+### Bug Fixes
+
+* **deps:** update agp to v9.4.1 ([#39](https://github.com/ReRokutosei/SimpleXray/issues/39)) ([4bfe975](https://github.com/ReRokutosei/SimpleXray/commit/4bfe975d8c22ca5f507f97638558ea76703ed9ab))
+* **deps:** update dependency androidx.navigation:navigation-compose-android to v2.10.2 ([#41](https://github.com/ReRokutosei/SimpleXray/issues/41)) ([beceaa7](https://github.com/ReRokutosei/SimpleXray/commit/beceaa74aefc97d66b3a5153e27d94aabd8bd178))
+* **deps:** update dependency androidx.work:work-runtime-ktx to v2.12.0 ([#42](https://github.com/ReRokutosei/SimpleXray/issues/42)) ([b618e5f](https://github.com/ReRokutosei/SimpleXray/commit/b618e5f28bc05b5b3c9c40cedec31119186a9c99))
+* **deps:** update dependency com.github.nanihadesuka:lazycolumnscrollbar to v3 ([#37](https://github.com/ReRokutosei/SimpleXray/issues/37)) ([304c4f7](https://github.com/ReRokutosei/SimpleXray/commit/304c4f7319ad40b613c975add12dedc97f45fbf8))
+
 ## [2.3.0-alpha.2](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0-alpha.1...v2.3.0-alpha.2) (2026-09-24)
 
 
