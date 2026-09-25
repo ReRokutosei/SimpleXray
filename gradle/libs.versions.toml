@@ -58,7 +58,7 @@ androidx-navigation-compose = { module = "androidx.navigation:navigation-compose
 androidx-navigationevent = { module = "androidx.navigationevent:navigationevent-compose", version.ref = "navigationevent" }
 
 # UI Components & Networking
-lazycolumnscrollbar = { module = "com.github.nanihadesuka:LazyColumnScrollbar", version.ref = "lazyColumnScrollbar" }
+lazycolumnscrollbar = { module = "com.github.nanihadesuka.LazyColumnScrollbar:lazycolumnscrollbar-android", version.ref = "lazyColumnScrollbar" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 okhttp = { module = "com.squareup.okhttp3:okhttp", version.ref = "okhttp" }
 yaml = { module = "org.yaml:snakeyaml", version = "2.7" }
