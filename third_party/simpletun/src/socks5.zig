@@ -19,7 +19,36 @@ pub fn formatConnectRequest(buf: *[10]u8, dst_ip: u32, dst_port: u16) usize {
     return 10;
 }
 
-test "SOCKS5 formatConnectRequest" {
+pub fn formatUdpAssociateRequest(buf: *[10]u8) usize {
+    buf[0] = 0x05; // SOCKS5
+    buf[1] = 0x03; // CMD: UDP ASSOCIATE
+    buf[2] = 0x00; // RSV
+    buf[3] = 0x01; // ATYP: IPv4 (BND.ADDR = 0.0.0.0:0 strictly per RFC 1928)
+    buf[4] = 0x00;
+    buf[5] = 0x00;
+    buf[6] = 0x00;
+    buf[7] = 0x00;
+    buf[8] = 0x00;
+    buf[9] = 0x00;
+    return 10;
+}
+
+pub fn formatUdpHeader(buf: *[10]u8, dst_ip: u32, dst_port: u16) usize {
+    buf[0] = 0x00; // RSV (2B)
+    buf[1] = 0x00;
+    buf[2] = 0x00; // FRAG (0x00 = standalone packet)
+    buf[3] = 0x01; // ATYP: IPv4
+
+    const ip_bytes: *const [4]u8 = @ptrCast(&dst_ip);
+    @memcpy(buf[4..8], ip_bytes);
+
+    const port_bytes: *const [2]u8 = @ptrCast(&dst_port);
+    @memcpy(buf[8..10], port_bytes);
+
+    return 10;
+}
+
+test "SOCKS5 formatConnectRequest and UdpAssociateRequest" {
     var buf: [10]u8 = undefined;
     const ip = std.mem.nativeToBig(u32, 0x7f000001); // 127.0.0.1
     const port = std.mem.nativeToBig(u16, 8080);
@@ -28,4 +57,8 @@ test "SOCKS5 formatConnectRequest" {
     try std.testing.expectEqual(@as(u8, 0x05), buf[0]);
     try std.testing.expectEqual(@as(u8, 0x01), buf[1]);
     try std.testing.expectEqual(@as(u8, 0x01), buf[3]);
+
+    const assoc_len = formatUdpAssociateRequest(&buf);
+    try std.testing.expectEqual(@as(usize, 10), assoc_len);
+    try std.testing.expectEqual(@as(u8, 0x03), buf[1]);
 }

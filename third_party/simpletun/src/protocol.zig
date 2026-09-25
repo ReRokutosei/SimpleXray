@@ -150,6 +150,69 @@ pub fn calculateTcpChecksum(src_ip: u32, dst_ip: u32, tcp_len: u16, tcp_packet: 
     return std.mem.nativeToBig(u16, ~@as(u16, @intCast(sum)));
 }
 
+pub const UdpHeader = extern struct {
+    src_port: u16,
+    dst_port: u16,
+    length: u16,
+    checksum: u16,
+
+    pub fn getSrcPort(self: *const UdpHeader) u16 {
+        return std.mem.bigToNative(u16, self.src_port);
+    }
+
+    pub fn getDstPort(self: *const UdpHeader) u16 {
+        return std.mem.bigToNative(u16, self.dst_port);
+    }
+
+    pub fn getLength(self: *const UdpHeader) u16 {
+        return std.mem.bigToNative(u16, self.length);
+    }
+
+    pub fn setSrcPort(self: *UdpHeader, val: u16) void {
+        self.src_port = std.mem.nativeToBig(u16, val);
+    }
+
+    pub fn setDstPort(self: *UdpHeader, val: u16) void {
+        self.dst_port = std.mem.nativeToBig(u16, val);
+    }
+
+    pub fn setLength(self: *UdpHeader, val: u16) void {
+        self.length = std.mem.nativeToBig(u16, val);
+    }
+};
+
+pub fn calculateUdpChecksum(src_ip: u32, dst_ip: u32, udp_len: u16, udp_packet: []const u8) u16 {
+    var sum: u32 = 0;
+
+    const src_bytes: *const [4]u8 = @ptrCast(&src_ip);
+    const dst_bytes: *const [4]u8 = @ptrCast(&dst_ip);
+
+    sum += (@as(u32, src_bytes[0]) << 8) | @as(u32, src_bytes[1]);
+    sum += (@as(u32, src_bytes[2]) << 8) | @as(u32, src_bytes[3]);
+    sum += (@as(u32, dst_bytes[0]) << 8) | @as(u32, dst_bytes[1]);
+    sum += (@as(u32, dst_bytes[2]) << 8) | @as(u32, dst_bytes[3]);
+    sum += 17; // IPPROTO_UDP
+    sum += udp_len;
+
+    // Checksum at byte offset 6..8 skipped
+    var i: usize = 0;
+    while (i + 1 < udp_packet.len) : (i += 2) {
+        if (i == 6) continue;
+        const w = (@as(u32, udp_packet[i]) << 8) | @as(u32, udp_packet[i + 1]);
+        sum += w;
+    }
+    if (i < udp_packet.len) {
+        sum += @as(u32, udp_packet[i]) << 8;
+    }
+
+    while ((sum >> 16) != 0) {
+        sum = (sum & 0xffff) + (sum >> 16);
+    }
+    const res = ~@as(u16, @intCast(sum));
+    if (res == 0) return std.mem.nativeToBig(u16, 0xffff);
+    return std.mem.nativeToBig(u16, res);
+}
+
 test "IPv4 and TCP Checksum calculation" {
     // 20-byte standard IPv4 header
     var ip_hdr_bytes = [_]u8{

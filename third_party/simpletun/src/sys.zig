@@ -68,3 +68,42 @@ pub fn connect(fd: fd_t, ip: u32, port: u16) !void {
 pub fn shutdown(fd: fd_t) void {
     _ = linux.shutdown(fd, linux.SHUT.WR);
 }
+
+pub fn createUdpSocket() !fd_t {
+    const rc = linux.socket(linux.AF.INET, linux.SOCK.DGRAM | linux.SOCK.NONBLOCK | linux.SOCK.CLOEXEC, linux.IPPROTO.UDP);
+    if (linux.errno(rc) != .SUCCESS) return error.SocketCreationFailed;
+    return @intCast(rc);
+}
+
+pub fn sendto(fd: fd_t, buf: []const u8, ip: u32, port: u16) !usize {
+    const sockaddr_in = extern struct {
+        sin_family: u16 = linux.AF.INET,
+        sin_port: u16,
+        sin_addr: u32,
+        sin_zero: [8]u8 = [_]u8{0} ** 8,
+    };
+
+    const sa = sockaddr_in{
+        .sin_family = linux.AF.INET,
+        .sin_port = std.mem.nativeToBig(u16, port),
+        .sin_addr = std.mem.nativeToBig(u32, ip),
+    };
+
+    const rc = linux.sendto(fd, buf.ptr, buf.len, 0, @ptrCast(&sa), @sizeOf(sockaddr_in));
+    return switch (linux.errno(rc)) {
+        .SUCCESS => @intCast(rc),
+        .AGAIN => error.WouldBlock,
+        .INTR => error.WouldBlock,
+        else => error.WriteFailed,
+    };
+}
+
+pub fn recvfrom(fd: fd_t, buf: []u8) !usize {
+    const rc = linux.recvfrom(fd, buf.ptr, buf.len, 0, null, null);
+    return switch (linux.errno(rc)) {
+        .SUCCESS => @intCast(rc),
+        .AGAIN => error.WouldBlock,
+        .INTR => error.WouldBlock,
+        else => error.ReadFailed,
+    };
+}

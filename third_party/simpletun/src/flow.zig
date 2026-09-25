@@ -132,6 +132,87 @@ pub const FlowTable = struct {
     }
 };
 
+pub const UdpSession = struct {
+    src_ip: u32,
+    dst_ip: u32,
+    src_port: u16,
+    dst_port: u16,
+    last_active_ms: i64,
+    active: bool,
+
+    pub fn matches(self: *const UdpSession, s_ip: u32, d_ip: u32, s_port: u16, d_port: u16) bool {
+        return self.active and
+            self.src_ip == s_ip and
+            self.dst_ip == d_ip and
+            self.src_port == s_port and
+            self.dst_port == d_port;
+    }
+};
+
+pub const UdpTable = struct {
+    pub const CAPACITY: usize = 256;
+    sessions: [CAPACITY]UdpSession,
+
+    pub fn init() UdpTable {
+        var table: UdpTable = undefined;
+        for (&table.sessions) |*s| {
+            s.active = false;
+        }
+        return table;
+    }
+
+    pub fn touchOrAllocate(self: *UdpTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) ?*UdpSession {
+        const now = sys.monotonicMs();
+        for (&self.sessions) |*s| {
+            if (s.matches(src_ip, dst_ip, src_port, dst_port)) {
+                s.last_active_ms = now;
+                return s;
+            }
+        }
+
+        // Find free slot
+        for (&self.sessions) |*s| {
+            if (!s.active) {
+                s.src_ip = src_ip;
+                s.dst_ip = dst_ip;
+                s.src_port = src_port;
+                s.dst_port = dst_port;
+                s.last_active_ms = now;
+                s.active = true;
+                return s;
+            }
+        }
+
+        // Evict oldest session (LRU-like eviction if table full)
+        var oldest_idx: usize = 0;
+        var oldest_time: i64 = self.sessions[0].last_active_ms;
+        for (self.sessions[1..], 1..) |*s, idx| {
+            if (s.last_active_ms < oldest_time) {
+                oldest_time = s.last_active_ms;
+                oldest_idx = idx;
+            }
+        }
+
+        const s = &self.sessions[oldest_idx];
+        s.src_ip = src_ip;
+        s.dst_ip = dst_ip;
+        s.src_port = src_port;
+        s.dst_port = dst_port;
+        s.last_active_ms = now;
+        s.active = true;
+        return s;
+    }
+
+    pub fn findByTarget(self: *UdpTable, dst_ip: u32, dst_port: u16) ?*UdpSession {
+        for (&self.sessions) |*s| {
+            if (s.active and s.dst_ip == dst_ip and s.dst_port == dst_port) {
+                return s;
+            }
+        }
+        return null;
+    }
+};
+
 test "FlowTable allocation and tombstone eviction" {
     var table = FlowTable.init();
     const flow1 = table.allocate(1, 2, 3, 4);

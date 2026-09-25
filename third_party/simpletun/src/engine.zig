@@ -16,12 +16,17 @@ pub const Engine = struct {
     cfg: EngineConfig,
     epoll_fd: sys.fd_t,
     table: flow_mod.FlowTable,
+    udp_table: flow_mod.UdpTable,
+    udp_ctrl_fd: sys.fd_t,
+    udp_relay_fd: sys.fd_t,
+    udp_relay_port: u16,
     running: bool,
 
     // Reusable I/O buffers (Single allocation, 0 dynamic malloc in fast path, aligned for IP/TCP headers)
     rx_packet_buf: [4096]u8 align(4),
     tx_packet_buf: [4096]u8 align(4),
     stream_buf: [4096]u8,
+    udp_scratch_buf: [4096]u8,
 
     pub fn init(cfg: EngineConfig) !Engine {
         const ep_rc = linux.epoll_create1(linux.EPOLL.CLOEXEC);
@@ -36,19 +41,38 @@ pub const Engine = struct {
         const ctl_rc = linux.epoll_ctl(epoll_fd, linux.EPOLL.CTL_ADD, cfg.tun_fd, &event);
         if (linux.errno(ctl_rc) != .SUCCESS) return error.EpollCtlFailed;
 
-        return Engine{
+        // Create local UDP socket for relay exchange
+        const udp_relay_fd = try sys.createUdpSocket();
+        errdefer sys.close(udp_relay_fd);
+
+        var udp_ev = linux.epoll_event{
+            .events = linux.EPOLL.IN,
+            .data = .{ .fd = udp_relay_fd },
+        };
+        _ = linux.epoll_ctl(epoll_fd, linux.EPOLL.CTL_ADD, udp_relay_fd, &udp_ev);
+
+        const eng = Engine{
             .cfg = cfg,
             .epoll_fd = epoll_fd,
             .table = flow_mod.FlowTable.init(),
+            .udp_table = flow_mod.UdpTable.init(),
+            .udp_ctrl_fd = -1,
+            .udp_relay_fd = udp_relay_fd,
+            .udp_relay_port = 0,
             .running = true,
             .rx_packet_buf = undefined,
             .tx_packet_buf = undefined,
             .stream_buf = undefined,
+            .udp_scratch_buf = undefined,
         };
+
+        return eng;
     }
 
     pub fn deinit(self: *Engine) void {
         sys.close(self.epoll_fd);
+        if (self.udp_ctrl_fd >= 0) sys.close(self.udp_ctrl_fd);
+        if (self.udp_relay_fd >= 0) sys.close(self.udp_relay_fd);
         for (&self.table.flows) |*flow| {
             if (flow.socks_fd >= 0) {
                 sys.close(flow.socks_fd);
@@ -73,6 +97,15 @@ pub const Engine = struct {
                 const fd = ev.data.fd;
                 if (fd == self.cfg.tun_fd) {
                     try self.handleTunRead();
+                } else if (fd == self.udp_relay_fd) {
+                    try self.handleUdpRelayRead();
+                } else if (fd == self.udp_ctrl_fd) {
+                    // UDP Associate TCP control connection status
+                    if ((ev.events & (linux.EPOLL.ERR | linux.EPOLL.HUP)) != 0) {
+                        sys.close(self.udp_ctrl_fd);
+                        self.udp_ctrl_fd = -1;
+                        self.udp_relay_port = 0;
+                    }
                 } else {
                     try self.handleSocksEvent(fd, ev.events);
                 }
@@ -80,18 +113,115 @@ pub const Engine = struct {
         }
     }
 
+    pub fn initUdpAssociate(self: *Engine) !void {
+        if (self.udp_ctrl_fd >= 0) return;
+
+        const sock = try sys.createTcpSocket();
+        errdefer sys.close(sock);
+
+        sys.connect(sock, self.cfg.socks_ip, self.cfg.socks_port) catch |err| {
+            if (err != error.ConnectionPending) return err;
+        };
+
+        // For control socket setup during init, we can briefly poll or wait with a short timeout
+        var pfd = [_]linux.pollfd{.{
+            .fd = sock,
+            .events = linux.POLL.OUT,
+            .revents = 0,
+        }};
+        _ = linux.poll(&pfd, 1, 500);
+
+        _ = try sys.write(sock, &socks5.Greeting);
+
+        var auth_resp: [2]u8 = undefined;
+        var pfd_in = [_]linux.pollfd{.{
+            .fd = sock,
+            .events = linux.POLL.IN,
+            .revents = 0,
+        }};
+        _ = linux.poll(&pfd_in, 1, 500);
+        const an = try sys.read(sock, &auth_resp);
+        if (an != 2 or auth_resp[0] != 0x05 or auth_resp[1] != 0x00) {
+            return error.Socks5AuthFailed;
+        }
+
+        var req_buf: [10]u8 = undefined;
+        const req_len = socks5.formatUdpAssociateRequest(&req_buf);
+        _ = try sys.write(sock, req_buf[0..req_len]);
+
+        _ = linux.poll(&pfd_in, 1, 500);
+        var resp_buf: [10]u8 = undefined;
+        const rn = try sys.read(sock, &resp_buf);
+        if (rn < 10 or resp_buf[0] != 0x05 or resp_buf[1] != 0x00) {
+            return error.Socks5UdpAssociateFailed;
+        }
+
+        const relay_port = (@as(u16, resp_buf[8]) << 8) | @as(u16, resp_buf[9]);
+        self.udp_ctrl_fd = sock;
+        self.udp_relay_port = relay_port;
+
+        // Monitor UDP ctrl socket for disconnection
+        var ev = linux.epoll_event{
+            .events = linux.EPOLL.ERR | linux.EPOLL.HUP,
+            .data = .{ .fd = sock },
+        };
+        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_ADD, sock, &ev);
+    }
+
     fn handleTunRead(self: *Engine) !void {
         const n = sys.read(self.cfg.tun_fd, &self.rx_packet_buf) catch |err| {
             if (err == error.WouldBlock) return;
             return err;
         };
-        if (n < 40) return; // Minimum IPv4 + TCP length
+        if (n < 20) return; // Minimum IPv4 header length
 
         const ip_hdr: *const protocol.Ipv4Header = @ptrCast(@alignCast(&self.rx_packet_buf[0]));
-        if (ip_hdr.version() != 4) return; // IPv4 only in Phase 1
-        if (ip_hdr.protocol != 6) return; // TCP only in Phase 1
+        if (ip_hdr.version() != 4) return; // IPv4 only
 
         const ip_hlen = ip_hdr.headerLen();
+        if (n < ip_hlen) return;
+
+        if (ip_hdr.protocol == 17) {
+            // UDP Packet Forwarding
+            if (n < ip_hlen + 8) return;
+            const udp_hdr: *const protocol.UdpHeader = @ptrCast(@alignCast(&self.rx_packet_buf[ip_hlen]));
+            const total_hlen = ip_hlen + 8;
+            if (n < total_hlen) return;
+
+            const payload = self.rx_packet_buf[total_hlen..n];
+            const src_ip = ip_hdr.src_ip;
+            const dst_ip = ip_hdr.dst_ip;
+            const src_port = udp_hdr.src_port;
+            const dst_port = udp_hdr.dst_port;
+
+            // Touch or allocate UDP session in table
+            _ = self.udp_table.touchOrAllocate(src_ip, dst_ip, src_port, dst_port);
+
+            // Re-attempt UDP Associate if not established
+            if (self.udp_ctrl_fd < 0 or self.udp_relay_port == 0) {
+                self.initUdpAssociate() catch return;
+            }
+
+            // Pack SOCKS5 UDP header (10 bytes) + payload
+            var socks5_udp_hdr: [10]u8 = undefined;
+            _ = socks5.formatUdpHeader(&socks5_udp_hdr, dst_ip, dst_port);
+
+            const send_len = 10 + payload.len;
+            if (send_len <= self.udp_scratch_buf.len) {
+                @memcpy(self.udp_scratch_buf[0..10], &socks5_udp_hdr);
+                @memcpy(self.udp_scratch_buf[10..send_len], payload);
+
+                _ = sys.sendto(
+                    self.udp_relay_fd,
+                    self.udp_scratch_buf[0..send_len],
+                    self.cfg.socks_ip,
+                    self.udp_relay_port,
+                ) catch {};
+            }
+            return;
+        }
+
+        if (ip_hdr.protocol != 6) return; // TCP only below
         if (n < ip_hlen + 20) return;
 
         const tcp_hdr: *const protocol.TcpHeader = @ptrCast(@alignCast(&self.rx_packet_buf[ip_hlen]));
@@ -400,4 +530,65 @@ pub const Engine = struct {
 
         _ = sys.write(self.cfg.tun_fd, self.tx_packet_buf[0..total_len]) catch {};
     }
+
+    fn handleUdpRelayRead(self: *Engine) !void {
+        const n = sys.recvfrom(self.udp_relay_fd, &self.udp_scratch_buf) catch |err| {
+            if (err == error.WouldBlock) return;
+            return err;
+        };
+        // SOCKS5 UDP response format:
+        // [0..2]: RSV(0x00, 0x00), [2]: FRAG(0x00), [3]: ATYP
+        // If ATYP=1 (IPv4): [4..8]: IP, [8..10]: Port, [10..n]: Payload
+        if (n < 10) return;
+        if (self.udp_scratch_buf[0] != 0 or self.udp_scratch_buf[1] != 0) return;
+        if (self.udp_scratch_buf[2] != 0) return; // Discard fragmented packets
+        if (self.udp_scratch_buf[3] != 0x01) return; // IPv4 only
+
+        const remote_ip = std.mem.readInt(u32, self.udp_scratch_buf[4..8], .big);
+        const remote_port = std.mem.readInt(u16, self.udp_scratch_buf[8..10], .big);
+        const payload = self.udp_scratch_buf[10..n];
+
+        // Find corresponding session to map back to original client
+        // In UdpSession, dst_ip and dst_port were stored as raw packet bytes (already network big-endian).
+        const session = self.udp_table.findByTarget(std.mem.nativeToBig(u32, remote_ip), std.mem.nativeToBig(u16, remote_port)) orelse return;
+
+        try self.sendUdpPacket(session.dst_ip, session.src_ip, session.dst_port, session.src_port, payload);
+    }
+
+    fn sendUdpPacket(self: *Engine, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16, payload: []const u8) !void {
+        const total_len: u16 = @intCast(20 + 8 + payload.len);
+        if (total_len > self.tx_packet_buf.len) return;
+
+        var ip_hdr: *protocol.Ipv4Header = @ptrCast(@alignCast(&self.tx_packet_buf[0]));
+        ip_hdr.ihl_version = 0x45;
+        ip_hdr.tos = 0;
+        ip_hdr.setTotalLen(total_len);
+        ip_hdr.id = 0;
+        ip_hdr.flags_fragment = std.mem.nativeToBig(u16, 0x4000); // DF
+        ip_hdr.ttl = 64;
+        ip_hdr.protocol = 17; // UDP
+        ip_hdr.checksum = 0;
+        ip_hdr.src_ip = src_ip;
+        ip_hdr.dst_ip = dst_ip;
+        ip_hdr.checksum = protocol.calculateIpv4Checksum(self.tx_packet_buf[0..20]);
+
+        var udp_hdr: *protocol.UdpHeader = @ptrCast(@alignCast(&self.tx_packet_buf[20]));
+        udp_hdr.src_port = src_port;
+        udp_hdr.dst_port = dst_port;
+        udp_hdr.setLength(@intCast(8 + payload.len));
+        udp_hdr.checksum = 0;
+
+        @memcpy(self.tx_packet_buf[28 .. 28 + payload.len], payload);
+
+        const udp_full_len: u16 = @intCast(8 + payload.len);
+        udp_hdr.checksum = protocol.calculateUdpChecksum(
+            src_ip,
+            dst_ip,
+            udp_full_len,
+            self.tx_packet_buf[20..total_len],
+        );
+
+        _ = sys.write(self.cfg.tun_fd, self.tx_packet_buf[0..total_len]) catch {};
+    }
 };
+
