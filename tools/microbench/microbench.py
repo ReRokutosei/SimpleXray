@@ -133,7 +133,8 @@ misc:
 
         elif self.backend == "zeptun":
             cmd = [
-                ZEPTUN_BIN, "run", "--tun", self.tun_name,
+                ZEPTUN_BIN, "run", "--preset", "mobile",
+                "--tun", self.tun_name,
                 "--mtu", str(self.mtu), "--handler", "socks5",
                 "--socks5", f"127.0.0.1:{self.socks_port}",
                 "--address", "172.16.0.1/30",
