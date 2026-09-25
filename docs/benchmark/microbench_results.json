@@ -1,0 +1,95 @@
+{
+  "metadata": {
+    "timestamp": "2026-09-25T22:06:09.089832",
+    "target": "Linux x86_64 User Namespace (Pure Stack Microbenchmark)",
+    "rounds": 1,
+    "steps": [
+      0,
+      250,
+      500,
+      750,
+      1000
+    ],
+    "backends": [
+      "simpletun"
+    ],
+    "networks": [
+      "tcp",
+      "udp"
+    ]
+  },
+  "rounds": {
+    "round_1": [
+      {
+        "backend": "simpletun",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 10.28,
+            "rss_mb": 10.28,
+            "private_dirty_mb": 8.58,
+            "threads": 1
+          },
+          {
+            "conns": 250,
+            "pss_mb": 10.28,
+            "rss_mb": 10.28,
+            "private_dirty_mb": 8.58,
+            "threads": 1
+          },
+          {
+            "conns": 500,
+            "pss_mb": 10.28,
+            "rss_mb": 10.28,
+            "private_dirty_mb": 8.58,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 0.0
+      },
+      {
+        "backend": "simpletun",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 10.28,
+            "rss_mb": 10.28,
+            "private_dirty_mb": 8.58,
+            "threads": 1
+          },
+          {
+            "conns": 250,
+            "pss_mb": 10.28,
+            "rss_mb": 10.29,
+            "private_dirty_mb": 8.58,
+            "threads": 1
+          },
+          {
+            "conns": 500,
+            "pss_mb": 10.28,
+            "rss_mb": 10.29,
+            "private_dirty_mb": 8.58,
+            "threads": 1
+          },
+          {
+            "conns": 750,
+            "pss_mb": 10.28,
+            "rss_mb": 10.29,
+            "private_dirty_mb": 8.58,
+            "threads": 1
+          },
+          {
+            "conns": 1000,
+            "pss_mb": 10.28,
+            "rss_mb": 10.29,
+            "private_dirty_mb": 8.58,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 0.0
+      }
+    ]
+  }
+}

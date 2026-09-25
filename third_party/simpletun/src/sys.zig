@@ -107,3 +107,15 @@ pub fn recvfrom(fd: fd_t, buf: []u8) !usize {
         else => error.ReadFailed,
     };
 }
+
+pub fn createEventFd() !fd_t {
+    const rc = linux.eventfd(0, linux.EFD.NONBLOCK | linux.EFD.CLOEXEC);
+    if (linux.errno(rc) != .SUCCESS) return error.EventFdFailed;
+    return @intCast(rc);
+}
+
+pub fn signalEventFd(fd: fd_t) void {
+    const val: u64 = 1;
+    _ = linux.write(fd, std.mem.asBytes(&val).ptr, 8);
+}
+

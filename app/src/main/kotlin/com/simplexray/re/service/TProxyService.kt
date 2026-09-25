@@ -59,7 +59,8 @@ class TProxyService : VpnService() {
         NONE,
         HEV,
         SING,
-        ZEPTUN
+        ZEPTUN,
+        SIMPLETUN
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -645,6 +646,31 @@ class TProxyService : VpnService() {
                 stopXray()
                 return false
             }
+        } else if (prefs.tunnelMode == TunnelMode.SimpleTun && !prefs.disableVpn) {
+            val fd = tunFd?.fd
+            if (fd == null) {
+                Log.e(TAG, "tunFd is null after establish()")
+                stopXray()
+                return false
+            }
+            Log.d(TAG, "Starting SimpleTUN backend on fd=$fd")
+            val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
+            val result = synchronized(nativeLifecycleLock) {
+                val res = runCatching {
+                    SimpleTunNative.nativeStart(fd, host, prefs.socksPort)
+                }.onFailure {
+                    Log.e(TAG, "Failed to start SimpleTUN backend", it)
+                }.getOrDefault(-1)
+                if (res == 0) {
+                    activeBackend = NativeBackend.SIMPLETUN
+                }
+                res
+            }
+            if (result != 0) {
+                Log.e(TAG, "SimpleTUN nativeStart failed: $result")
+                stopXray()
+                return false
+            }
         } else {
             val tproxyFile = File(cacheDir, "tproxy.conf")
             try {
@@ -822,6 +848,7 @@ class TProxyService : VpnService() {
                     goTunBinder?.stop() ?: true
                 }
                 NativeBackend.ZEPTUN -> runCatching { ZeptunNative.nativeStop() }
+                NativeBackend.SIMPLETUN -> runCatching { SimpleTunNative.nativeStop() }
                 NativeBackend.NONE -> return
             }
             goTunBinder = null

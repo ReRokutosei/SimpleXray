@@ -20,6 +20,7 @@ pub const Engine = struct {
     udp_ctrl_fd: sys.fd_t,
     udp_relay_fd: sys.fd_t,
     udp_relay_port: u16,
+    stop_fd: sys.fd_t,
     running: bool,
 
     // Reusable I/O buffers (Single allocation, 0 dynamic malloc in fast path, aligned for IP/TCP headers)
@@ -51,6 +52,16 @@ pub const Engine = struct {
         };
         _ = linux.epoll_ctl(epoll_fd, linux.EPOLL.CTL_ADD, udp_relay_fd, &udp_ev);
 
+        // Create stop eventfd
+        const stop_fd = try sys.createEventFd();
+        errdefer sys.close(stop_fd);
+
+        var stop_ev = linux.epoll_event{
+            .events = linux.EPOLL.IN,
+            .data = .{ .fd = stop_fd },
+        };
+        _ = linux.epoll_ctl(epoll_fd, linux.EPOLL.CTL_ADD, stop_fd, &stop_ev);
+
         const eng = Engine{
             .cfg = cfg,
             .epoll_fd = epoll_fd,
@@ -59,6 +70,7 @@ pub const Engine = struct {
             .udp_ctrl_fd = -1,
             .udp_relay_fd = udp_relay_fd,
             .udp_relay_port = 0,
+            .stop_fd = stop_fd,
             .running = true,
             .rx_packet_buf = undefined,
             .tx_packet_buf = undefined,
@@ -71,6 +83,7 @@ pub const Engine = struct {
 
     pub fn deinit(self: *Engine) void {
         sys.close(self.epoll_fd);
+        if (self.stop_fd >= 0) sys.close(self.stop_fd);
         if (self.udp_ctrl_fd >= 0) sys.close(self.udp_ctrl_fd);
         if (self.udp_relay_fd >= 0) sys.close(self.udp_relay_fd);
         for (&self.table.flows) |*flow| {
@@ -78,6 +91,13 @@ pub const Engine = struct {
                 sys.close(flow.socks_fd);
                 flow.socks_fd = -1;
             }
+        }
+    }
+
+    pub fn stop(self: *Engine) void {
+        self.running = false;
+        if (self.stop_fd >= 0) {
+            sys.signalEventFd(self.stop_fd);
         }
     }
 
@@ -95,7 +115,10 @@ pub const Engine = struct {
             const count: usize = @intCast(num_events);
             for (events[0..count]) |ev| {
                 const fd = ev.data.fd;
-                if (fd == self.cfg.tun_fd) {
+                if (fd == self.stop_fd) {
+                    self.running = false;
+                    return;
+                } else if (fd == self.cfg.tun_fd) {
                     try self.handleTunRead();
                 } else if (fd == self.udp_relay_fd) {
                     try self.handleUdpRelayRead();
