@@ -923,6 +923,10 @@ class TProxyService : VpnService() {
         private fun getTproxyConf(prefs: Preferences): String {
             var tproxyConf = """misc:
   task-stack-size: ${prefs.taskStackSize}
+  connect-timeout: ${prefs.tcpConnectTimeout}
+  tcp-read-write-timeout: ${prefs.tcpReadWriteTimeout}
+  udp-read-write-timeout: ${prefs.udpReadWriteTimeout}
+  udp-recv-buffer-size: ${prefs.udpRecvBufferSize}
 tunnel:
   mtu: ${prefs.tunnelMtu}
 """
