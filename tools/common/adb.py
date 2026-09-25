@@ -34,7 +34,11 @@ class AdbRunner:
 
         rc, out, _ = run_cmd(["adb", "devices"])
         lines = [line.strip() for line in out.strip().splitlines() if line.strip() and not line.startswith("List of devices")]
-        devices = [l.split()[0] for l in lines if "\tdevice" in l]
+        devices = []
+        for l in lines:
+            if "\tdevice" in l:
+                # Use split("\t")[0] instead of split()[0] to safely support mDNS TLS names with spaces like 'name (2)._adb...'
+                devices.append(l.split("\t")[0].strip())
 
         if not devices:
             raise RuntimeError("No authorized ADB device found connected.")
