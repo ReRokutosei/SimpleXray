@@ -164,6 +164,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_21
     }
 
+    java {
+        toolchain {
+            languageVersion.set(JavaLanguageVersion.of(25))
+        }
+    }
+
     androidComponents {
         onVariants(selector().all()) { variant ->
             variant.outputs.forEach { output ->
@@ -192,9 +198,10 @@ android {
                 directories.add("build/generated/source/proto/main/grpckt")
             }
             assets {
-                setSrcDirs(
-                    if (noGeoAssets.get()) listOf("src/main/assets-no-geo")
-                    else listOf("src/main/assets")
+                directories.clear()
+                directories.add(
+                    if (noGeoAssets.get()) "src/main/assets-no-geo"
+                    else "src/main/assets"
                 )
             }
         }
