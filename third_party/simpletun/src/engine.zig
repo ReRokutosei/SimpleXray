@@ -119,6 +119,15 @@ pub const Engine = struct {
 
         const f = flow.?;
 
+        // Fast Recycle: If we receive a new SYN for a flow in tombstone, immediately reset and re-allocate!
+        if ((flags & protocol.TcpHeader.FLAG_SYN) != 0 and (flags & protocol.TcpHeader.FLAG_ACK) == 0) {
+            if (f.state == .tombstone) {
+                f.reset();
+                try self.handleNewSyn(src_ip, dst_ip, src_port, dst_port, seq);
+                return;
+            }
+        }
+
         if ((flags & protocol.TcpHeader.FLAG_RST) != 0) {
             self.table.markTombstone(f, 3000);
             return;
@@ -132,17 +141,32 @@ pub const Engine = struct {
                 return;
             }
 
+            // If currently blocked by backpressure, refuse new payload without advancing rcv_nxt
+            if (f.is_blocked and payload.len > 0) {
+                // Drop packet and reinforce zero-window
+                try self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 0, null);
+                return;
+            }
+
             // Normal payload forward
             if (payload.len > 0 and seq == f.rcv_nxt) {
-                f.rcv_nxt +%= @intCast(payload.len);
-
                 // Forward payload to SOCKS5 socket
                 const sent = sys.write(f.socks_fd, payload) catch |err| {
                     if (err == error.WouldBlock) {
                         // Enter backpressure state
                         f.is_blocked = true;
-                        @memcpy(f.overflow_buf[0..payload.len], payload);
-                        f.overflow_len = @intCast(payload.len);
+                        const copy_len = @min(payload.len, f.overflow_buf.len);
+                        @memcpy(f.overflow_buf[0..copy_len], payload[0..copy_len]);
+                        f.overflow_len = @intCast(copy_len);
+                        f.rcv_nxt +%= @intCast(copy_len);
+
+                        // Arm EPOLLOUT to wake up when socket is writable again
+                        var ev = linux.epoll_event{
+                            .events = linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR,
+                            .data = .{ .fd = f.socks_fd },
+                        };
+                        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, f.socks_fd, &ev);
+
                         try self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 0, null);
                         return;
                     }
@@ -154,10 +178,20 @@ pub const Engine = struct {
                 if (sent < payload.len) {
                     f.is_blocked = true;
                     const rem = payload.len - sent;
-                    @memcpy(f.overflow_buf[0..rem], payload[sent..]);
-                    f.overflow_len = @intCast(rem);
+                    const copy_len = @min(rem, f.overflow_buf.len);
+                    @memcpy(f.overflow_buf[0..copy_len], payload[sent .. sent + copy_len]);
+                    f.overflow_len = @intCast(copy_len);
+                    f.rcv_nxt +%= @intCast(sent + copy_len);
+
+                    var ev = linux.epoll_event{
+                        .events = linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR,
+                        .data = .{ .fd = f.socks_fd },
+                    };
+                    _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, f.socks_fd, &ev);
+
                     try self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 0, null);
                 } else {
+                    f.rcv_nxt +%= @intCast(payload.len);
                     // Send normal cumulative ACK
                     try self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 65535, null);
                 }
@@ -248,6 +282,14 @@ pub const Engine = struct {
                     if (n >= 4 and resp[0] == 0x05 and resp[1] == 0x00) {
                         // SOCKS5 ready! Send conservative SYN-ACK
                         flow.state = .established;
+
+                        // Switch to EPOLL.IN only (arm EPOLL.OUT only on EAGAIN backpressure)
+                        var ev = linux.epoll_event{
+                            .events = linux.EPOLL.IN | linux.EPOLL.ERR,
+                            .data = .{ .fd = fd },
+                        };
+                        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, fd, &ev);
+
                         try self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_SYN | protocol.TcpHeader.FLAG_ACK, flow.s_isn, flow.rcv_nxt, 65535, null);
                     } else {
                         try self.sendRst(flow);
@@ -283,6 +325,14 @@ pub const Engine = struct {
                         if (written == flow.overflow_len) {
                             flow.overflow_len = 0;
                             flow.is_blocked = false;
+
+                            // Disarm EPOLLOUT to prevent busy loop
+                            var ev = linux.epoll_event{
+                                .events = linux.EPOLL.IN | linux.EPOLL.ERR,
+                                .data = .{ .fd = fd },
+                            };
+                            _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, fd, &ev);
+
                             try self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, 65535, null);
                         }
                     }
