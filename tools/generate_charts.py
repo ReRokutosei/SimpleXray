@@ -47,6 +47,7 @@ NAMES = {
     "sing": "SingTUN",
     "xray": "Xray",
     "zeptun": "Zeptun",
+    "simpletun": "SimpleTUN",
 }
 COLORS = {
     "direct_none": "#94a3b8",
@@ -54,6 +55,7 @@ COLORS = {
     "sing": "#00ADD8",
     "xray": "#e11d48",
     "zeptun": "#F7A41D",
+    "simpletun": "#10B981",
 }
 
 

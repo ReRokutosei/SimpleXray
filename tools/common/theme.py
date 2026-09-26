@@ -56,11 +56,20 @@ PALETTE = {
         'so_size_mb': 0.26,
         'runtime': 'Zig userspace stack',
         'ipc': 'Local SOCKS5 Inbound'
+    },
+    'simpletun': {
+        'name': 'SimpleTUN (Zig/0-Heap)',
+        'fill': '#10b981',
+        'edge': '#059669',
+        'light': '#d1fae5',
+        'so_size_mb': 0.15,
+        'runtime': 'Zig 0-heap lightweight stack',
+        'ipc': 'Local SOCKS5 Inbound'
     }
 }
 
-BACKEND_ORDER = ['hev', 'sing', 'xray', 'zeptun']
-TARGET_ORDER = ['direct_none', 'hev', 'sing', 'xray', 'zeptun']
+BACKEND_ORDER = ['hev', 'sing', 'xray', 'zeptun', 'simpletun']
+TARGET_ORDER = ['direct_none', 'hev', 'sing', 'xray', 'zeptun', 'simpletun']
 
 # Font Discovery
 FONT_DIRS = [

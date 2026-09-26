@@ -261,7 +261,8 @@ def run_media_suite(
         "hev": "Hev",
         "xray": "Xray TUN",
         "sing": "SingTUN",
-        "zeptun": "Zeptun"
+        "zeptun": "Zeptun",
+        "simpletun": "SimpleTUN",
     }
 
     # Go-based TUN backends that carry an independent Go runtime in their .so
@@ -336,6 +337,7 @@ def run_loopback_suite(
         "xray": "Xray TUN",
         "sing": "SingTUN",
         "zeptun": "Zeptun",
+        "simpletun": "SimpleTUN",
     }
 
     prev_backend: Optional[str] = None

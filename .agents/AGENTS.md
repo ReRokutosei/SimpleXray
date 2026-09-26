@@ -13,7 +13,7 @@ This file provides the necessary context and constraints for AI agents interacti
 - **Architecture**: MVVM with Android ViewModels.
 - **Data Persistence**: Direct Android `SharedPreferences`.
 - **Communication/RPC**: gRPC with Protocol Buffers (protobuf) to query Xray core status and traffic statistics through a dynamically allocated `127.0.0.1` TCP port. Service status and process logs are communicated reactively via in-memory `VpnStateHub` (`StateFlow` and `SharedFlow`).
-- **Native Components & TUN Backends**: Uses CMake to build `hev-socks5-tunnel` (C/lwIP) and dependencies as native JNI libraries, integrates `sing-tun` (Go stack), `zeptun` (Zig userspace stack), and integrates `mipstack` (Mihomo pure Go stack). Supports 4 primary TUN backends: Hev (default, C/lwIP for optimal throughput and low power consumption), SingTUN (Go/sing-box), Zeptun (Zig userspace stack), and native Xray TUN (Go/gVisor). In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. In Hev, SingTUN, and Zeptun modes, the tunnel forwards traffic to Xray through its local SOCKS5 inbound.
+- **Native Components & TUN Backends**: Uses CMake to build `hev-socks5-tunnel` (C/lwIP) and dependencies as native JNI libraries, integrates `sing-tun` (Go stack), `zeptun` (Zig userspace stack), `simpletun` (custom Zig 0-heap lightweight TUN-to-SOCKS5 protocol shifter), and integrates `mipstack` (Mihomo pure Go stack). Supports 5 primary TUN backends: Hev (default, C/lwIP for optimal throughput and low power consumption), SingTUN (Go/sing-box), Zeptun (Zig userspace stack), SimpleTUN (custom Zig 0-heap lightweight engine), and native Xray TUN (Go/gVisor). In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. In Hev, SingTUN, Zeptun, and SimpleTUN modes, the tunnel forwards traffic to Xray through its local SOCKS5 inbound.
 
 ## Project Structure
 - `app/src/main/kotlin/com/simplexray/re/`:
@@ -71,6 +71,7 @@ This file provides the necessary context and constraints for AI agents interacti
      - `Hev`: `#555555`
      - `SingTUN`: `#00ADD8`
      - `Zeptun`: `#F7A41D`
+     - `SimpleTUN`: `#10B981`
    - **Y-Axis Hierarchy & Symmetry**: For multi-panel comparisons (e.g. 1×2 layouts), render Y-axis ticks and category labels on the left panel only; omit redundant labels and ticks on the right panel. Category headers (e.g. Backend name) should be vertically centered across their sub-items (e.g. between 4W and 8W).
    - **Natural Ordering**: Order concurrent workloads progressively (e.g. top-to-bottom: 4 Workers before 8 Workers).
    - **No Meaningless Spacers**: If a backend is not applicable to a workload (e.g. Hev exceeding PCB limits on 5,000 CPS), do not allocate empty bar rows that break layout continuity; annotate via a concise, centered bottom footnote instead.

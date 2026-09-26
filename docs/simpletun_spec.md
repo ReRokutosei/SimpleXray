@@ -1,6 +1,6 @@
 # SimpleTUN Architecture & State Machine Specification
 
-**Version**: 0.1-draft  
+**Version**: 0.2-stable  
 **Target Scope**: Android `VpnService` TUN-to-SOCKS5 transparent proxy endpoint  
 **Language Target**: Zig (C ABI export)  
 
@@ -16,21 +16,22 @@ SimpleTUN is a purpose-built user-space network endpoint designed strictly for A
  +---------------------------------------------------------+
        ^ (IP Packets)
        v
- [ tun_fd ] (L3 Point-to-Point Virtual Interface)
+ [ tun_fd ] (L3 Virtual Interface, O_NONBLOCK)
        ^
        | read() / writev()
        v
  +---------------------------------------------------------+
  | SimpleTUN (User-space Protocol Shifter)                 |
- |  - IPv4 Packet Demux & Checksum Calculation             |
- |  - Conservative TCP State Machine & Flow Control        |
- |  - Per-flow Zero-Window Backpressure                    |
- |  - Zero-Allocation Static Slab Session Table            |
+ |  - IPv4 Packet Demux & RFC 793/1624 Checksum Fold       |
+ |  - Conservative TCP State Machine & 4-Byte MSS Option   |
+ |  - Per-flow Zero-Window Backpressure & Sliding Buffer   |
+ |  - UDP ASSOCIATE & DNS Transaction ID Ring Tracker      |
+ |  - Zero-Allocation Static Slab Session Table (<1.5MB)   |
  +---------------------------------------------------------+
        ^
-       | non-blocking stream I/O (epoll)
+       | non-blocking stream & datagram I/O (epoll)
        v
- [ socks5_fd ] (Local TCP Socket)
+ [ socks_fd / udp_relay_fd ] (Local Sockets)
        ^
        v
  +---------------------------------------------------------+
@@ -38,19 +39,20 @@ SimpleTUN is a purpose-built user-space network endpoint designed strictly for A
  +---------------------------------------------------------+
 ```
 
-### 1.1 In-Scope (Phase 1)
-- Single TUN file descriptor input (`tun_fd`).
+### 1.1 In-Scope
+- Single TUN file descriptor input (`tun_fd`), configured non-blocking (`O_NONBLOCK`).
 - IPv4 protocol parsing and packet synthesis.
 - TCP stream translation to local SOCKS5 client (`NO AUTHENTICATION REQUIRED`, `CMD 0x01 CONNECT`).
-- Conservative 3-way handshake (local SOCKS5 upstream establishment before client `SYN-ACK` generation).
-- Explicit per-flow backpressure via standard TCP zero-window signaling (`Win=0`) and persist probe handling.
-- Deterministic connection tear-down (`FIN` half-close propagation, `RST` teardown, short-lived session tombstones).
-- Bounded memory footprint via statically allocated slab allocators.
+- Conservative 3-way handshake with 4-byte TCP MSS Option (`Kind=2, Len=4, Value=MTU-40`, e.g. 1460).
+- Level-triggered epoll safety: explicit disarming of `EPOLLOUT` during handshake to avoid 100% CPU spinning; immediate socket closure and `EPOLL_CTL_DEL` upon upstream EOF.
+- Explicit per-flow backpressure via standard TCP zero-window signaling (`Win=0`), persist probe handling (0-byte and 1-byte probes), and sliding overflow buffer.
+- Deterministic connection tear-down (`FIN` half-close propagation, `RST` teardown, short-lived session tombstones with LRU eviction fallback under high CPS).
+- SOCKS5 UDP ASSOCIATE relay with dedicated 64-slot FIFO ring buffer (`DnsQueryTracker`) for concurrent DNS query matching.
+- Bounded memory footprint via statically pinned slab tables with zero stack allocation (`initInto`).
 
-### 1.2 Out-of-Scope (Deferred to Future Phases)
-- **IPv6 parsing & synthesis** (Deferred to Phase 2).
-- **UDP ASSOCIATE & UDP NAT** (Deferred to Phase 3).
-- **0-RTT SYN spoofing with speculative payload buffering** (Deferred to Phase 2).
+### 1.2 Out-of-Scope (Deferred to Future Releases)
+- **IPv6 parsing & synthesis** (Deferred).
+- **0-RTT SYN spoofing with speculative payload buffering**.
 - **ICMP processing**: All ICMP packets are silently dropped.
 - **IP reassembly & fragmentation**: Path MTU discovery is assumed; fragmented IP packets are dropped.
 - **General routing tables**: Destination IPv4 and port are extracted directly from headers and mapped to SOCKS5 targets.
@@ -287,17 +289,19 @@ pub const Flow = struct {
 };
 ```
 
-### 7.2 Memory Budget Sizing (512 Concurrent Flows)
+### 7.2 Memory Budget Sizing (512 Concurrent Flows + 256 UDP Sessions)
 
 | Component | Sizing Formula | Static Footprint |
 | :--- | :--- | :--- |
-| **Flow Slab Table** | 512 entries × ~2,100 bytes/entry | **~1,075 KB (1.05 MB)** |
+| **TCP Flow Slab Table** | 512 entries × ~2,100 bytes/entry | **~1,075 KB (1.05 MB)** |
+| **UDP Session Table** | 256 entries × 32 bytes/entry | **8 KB** |
+| **DNS Query Tracker** | 64 entries × 6 bytes FIFO ring | **~0.4 KB** |
 | **Lookup Hash Index** | 1024 bucket heads (u16 index) | **2 KB** |
 | **I/O Packet Buffer (RX/TX)** | 2 buffers × 2048 bytes (Scratch) | **4 KB** |
-| **Epoll Event Array** | 512 `struct epoll_event` (64B) | **32 KB** |
-| **Total Resident Memory (PSS)** | Statically pinned / BSS | **~1.12 MB** |
+| **Epoll Event Array** | 512 `struct epoll_event` | **~6 KB** |
+| **Total Resident Memory (PSS)** | Statically pinned / BSS (`initInto`) | **~1.15 MB** |
 
-> **Conclusion**: The entire state machine, including per-flow backpressure scratch buffers, strictly fits within **< 1.5 MB PSS**, completely immune to unbounded allocation spikes.
+> **Conclusion**: The entire state machine, including per-flow backpressure scratch buffers and UDP/DNS tracking, strictly fits within **< 1.5 MB PSS**, completely immune to dynamic heap allocations and GC pauses.
 
 ---
 
@@ -309,12 +313,19 @@ Verification follows a multi-stage deterministic test pipeline:
 [ Stage 1: Linux User-Namespace Harness (unshare -r -n) ]
     ├── Automated curl GET/POST against local SOCKS5
     ├── iperf3 single-stream & 16-worker multi-stream saturation
-    ├── Zero-Window verification via iptables/tc simulated upstream throttling
-    └── Valgrind / AddressSanitizer leak & bounds verification
+    ├── Zero-Window verification via simulated upstream throttling
+    └── AddressSanitizer leak & bounds verification
 
 [ Stage 2: Abnormal Network Boundary Suite ]
-    ├── Upstream SOCKS5 abrupt termination (SIGKILL) -> Assert clean client RST
+    ├── Upstream SOCKS5 abrupt termination -> Assert clean client RST
     ├── Client RST injection -> Assert socks_fd closed without leaks
-    ├── Half-close validation (curl --limit-rate upload/download asymmetric close)
-    └── Port reuse churn (10,000 rapid sequential connections) -> Tombstone collision check
+    ├── Half-close validation (asymmetric close)
+    └── Port reuse churn (rapid sequential connections) -> LRU tombstone eviction check
+
+[ Stage 3: Android Device Verification & Benchmark Suite ]
+    ├── SimpleXray TProxyService integration via JNI bridge (libsimpletun.so)
+    ├── End-to-end HTTP/HTTPS dual-stack validation (curl www.baidu.com)
+    ├── CPU idle inspection (top shows 0.0% CPU suspended in epoll_wait)
+    └── Standardized benchmark runner execution:
+        python3 tools/benchmark.py --preset light --backends simpletun
 ```
