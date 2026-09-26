@@ -409,14 +409,16 @@ fun SettingsScreen(
                     enabled = !vpnDisabled
                 )
 
+                val isSimpleTun = settingsState.switches.tunnelMode == TunnelMode.SimpleTun
+
                 EditableListItemWithMiuixBottomSheet(
                     headline = stringResource(R.string.tunnel_mtu_title),
-                    currentValue = settingsState.tunnelMtu.value,
+                    currentValue = if (isSimpleTun) "1500" else settingsState.tunnelMtu.value,
                     onValueConfirmed = { newValue -> mainViewModel.updateTunnelMtu(newValue) },
                     label = stringResource(R.string.tunnel_mtu_title),
                     supportingText = stringResource(R.string.tunnel_mtu_summary),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    enabled = !vpnDisabled
+                    enabled = !vpnDisabled && !isSimpleTun
                 )
 
                 SwitchPreference(
@@ -898,7 +900,7 @@ fun EditableListItemWithMiuixBottomSheet(
             if (customSummary == null) {
                 Text(
                     text = currentValue,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    color = if (enabled) MiuixTheme.colorScheme.onSurfaceVariantSummary else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
                     style = MiuixTheme.textStyles.body2,
                 )
             }
