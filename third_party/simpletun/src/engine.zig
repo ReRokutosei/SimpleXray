@@ -397,33 +397,14 @@ pub const Engine = struct {
                 }
             }
 
-            // Normal payload forward
+            // Normal payload forward. On upstream backpressure we deliberately
+            // do not buffer: only bytes accepted by the SOCKS socket are ACKed,
+            // and the client TCP stack retransmits the rest after window reopen.
             if (effective_payload.len > 0) {
                 const sent = sys.writeSocket(f.socks_fd, effective_payload) catch |err| {
                     if (err == error.WouldBlock) {
-                        // Enter backpressure state
                         f.is_blocked = true;
-                        if (self.table.getOverflowBuf(f)) |buf| {
-                            const copy_len = @min(effective_payload.len, buf.len);
-                            @memcpy(buf[0..copy_len], effective_payload[0..copy_len]);
-                            f.overflow_len = @intCast(copy_len);
-                            f.rcv_nxt +%= @intCast(copy_len);
-                        } else {
-                            // M-2: All 16 overflow slots are taken. Cannot buffer — send RST to avoid
-                            // silent data loss while the client retransmits indefinitely.
-                            self.sendRst(f);
-                            self.closeFlow(f, 3000);
-                            return;
-                        }
-
-                        // Always arm EPOLLOUT to wake up when socket is writable again
-                        const flow_idx: u32 = @intCast(self.table.indexOf(f));
-                        var ev = linux.epoll_event{
-                            .events = linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR,
-                            .data = .{ .u32 = flow_idx + FLOW_INDEX_OFFSET },
-                        };
-                        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, f.socks_fd, &ev);
-
+                        self.armSocksEvents(f, linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR);
                         self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 0, null);
                         return;
                     }
@@ -435,21 +416,7 @@ pub const Engine = struct {
                 if (sent < effective_payload.len) {
                     f.is_blocked = true;
                     f.rcv_nxt +%= @intCast(sent);
-                    const rem = effective_payload.len - sent;
-                    if (self.table.getOverflowBuf(f)) |buf| {
-                        const copy_len = @min(rem, buf.len);
-                        @memcpy(buf[0..copy_len], effective_payload[sent .. sent + copy_len]);
-                        f.overflow_len = @intCast(copy_len);
-                        f.rcv_nxt +%= @intCast(copy_len);
-                    }
-
-                    const flow_idx: u32 = @intCast(self.table.indexOf(f));
-                    var ev = linux.epoll_event{
-                        .events = linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR,
-                        .data = .{ .u32 = flow_idx + FLOW_INDEX_OFFSET },
-                    };
-                    _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, f.socks_fd, &ev);
-
+                    self.armSocksEvents(f, linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR);
                     self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 0, null);
                 } else {
                     f.rcv_nxt +%= @intCast(effective_payload.len);
@@ -459,16 +426,13 @@ pub const Engine = struct {
                 }
             }
 
-            // Handle client FIN with in-order sequence verification
+            // Handle client FIN with in-order sequence verification.
             if ((flags & protocol.TcpHeader.FLAG_FIN) != 0) {
                 if (seq +% @as(u32, @intCast(payload.len)) == f.rcv_nxt) {
                     if (!f.client_fin) {
                         f.rcv_nxt +%= 1;
                         f.client_fin = true;
-                        // Defer shutdown until overflow buffer is fully flushed upstream
-                        if (f.overflow_len == 0) {
-                            sys.shutdown(f.socks_fd);
-                        }
+                        sys.shutdown(f.socks_fd);
                     }
                 }
                 const win: u16 = if (f.is_blocked) 0 else 65535;
@@ -573,7 +537,6 @@ pub const Engine = struct {
 
     fn handleSocksEvent(self: *Engine, flow: *flow_mod.Flow, events: u32) void {
         const fd = flow.socks_fd;
-        const flow_idx: u32 = @intCast(self.table.indexOf(flow));
 
         const is_fatal_err = (events & linux.EPOLL.ERR) != 0;
         const is_fatal_hup = (events & linux.EPOLL.HUP) != 0 and (events & linux.EPOLL.IN) == 0;
@@ -685,52 +648,15 @@ pub const Engine = struct {
                     }
                 }
 
-                // If unblocked, flush overflow buffer and announce window reopen
+                // Upstream socket writable again: reopen the client window and
+                // let TCP retransmission deliver the unacknowledged bytes.
                 if ((events & linux.EPOLL.OUT) != 0 and flow.is_blocked) {
-                    if (flow.overflow_len > 0) {
-                        if (self.table.getOverflowBuf(flow)) |buf| {
-                            const written = sys.writeSocket(fd, buf[0..flow.overflow_len]) catch |err| {
-                                if (err == error.WouldBlock) return;
-                                self.sendRst(flow);
-                                self.closeFlow(flow, 3000);
-                                return;
-                            };
-                            if (written < flow.overflow_len) {
-                                const rem = flow.overflow_len - written;
-                                std.mem.copyForwards(u8, buf[0..rem], buf[written..flow.overflow_len]);
-                                flow.overflow_len = @intCast(rem);
-                            } else {
-                                self.table.releaseOverflowBuf(flow);
-                                flow.is_blocked = false;
-
-                                // If client sent FIN earlier, now that overflow is flushed, trigger shutdown
-                                if (flow.client_fin) {
-                                    sys.shutdown(fd);
-                                }
-
-                                // Disarm EPOLLOUT to prevent busy loop
-                                var ev = linux.epoll_event{
-                                    .events = linux.EPOLL.IN | linux.EPOLL.ERR,
-                                    .data = .{ .u32 = flow_idx + FLOW_INDEX_OFFSET },
-                                };
-                                _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, fd, &ev);
-
-                                self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, 65535, null);
-                            }
-                        }
-                    } else {
-                        // Unblocked without pending overflow data
-                        flow.is_blocked = false;
-                        if (flow.client_fin) {
-                            sys.shutdown(fd);
-                        }
-                        var ev = linux.epoll_event{
-                            .events = linux.EPOLL.IN | linux.EPOLL.ERR,
-                            .data = .{ .u32 = flow_idx + FLOW_INDEX_OFFSET },
-                        };
-                        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, fd, &ev);
-                        self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, 65535, null);
+                    flow.is_blocked = false;
+                    if (flow.client_fin) {
+                        sys.shutdown(fd);
                     }
+                    self.armSocksEvents(flow, linux.EPOLL.IN | linux.EPOLL.ERR);
+                    self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, 65535, null);
                 }
             },
             else => {},

@@ -27,8 +27,6 @@ pub const Flow = struct {
     // SOCKS5 and I/O state
     socks_fd: i32,
     tombstone_until_ms: i64,
-    overflow_len: u16,
-    overflow_pool_idx: u8,
     state: State,
     is_blocked: bool,
     client_fin: bool,
@@ -53,8 +51,6 @@ pub const Flow = struct {
         self.s_isn = 0;
         self.socks_fd = -1;
         self.tombstone_until_ms = 0;
-        self.overflow_len = 0;
-        self.overflow_pool_idx = 0xff;
         self.state = .free;
         self.is_blocked = false;
         self.client_fin = false;
@@ -64,18 +60,12 @@ pub const Flow = struct {
 
 pub const FlowTable = struct {
     pub const CAPACITY: usize = 1024;
-    pub const OVERFLOW_POOL_SIZE: usize = 16;
 
     flows: [CAPACITY]Flow,
-    overflow_pool: [OVERFLOW_POOL_SIZE][2048]u8,
-    overflow_pool_used: [OVERFLOW_POOL_SIZE]bool,
 
     pub fn initInto(self: *FlowTable) void {
         for (&self.flows) |*flow| {
             flow.reset();
-        }
-        for (&self.overflow_pool_used) |*used| {
-            used.* = false;
         }
     }
 
@@ -91,28 +81,6 @@ pub const FlowTable = struct {
         return (ptr - base) / @sizeOf(Flow);
     }
 
-    pub fn getOverflowBuf(self: *FlowTable, flow: *Flow) ?[]u8 {
-        if (flow.overflow_pool_idx < OVERFLOW_POOL_SIZE) {
-            return &self.overflow_pool[flow.overflow_pool_idx];
-        }
-        for (&self.overflow_pool_used, 0..) |*used, idx| {
-            if (!used.*) {
-                used.* = true;
-                flow.overflow_pool_idx = @intCast(idx);
-                return &self.overflow_pool[idx];
-            }
-        }
-        return null;
-    }
-
-    pub fn releaseOverflowBuf(self: *FlowTable, flow: *Flow) void {
-        if (flow.overflow_pool_idx < OVERFLOW_POOL_SIZE) {
-            self.overflow_pool_used[flow.overflow_pool_idx] = false;
-            flow.overflow_pool_idx = 0xff;
-            flow.overflow_len = 0;
-        }
-    }
-
     pub fn findFlow(self: *FlowTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) ?*Flow {
         for (&self.flows) |*flow| {
             if (flow.state != .free and flow.matches(src_ip, dst_ip, src_port, dst_port)) {
@@ -126,7 +94,6 @@ pub const FlowTable = struct {
         // First pass: try to find a completely free slot
         for (&self.flows) |*flow| {
             if (flow.state == .free) {
-                self.releaseOverflowBuf(flow);
                 flow.reset();
                 flow.src_ip = src_ip;
                 flow.dst_ip = dst_ip;
@@ -145,7 +112,6 @@ pub const FlowTable = struct {
         for (&self.flows) |*flow| {
             if (flow.state == .tombstone) {
                 if (now >= flow.tombstone_until_ms) {
-                    self.releaseOverflowBuf(flow);
                     flow.reset();
                     flow.src_ip = src_ip;
                     flow.dst_ip = dst_ip;
@@ -163,7 +129,6 @@ pub const FlowTable = struct {
 
         // Third pass: under high CPS pressure, forcibly evict the oldest tombstone
         if (oldest_tombstone) |flow| {
-            self.releaseOverflowBuf(flow);
             flow.reset();
             flow.src_ip = src_ip;
             flow.dst_ip = dst_ip;
@@ -186,7 +151,6 @@ pub const FlowTable = struct {
             }
         }
         if (oldest_flow) |flow| {
-            self.releaseOverflowBuf(flow);
             const old_fd = flow.socks_fd;
             flow.reset();
             flow.socks_fd = old_fd; // Preserved for Engine to epoll_ctl(DEL) and sys.close()
@@ -202,7 +166,7 @@ pub const FlowTable = struct {
     }
 
     pub fn markTombstone(self: *FlowTable, flow: *Flow, duration_ms: i64) void {
-        self.releaseOverflowBuf(flow);
+        _ = self;
         if (flow.socks_fd >= 0) {
             sys.close(flow.socks_fd);
             flow.socks_fd = -1;
