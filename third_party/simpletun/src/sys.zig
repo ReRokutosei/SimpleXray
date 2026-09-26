@@ -133,6 +133,18 @@ pub fn recvfrom(fd: fd_t, buf: []u8) !usize {
     }
 }
 
+pub fn recvPeek(fd: fd_t, buf: []u8) !usize {
+    while (true) {
+        const rc = linux.recvfrom(fd, buf.ptr, buf.len, linux.MSG.PEEK, null, null);
+        switch (linux.errno(rc)) {
+            .SUCCESS => return @intCast(rc),
+            .INTR => continue,
+            .AGAIN => return error.WouldBlock,
+            else => return error.ReadFailed,
+        }
+    }
+}
+
 pub fn createEventFd() !fd_t {
     const rc = linux.eventfd(0, linux.EFD.NONBLOCK | linux.EFD.CLOEXEC);
     if (linux.errno(rc) != .SUCCESS) return error.EventFdFailed;
@@ -143,4 +155,3 @@ pub fn signalEventFd(fd: fd_t) void {
     const val: u64 = 1;
     _ = linux.write(fd, std.mem.asBytes(&val).ptr, 8);
 }
-

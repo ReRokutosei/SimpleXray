@@ -18,20 +18,23 @@ pub const Flow = struct {
     src_port: u16,
     dst_port: u16,
 
-    // Sequence & Acknowledgment tracking (16B)
+    // Sequence & Acknowledgment tracking
     rcv_nxt: u32,
     snd_nxt: u32,
+    snd_una: u32,
     c_isn: u32,
     s_isn: u32,
 
     // SOCKS5 and I/O state
     socks_fd: i32,
     tombstone_until_ms: i64,
+    peer_wnd: u16,
     state: State,
     is_blocked: bool,
     client_fin: bool,
+    tun_blocked: bool,
     hs: socks5.Handshake = .{},
-    _pad: [2]u8 = [_]u8{0} ** 2,
+    _pad: [1]u8 = [_]u8{0} ** 1,
 
     pub fn matches(self: *const Flow, s_ip: u32, d_ip: u32, s_port: u16, d_port: u16) bool {
         return self.src_ip == s_ip and
@@ -47,13 +50,16 @@ pub const Flow = struct {
         self.dst_port = 0;
         self.rcv_nxt = 0;
         self.snd_nxt = 0;
+        self.snd_una = 0;
         self.c_isn = 0;
         self.s_isn = 0;
         self.socks_fd = -1;
         self.tombstone_until_ms = 0;
+        self.peer_wnd = 0;
         self.state = .free;
         self.is_blocked = false;
         self.client_fin = false;
+        self.tun_blocked = false;
         self.hs.reset();
     }
 };
@@ -308,7 +314,7 @@ pub const UdpTable = struct {
 };
 
 comptime {
-    std.debug.assert(@sizeOf(Flow) == 72);
+    std.debug.assert(@sizeOf(Flow) == 80);
     std.debug.assert(@sizeOf(UdpSession) == 24);
     std.debug.assert(@sizeOf(DnsQuery) == 16);
 }

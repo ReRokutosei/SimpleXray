@@ -46,12 +46,13 @@ SimpleTUN is a purpose-built user-space network endpoint designed strictly for A
 - Conservative 3-way handshake with 4-byte TCP MSS Option (`Kind=2, Len=4, Value=MTU-40`, e.g. 1460).
 - Level-triggered epoll safety: explicit disarming of `EPOLLOUT` during handshake to avoid 100% CPU spinning; immediate socket closure and mandatory `EPOLL_CTL_DEL` upon EOF/RST.
 - O(1) SOCKS event dispatch via epoll union data (`flow_idx + 0x1000`), completely eliminating O(N) table searches.
-- 0-Copy direct downstream packet synthesis: reading directly from SOCKS5 socket into `tx_packet_buf[40..]` without intermediate buffer or secondary memcpy.
+- Direct downstream packet synthesis via `recv(MSG_PEEK)`: SOCKS data is consumed only after the synthesized packet has been accepted by the TUN device, so TUN `EAGAIN` never drops payload.
+- Downstream client TCP flow control: `snd_una`/`peer_wnd` tracking prevents reading more from SOCKS than the client kernel can receive, including zero-window pause and window reopen.
 - Incremental SOCKS5 handshake parser that consumes exactly the bytes of each response, even when authentication or CONNECT replies are split across TCP segments.
 - Explicit per-flow upstream backpressure via standard TCP zero-window signaling (`Win=0`) and persist probe handling (0-byte and 1-byte probes). Unacknowledged bytes are retransmitted by the client TCP stack after the window reopens; no user-space payload buffer is required.
 - Deterministic connection tear-down (`FIN` half-close propagation, `RST` teardown, short-lived session tombstones with LRU/saturation eviction fallback under high CPS).
 - SOCKS5 UDP ASSOCIATE relay with dedicated 64-slot FIFO ring buffer (`DnsQueryTracker`) for concurrent DNS query matching and 2000ms failure backoff cooldown.
-- Ultra-dense memory footprint via statically pinned 72-byte Flow slab tables (< 100 KiB total BSS).
+- Ultra-dense memory footprint via statically pinned 80-byte Flow slab tables (< 100 KiB total BSS).
 
 ### 1.2 Out-of-Scope (Deferred to Future Releases)
 - **IPv6 parsing & synthesis** (Deferred).
@@ -234,6 +235,14 @@ SimpleTUN is intentionally optimized for mobile VPN transparent proxy environmen
 - **DNS Queries (`dst_port == 53`)**: SimpleTUN utilizes a dedicated 64-entry FIFO ring buffer (`DnsQueryTracker`) keyed on `(DNS Transaction ID, client_port)`. This guarantees accurate, concurrent matching and demultiplexing of multiple in-flight DNS queries even when targeting the same upstream DNS resolver.
 - **Non-DNS Datagrams**: To strictly adhere to the zero-heap and fixed file-descriptor budget (< 100 KiB resident BSS), SimpleTUN multiplexes all UDP traffic through a single SOCKS5 `UDP ASSOCIATE` relay socket (`udp_relay_fd`) rather than spawning an unbounded number of OS socket FDs per foreign destination. In an Android single-host VpnService environment where all traffic originates locally from the device itself with ephemeral client ports, inbound return datagrams for identical `(target_ip, target_port)` tuples are dispatched to the most recently active session (`findByTarget`). This is a deliberate, documented architectural trade-off prioritizing deterministic resource boundaries and zero FD leakage over symmetric NAT tracking for generic non-DNS UDP.
 
+### 5.5 Downstream Flow Control & TUN Backpressure
+- SimpleTUN tracks the client-side send state with `snd_una` and `peer_wnd`.
+- Downstream data is only read while `snd_nxt - snd_una < peer_wnd`; a zero client window pauses all SOCKS reads.
+- On client ACK / window update, the send window is advanced and the downstream pump resumes immediately.
+- SOCKS data is peeked with `MSG_PEEK` before packet synthesis and consumed with `read()` only after `write(tun_fd)` succeeds.
+- If the TUN device returns `EAGAIN`, the flow sets `tun_blocked`, pauses its SOCKS `EPOLLIN`, and arms `EPOLLOUT` on the TUN descriptor.
+- When the TUN becomes writable again, blocked flows are retried; unacknowledged TCP bytes remain in the SOCKS socket/kernel buffers, so no user-space payload queue is introduced.
+
 ---
 
 ## 6. Teardown, RST Handling, and Session Tombstones
@@ -282,21 +291,24 @@ pub const Flow = struct {
     src_port: u16,
     dst_port: u16,
 
-    // Sequence & Acknowledgment Tracking (16 Bytes)
+    // Sequence & Acknowledgment Tracking
     rcv_nxt: u32,
     snd_nxt: u32,
+    snd_una: u32,
     c_isn: u32,
     s_isn: u32,
 
-    // File Descriptor, Deadline, State & Handshake (36 Bytes)
+    // File Descriptor, Window, Deadline, State & Handshake
     socks_fd: i32,               // 4B
     tombstone_until_ms: i64,     // 8B
+    peer_wnd: u16,               // 2B
     state: State,                // 1B
     is_blocked: bool,            // 1B
     client_fin: bool,            // 1B
+    tun_blocked: bool,           // 1B
     hs: socks5.Handshake,        // 24B (phase, offset, 22B response buffer)
-    _pad: [2]u8 = [_]u8{0} ** 2, // 2B
-    // Total struct size: 72 bytes (fits in two 64B cache lines)
+    _pad: [1]u8 = [_]u8{0} ** 1, // 1B
+    // Total struct size: 80 bytes (fits in two 64B cache lines)
 };
 ```
 
@@ -304,12 +316,12 @@ pub const Flow = struct {
 
 | Component | Sizing Formula | Static Footprint |
 | :--- | :--- | :--- |
-| **TCP Flow Slab Table** | 1024 entries × 72 bytes/entry | **72 KiB (L2 D-Cache Resident)** |
-| **Upstream Payload Buffers** | None; client TCP retransmission is the queue | **0 KiB** |
+| **TCP Flow Slab Table** | 1024 entries × 80 bytes/entry | **80 KiB (L2 D-Cache Resident)** |
+| **Payload Buffers** | None; TCP retransmission and `MSG_PEEK` are the queues | **0 KiB** |
 | **UDP Session Table** | 256 entries × 24 bytes/entry (Packed) | **6 KiB** |
 | **DNS Query Tracker** | 64 entries × 16 bytes FIFO ring | **1 KiB** |
 | **I/O Packet Buffers** | 3 buffers × 4096 bytes (RX / TX / UDP Relay) | **12 KiB** |
-| **Total Resident Memory (BSS)** | Statically pinned in BSS (`initInto`) | **~91 KiB (< 0.1 MiB)** |
+| **Total Resident Memory (BSS)** | Statically pinned in BSS (`initInto`) | **~99 KiB (< 0.1 MiB)** |
 
 > **Conclusion**: The entire state machine, including the incremental handshake parser and UDP/DNS tracking, strictly fits within **< 100 KiB total static memory** (actual Android app PSS growth is practically flat at 0 KiB / connection), completely immune to dynamic heap allocations and GC pauses.
 

@@ -33,6 +33,7 @@ pub const Engine = struct {
     last_udp_associate_fail_ms: i64,
     stop_fd: sys.fd_t,
     running: bool,
+    tun_out_armed: bool,
 
     // Reusable I/O buffers (Single allocation, 0 dynamic malloc in fast path, aligned for IP/TCP headers)
     rx_packet_buf: [4096]u8 align(4),
@@ -86,6 +87,7 @@ pub const Engine = struct {
         self.last_udp_associate_fail_ms = 0;
         self.stop_fd = stop_fd;
         self.running = true;
+        self.tun_out_armed = false;
     }
 
     pub fn init(cfg: EngineConfig) !Engine {
@@ -116,12 +118,136 @@ pub const Engine = struct {
     }
 
     pub fn closeFlow(self: *Engine, flow: *flow_mod.Flow, tombstone_ms: i64) void {
+        if (flow.tun_blocked) {
+            flow.tun_blocked = false;
+            self.armTunEvents();
+        }
         if (flow.socks_fd >= 0) {
             _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_DEL, flow.socks_fd, null);
             sys.close(flow.socks_fd);
             flow.socks_fd = -1;
         }
         self.table.markTombstone(flow, tombstone_ms);
+    }
+
+    fn anyTunBlocked(self: *const Engine) bool {
+        for (&self.table.flows) |*flow| {
+            if (flow.tun_blocked) return true;
+        }
+        return false;
+    }
+
+    fn armTunEvents(self: *Engine) void {
+        const want_out = self.anyTunBlocked();
+        if (want_out == self.tun_out_armed) return;
+        var ev = linux.epoll_event{
+            .events = if (want_out) (linux.EPOLL.IN | linux.EPOLL.OUT) else linux.EPOLL.IN,
+            .data = .{ .fd = self.cfg.tun_fd },
+        };
+        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, self.cfg.tun_fd, &ev);
+        self.tun_out_armed = want_out;
+    }
+
+    fn canSendDownstream(flow: *const flow_mod.Flow) bool {
+        if (flow.tun_blocked) return false;
+        const inflight = flow.snd_nxt -% flow.snd_una;
+        return inflight < @as(u32, flow.peer_wnd);
+    }
+
+    fn refreshSocksEvents(self: *Engine, flow: *flow_mod.Flow) void {
+        var events: u32 = linux.EPOLL.ERR;
+        if (canSendDownstream(flow)) events |= linux.EPOLL.IN;
+        if (flow.is_blocked) events |= linux.EPOLL.OUT;
+        self.armSocksEvents(flow, events);
+    }
+
+    fn markTunBlocked(self: *Engine, flow: *flow_mod.Flow) void {
+        if (flow.tun_blocked) return;
+        flow.tun_blocked = true;
+        self.refreshSocksEvents(flow);
+        self.armTunEvents();
+    }
+
+    fn clearTunBlocked(self: *Engine, flow: *flow_mod.Flow) void {
+        if (!flow.tun_blocked) return;
+        flow.tun_blocked = false;
+        self.refreshSocksEvents(flow);
+        self.armTunEvents();
+    }
+
+    fn flushTunBlocked(self: *Engine) void {
+        for (&self.table.flows) |*flow| {
+            if (flow.state == .established and flow.tun_blocked) {
+                self.clearTunBlocked(flow);
+                self.pumpDownstream(flow);
+            }
+        }
+    }
+
+    fn updateSendWindow(self: *Engine, flow: *flow_mod.Flow, ack: u32, window: u16) void {
+        _ = self;
+        if (protocol.seqBetween(flow.snd_una, ack, flow.snd_nxt)) {
+            flow.snd_una = ack;
+            flow.peer_wnd = window;
+        }
+    }
+
+    fn pumpDownstream(self: *Engine, flow: *flow_mod.Flow) void {
+        if (flow.state != .established) return;
+        const fd = flow.socks_fd;
+        const max_mss: usize = @min(
+            if (self.cfg.mtu > 40) self.cfg.mtu - 40 else 1460,
+            self.tx_packet_buf.len - 40,
+        );
+
+        var batch: usize = 0;
+        while (canSendDownstream(flow)) : (batch += 1) {
+            if (batch >= 16) break;
+            const inflight = flow.snd_nxt -% flow.snd_una;
+            const available = @as(u32, flow.peer_wnd) - inflight;
+            const want: usize = @min(max_mss, @as(usize, available));
+            if (want == 0) break;
+
+            const n = sys.recvPeek(fd, self.tx_packet_buf[40 .. 40 + want]) catch |err| {
+                if (err == error.WouldBlock) break;
+                self.sendRst(flow);
+                self.closeFlow(flow, 3000);
+                return;
+            };
+            if (n == 0) {
+                const win_to_announce: u16 = if (flow.is_blocked) 0 else 65535;
+                self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_FIN | protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, win_to_announce, null);
+                flow.snd_nxt +%= 1;
+                self.closeFlow(flow, 3000);
+                return;
+            }
+
+            self.sendTcpPacketDirect(flow, protocol.TcpHeader.FLAG_ACK | protocol.TcpHeader.FLAG_PSH, flow.snd_nxt, flow.rcv_nxt, flow.peer_wnd, n) catch |err| {
+                if (err == error.WouldBlock) {
+                    self.markTunBlocked(flow);
+                    return;
+                }
+                self.sendRst(flow);
+                self.closeFlow(flow, 3000);
+                return;
+            };
+
+            const consumed = sys.read(fd, self.tx_packet_buf[40 .. 40 + n]) catch {
+                self.sendRst(flow);
+                self.closeFlow(flow, 3000);
+                return;
+            };
+            if (consumed != n) {
+                self.sendRst(flow);
+                self.closeFlow(flow, 3000);
+                return;
+            }
+            flow.snd_nxt +%= @intCast(n);
+
+            if (n < want) break; // socket receive buffer drained
+        }
+
+        self.refreshSocksEvents(flow);
     }
 
     pub fn run(self: *Engine) !void {
@@ -158,7 +284,8 @@ pub const Engine = struct {
                     self.running = false;
                     return;
                 } else if (fd == self.cfg.tun_fd) {
-                    self.handleTunRead();
+                    if ((ev.events & linux.EPOLL.OUT) != 0) self.flushTunBlocked();
+                    if ((ev.events & linux.EPOLL.IN) != 0) self.handleTunRead();
                 } else if (fd == self.udp_relay_fd) {
                     self.handleUdpRelayRead();
                 } else if (fd == self.udp_ctrl_fd) {
@@ -359,6 +486,12 @@ pub const Engine = struct {
         }
 
         if (f.state == .established) {
+            if ((flags & protocol.TcpHeader.FLAG_ACK) != 0) {
+                self.updateSendWindow(f, tcp_hdr.getAck(), tcp_hdr.getWindow());
+                self.pumpDownstream(f);
+                if (f.state != .established) return;
+            }
+
             // Check for Persist Probe (seq == rcv_nxt or seq == rcv_nxt - 1, payload len <= 1)
             const is_probe = (payload.len <= 1 and (seq == f.rcv_nxt or seq == f.rcv_nxt -% 1));
             if (f.is_blocked and is_probe) {
@@ -404,7 +537,7 @@ pub const Engine = struct {
                 const sent = sys.writeSocket(f.socks_fd, effective_payload) catch |err| {
                     if (err == error.WouldBlock) {
                         f.is_blocked = true;
-                        self.armSocksEvents(f, linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR);
+                        self.refreshSocksEvents(f);
                         self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 0, null);
                         return;
                     }
@@ -416,7 +549,7 @@ pub const Engine = struct {
                 if (sent < effective_payload.len) {
                     f.is_blocked = true;
                     f.rcv_nxt +%= @intCast(sent);
-                    self.armSocksEvents(f, linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR);
+                    self.refreshSocksEvents(f);
                     self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 0, null);
                 } else {
                     f.rcv_nxt +%= @intCast(effective_payload.len);
@@ -443,6 +576,7 @@ pub const Engine = struct {
 
     fn handleNewSyn(self: *Engine, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16, client_isn: u32) void {
         const flow = self.table.allocate(src_ip, dst_ip, src_port, dst_port) orelse return;
+        self.armTunEvents();
 
         // C-2: If fourth-pass recycling returned a slot that still has a live socks_fd (flow.zig
         // intentionally did NOT close it so we can call epoll_ctl(DEL) here first), deregister and close it now.
@@ -460,6 +594,8 @@ pub const Engine = struct {
         _ = linux.getrandom(std.mem.asBytes(&rand_val).ptr, 4, 0);
         flow.s_isn = rand_val;
         flow.snd_nxt = rand_val +% 1;
+        flow.snd_una = rand_val;
+        flow.peer_wnd = 0;
 
         // Initiate non-blocking connect to local SOCKS5 inbound
         const sock = sys.createTcpSocket() catch {
@@ -608,7 +744,7 @@ pub const Engine = struct {
                         }
 
                         flow.state = .established;
-                        self.armSocksEvents(flow, linux.EPOLL.IN | linux.EPOLL.ERR);
+                        self.refreshSocksEvents(flow);
                         self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_SYN | protocol.TcpHeader.FLAG_ACK, flow.s_isn, flow.rcv_nxt, 65535, null);
                     }
                 } else {
@@ -616,36 +752,10 @@ pub const Engine = struct {
                 }
             },
             .established => {
-                // Downstream data: 0-Copy direct from SOCKS5 socket to tx_packet_buf payload
+                // Downstream data: peek first, consume only after a successful TUN write.
                 if ((events & linux.EPOLL.IN) != 0) {
-                    const max_mss: usize = if (self.cfg.mtu > 40) self.cfg.mtu - 40 else 1460;
-                    var batch: usize = 0;
-                    while (batch < 16) : (batch += 1) {
-                        const n = sys.read(fd, self.tx_packet_buf[40 .. 40 + max_mss]) catch |err| {
-                            if (err == error.WouldBlock) break;
-                            self.sendRst(flow);
-                            self.closeFlow(flow, 3000);
-                            return;
-                        };
-                        if (n == 0) {
-                            // Upstream EOF: send FIN-ACK and enter tombstone immediately
-                            const win_to_announce: u16 = if (flow.is_blocked) 0 else 65535;
-                            self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_FIN | protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, win_to_announce, null);
-                            flow.snd_nxt +%= 1;
-                            self.closeFlow(flow, 3000);
-                            return;
-                        }
-
-                        // Direct in-place packet synthesis and transmission (0 memcpy)
-                        const win_to_announce: u16 = if (flow.is_blocked) 0 else 65535;
-                        if (self.sendTcpPacketDirect(flow, protocol.TcpHeader.FLAG_ACK | protocol.TcpHeader.FLAG_PSH, flow.snd_nxt, flow.rcv_nxt, win_to_announce, n)) {
-                            flow.snd_nxt +%= @intCast(n);
-                        } else {
-                            break;
-                        }
-
-                        if (n < max_mss) break; // Drained socket buffer
-                    }
+                    self.pumpDownstream(flow);
+                    if (flow.state != .established) return;
                 }
 
                 // Upstream socket writable again: reopen the client window and
@@ -655,7 +765,7 @@ pub const Engine = struct {
                     if (flow.client_fin) {
                         sys.shutdown(fd);
                     }
-                    self.armSocksEvents(flow, linux.EPOLL.IN | linux.EPOLL.ERR);
+                    self.refreshSocksEvents(flow);
                     self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, 65535, null);
                 }
             },
@@ -725,11 +835,11 @@ pub const Engine = struct {
         _ = sys.writeTun(self.cfg.tun_fd, self.tx_packet_buf[0..total_len]) catch {};
     }
 
-    // Direct 0-copy fast path: tx_packet_buf[40 .. 40 + payload_len] already holds data from sys.read!
-    fn sendTcpPacketDirect(self: *Engine, flow: *flow_mod.Flow, flags: u8, seq: u32, ack: u32, window: u16, payload_len: usize) bool {
+    // Direct 0-copy fast path: tx_packet_buf[40 .. 40 + payload_len] already holds data from sys.recvPeek().
+    fn sendTcpPacketDirect(self: *Engine, flow: *flow_mod.Flow, flags: u8, seq: u32, ack: u32, window: u16, payload_len: usize) !void {
         const tcp_hlen: u16 = 20;
         const total_len: u16 = @intCast(20 + tcp_hlen + payload_len);
-        if (total_len > self.tx_packet_buf.len) return false;
+        if (total_len > self.tx_packet_buf.len) return error.PacketTooLarge;
 
         var ip_hdr: *protocol.Ipv4Header = @ptrCast(@alignCast(&self.tx_packet_buf[0]));
         ip_hdr.ihl_version = 0x45;
@@ -763,11 +873,7 @@ pub const Engine = struct {
             self.tx_packet_buf[20..total_len],
         );
 
-        if (sys.writeTun(self.cfg.tun_fd, self.tx_packet_buf[0..total_len])) |_| {
-            return true;
-        } else |_| {
-            return false;
-        }
+        _ = try sys.writeTun(self.cfg.tun_fd, self.tx_packet_buf[0..total_len]);
     }
 
     fn handleUdpRelayRead(self: *Engine) void {
@@ -839,3 +945,71 @@ pub const Engine = struct {
         _ = sys.writeTun(self.cfg.tun_fd, self.tx_packet_buf[0..total_len]) catch {};
     }
 };
+
+test "downstream send window respects inflight bytes and TUN blocking" {
+    var flow: flow_mod.Flow = undefined;
+    flow.reset();
+    flow.snd_una = 0xffff_fff0;
+    flow.snd_nxt = 0x0000_0000;
+    flow.peer_wnd = 32;
+    try std.testing.expect(Engine.canSendDownstream(&flow));
+
+    flow.snd_nxt = 0x0000_0010;
+    try std.testing.expect(!Engine.canSendDownstream(&flow));
+
+    flow.snd_nxt = 0x0000_0000;
+    flow.tun_blocked = true;
+    try std.testing.expect(!Engine.canSendDownstream(&flow));
+}
+
+test "downstream pump consumes SOCKS data only after TUN write" {
+    var tun_pair: [2]i32 = undefined;
+    var rc = linux.socketpair(linux.AF.UNIX, linux.SOCK.STREAM, 0, &tun_pair);
+    try std.testing.expectEqual(@as(usize, 0), rc);
+    defer {
+        _ = linux.close(tun_pair[0]);
+        _ = linux.close(tun_pair[1]);
+    }
+
+    var socks_pair: [2]i32 = undefined;
+    rc = linux.socketpair(linux.AF.UNIX, linux.SOCK.STREAM, 0, &socks_pair);
+    try std.testing.expectEqual(@as(usize, 0), rc);
+    defer {
+        _ = linux.close(socks_pair[0]);
+        _ = linux.close(socks_pair[1]);
+    }
+    const flags = linux.fcntl(socks_pair[0], linux.F.GETFL, 0);
+    _ = linux.fcntl(socks_pair[0], linux.F.SETFL, flags | O_NONBLOCK);
+
+    var eng: Engine = undefined;
+    try eng.initInto(.{
+        .tun_fd = tun_pair[0],
+        .socks_ip = 0x7f000001,
+        .socks_port = 10808,
+        .mtu = 1500,
+    });
+    defer eng.deinit();
+
+    var flow: flow_mod.Flow = undefined;
+    flow.reset();
+    flow.state = .established;
+    flow.socks_fd = socks_pair[0];
+    flow.snd_una = 0;
+    flow.snd_nxt = 0;
+    flow.peer_wnd = 65535;
+
+    const payload = "hello";
+    _ = linux.write(socks_pair[1], payload.ptr, payload.len);
+    eng.pumpDownstream(&flow);
+
+    try std.testing.expectEqual(@as(u32, payload.len), flow.snd_nxt);
+
+    var packet: [128]u8 = undefined;
+    const packet_len = linux.read(tun_pair[1], &packet, packet.len);
+    try std.testing.expectEqual(@as(usize, 20 + 20 + payload.len), packet_len);
+    try std.testing.expectEqualSlices(u8, payload, packet[40 .. 40 + payload.len]);
+
+    var drained: [4]u8 = undefined;
+    const drain_rc = linux.read(socks_pair[0], &drained, drained.len);
+    try std.testing.expectEqual(linux.E.AGAIN, linux.errno(drain_rc));
+}

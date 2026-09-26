@@ -84,6 +84,18 @@ pub const TcpHeader = extern struct {
     }
 };
 
+pub inline fn seqLt(a: u32, b: u32) bool {
+    return @as(i32, @bitCast(a -% b)) < 0;
+}
+
+pub inline fn seqLe(a: u32, b: u32) bool {
+    return a == b or seqLt(a, b);
+}
+
+pub inline fn seqBetween(lo: u32, x: u32, hi: u32) bool {
+    return seqLe(lo, x) and seqLe(x, hi);
+}
+
 pub fn calculateIpv4Checksum(header_bytes: []const u8) u16 {
     var sum: u32 = 0;
     var i: usize = 0;
@@ -208,4 +220,12 @@ test "IPv4 and TCP Checksum calculation" {
         verify_sum = (verify_sum & 0xffff) + (verify_sum >> 16);
     }
     try std.testing.expectEqual(@as(u16, 0xffff), @as(u16, @intCast(verify_sum)));
+}
+
+test "TCP sequence comparisons wrap correctly" {
+    try std.testing.expect(seqLt(0, 1));
+    try std.testing.expect(seqLt(std.math.maxInt(u32), 0));
+    try std.testing.expect(seqLe(100, 100));
+    try std.testing.expect(seqBetween(100, 105, 110));
+    try std.testing.expect(!seqBetween(100, 115, 110));
 }
