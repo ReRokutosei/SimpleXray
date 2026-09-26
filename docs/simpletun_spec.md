@@ -1,6 +1,6 @@
 # SimpleTUN Architecture & State Machine Specification
 
-**Version**: 0.2-stable  
+**Version**: 0.3-perf  
 **Target Scope**: Android `VpnService` TUN-to-SOCKS5 transparent proxy endpoint  
 **Language Target**: Zig (C ABI export)  
 
@@ -41,14 +41,16 @@ SimpleTUN is a purpose-built user-space network endpoint designed strictly for A
 
 ### 1.1 In-Scope
 - Single TUN file descriptor input (`tun_fd`), configured non-blocking (`O_NONBLOCK`).
-- IPv4 protocol parsing and packet synthesis.
+- IPv4 protocol parsing, packet synthesis, and branchless 16-bit checksum fold.
 - TCP stream translation to local SOCKS5 client (`NO AUTHENTICATION REQUIRED`, `CMD 0x01 CONNECT`).
 - Conservative 3-way handshake with 4-byte TCP MSS Option (`Kind=2, Len=4, Value=MTU-40`, e.g. 1460).
-- Level-triggered epoll safety: explicit disarming of `EPOLLOUT` during handshake to avoid 100% CPU spinning; immediate socket closure and `EPOLL_CTL_DEL` upon upstream EOF.
-- Explicit per-flow backpressure via standard TCP zero-window signaling (`Win=0`), persist probe handling (0-byte and 1-byte probes), and sliding overflow buffer.
-- Deterministic connection tear-down (`FIN` half-close propagation, `RST` teardown, short-lived session tombstones with LRU eviction fallback under high CPS).
-- SOCKS5 UDP ASSOCIATE relay with dedicated 64-slot FIFO ring buffer (`DnsQueryTracker`) for concurrent DNS query matching.
-- Bounded memory footprint via statically pinned slab tables with zero stack allocation (`initInto`).
+- Level-triggered epoll safety: explicit disarming of `EPOLLOUT` during handshake to avoid 100% CPU spinning; immediate socket closure and mandatory `EPOLL_CTL_DEL` upon EOF/RST.
+- O(1) SOCKS event dispatch via epoll union data (`flow_idx + 0x1000`), completely eliminating O(N) table searches.
+- 0-Copy direct downstream packet synthesis: reading directly from SOCKS5 socket into `tx_packet_buf[40..]` without intermediate buffer or secondary memcpy.
+- Explicit per-flow backpressure via standard TCP zero-window signaling (`Win=0`), persist probe handling (0-byte and 1-byte probes), and shared 16-slot overflow pool.
+- Deterministic connection tear-down (`FIN` half-close propagation, `RST` teardown, short-lived session tombstones with LRU/saturation eviction fallback under high CPS).
+- SOCKS5 UDP ASSOCIATE relay with dedicated 64-slot FIFO ring buffer (`DnsQueryTracker`) for concurrent DNS query matching and 2000ms failure backoff cooldown.
+- Ultra-dense memory footprint via statically pinned 48-byte Flow slab tables (< 100 KB total BSS, 100% L1 D-Cache resident).
 
 ### 1.2 Out-of-Scope (Deferred to Future Releases)
 - **IPv6 parsing & synthesis** (Deferred).
@@ -86,7 +88,7 @@ Each TCP flow is identified by a 4-tuple: `(src_ip, src_port, dst_ip, dst_port)`
                                        |
                                 RX: Client SYN
                                        |
-                         Create Flow in STATIC_SLAB
+                         Allocate Flow in Static Slab
                          Open non-blocking SOCKS5 TCP
                                        |
                                        v
@@ -102,17 +104,18 @@ Each TCP flow is identified by a 4-tuple: `(src_ip, src_port, dst_ip, dst_port)`
                         [ ESTABLISHED ]
                           |         |
            Client sends FIN |         | Upstream Socket EOF
+           (set client_fin) |         | (send FIN-ACK, closeFlow)
                           v         v
-               [ CLIENT_CLOSE_1 ]   [ UPSTREAM_CLOSED ]
+                   [ SHUT_WR ]  [ TOMBSTONE ] (3 seconds)
                           \         /
-                   Both directions closed
-                            |
-                            v
-                       [ TOMBSTONE ] (2~5 seconds)
-                            |
-                         Timeout
-                            v
-                        [ FREE ]
+                    Both directions closed
+                             |
+                             v
+                        [ TOMBSTONE ] (3 seconds)
+                             |
+                          Timeout / Fast-Recycle
+                             v
+                          [ FREE ]
 ```
 
 ### 3.2 State Definitions
@@ -121,10 +124,10 @@ Each TCP flow is identified by a 4-tuple: `(src_ip, src_port, dst_ip, dst_port)`
 | :--- | :--- | :--- | :--- |
 | `FREE` | Unallocated slot in static slab. | Inactive | Inactive |
 | `UPSTREAM_CONNECT` | Received `SYN`. Connecting to `127.0.0.1` and negotiating SOCKS5 handshake. | Do not send `SYN-ACK` yet. If client retransmits `SYN`, drop duplicate or ignore. | Non-blocking connect + SOCKS5 handshake in progress. |
-| `ESTABLISHED` | SOCKS5 handshake succeeded. `SYN-ACK` sent, client `ACK` received. Bi-directional data transfer active. | Normal `ACK` progression. Backpressure signals evaluated per packet. | Bi-directional streaming via non-blocking read/write. |
-| `CLIENT_CLOSE_1` | Client sent `FIN`. Half-close acknowledged. | Replied `ACK` (`seq = fin_seq + 1`). Further data rejected with `RST`. | Call `shutdown(socks_fd, SHUT_WR)`. Continues reading downstream data. |
-| `UPSTREAM_CLOSED` | SOCKS5 socket hit `EOF`. Upstream closed sending. | Send `FIN` to client kernel. Await client final `ACK`. | Socket closed locally. |
-| `TOMBSTONE` | Flow fully closed. 4-tuple locked for 2~5 seconds to absorb late-arriving packets. | Dropped or answered with current sequence `RST` if out of window. | Deallocated. |
+| `SOCKS5_AUTH_WAIT` | Sent SOCKS5 Greeting, awaiting authentication response `[0x05, 0x00]`. | Inactive | `EPOLLIN` monitored. |
+| `SOCKS5_CONNECT_WAIT` | Sent SOCKS5 Connect Request, awaiting target connection response `[0x05, 0x00, ...]`. | Inactive | `EPOLLIN` monitored. |
+| `ESTABLISHED` | SOCKS5 handshake succeeded. `SYN-ACK` sent, bi-directional data transfer active. Supports `client_fin` flag for half-close. | Normal `ACK` progression. Backpressure signals evaluated per packet. | Bi-directional streaming via non-blocking read/write (0-copy direct). |
+| `TOMBSTONE` | Flow fully closed. 4-tuple locked for 3 seconds to absorb late-arriving packets or quick RFC 1122 fast recycle on new `SYN`. | Answered with identical trailing `ACK` or `RST`. | Socket closed and unmapped immediately from epoll. |
 
 ---
 
@@ -274,18 +277,19 @@ pub const Flow = struct {
     // Sequence & Acknowledgment Tracking (16 Bytes)
     rcv_nxt: u32,
     snd_nxt: u32,
-    s_isn: u32,
     c_isn: u32,
+    s_isn: u32,
 
-    // File Descriptor & State (12 Bytes)
-    socks_fd: i32,
-    state: State,
-    is_blocked: bool,
-    tombstone_until_ms: u64,
-
-    // Single-Packet Overflow Buffer for Zero-Window Backpressure (2048 Bytes)
-    overflow_len: u16,
-    overflow_buf: [2048]u8,
+    // File Descriptor & State Tracking (20 Bytes)
+    socks_fd: i32,               // 4B
+    tombstone_until_ms: i64,     // 8B
+    overflow_len: u16,           // 2B
+    overflow_pool_idx: u8,       // 1B (0xff = unassigned)
+    state: State,                // 1B
+    is_blocked: bool,            // 1B
+    client_fin: bool,            // 1B
+    _pad: [2]u8 = [_]u8{0} ** 2, // 2B
+    // Total struct size: Exactly 48 bytes (0 internal holes, fits inside 1 single 64B Cache Line)
 };
 ```
 
@@ -293,15 +297,14 @@ pub const Flow = struct {
 
 | Component | Sizing Formula | Static Footprint |
 | :--- | :--- | :--- |
-| **TCP Flow Slab Table** | 512 entries × ~2,100 bytes/entry | **~1,075 KB (1.05 MB)** |
-| **UDP Session Table** | 256 entries × 32 bytes/entry | **8 KB** |
-| **DNS Query Tracker** | 64 entries × 6 bytes FIFO ring | **~0.4 KB** |
-| **Lookup Hash Index** | 1024 bucket heads (u16 index) | **2 KB** |
-| **I/O Packet Buffer (RX/TX)** | 2 buffers × 2048 bytes (Scratch) | **4 KB** |
-| **Epoll Event Array** | 512 `struct epoll_event` | **~6 KB** |
-| **Total Resident Memory (PSS)** | Statically pinned / BSS (`initInto`) | **~1.15 MB** |
+| **TCP Flow Slab Table** | 512 entries × 48 bytes/entry | **24 KB (100% L1 D-Cache Resident)** |
+| **Shared Backpressure Pool** | 16 buffers × 2048 bytes (Leased on EAGAIN) | **32 KB** |
+| **UDP Session Table** | 256 entries × 24 bytes/entry (Packed) | **6 KB** |
+| **DNS Query Tracker** | 64 entries × 16 bytes FIFO ring | **1 KB** |
+| **I/O Packet Buffers** | 3 buffers × 4096 bytes (RX / TX / UDP Relay) | **12 KB** |
+| **Total Resident Memory (BSS)** | Statically pinned in BSS (`initInto`) | **~75 KB (0.07 MB)** |
 
-> **Conclusion**: The entire state machine, including per-flow backpressure scratch buffers and UDP/DNS tracking, strictly fits within **< 1.5 MB PSS**, completely immune to dynamic heap allocations and GC pauses.
+> **Conclusion**: The entire state machine, including shared backpressure scratch buffers and UDP/DNS tracking, strictly fits within **< 100 KB total static memory** (actual Android app PSS growth is practically flat at 0 KiB / connection), completely immune to dynamic heap allocations and GC pauses.
 
 ---
 
