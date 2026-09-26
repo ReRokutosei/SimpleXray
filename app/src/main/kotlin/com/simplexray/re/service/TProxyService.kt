@@ -786,7 +786,7 @@ class TProxyService : VpnService() {
                 excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("169.254.0.0"), 16))
                 excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("172.16.0.0"), 12))
                 excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("192.168.0.0"), 16))
-                if (prefs.ipv6) {
+                if (prefs.ipv6 && prefs.tunnelMode != TunnelMode.SimpleTun) {
                     excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("fc00::"), 7))
                     excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("fe80::"), 10))
                 }
@@ -800,7 +800,7 @@ class TProxyService : VpnService() {
             addRoute("0.0.0.0", 0)
             prefs.dnsIpv4.takeIf { it.isNotEmpty() }?.also { addDnsServer(it) }
         }
-        if (prefs.ipv6) {
+        if (prefs.ipv6 && prefs.tunnelMode != TunnelMode.SimpleTun) {
             addAddress(prefs.tunnelIpv6Address, prefs.tunnelIpv6Prefix)
             addRoute("::", 0)
             prefs.dnsIpv6.takeIf { it.isNotEmpty() }?.also { addDnsServer(it) }

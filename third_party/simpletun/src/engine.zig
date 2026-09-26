@@ -382,9 +382,12 @@ pub const Engine = struct {
                         effective_payload = payload[overlap..];
                     } else {
                         // Fully duplicate packet
-                        const win: u16 = if (f.is_blocked) 0 else 65535;
-                        self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, win, null);
-                        return;
+                        if ((flags & protocol.TcpHeader.FLAG_FIN) == 0) {
+                            const win: u16 = if (f.is_blocked) 0 else 65535;
+                            self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, win, null);
+                            return;
+                        }
+                        effective_payload = payload[0..0];
                     }
                 } else if (seq != f.rcv_nxt) {
                     // Out-of-order packet: do not buffer, send ACK with expected rcv_nxt
@@ -444,13 +447,15 @@ pub const Engine = struct {
                     self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 0, null);
                 } else {
                     f.rcv_nxt +%= @intCast(effective_payload.len);
-                    self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 65535, null);
+                    if ((flags & protocol.TcpHeader.FLAG_FIN) == 0) {
+                        self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 65535, null);
+                    }
                 }
             }
 
             // Handle client FIN with in-order sequence verification
             if ((flags & protocol.TcpHeader.FLAG_FIN) != 0) {
-                if (seq == f.rcv_nxt -% @as(u32, @intCast(effective_payload.len))) {
+                if (seq +% @as(u32, @intCast(payload.len)) == f.rcv_nxt) {
                     if (!f.client_fin) {
                         f.rcv_nxt +%= 1;
                         f.client_fin = true;

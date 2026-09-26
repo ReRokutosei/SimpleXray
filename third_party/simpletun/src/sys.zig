@@ -51,7 +51,7 @@ pub fn writeSocket(fd: fd_t, buf: []const u8) !usize {
 
 pub fn writeTun(fd: fd_t, buf: []const u8) !usize {
     var retries: usize = 0;
-    while (retries < 20) : (retries += 1) {
+    while (retries < 3) : (retries += 1) {
         const rc = linux.write(fd, buf.ptr, buf.len);
         switch (linux.errno(rc)) {
             .SUCCESS => return @intCast(rc),
@@ -61,7 +61,7 @@ pub fn writeTun(fd: fd_t, buf: []const u8) !usize {
                     .events = linux.POLL.OUT,
                     .revents = 0,
                 }};
-                _ = linux.poll(&pfd, 1, 10);
+                _ = linux.poll(&pfd, 1, 1);
                 continue;
             },
             .INTR => continue,

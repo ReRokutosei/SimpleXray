@@ -89,7 +89,7 @@ The benchmark was executed headlessly via Android `BenchmarkService`. Each confi
 | **Hev** | 313 Mbps (Constrained) | 2.1 ms | +12.6 ms |
 | **SingTUN** | 786 Mbps (Saturated) | 2.1 ms | +76.1 ms |
 | **Zeptun** | 794 Mbps (Saturated) | 2.1 ms | +79.0 ms |
-| **SimpleTUN** | 240 Mbps (Constrained) | 2.1 ms | +122.1 ms |
+| **SimpleTUN** | 240 Mbps (Constrained) | 27.2 ms | +122.1 ms |
 
 - Under saturated downlink load (786–794 Mbps), latency inflation was +76.1 ms for SingTUN and +79.0 ms for Zeptun.
 - Hev recorded +12.6 ms latency inflation with background throughput constrained at 313 Mbps; SimpleTUN recorded +122.1 ms under 240 Mbps constrained background download.

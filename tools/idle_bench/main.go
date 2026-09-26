@@ -76,6 +76,8 @@ func runRTT(args []string) {
 			conn.Close()
 			if newConn, dialErr := net.DialTimeout("tcp", *server, *timeout); dialErr == nil {
 				conn = newConn
+			} else {
+				time.Sleep(*interval)
 			}
 			continue
 		}
