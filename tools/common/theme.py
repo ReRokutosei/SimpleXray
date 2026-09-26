@@ -31,7 +31,7 @@ PALETTE = {
         'ipc': 'Local SOCKS5 Inbound'
     },
     'sing': {
-        'name': 'SingTUN (Go/userspace)',
+        'name': 'SingTUN (Go/sing-tun)',
         'fill': '#00ADD8',
         'edge': '#008bb3',
         'light': '#e0f7fa',
@@ -40,7 +40,7 @@ PALETTE = {
         'ipc': 'Local SOCKS5 Inbound'
     },
     'xray': {
-        'name': 'Xray TUN (gVisor)',
+        'name': 'Xray TUN (Go/gVisor)',
         'fill': '#e11d48',   # Rose 600
         'edge': '#be123c',   # Rose 700
         'light': '#ffe4e6',  # Rose 100
@@ -49,7 +49,7 @@ PALETTE = {
         'ipc': 'JNI Fork Child Process (FD Injected)'
     },
     'zeptun': {
-        'name': 'Zeptun (Zig/userspace)',
+        'name': 'Zeptun (Zig/smoltcp)',
         'fill': '#F7A41D',
         'edge': '#d97706',
         'light': '#fef3c7',
@@ -58,7 +58,7 @@ PALETTE = {
         'ipc': 'Local SOCKS5 Inbound'
     },
     'simpletun': {
-        'name': 'SimpleTUN (Zig/0-Heap)',
+        'name': 'SimpleTUN (Zig/Shifter)',
         'fill': '#10b981',
         'edge': '#059669',
         'light': '#d1fae5',
