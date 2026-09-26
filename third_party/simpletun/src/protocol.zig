@@ -59,14 +59,6 @@ pub const TcpHeader = extern struct {
         return @as(usize, self.dataOffset()) * 4;
     }
 
-    pub fn getSrcPort(self: *const TcpHeader) u16 {
-        return std.mem.bigToNative(u16, self.src_port);
-    }
-
-    pub fn getDstPort(self: *const TcpHeader) u16 {
-        return std.mem.bigToNative(u16, self.dst_port);
-    }
-
     pub fn getSeq(self: *const TcpHeader) u32 {
         return std.mem.bigToNative(u32, self.seq);
     }
@@ -89,14 +81,6 @@ pub const TcpHeader = extern struct {
 
     pub fn setWindow(self: *TcpHeader, val: u16) void {
         self.window = std.mem.nativeToBig(u16, val);
-    }
-
-    pub fn setSrcPort(self: *TcpHeader, val: u16) void {
-        self.src_port = std.mem.nativeToBig(u16, val);
-    }
-
-    pub fn setDstPort(self: *TcpHeader, val: u16) void {
-        self.dst_port = std.mem.nativeToBig(u16, val);
     }
 };
 
@@ -133,10 +117,9 @@ pub fn calculateTcpChecksum(src_ip: u32, dst_ip: u32, tcp_len: u16, tcp_packet: 
     sum += 6; // IPPROTO_TCP
     sum += tcp_len;
 
-    // TCP header and payload (checksum field at offset 16..18 is skipped)
+    // TCP header and payload (checksum field at offset 16 is assumed 0 in prepared packet)
     var i: usize = 0;
     while (i + 1 < tcp_packet.len) : (i += 2) {
-        if (i == 16) continue;
         const w = (@as(u32, tcp_packet[i]) << 8) | @as(u32, tcp_packet[i + 1]);
         sum += w;
     }
@@ -158,26 +141,6 @@ pub const UdpHeader = extern struct {
     length: u16,
     checksum: u16,
 
-    pub fn getSrcPort(self: *const UdpHeader) u16 {
-        return std.mem.bigToNative(u16, self.src_port);
-    }
-
-    pub fn getDstPort(self: *const UdpHeader) u16 {
-        return std.mem.bigToNative(u16, self.dst_port);
-    }
-
-    pub fn getLength(self: *const UdpHeader) u16 {
-        return std.mem.bigToNative(u16, self.length);
-    }
-
-    pub fn setSrcPort(self: *UdpHeader, val: u16) void {
-        self.src_port = std.mem.nativeToBig(u16, val);
-    }
-
-    pub fn setDstPort(self: *UdpHeader, val: u16) void {
-        self.dst_port = std.mem.nativeToBig(u16, val);
-    }
-
     pub fn setLength(self: *UdpHeader, val: u16) void {
         self.length = std.mem.nativeToBig(u16, val);
     }
@@ -196,10 +159,9 @@ pub fn calculateUdpChecksum(src_ip: u32, dst_ip: u32, udp_len: u16, udp_packet: 
     sum += 17; // IPPROTO_UDP
     sum += udp_len;
 
-    // Checksum at byte offset 6..8 skipped
+    // Checksum at byte offset 6 is assumed 0 in prepared packet
     var i: usize = 0;
     while (i + 1 < udp_packet.len) : (i += 2) {
-        if (i == 6) continue;
         const w = (@as(u32, udp_packet[i]) << 8) | @as(u32, udp_packet[i + 1]);
         sum += w;
     }

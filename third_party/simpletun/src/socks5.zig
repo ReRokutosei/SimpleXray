@@ -19,17 +19,10 @@ pub fn formatConnectRequest(buf: *[10]u8, dst_ip: u32, dst_port: u16) usize {
     return 10;
 }
 
+pub const UdpAssociateReq = [_]u8{ 0x05, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+
 pub fn formatUdpAssociateRequest(buf: *[10]u8) usize {
-    buf[0] = 0x05; // SOCKS5
-    buf[1] = 0x03; // CMD: UDP ASSOCIATE
-    buf[2] = 0x00; // RSV
-    buf[3] = 0x01; // ATYP: IPv4 (BND.ADDR = 0.0.0.0:0 strictly per RFC 1928)
-    buf[4] = 0x00;
-    buf[5] = 0x00;
-    buf[6] = 0x00;
-    buf[7] = 0x00;
-    buf[8] = 0x00;
-    buf[9] = 0x00;
+    @memcpy(buf[0..10], &UdpAssociateReq);
     return 10;
 }
 

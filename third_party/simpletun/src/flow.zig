@@ -7,19 +7,17 @@ pub const State = enum(u8) {
     socks5_auth_wait,
     socks5_connect_wait,
     established,
-    client_close_1,
-    upstream_closed,
     tombstone,
 };
 
 pub const Flow = struct {
-    // 4-Tuple identification
+    // 4-Tuple identification (12B)
     src_ip: u32,
     dst_ip: u32,
     src_port: u16,
     dst_port: u16,
 
-    // Sequence & Acknowledgment tracking
+    // Sequence & Acknowledgment tracking (16B)
     rcv_nxt: u32,
     snd_nxt: u32,
     c_isn: u32,
@@ -27,13 +25,13 @@ pub const Flow = struct {
 
     // SOCKS5 and I/O state
     socks_fd: i32,
+    tombstone_until_ms: i64,
+    overflow_len: u16,
+    overflow_pool_idx: u8,
     state: State,
     is_blocked: bool,
-    tombstone_until_ms: i64,
-
-    // Bounded overflow buffer for zero-window backpressure (max 1 MTU)
-    overflow_len: u16,
-    overflow_buf: [2048]u8,
+    client_fin: bool,
+    _pad: [2]u8 = [_]u8{0} ** 2,
 
     pub fn matches(self: *const Flow, s_ip: u32, d_ip: u32, s_port: u16, d_port: u16) bool {
         return self.src_ip == s_ip and
@@ -52,20 +50,29 @@ pub const Flow = struct {
         self.c_isn = 0;
         self.s_isn = 0;
         self.socks_fd = -1;
-        self.state = .free;
-        self.is_blocked = false;
         self.tombstone_until_ms = 0;
         self.overflow_len = 0;
+        self.overflow_pool_idx = 0xff;
+        self.state = .free;
+        self.is_blocked = false;
+        self.client_fin = false;
     }
 };
 
 pub const FlowTable = struct {
     pub const CAPACITY: usize = 512;
+    pub const OVERFLOW_POOL_SIZE: usize = 16;
+
     flows: [CAPACITY]Flow,
+    overflow_pool: [OVERFLOW_POOL_SIZE][2048]u8,
+    overflow_pool_used: [OVERFLOW_POOL_SIZE]bool,
 
     pub fn initInto(self: *FlowTable) void {
         for (&self.flows) |*flow| {
             flow.reset();
+        }
+        for (&self.overflow_pool_used) |*used| {
+            used.* = false;
         }
     }
 
@@ -73,6 +80,34 @@ pub const FlowTable = struct {
         var table: FlowTable = undefined;
         table.initInto();
         return table;
+    }
+
+    pub fn indexOf(self: *const FlowTable, flow: *const Flow) usize {
+        const base = @intFromPtr(&self.flows[0]);
+        const ptr = @intFromPtr(flow);
+        return (ptr - base) / @sizeOf(Flow);
+    }
+
+    pub fn getOverflowBuf(self: *FlowTable, flow: *Flow) ?[]u8 {
+        if (flow.overflow_pool_idx < OVERFLOW_POOL_SIZE) {
+            return &self.overflow_pool[flow.overflow_pool_idx];
+        }
+        for (&self.overflow_pool_used, 0..) |*used, idx| {
+            if (!used.*) {
+                used.* = true;
+                flow.overflow_pool_idx = @intCast(idx);
+                return &self.overflow_pool[idx];
+            }
+        }
+        return null;
+    }
+
+    pub fn releaseOverflowBuf(self: *FlowTable, flow: *Flow) void {
+        if (flow.overflow_pool_idx < OVERFLOW_POOL_SIZE) {
+            self.overflow_pool_used[flow.overflow_pool_idx] = false;
+            flow.overflow_pool_idx = 0xff;
+            flow.overflow_len = 0;
+        }
     }
 
     pub fn findFlow(self: *FlowTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) ?*Flow {
@@ -84,20 +119,11 @@ pub const FlowTable = struct {
         return null;
     }
 
-    pub fn findBySocksFd(self: *FlowTable, fd: i32) ?*Flow {
-        if (fd < 0) return null;
-        for (&self.flows) |*flow| {
-            if (flow.state != .free and flow.socks_fd == fd) {
-                return flow;
-            }
-        }
-        return null;
-    }
-
     pub fn allocate(self: *FlowTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) ?*Flow {
         // First pass: try to find a completely free slot
         for (&self.flows) |*flow| {
             if (flow.state == .free) {
+                self.releaseOverflowBuf(flow);
                 flow.reset();
                 flow.src_ip = src_ip;
                 flow.dst_ip = dst_ip;
@@ -116,6 +142,7 @@ pub const FlowTable = struct {
         for (&self.flows) |*flow| {
             if (flow.state == .tombstone) {
                 if (now >= flow.tombstone_until_ms) {
+                    self.releaseOverflowBuf(flow);
                     flow.reset();
                     flow.src_ip = src_ip;
                     flow.dst_ip = dst_ip;
@@ -133,6 +160,7 @@ pub const FlowTable = struct {
 
         // Third pass: under high CPS pressure, forcibly evict the oldest tombstone
         if (oldest_tombstone) |flow| {
+            self.releaseOverflowBuf(flow);
             flow.reset();
             flow.src_ip = src_ip;
             flow.dst_ip = dst_ip;
@@ -142,11 +170,35 @@ pub const FlowTable = struct {
             return flow;
         }
 
-        return null; // Table completely full with active non-tombstone flows
+        // Fourth pass: table completely saturated with active flows; forcibly recycle oldest flow to guarantee zero deadlocks
+        var oldest_flow: ?*Flow = null;
+        var oldest_time: i64 = std.math.maxInt(i64);
+        for (&self.flows) |*flow| {
+            if (flow.tombstone_until_ms < oldest_time) {
+                oldest_time = flow.tombstone_until_ms;
+                oldest_flow = flow;
+            }
+        }
+        if (oldest_flow) |flow| {
+            self.releaseOverflowBuf(flow);
+            if (flow.socks_fd >= 0) {
+                sys.close(flow.socks_fd);
+                flow.socks_fd = -1;
+            }
+            flow.reset();
+            flow.src_ip = src_ip;
+            flow.dst_ip = dst_ip;
+            flow.src_port = src_port;
+            flow.dst_port = dst_port;
+            flow.state = .upstream_connect;
+            return flow;
+        }
+
+        return null;
     }
 
     pub fn markTombstone(self: *FlowTable, flow: *Flow, duration_ms: i64) void {
-        _ = self;
+        self.releaseOverflowBuf(flow);
         if (flow.socks_fd >= 0) {
             sys.close(flow.socks_fd);
             flow.socks_fd = -1;
@@ -157,12 +209,13 @@ pub const FlowTable = struct {
 };
 
 pub const UdpSession = struct {
+    last_active_ms: i64,
     src_ip: u32,
     dst_ip: u32,
     src_port: u16,
     dst_port: u16,
-    last_active_ms: i64,
     active: bool,
+    _pad: [3]u8 = [_]u8{0} ** 3,
 
     pub fn matches(self: *const UdpSession, s_ip: u32, d_ip: u32, s_port: u16, d_port: u16) bool {
         return self.active and
@@ -175,11 +228,12 @@ pub const UdpSession = struct {
 
 pub const DnsQuery = struct {
     src_ip: u32,
-    src_port: u16,
     dst_ip: u32,
+    src_port: u16,
     dst_port: u16,
     dns_tx_id: u16,
     active: bool,
+    _pad: u8 = 0,
 };
 
 pub const UdpTable = struct {

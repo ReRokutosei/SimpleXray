@@ -16,54 +16,51 @@ pub fn close(fd: fd_t) void {
     }
 }
 
+pub const SockAddrIn = extern struct {
+    sin_family: u16 = linux.AF.INET,
+    sin_port: u16,
+    sin_addr: u32,
+    sin_zero: [8]u8 = [_]u8{0} ** 8,
+};
+
 pub fn read(fd: fd_t, buf: []u8) !usize {
-    const rc = linux.read(fd, buf.ptr, buf.len);
-    return switch (linux.errno(rc)) {
-        .SUCCESS => @intCast(rc),
-        .AGAIN => error.WouldBlock,
-        .INTR => error.WouldBlock,
-        else => error.ReadFailed,
-    };
+    while (true) {
+        const rc = linux.read(fd, buf.ptr, buf.len);
+        switch (linux.errno(rc)) {
+            .SUCCESS => return @intCast(rc),
+            .INTR => continue,
+            .AGAIN => return error.WouldBlock,
+            else => return error.ReadFailed,
+        }
+    }
 }
 
 pub fn writeSocket(fd: fd_t, buf: []const u8) !usize {
-    const rc = linux.sendto(fd, buf.ptr, buf.len, linux.MSG.NOSIGNAL, null, 0);
-    return switch (linux.errno(rc)) {
-        .SUCCESS => @intCast(rc),
-        .AGAIN => error.WouldBlock,
-        .INTR => error.WouldBlock,
-        .PIPE => error.BrokenPipe,
-        .CONNRESET => error.ConnectionReset,
-        else => error.WriteFailed,
-    };
-}
-
-pub fn writeTun(fd: fd_t, buf: []const u8) !usize {
-    var retries: usize = 0;
-    while (retries < 20) : (retries += 1) {
-        const rc = linux.write(fd, buf.ptr, buf.len);
+    while (true) {
+        const rc = linux.sendto(fd, buf.ptr, buf.len, linux.MSG.NOSIGNAL, null, 0);
         switch (linux.errno(rc)) {
             .SUCCESS => return @intCast(rc),
-            .AGAIN => {
-                var pfd = [_]linux.pollfd{.{
-                    .fd = fd,
-                    .events = linux.POLL.OUT,
-                    .revents = 0,
-                }};
-                _ = linux.poll(&pfd, 1, 10);
-                continue;
-            },
             .INTR => continue,
+            .AGAIN => return error.WouldBlock,
             .PIPE => return error.BrokenPipe,
             .CONNRESET => return error.ConnectionReset,
             else => return error.WriteFailed,
         }
     }
-    return error.WouldBlock;
 }
 
-pub fn write(fd: fd_t, buf: []const u8) !usize {
-    return writeSocket(fd, buf);
+pub fn writeTun(fd: fd_t, buf: []const u8) !usize {
+    while (true) {
+        const rc = linux.write(fd, buf.ptr, buf.len);
+        switch (linux.errno(rc)) {
+            .SUCCESS => return @intCast(rc),
+            .INTR => continue,
+            .AGAIN => return error.WouldBlock,
+            .PIPE => return error.BrokenPipe,
+            .CONNRESET => return error.ConnectionReset,
+            else => return error.WriteFailed,
+        }
+    }
 }
 
 pub fn createTcpSocket() !fd_t {
@@ -73,20 +70,13 @@ pub fn createTcpSocket() !fd_t {
 }
 
 pub fn connect(fd: fd_t, ip: u32, port: u16) !void {
-    const sockaddr_in = extern struct {
-        sin_family: u16 = linux.AF.INET,
-        sin_port: u16,
-        sin_addr: u32,
-        sin_zero: [8]u8 = [_]u8{0} ** 8,
-    };
-
-    const sa = sockaddr_in{
+    const sa = SockAddrIn{
         .sin_family = linux.AF.INET,
         .sin_port = std.mem.nativeToBig(u16, port),
         .sin_addr = std.mem.nativeToBig(u32, ip),
     };
 
-    const rc = linux.connect(fd, @ptrCast(&sa), @sizeOf(sockaddr_in));
+    const rc = linux.connect(fd, @ptrCast(&sa), @sizeOf(SockAddrIn));
     const err = linux.errno(rc);
     if (err == .SUCCESS) return;
     if (err == .INPROGRESS or err == .ALREADY or err == .AGAIN) return error.ConnectionPending;
@@ -104,36 +94,33 @@ pub fn createUdpSocket() !fd_t {
 }
 
 pub fn sendto(fd: fd_t, buf: []const u8, ip: u32, port: u16) !usize {
-    const sockaddr_in = extern struct {
-        sin_family: u16 = linux.AF.INET,
-        sin_port: u16,
-        sin_addr: u32,
-        sin_zero: [8]u8 = [_]u8{0} ** 8,
-    };
-
-    const sa = sockaddr_in{
+    const sa = SockAddrIn{
         .sin_family = linux.AF.INET,
         .sin_port = std.mem.nativeToBig(u16, port),
         .sin_addr = std.mem.nativeToBig(u32, ip),
     };
 
-    const rc = linux.sendto(fd, buf.ptr, buf.len, 0, @ptrCast(&sa), @sizeOf(sockaddr_in));
-    return switch (linux.errno(rc)) {
-        .SUCCESS => @intCast(rc),
-        .AGAIN => error.WouldBlock,
-        .INTR => error.WouldBlock,
-        else => error.WriteFailed,
-    };
+    while (true) {
+        const rc = linux.sendto(fd, buf.ptr, buf.len, 0, @ptrCast(&sa), @sizeOf(SockAddrIn));
+        switch (linux.errno(rc)) {
+            .SUCCESS => return @intCast(rc),
+            .INTR => continue,
+            .AGAIN => return error.WouldBlock,
+            else => return error.WriteFailed,
+        }
+    }
 }
 
 pub fn recvfrom(fd: fd_t, buf: []u8) !usize {
-    const rc = linux.recvfrom(fd, buf.ptr, buf.len, 0, null, null);
-    return switch (linux.errno(rc)) {
-        .SUCCESS => @intCast(rc),
-        .AGAIN => error.WouldBlock,
-        .INTR => error.WouldBlock,
-        else => error.ReadFailed,
-    };
+    while (true) {
+        const rc = linux.recvfrom(fd, buf.ptr, buf.len, 0, null, null);
+        switch (linux.errno(rc)) {
+            .SUCCESS => return @intCast(rc),
+            .INTR => continue,
+            .AGAIN => return error.WouldBlock,
+            else => return error.ReadFailed,
+        }
+    }
 }
 
 pub fn createEventFd() !fd_t {
