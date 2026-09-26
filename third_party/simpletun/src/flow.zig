@@ -1,5 +1,6 @@
 const std = @import("std");
 const sys = @import("sys.zig");
+const socks5 = @import("socks5.zig");
 
 pub const State = enum(u8) {
     free = 0,
@@ -31,6 +32,7 @@ pub const Flow = struct {
     state: State,
     is_blocked: bool,
     client_fin: bool,
+    hs: socks5.Handshake = .{},
     _pad: [2]u8 = [_]u8{0} ** 2,
 
     pub fn matches(self: *const Flow, s_ip: u32, d_ip: u32, s_port: u16, d_port: u16) bool {
@@ -56,6 +58,7 @@ pub const Flow = struct {
         self.state = .free;
         self.is_blocked = false;
         self.client_fin = false;
+        self.hs.reset();
     }
 };
 
@@ -341,7 +344,7 @@ pub const UdpTable = struct {
 };
 
 comptime {
-    std.debug.assert(@sizeOf(Flow) == 48);
+    std.debug.assert(@sizeOf(Flow) == 72);
     std.debug.assert(@sizeOf(UdpSession) == 24);
     std.debug.assert(@sizeOf(DnsQuery) == 16);
 }

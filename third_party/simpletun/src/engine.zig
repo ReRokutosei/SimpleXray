@@ -506,6 +506,7 @@ pub const Engine = struct {
 
         flow.socks_fd = sock;
         flow.state = .upstream_connect;
+        flow.hs.beginGreeting();
 
         sys.connect(sock, self.cfg.socks_ip, self.cfg.socks_port) catch |err| {
             if (err != error.ConnectionPending) {
@@ -528,94 +529,127 @@ pub const Engine = struct {
         }
     }
 
+    fn armSocksEvents(self: *Engine, flow: *flow_mod.Flow, events: u32) void {
+        const flow_idx: u32 = @intCast(self.table.indexOf(flow));
+        var ev = linux.epoll_event{
+            .events = events,
+            .data = .{ .u32 = flow_idx + FLOW_INDEX_OFFSET },
+        };
+        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, flow.socks_fd, &ev);
+    }
+
+    fn failSocksFlow(self: *Engine, flow: *flow_mod.Flow) void {
+        self.sendRst(flow);
+        self.closeFlow(flow, 3000);
+    }
+
+    fn driveSocks5Tx(self: *Engine, flow: *flow_mod.Flow) !void {
+        _ = self;
+        const fd = flow.socks_fd;
+        while (!flow.hs.complete()) {
+            const offset: usize = flow.hs.have;
+            const chunk = flow.hs.outgoing()[offset..];
+            const n = try sys.writeSocket(fd, chunk);
+            if (n == 0) return error.Socks5WriteFailed;
+            flow.hs.commitSent(n);
+        }
+    }
+
+    fn driveSocks5Rx(self: *Engine, flow: *flow_mod.Flow) !void {
+        _ = self;
+        const fd = flow.socks_fd;
+        var scratch: [22]u8 = undefined;
+        while (!flow.hs.complete()) {
+            const want = flow.hs.remaining();
+            if (want == 0) return error.Socks5Malformed;
+            const n = try sys.read(fd, scratch[0..want]);
+            if (n == 0) return error.Socks5Eof;
+            for (scratch[0..n]) |byte| {
+                flow.hs.consume(byte);
+                if (flow.hs.complete()) break;
+            }
+        }
+    }
+
     fn handleSocksEvent(self: *Engine, flow: *flow_mod.Flow, events: u32) void {
         const fd = flow.socks_fd;
         const flow_idx: u32 = @intCast(self.table.indexOf(flow));
 
         const is_fatal_err = (events & linux.EPOLL.ERR) != 0;
-        const is_fatal_hup = (events & linux.EPOLL.HUP) != 0 and (flow.state != .established or (events & linux.EPOLL.IN) == 0);
+        const is_fatal_hup = (events & linux.EPOLL.HUP) != 0 and (events & linux.EPOLL.IN) == 0;
         if (is_fatal_err or is_fatal_hup) {
-            self.sendRst(flow);
-            self.closeFlow(flow, 3000);
+            self.failSocksFlow(flow);
             return;
         }
 
         switch (flow.state) {
             .upstream_connect => {
                 if ((events & linux.EPOLL.OUT) != 0) {
-                    _ = sys.writeSocket(fd, &socks5.Greeting) catch |err| {
-                        if (err != error.WouldBlock) {
-                            self.sendRst(flow);
-                            self.closeFlow(flow, 3000);
-                        }
+                    self.driveSocks5Tx(flow) catch |err| {
+                        if (err == error.WouldBlock) return;
+                        self.failSocksFlow(flow);
                         return;
                     };
+                    flow.hs.beginAuth();
                     flow.state = .socks5_auth_wait;
-
-                    // Crucial: Disarm EPOLLOUT to prevent busy-looping while waiting for auth response
-                    var ev = linux.epoll_event{
-                        .events = linux.EPOLL.IN | linux.EPOLL.ERR,
-                        .data = .{ .u32 = flow_idx + FLOW_INDEX_OFFSET },
-                    };
-                    _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, fd, &ev);
+                    self.armSocksEvents(flow, linux.EPOLL.IN | linux.EPOLL.ERR);
                 }
             },
             .socks5_auth_wait => {
                 if ((events & linux.EPOLL.IN) != 0) {
-                    var auth_resp: [2]u8 = undefined;
-                    const n = sys.read(fd, &auth_resp) catch |err| {
-                        if (err != error.WouldBlock) {
-                            self.sendRst(flow);
-                            self.closeFlow(flow, 3000);
-                        }
+                    self.driveSocks5Rx(flow) catch |err| {
+                        if (err == error.WouldBlock) return;
+                        self.failSocksFlow(flow);
                         return;
                     };
-                    if (n == 2 and auth_resp[0] == 0x05 and auth_resp[1] == 0x00) {
-                        var req_buf: [10]u8 = undefined;
-                        const req_len = socks5.formatConnectRequest(&req_buf, flow.dst_ip, flow.dst_port);
-                        _ = sys.writeSocket(fd, req_buf[0..req_len]) catch |err| {
-                            if (err != error.WouldBlock) {
-                                self.sendRst(flow);
-                                self.closeFlow(flow, 3000);
-                            }
-                            return;
-                        };
-                        flow.state = .socks5_connect_wait;
-                    } else { // N-1: simplified from 'else if (n > 0 or n == 0)' which was always true
-                        self.sendRst(flow);
-                        self.closeFlow(flow, 3000);
+                    const resp = flow.hs.incoming();
+                    if (resp.len != 2 or resp[0] != 0x05 or resp[1] != 0x00) {
+                        self.failSocksFlow(flow);
+                        return;
                     }
+
+                    flow.hs.beginConnectRequest(flow.dst_ip, flow.dst_port);
+                    flow.state = .socks5_connect_wait;
+                    self.armSocksEvents(flow, linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR);
+                    self.driveSocks5Tx(flow) catch |err| {
+                        if (err == error.WouldBlock) return;
+                        self.failSocksFlow(flow);
+                        return;
+                    };
+                    flow.hs.beginReply();
+                    self.armSocksEvents(flow, linux.EPOLL.IN | linux.EPOLL.ERR);
                 }
             },
             .socks5_connect_wait => {
-                if ((events & linux.EPOLL.IN) != 0) {
-                    // M-4: SOCKS5 CONNECT response is 10 bytes for IPv4 (ATYP=1) or 22 bytes for IPv6 (ATYP=4).
-                    // Use a 22-byte buffer to consume the full reply regardless of bound address type,
-                    // preventing leftover bytes from being misread as application data.
-                    var resp: [22]u8 = undefined;
-                    const n = sys.read(fd, &resp) catch |err| {
-                        if (err != error.WouldBlock) {
-                            self.sendRst(flow);
-                            self.closeFlow(flow, 3000);
-                        }
-                        return;
-                    };
-                    if (n >= 4 and resp[0] == 0x05 and resp[1] == 0x00) {
-                        // SOCKS5 ready! Send conservative SYN-ACK
-                        flow.state = .established;
-
-                        // Switch to EPOLL.IN only (arm EPOLL.OUT only on EAGAIN backpressure)
-                        var ev = linux.epoll_event{
-                            .events = linux.EPOLL.IN | linux.EPOLL.ERR,
-                            .data = .{ .u32 = flow_idx + FLOW_INDEX_OFFSET },
+                if (flow.hs.phase == .request_tx) {
+                    if ((events & linux.EPOLL.OUT) != 0) {
+                        self.driveSocks5Tx(flow) catch |err| {
+                            if (err == error.WouldBlock) return;
+                            self.failSocksFlow(flow);
+                            return;
                         };
-                        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, fd, &ev);
-
-                        self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_SYN | protocol.TcpHeader.FLAG_ACK, flow.s_isn, flow.rcv_nxt, 65535, null);
-                    } else { // N-1: 'n > 0 or n == 0' was always true — simplified to else
-                        self.sendRst(flow);
-                        self.closeFlow(flow, 3000);
+                        flow.hs.beginReply();
+                        self.armSocksEvents(flow, linux.EPOLL.IN | linux.EPOLL.ERR);
                     }
+                } else if (flow.hs.phase == .reply_rx) {
+                    if ((events & linux.EPOLL.IN) != 0) {
+                        self.driveSocks5Rx(flow) catch |err| {
+                            if (err == error.WouldBlock) return;
+                            self.failSocksFlow(flow);
+                            return;
+                        };
+                        const resp = flow.hs.incoming();
+                        if (resp.len < 4 or resp[0] != 0x05 or resp[1] != 0x00 or (resp[3] != 0x01 and resp[3] != 0x04)) {
+                            self.failSocksFlow(flow);
+                            return;
+                        }
+
+                        flow.state = .established;
+                        self.armSocksEvents(flow, linux.EPOLL.IN | linux.EPOLL.ERR);
+                        self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_SYN | protocol.TcpHeader.FLAG_ACK, flow.s_isn, flow.rcv_nxt, 65535, null);
+                    }
+                } else {
+                    self.failSocksFlow(flow);
                 }
             },
             .established => {
@@ -663,7 +697,7 @@ pub const Engine = struct {
                             };
                             if (written < flow.overflow_len) {
                                 const rem = flow.overflow_len - written;
-                                std.mem.copyForwards(u8, buf[0..rem], buf[written .. flow.overflow_len]);
+                                std.mem.copyForwards(u8, buf[0..rem], buf[written..flow.overflow_len]);
                                 flow.overflow_len = @intCast(rem);
                             } else {
                                 self.table.releaseOverflowBuf(flow);
