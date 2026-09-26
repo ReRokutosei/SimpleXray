@@ -39,15 +39,27 @@ pub fn writeSocket(fd: fd_t, buf: []const u8) !usize {
 }
 
 pub fn writeTun(fd: fd_t, buf: []const u8) !usize {
-    const rc = linux.write(fd, buf.ptr, buf.len);
-    return switch (linux.errno(rc)) {
-        .SUCCESS => @intCast(rc),
-        .AGAIN => error.WouldBlock,
-        .INTR => error.WouldBlock,
-        .PIPE => error.BrokenPipe,
-        .CONNRESET => error.ConnectionReset,
-        else => error.WriteFailed,
-    };
+    var retries: usize = 0;
+    while (retries < 20) : (retries += 1) {
+        const rc = linux.write(fd, buf.ptr, buf.len);
+        switch (linux.errno(rc)) {
+            .SUCCESS => return @intCast(rc),
+            .AGAIN => {
+                var pfd = [_]linux.pollfd{.{
+                    .fd = fd,
+                    .events = linux.POLL.OUT,
+                    .revents = 0,
+                }};
+                _ = linux.poll(&pfd, 1, 10);
+                continue;
+            },
+            .INTR => continue,
+            .PIPE => return error.BrokenPipe,
+            .CONNRESET => return error.ConnectionReset,
+            else => return error.WriteFailed,
+        }
+    }
+    return error.WouldBlock;
 }
 
 pub fn write(fd: fd_t, buf: []const u8) !usize {

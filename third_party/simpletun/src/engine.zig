@@ -223,9 +223,18 @@ pub const Engine = struct {
     }
 
     fn handleTunRead(self: *Engine) void {
-        const n = sys.read(self.cfg.tun_fd, &self.rx_packet_buf) catch return;
-        if (n < 20) return; // Minimum IPv4 header length
+        var batch: usize = 0;
+        while (batch < 32) : (batch += 1) {
+            const n = sys.read(self.cfg.tun_fd, &self.rx_packet_buf) catch |err| {
+                if (err == error.WouldBlock) return;
+                return;
+            };
+            if (n < 20) return;
+            self.processTunPacket(n);
+        }
+    }
 
+    fn processTunPacket(self: *Engine, n: usize) void {
         const ip_hdr: *const protocol.Ipv4Header = @ptrCast(@alignCast(&self.rx_packet_buf[0]));
         if (ip_hdr.version() != 4) return; // IPv4 only
 

@@ -17,6 +17,7 @@
 
 typedef struct {
     pthread_t thread;
+    int thread_created;
     int tun_fd;
     uint32_t socks_ip;
     uint16_t socks_port;
@@ -52,6 +53,10 @@ static jint native_start(JNIEnv *env, jclass klass, jint fd, jstring socks_host,
         pthread_mutex_unlock(&context_mutex);
         return 0; // Already running
     }
+    if (context.thread_created) {
+        pthread_join(context.thread, NULL);
+        context.thread_created = 0;
+    }
 
     uint32_t ip = 0x7f000001; // default 127.0.0.1
     if (socks_host != NULL) {
@@ -81,11 +86,13 @@ static jint native_start(JNIEnv *env, jclass klass, jint fd, jstring socks_host,
 
     if (create_rc != 0) {
         context.running = 0;
+        context.thread_created = 0;
         pthread_mutex_unlock(&context_mutex);
         LOGE("Failed to create worker thread for SimpleTUN: rc=%d", create_rc);
         return -2;
     }
 
+    context.thread_created = 1;
     pthread_mutex_unlock(&context_mutex);
     LOGI("SimpleTUN nativeStart succeeded");
     return 0;
@@ -96,7 +103,7 @@ static jint native_stop(JNIEnv *env, jclass klass) {
     (void)klass;
 
     pthread_mutex_lock(&context_mutex);
-    if (!context.running) {
+    if (!context.thread_created) {
         pthread_mutex_unlock(&context_mutex);
         return 0;
     }
@@ -104,9 +111,12 @@ static jint native_stop(JNIEnv *env, jclass klass) {
     LOGI("Stopping SimpleTUN engine...");
     simpletun_stop();
 
-    pthread_join(context.thread, NULL);
+    pthread_t thread_to_join = context.thread;
     context.running = 0;
+    context.thread_created = 0;
     pthread_mutex_unlock(&context_mutex);
+
+    pthread_join(thread_to_join, NULL);
 
     LOGI("SimpleTUN engine stopped cleanly");
     return 0;
