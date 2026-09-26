@@ -60,7 +60,7 @@ pub const Flow = struct {
 };
 
 pub const FlowTable = struct {
-    pub const CAPACITY: usize = 512;
+    pub const CAPACITY: usize = 1024;
     pub const OVERFLOW_POOL_SIZE: usize = 16;
 
     flows: [CAPACITY]Flow,

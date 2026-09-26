@@ -619,8 +619,11 @@ pub const Engine = struct {
 
                         // Direct in-place packet synthesis and transmission (0 memcpy)
                         const win_to_announce: u16 = if (flow.is_blocked) 0 else 65535;
-                        self.sendTcpPacketDirect(flow, protocol.TcpHeader.FLAG_ACK | protocol.TcpHeader.FLAG_PSH, flow.snd_nxt, flow.rcv_nxt, win_to_announce, n);
-                        flow.snd_nxt +%= @intCast(n);
+                        if (self.sendTcpPacketDirect(flow, protocol.TcpHeader.FLAG_ACK | protocol.TcpHeader.FLAG_PSH, flow.snd_nxt, flow.rcv_nxt, win_to_announce, n)) {
+                            flow.snd_nxt +%= @intCast(n);
+                        } else {
+                            break;
+                        }
 
                         if (n < max_mss) break; // Drained socket buffer
                     }
@@ -741,10 +744,10 @@ pub const Engine = struct {
     }
 
     // Direct 0-copy fast path: tx_packet_buf[40 .. 40 + payload_len] already holds data from sys.read!
-    fn sendTcpPacketDirect(self: *Engine, flow: *flow_mod.Flow, flags: u8, seq: u32, ack: u32, window: u16, payload_len: usize) void {
+    fn sendTcpPacketDirect(self: *Engine, flow: *flow_mod.Flow, flags: u8, seq: u32, ack: u32, window: u16, payload_len: usize) bool {
         const tcp_hlen: u16 = 20;
         const total_len: u16 = @intCast(20 + tcp_hlen + payload_len);
-        if (total_len > self.tx_packet_buf.len) return;
+        if (total_len > self.tx_packet_buf.len) return false;
 
         var ip_hdr: *protocol.Ipv4Header = @ptrCast(@alignCast(&self.tx_packet_buf[0]));
         ip_hdr.ihl_version = 0x45;
@@ -778,7 +781,11 @@ pub const Engine = struct {
             self.tx_packet_buf[20..total_len],
         );
 
-        _ = sys.writeTun(self.cfg.tun_fd, self.tx_packet_buf[0..total_len]) catch {};
+        if (sys.writeTun(self.cfg.tun_fd, self.tx_packet_buf[0..total_len])) |_| {
+            return true;
+        } else |_| {
+            return false;
+        }
     }
 
     fn handleUdpRelayRead(self: *Engine) void {

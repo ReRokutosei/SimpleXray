@@ -125,14 +125,15 @@ def render_wifi_throughput(
     for axis, network in zip(axes, ("TCP", "UDP")):
         keys = [(network, 1), (network, 8)]
         y = np.arange(len(keys))[::-1]
-        height = 0.18
         num_backends = len(backends)
+        height = 0.72 / num_backends
+        offsets = np.linspace((num_backends - 1) * height / 2, -(num_backends - 1) * height / 2, num_backends)
 
         all_vals = []
         for index, backend in enumerate(backends):
             values = [statistics.mean(groups[key].get(backend, [0.0])) for key in keys]
             all_vals.extend(values)
-            positions = y + (1 - index) * height
+            positions = y + offsets[index]
             bars = axis.barh(
                 positions, values, height,
                 color=COLORS[backend],
@@ -928,7 +929,7 @@ def main() -> None:
     profile = resolve_device_paths(args.device_profile)
     data_dir = args.data_dir if args.data_dir else profile["data_dir"]
     if args.data_dir:
-        for key in ["throughput_json", "bufferbloat_json", "stability_json", "idle_memory_json", "cps_json", "weaknet_json"]:
+        for key in ["throughput_json", "bufferbloat_json", "stability_json", "idle_memory_json", "cps_json", "weaknet_json", "microbench_json"]:
             filename = os.path.basename(profile[key])
             profile[key] = os.path.join(data_dir, filename)
 

@@ -364,12 +364,13 @@ print(json.dumps(measurements))
     err_thread = threading.Thread(target=forward_stderr, daemon=True)
     err_thread.start()
 
+    timeout_sec = int(len(steps) * (settle_sec + 5) + 30)
     try:
-        stdout, _ = proc.communicate(timeout=timeout_sec + 30)
+        stdout, _ = proc.communicate(timeout=timeout_sec)
     except subprocess.TimeoutExpired:
         proc.kill()
         stdout, _ = proc.communicate()
-        log_error(f"Namespace run timed out after {timeout_sec + 30}s")
+        log_error(f"Namespace run timed out after {timeout_sec}s")
         return {"backend": backend, "network": network, "flows": [], "slope": 0.0}
 
     err_thread.join()

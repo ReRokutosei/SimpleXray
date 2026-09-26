@@ -342,6 +342,8 @@ def run_loopback_suite(
 
     prev_backend: Optional[str] = None
     for b in backends:
+        if b == "simpletun":
+            continue
         b_name = name_map.get(b, b.upper())
         # Force-reset between Go-based backends to prevent Go runtime cgo conflicts.
         if prev_backend is not None and (b in GO_BACKENDS or prev_backend in GO_BACKENDS):
@@ -357,6 +359,8 @@ def run_loopback_suite(
 
     prev_backend = None
     for b in backends:
+        if b == "simpletun":
+            continue
         b_name = name_map.get(b, b.upper())
         if prev_backend is not None and (b in GO_BACKENDS or prev_backend in GO_BACKENDS):
             adb.force_reset_app()

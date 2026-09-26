@@ -28,9 +28,9 @@ static SimpleTunContext context;
 static pthread_mutex_t context_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static void *run_engine(void *arg) {
-    SimpleTunContext *ctx = (SimpleTunContext *)arg;
-    LOGI("SimpleTUN worker thread started (tun_fd=%d, socks_port=%u)", ctx->tun_fd, ctx->socks_port);
-    int rc = simpletun_start(ctx->tun_fd, ctx->socks_ip, ctx->socks_port);
+    (void)arg;
+    LOGI("SimpleTUN worker thread started");
+    int rc = simpletun_run();
     LOGI("SimpleTUN worker thread finished with rc=%d", rc);
 
     pthread_mutex_lock(&context_mutex);
@@ -70,6 +70,15 @@ static jint native_start(JNIEnv *env, jclass klass, jint fd, jstring socks_host,
         }
     }
 
+    // Synchronously initialize the engine on the calling thread so that
+    // any initialization failure is immediately propagated to Kotlin.
+    int init_rc = simpletun_init(fd, ip, (uint16_t)socks_port);
+    if (init_rc != 0) {
+        pthread_mutex_unlock(&context_mutex);
+        LOGE("Failed to initialize SimpleTUN engine: rc=%d", init_rc);
+        return init_rc;
+    }
+
     memset(&context, 0, sizeof(context));
     context.tun_fd = fd;
     context.socks_ip = ip;
@@ -85,6 +94,8 @@ static jint native_start(JNIEnv *env, jclass klass, jint fd, jstring socks_host,
     pthread_attr_destroy(&attr);
 
     if (create_rc != 0) {
+        simpletun_stop();
+        simpletun_run();
         context.running = 0;
         context.thread_created = 0;
         pthread_mutex_unlock(&context_mutex);

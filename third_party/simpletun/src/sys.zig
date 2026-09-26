@@ -50,17 +50,27 @@ pub fn writeSocket(fd: fd_t, buf: []const u8) !usize {
 }
 
 pub fn writeTun(fd: fd_t, buf: []const u8) !usize {
-    while (true) {
+    var retries: usize = 0;
+    while (retries < 20) : (retries += 1) {
         const rc = linux.write(fd, buf.ptr, buf.len);
         switch (linux.errno(rc)) {
             .SUCCESS => return @intCast(rc),
+            .AGAIN => {
+                var pfd = [_]linux.pollfd{.{
+                    .fd = fd,
+                    .events = linux.POLL.OUT,
+                    .revents = 0,
+                }};
+                _ = linux.poll(&pfd, 1, 10);
+                continue;
+            },
             .INTR => continue,
-            .AGAIN => return error.WouldBlock,
             .PIPE => return error.BrokenPipe,
             .CONNRESET => return error.ConnectionReset,
             else => return error.WriteFailed,
         }
     }
+    return error.WouldBlock;
 }
 
 pub fn createTcpSocket() !fd_t {

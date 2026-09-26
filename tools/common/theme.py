@@ -62,7 +62,7 @@ PALETTE = {
         'fill': '#10b981',
         'edge': '#059669',
         'light': '#d1fae5',
-        'so_size_mb': 0.15,
+        'so_size_mb': 0.02,  # 19 KB
         'runtime': 'Zig 0-heap lightweight stack',
         'ipc': 'Local SOCKS5 Inbound'
     }

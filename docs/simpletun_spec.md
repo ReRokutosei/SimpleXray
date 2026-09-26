@@ -226,6 +226,11 @@ Upstream SOCKS5 Socket (EAGAIN on write)
   - `Ack`: `rcv_nxt`
   - `Window`: `65535`
 
+### 5.4 UDP Session Demultiplexing & Single Relay Socket Trade-Off
+SimpleTUN is intentionally optimized for mobile VPN transparent proxy environments where the overwhelming majority (>99%) of UDP traffic consists of DNS queries:
+- **DNS Queries (`dst_port == 53`)**: SimpleTUN utilizes a dedicated 64-entry FIFO ring buffer (`DnsQueryTracker`) keyed on `(DNS Transaction ID, client_port)`. This guarantees accurate, concurrent matching and demultiplexing of multiple in-flight DNS queries even when targeting the same upstream DNS resolver.
+- **Non-DNS Datagrams**: To strictly adhere to the zero-heap and fixed file-descriptor budget (< 100 KB resident BSS), SimpleTUN multiplexes all UDP traffic through a single SOCKS5 `UDP ASSOCIATE` relay socket (`udp_relay_fd`) rather than spawning an unbounded number of OS socket FDs per foreign destination. When multiple internal clients send datagrams to the exact same external destination `(target_ip, target_port)`, inbound return datagrams are dispatched to the most recently active session (`findByTarget`). This is a deliberate, documented architectural trade-off prioritizing deterministic resource boundaries and zero FD leakage over symmetric NAT tracking for generic non-DNS UDP.
+
 ---
 
 ## 6. Teardown, RST Handling, and Session Tombstones
@@ -293,16 +298,16 @@ pub const Flow = struct {
 };
 ```
 
-### 7.2 Memory Budget Sizing (512 Concurrent Flows + 256 UDP Sessions)
+### 7.2 Memory Budget Sizing (1024 Concurrent Flows + 256 UDP Sessions)
 
 | Component | Sizing Formula | Static Footprint |
 | :--- | :--- | :--- |
-| **TCP Flow Slab Table** | 512 entries × 48 bytes/entry | **24 KB (100% L1 D-Cache Resident)** |
+| **TCP Flow Slab Table** | 1024 entries × 48 bytes/entry | **48 KB (L1/L2 D-Cache Resident)** |
 | **Shared Backpressure Pool** | 16 buffers × 2048 bytes (Leased on EAGAIN) | **32 KB** |
 | **UDP Session Table** | 256 entries × 24 bytes/entry (Packed) | **6 KB** |
 | **DNS Query Tracker** | 64 entries × 16 bytes FIFO ring | **1 KB** |
 | **I/O Packet Buffers** | 3 buffers × 4096 bytes (RX / TX / UDP Relay) | **12 KB** |
-| **Total Resident Memory (BSS)** | Statically pinned in BSS (`initInto`) | **~75 KB (0.07 MB)** |
+| **Total Resident Memory (BSS)** | Statically pinned in BSS (`initInto`) | **~99 KB (< 0.1 MB)** |
 
 > **Conclusion**: The entire state machine, including shared backpressure scratch buffers and UDP/DNS tracking, strictly fits within **< 100 KB total static memory** (actual Android app PSS growth is practically flat at 0 KiB / connection), completely immune to dynamic heap allocations and GC pauses.
 

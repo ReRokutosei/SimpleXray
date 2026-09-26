@@ -8,6 +8,19 @@ extern "C" {
 #endif
 
 /**
+ * Synchronously initializes the SimpleTUN engine on the given TUN file descriptor.
+ * Returns 0 on success, or negative error code on failure.
+ */
+int simpletun_init(int tun_fd, uint32_t socks_ip, uint16_t socks_port);
+
+/**
+ * Runs the initialized SimpleTUN event loop, blocking the calling thread until stopped.
+ * Cleans up and deinitializes the engine on exit.
+ * Returns 0 on clean stop, non-zero on failure.
+ */
+int simpletun_run(void);
+
+/**
  * Starts SimpleTUN on the given TUN file descriptor and blocks the calling thread
  * until simpletun_stop() is called.
  * 

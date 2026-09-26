@@ -660,8 +660,13 @@ class TProxyService : VpnService() {
                 stopXray()
                 return false
             }
-            if (host.contains(':')) {
-                Log.e(TAG, "SimpleTUN currently supports IPv4 SOCKS5 inbounds only: $host")
+            val isIpv4 = host.split('.').let { parts ->
+                parts.size == 4 && parts.all { part ->
+                    part.isNotEmpty() && part.length <= 3 && part.toIntOrNull() in 0..255
+                }
+            }
+            if (!isIpv4) {
+                Log.e(TAG, "SimpleTUN currently supports IPv4 dotted-decimal SOCKS5 inbounds only: $host")
                 stopXray()
                 return false
             }
