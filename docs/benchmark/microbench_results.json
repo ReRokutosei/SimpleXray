@@ -1,0 +1,155 @@
+{
+  "metadata": {
+    "timestamp": "2026-09-26T19:36:19.537543",
+    "target": "Linux x86_64 User Namespace (Pure Stack Microbenchmark)",
+    "rounds": 3,
+    "steps": [
+      0,
+      250,
+      500,
+      750,
+      1000
+    ],
+    "backends": [
+      "simpletun"
+    ],
+    "networks": [
+      "tcp",
+      "udp"
+    ]
+  },
+  "rounds": {
+    "round_1": [
+      {
+        "backend": "simpletun",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 10.14,
+            "rss_mb": 10.14,
+            "private_dirty_mb": 8.59,
+            "threads": 1
+          },
+          {
+            "conns": 250,
+            "pss_mb": 10.15,
+            "rss_mb": 10.15,
+            "private_dirty_mb": 8.59,
+            "threads": 1
+          },
+          {
+            "conns": 500,
+            "pss_mb": 10.15,
+            "rss_mb": 10.15,
+            "private_dirty_mb": 8.59,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 0.02
+      },
+      {
+        "backend": "simpletun",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 10.16,
+            "rss_mb": 10.16,
+            "private_dirty_mb": 8.59,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 0.0
+      }
+    ],
+    "round_2": [
+      {
+        "backend": "simpletun",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 10.19,
+            "rss_mb": 10.19,
+            "private_dirty_mb": 8.59,
+            "threads": 1
+          },
+          {
+            "conns": 250,
+            "pss_mb": 10.19,
+            "rss_mb": 10.19,
+            "private_dirty_mb": 8.59,
+            "threads": 1
+          },
+          {
+            "conns": 500,
+            "pss_mb": 10.19,
+            "rss_mb": 10.19,
+            "private_dirty_mb": 8.59,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 0.0
+      },
+      {
+        "backend": "simpletun",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 10.19,
+            "rss_mb": 10.19,
+            "private_dirty_mb": 8.59,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 0.0
+      }
+    ],
+    "round_3": [
+      {
+        "backend": "simpletun",
+        "network": "tcp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 10.19,
+            "rss_mb": 10.19,
+            "private_dirty_mb": 8.59,
+            "threads": 1
+          },
+          {
+            "conns": 250,
+            "pss_mb": 10.19,
+            "rss_mb": 10.19,
+            "private_dirty_mb": 8.59,
+            "threads": 1
+          },
+          {
+            "conns": 500,
+            "pss_mb": 10.19,
+            "rss_mb": 10.19,
+            "private_dirty_mb": 8.59,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 0.0
+      },
+      {
+        "backend": "simpletun",
+        "network": "udp",
+        "flows": [
+          {
+            "conns": 0,
+            "pss_mb": 10.19,
+            "rss_mb": 10.19,
+            "private_dirty_mb": 8.59,
+            "threads": 1
+          }
+        ],
+        "slope_kib_per_conn": 0.0
+      }
+    ]
+  }
+}

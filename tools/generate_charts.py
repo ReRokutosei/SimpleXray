@@ -38,8 +38,8 @@ from common.theme import (
     save_dashboard,
 )
 
-LIGHT_BACKENDS = ["hev", "sing", "zeptun"]
-FULL_BACKENDS = ["hev", "sing", "xray", "zeptun"]
+LIGHT_BACKENDS = ["hev", "sing", "zeptun", "simpletun"]
+FULL_BACKENDS = ["hev", "sing", "xray", "zeptun", "simpletun"]
 
 NAMES = {
     "direct_none": "Baseline",
@@ -47,6 +47,7 @@ NAMES = {
     "sing": "SingTUN",
     "xray": "Xray",
     "zeptun": "Zeptun",
+    "simpletun": "SimpleTUN",
 }
 COLORS = {
     "direct_none": "#94a3b8",
@@ -54,6 +55,7 @@ COLORS = {
     "sing": "#00ADD8",
     "xray": "#e11d48",
     "zeptun": "#F7A41D",
+    "simpletun": "#10B981",
 }
 
 
@@ -123,14 +125,15 @@ def render_wifi_throughput(
     for axis, network in zip(axes, ("TCP", "UDP")):
         keys = [(network, 1), (network, 8)]
         y = np.arange(len(keys))[::-1]
-        height = 0.18
         num_backends = len(backends)
+        height = 0.72 / num_backends
+        offsets = np.linspace((num_backends - 1) * height / 2, -(num_backends - 1) * height / 2, num_backends)
 
         all_vals = []
         for index, backend in enumerate(backends):
             values = [statistics.mean(groups[key].get(backend, [0.0])) for key in keys]
             all_vals.extend(values)
-            positions = y + (1 - index) * height
+            positions = y + offsets[index]
             bars = axis.barh(
                 positions, values, height,
                 color=COLORS[backend],
@@ -918,11 +921,18 @@ def main() -> None:
     parser.add_argument("--device-profile", default=DEFAULT_DEVICE, choices=sorted(DEVICE_PROFILES),
                         help=f"Device profile to load data from and save charts to (default: {DEFAULT_DEVICE})")
     parser.add_argument("--preset", choices=["light", "full"], default="light",
-                        help="Backend selection preset: 'light' (Hev/SingTUN/Zeptun) or 'full' (all)")
+                        help="Backend selection preset: 'light' (Hev/SingTUN/Zeptun/SimpleTUN) or 'full' (all)")
+    parser.add_argument("--data-dir", default=None,
+                        help="Custom input directory containing benchmark JSON datasets (overrides profile data_dir)")
     args = parser.parse_args()
 
     profile = resolve_device_paths(args.device_profile)
-    data_dir = profile["data_dir"]
+    data_dir = args.data_dir if args.data_dir else profile["data_dir"]
+    if args.data_dir:
+        for key in ["throughput_json", "bufferbloat_json", "stability_json", "idle_memory_json", "cps_json", "weaknet_json", "microbench_json"]:
+            filename = os.path.basename(profile[key])
+            profile[key] = os.path.join(data_dir, filename)
+
     charts_dir = profile["charts_dir"]
     os.makedirs(charts_dir, exist_ok=True)
 

@@ -261,7 +261,8 @@ def run_media_suite(
         "hev": "Hev",
         "xray": "Xray TUN",
         "sing": "SingTUN",
-        "zeptun": "Zeptun"
+        "zeptun": "Zeptun",
+        "simpletun": "SimpleTUN",
     }
 
     # Go-based TUN backends that carry an independent Go runtime in their .so
@@ -286,7 +287,7 @@ def run_media_suite(
                 adb, app_uid, f"{b_name} (MTU 1500)", b, 1500, server_ip,
                 duration=duration, parallel=1, medium=medium, network="tcp"
             ))
-            if include_jumbo:
+            if include_jumbo and b != "simpletun":
                 results.append(run_throughput_case(
                     adb, app_uid, f"{b_name} (MTU 9000)", b, 9000, server_ip,
                     duration=duration, parallel=1, medium=medium, network="tcp"
@@ -296,7 +297,7 @@ def run_media_suite(
                 adb, app_uid, f"{b_name} (MTU 1500)", b, 1500, server_ip,
                 duration=duration, parallel=8, medium=medium, network="tcp"
             ))
-            if include_jumbo:
+            if include_jumbo and b != "simpletun":
                 results.append(run_throughput_case(
                     adb, app_uid, f"{b_name} (MTU 9000)", b, 9000, server_ip,
                     duration=duration, parallel=8, medium=medium, network="tcp"
@@ -336,10 +337,13 @@ def run_loopback_suite(
         "xray": "Xray TUN",
         "sing": "SingTUN",
         "zeptun": "Zeptun",
+        "simpletun": "SimpleTUN",
     }
 
     prev_backend: Optional[str] = None
     for b in backends:
+        if b == "simpletun":
+            continue
         b_name = name_map.get(b, b.upper())
         # Force-reset between Go-based backends to prevent Go runtime cgo conflicts.
         if prev_backend is not None and (b in GO_BACKENDS or prev_backend in GO_BACKENDS):
@@ -355,6 +359,8 @@ def run_loopback_suite(
 
     prev_backend = None
     for b in backends:
+        if b == "simpletun":
+            continue
         b_name = name_map.get(b, b.upper())
         if prev_backend is not None and (b in GO_BACKENDS or prev_backend in GO_BACKENDS):
             adb.force_reset_app()

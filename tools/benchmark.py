@@ -105,7 +105,7 @@ def main():
     parser.add_argument("--network", default=None, choices=["tcp", "udp", "all"],
                         help="Network protocols to benchmark ('tcp', 'udp', or 'all')")
     parser.add_argument("--backends", default=None,
-                        help="TUN backends to benchmark (comma-separated: hev,sing,xray,zeptun, or 'all')")
+                        help="TUN backends to benchmark (comma-separated: hev,sing,xray,zeptun,simpletun, or 'all')")
     parser.add_argument("--skip-baseline", action="store_true", default=None,
                         help="Skip running physical baseline (No VPN) tests")
     parser.add_argument("--wifi-server-ip", default="192.168.31.236",
@@ -120,6 +120,8 @@ def main():
                         help=f"Device profile used for default output paths (default: {DEFAULT_DEVICE})")
     parser.add_argument("--throughput-output", default=None,
                         help="Custom path to save throughput JSON results instead of profile default")
+    parser.add_argument("--output-dir", default=None,
+                        help="Custom directory to store all output JSON results instead of profile data_dir")
     parser.add_argument("--rounds", type=int, default=None,
                         help="Number of test rounds to execute (default: 3)")
     parser.add_argument("--no-jumbo", action="store_true", default=None,
@@ -148,6 +150,17 @@ def main():
 
     preset = get_preset(args.preset)
     profile = resolve_device_paths(args.device_profile)
+    if args.output_dir:
+        out_dir = os.path.abspath(args.output_dir)
+        profile["data_dir"] = out_dir
+        profile["throughput_json"] = os.path.join(out_dir, "throughput.json")
+        profile["bench_json"] = os.path.join(out_dir, "throughput.json")
+        profile["idle_memory_json"] = os.path.join(out_dir, "idle_memory.json")
+        profile["bufferbloat_json"] = os.path.join(out_dir, "bufferbloat.json")
+        profile["stability_json"] = os.path.join(out_dir, "stability.json")
+        profile["cps_json"] = os.path.join(out_dir, "cps.json")
+        profile["weaknet_json"] = os.path.join(out_dir, "weaknet.json")
+        profile["microbench_json"] = os.path.join(out_dir, "microbench.json")
 
     # 1. Resolve configuration through Preset with CLI overrides
     if preset:
