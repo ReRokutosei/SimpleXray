@@ -287,7 +287,7 @@ def run_media_suite(
                 adb, app_uid, f"{b_name} (MTU 1500)", b, 1500, server_ip,
                 duration=duration, parallel=1, medium=medium, network="tcp"
             ))
-            if include_jumbo:
+            if include_jumbo and b != "simpletun":
                 results.append(run_throughput_case(
                     adb, app_uid, f"{b_name} (MTU 9000)", b, 9000, server_ip,
                     duration=duration, parallel=1, medium=medium, network="tcp"
@@ -297,7 +297,7 @@ def run_media_suite(
                 adb, app_uid, f"{b_name} (MTU 1500)", b, 1500, server_ip,
                 duration=duration, parallel=8, medium=medium, network="tcp"
             ))
-            if include_jumbo:
+            if include_jumbo and b != "simpletun":
                 results.append(run_throughput_case(
                     adb, app_uid, f"{b_name} (MTU 9000)", b, 9000, server_ip,
                     duration=duration, parallel=8, medium=medium, network="tcp"

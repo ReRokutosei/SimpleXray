@@ -364,7 +364,14 @@ print(json.dumps(measurements))
     err_thread = threading.Thread(target=forward_stderr, daemon=True)
     err_thread.start()
 
-    stdout, _ = proc.communicate()
+    try:
+        stdout, _ = proc.communicate(timeout=timeout_sec + 30)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        stdout, _ = proc.communicate()
+        log_error(f"Namespace run timed out after {timeout_sec + 30}s")
+        return {"backend": backend, "network": network, "flows": [], "slope": 0.0}
+
     err_thread.join()
 
     if proc.returncode != 0:
@@ -374,7 +381,7 @@ print(json.dumps(measurements))
     try:
         flows = json.loads(stdout.strip().splitlines()[-1])
     except Exception as e:
-        log_error(f"Failed to parse flow measurements: {e}\nRaw output: {res.stdout}")
+        log_error(f"Failed to parse flow measurements: {e}\nRaw output: {stdout}")
         flows = []
 
     # Calculate slope

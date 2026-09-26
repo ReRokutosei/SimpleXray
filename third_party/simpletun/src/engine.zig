@@ -405,15 +405,15 @@ pub const Engine = struct {
                             @memcpy(buf[0..copy_len], effective_payload[0..copy_len]);
                             f.overflow_len = @intCast(copy_len);
                             f.rcv_nxt +%= @intCast(copy_len);
-
-                            // Arm EPOLLOUT to wake up when socket is writable again
-                            const flow_idx: u32 = @intCast(self.table.indexOf(f));
-                            var ev = linux.epoll_event{
-                                .events = linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR,
-                                .data = .{ .u32 = flow_idx + FLOW_INDEX_OFFSET },
-                            };
-                            _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, f.socks_fd, &ev);
                         }
+
+                        // Always arm EPOLLOUT to wake up when socket is writable again
+                        const flow_idx: u32 = @intCast(self.table.indexOf(f));
+                        var ev = linux.epoll_event{
+                            .events = linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR,
+                            .data = .{ .u32 = flow_idx + FLOW_INDEX_OFFSET },
+                        };
+                        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, f.socks_fd, &ev);
 
                         self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 0, null);
                         return;
@@ -425,20 +425,21 @@ pub const Engine = struct {
 
                 if (sent < effective_payload.len) {
                     f.is_blocked = true;
+                    f.rcv_nxt +%= @intCast(sent);
                     const rem = effective_payload.len - sent;
                     if (self.table.getOverflowBuf(f)) |buf| {
                         const copy_len = @min(rem, buf.len);
                         @memcpy(buf[0..copy_len], effective_payload[sent .. sent + copy_len]);
                         f.overflow_len = @intCast(copy_len);
-                        f.rcv_nxt +%= @intCast(sent + copy_len);
-
-                        const flow_idx: u32 = @intCast(self.table.indexOf(f));
-                        var ev = linux.epoll_event{
-                            .events = linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR,
-                            .data = .{ .u32 = flow_idx + FLOW_INDEX_OFFSET },
-                        };
-                        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, f.socks_fd, &ev);
+                        f.rcv_nxt +%= @intCast(copy_len);
                     }
+
+                    const flow_idx: u32 = @intCast(self.table.indexOf(f));
+                    var ev = linux.epoll_event{
+                        .events = linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR,
+                        .data = .{ .u32 = flow_idx + FLOW_INDEX_OFFSET },
+                    };
+                    _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, f.socks_fd, &ev);
 
                     self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 0, null);
                 } else {
@@ -447,12 +448,17 @@ pub const Engine = struct {
                 }
             }
 
-            // Handle client FIN
+            // Handle client FIN with in-order sequence verification
             if ((flags & protocol.TcpHeader.FLAG_FIN) != 0) {
-                if (!f.client_fin) {
-                    f.rcv_nxt +%= 1;
-                    f.client_fin = true;
-                    sys.shutdown(f.socks_fd);
+                if (seq == f.rcv_nxt -% @as(u32, @intCast(effective_payload.len))) {
+                    if (!f.client_fin) {
+                        f.rcv_nxt +%= 1;
+                        f.client_fin = true;
+                        // Defer shutdown until overflow buffer is fully flushed upstream
+                        if (f.overflow_len == 0) {
+                            sys.shutdown(f.socks_fd);
+                        }
+                    }
                 }
                 const win: u16 = if (f.is_blocked) 0 else 65535;
                 self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, win, null);
@@ -507,7 +513,9 @@ pub const Engine = struct {
         const fd = flow.socks_fd;
         const flow_idx: u32 = @intCast(self.table.indexOf(flow));
 
-        if ((events & (linux.EPOLL.ERR | linux.EPOLL.HUP)) != 0) {
+        const is_fatal_err = (events & linux.EPOLL.ERR) != 0;
+        const is_fatal_hup = (events & linux.EPOLL.HUP) != 0 and (flow.state != .established or (events & linux.EPOLL.IN) == 0);
+        if (is_fatal_err or is_fatal_hup) {
             self.sendRst(flow);
             self.closeFlow(flow, 3000);
             return;
@@ -636,6 +644,11 @@ pub const Engine = struct {
                                 self.table.releaseOverflowBuf(flow);
                                 flow.is_blocked = false;
 
+                                // If client sent FIN earlier, now that overflow is flushed, trigger shutdown
+                                if (flow.client_fin) {
+                                    sys.shutdown(fd);
+                                }
+
                                 // Disarm EPOLLOUT to prevent busy loop
                                 var ev = linux.epoll_event{
                                     .events = linux.EPOLL.IN | linux.EPOLL.ERR,
@@ -646,6 +659,18 @@ pub const Engine = struct {
                                 self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, 65535, null);
                             }
                         }
+                    } else {
+                        // Unblocked without pending overflow data
+                        flow.is_blocked = false;
+                        if (flow.client_fin) {
+                            sys.shutdown(fd);
+                        }
+                        var ev = linux.epoll_event{
+                            .events = linux.EPOLL.IN | linux.EPOLL.ERR,
+                            .data = .{ .u32 = flow_idx + FLOW_INDEX_OFFSET },
+                        };
+                        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, fd, &ev);
+                        self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, 65535, null);
                     }
                 }
             },

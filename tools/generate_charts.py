@@ -38,8 +38,8 @@ from common.theme import (
     save_dashboard,
 )
 
-LIGHT_BACKENDS = ["hev", "sing", "zeptun"]
-FULL_BACKENDS = ["hev", "sing", "xray", "zeptun"]
+LIGHT_BACKENDS = ["hev", "sing", "zeptun", "simpletun"]
+FULL_BACKENDS = ["hev", "sing", "xray", "zeptun", "simpletun"]
 
 NAMES = {
     "direct_none": "Baseline",
@@ -920,11 +920,18 @@ def main() -> None:
     parser.add_argument("--device-profile", default=DEFAULT_DEVICE, choices=sorted(DEVICE_PROFILES),
                         help=f"Device profile to load data from and save charts to (default: {DEFAULT_DEVICE})")
     parser.add_argument("--preset", choices=["light", "full"], default="light",
-                        help="Backend selection preset: 'light' (Hev/SingTUN/Zeptun) or 'full' (all)")
+                        help="Backend selection preset: 'light' (Hev/SingTUN/Zeptun/SimpleTUN) or 'full' (all)")
+    parser.add_argument("--data-dir", default=None,
+                        help="Custom input directory containing benchmark JSON datasets (overrides profile data_dir)")
     args = parser.parse_args()
 
     profile = resolve_device_paths(args.device_profile)
-    data_dir = profile["data_dir"]
+    data_dir = args.data_dir if args.data_dir else profile["data_dir"]
+    if args.data_dir:
+        for key in ["throughput_json", "bufferbloat_json", "stability_json", "idle_memory_json", "cps_json", "weaknet_json"]:
+            filename = os.path.basename(profile[key])
+            profile[key] = os.path.join(data_dir, filename)
+
     charts_dir = profile["charts_dir"]
     os.makedirs(charts_dir, exist_ok=True)
 

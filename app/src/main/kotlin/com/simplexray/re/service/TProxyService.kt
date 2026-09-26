@@ -655,6 +655,16 @@ class TProxyService : VpnService() {
             }
             Log.d(TAG, "Starting SimpleTUN backend on fd=$fd")
             val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
+            if (prefs.socksUsername.isNotEmpty() || prefs.socksPassword.isNotEmpty()) {
+                Log.e(TAG, "SimpleTUN does not support authenticated SOCKS5 inbounds. Please clear credentials.")
+                stopXray()
+                return false
+            }
+            if (host.contains(':')) {
+                Log.e(TAG, "SimpleTUN currently supports IPv4 SOCKS5 inbounds only: $host")
+                stopXray()
+                return false
+            }
             val result = synchronized(nativeLifecycleLock) {
                 val res = runCatching {
                     SimpleTunNative.nativeStart(fd, host, prefs.socksPort)
