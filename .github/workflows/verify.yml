@@ -51,5 +51,10 @@ jobs:
         cd third_party/simpletun
         zig build android
 
+    - name: Test simpletun
+      run: |
+        cd third_party/simpletun
+        zig build test
+
     - name: Build and Test with Gradle
       run: bash ./gradlew testDebugUnitTest assembleDebug

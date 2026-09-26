@@ -340,6 +340,12 @@ pub const UdpTable = struct {
     }
 };
 
+comptime {
+    std.debug.assert(@sizeOf(Flow) == 48);
+    std.debug.assert(@sizeOf(UdpSession) == 24);
+    std.debug.assert(@sizeOf(DnsQuery) == 16);
+}
+
 test "FlowTable allocation and tombstone eviction" {
     var table: FlowTable = undefined;
     table.initInto();

@@ -177,6 +177,12 @@ pub fn calculateUdpChecksum(src_ip: u32, dst_ip: u32, udp_len: u16, udp_packet: 
     return std.mem.nativeToBig(u16, res);
 }
 
+comptime {
+    std.debug.assert(@sizeOf(Ipv4Header) == 20);
+    std.debug.assert(@sizeOf(TcpHeader) == 20);
+    std.debug.assert(@sizeOf(UdpHeader) == 8);
+}
+
 test "IPv4 and TCP Checksum calculation" {
     // 20-byte standard IPv4 header
     var ip_hdr_bytes = [_]u8{
