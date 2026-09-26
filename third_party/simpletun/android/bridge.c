@@ -94,11 +94,13 @@ static jint native_start(JNIEnv *env, jclass klass, jint fd, jstring socks_host,
     pthread_attr_destroy(&attr);
 
     if (create_rc != 0) {
-        simpletun_stop();
-        simpletun_run();
         context.running = 0;
         context.thread_created = 0;
+        // Unlock before calling simpletun_stop()/simpletun_run() to prevent deadlock:
+        // both functions may re-acquire context_mutex internally.
         pthread_mutex_unlock(&context_mutex);
+        simpletun_stop();
+        simpletun_run();
         LOGE("Failed to create worker thread for SimpleTUN: rc=%d", create_rc);
         return -2;
     }

@@ -170,7 +170,10 @@ pub const FlowTable = struct {
             return flow;
         }
 
-        // Fourth pass: table completely saturated with active flows; forcibly recycle oldest flow to guarantee zero deadlocks
+        // Fourth pass: table completely saturated with active flows; forcibly recycle oldest flow.
+        // NOTE: socks_fd is intentionally NOT closed here because the caller (Engine) must first call
+        // epoll_ctl(DEL) before close() to prevent stale epoll events firing against the recycled slot.
+        // The caller is responsible for closing the returned evicted_socks_fd.
         var oldest_flow: ?*Flow = null;
         var oldest_time: i64 = std.math.maxInt(i64);
         for (&self.flows) |*flow| {
@@ -181,11 +184,9 @@ pub const FlowTable = struct {
         }
         if (oldest_flow) |flow| {
             self.releaseOverflowBuf(flow);
-            if (flow.socks_fd >= 0) {
-                sys.close(flow.socks_fd);
-                flow.socks_fd = -1;
-            }
+            const old_fd = flow.socks_fd;
             flow.reset();
+            flow.socks_fd = old_fd; // Preserved for Engine to epoll_ctl(DEL) and sys.close()
             flow.src_ip = src_ip;
             flow.dst_ip = dst_ip;
             flow.src_port = src_port;

@@ -201,7 +201,7 @@ pub const Engine = struct {
             .events = linux.POLL.OUT,
             .revents = 0,
         }};
-        _ = linux.poll(&pfd, 1, 200);
+        _ = linux.poll(&pfd, 1, 50);
 
         _ = try sys.writeSocket(sock, &socks5.Greeting);
 
@@ -211,7 +211,7 @@ pub const Engine = struct {
             .events = linux.POLL.IN,
             .revents = 0,
         }};
-        _ = linux.poll(&pfd_in, 1, 200);
+        _ = linux.poll(&pfd_in, 1, 50);
         const an = try sys.read(sock, &auth_resp);
         if (an != 2 or auth_resp[0] != 0x05 or auth_resp[1] != 0x00) {
             return error.Socks5AuthFailed;
@@ -219,7 +219,7 @@ pub const Engine = struct {
 
         _ = try sys.writeSocket(sock, &socks5.UdpAssociateReq);
 
-        _ = linux.poll(&pfd_in, 1, 200);
+        _ = linux.poll(&pfd_in, 1, 50);
         var resp_buf: [10]u8 = undefined;
         const rn = try sys.read(sock, &resp_buf);
         if (rn < 10 or resp_buf[0] != 0x05 or resp_buf[1] != 0x00 or resp_buf[3] != 0x01) {
@@ -244,7 +244,7 @@ pub const Engine = struct {
                 if (err == error.WouldBlock) return;
                 return;
             };
-            if (n < 20) return;
+            if (n < 20) continue; // M-3: skip malformed/short packet, do not abort the entire read batch
             self.processTunPacket(n);
         }
     }
@@ -408,6 +408,12 @@ pub const Engine = struct {
                             @memcpy(buf[0..copy_len], effective_payload[0..copy_len]);
                             f.overflow_len = @intCast(copy_len);
                             f.rcv_nxt +%= @intCast(copy_len);
+                        } else {
+                            // M-2: All 16 overflow slots are taken. Cannot buffer — send RST to avoid
+                            // silent data loss while the client retransmits indefinitely.
+                            self.sendRst(f);
+                            self.closeFlow(f, 3000);
+                            return;
                         }
 
                         // Always arm EPOLLOUT to wake up when socket is writable again
@@ -473,6 +479,14 @@ pub const Engine = struct {
 
     fn handleNewSyn(self: *Engine, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16, client_isn: u32) void {
         const flow = self.table.allocate(src_ip, dst_ip, src_port, dst_port) orelse return;
+
+        // C-2: If fourth-pass recycling returned a slot that still has a live socks_fd (flow.zig
+        // intentionally did NOT close it so we can call epoll_ctl(DEL) here first), deregister and close it now.
+        if (flow.socks_fd >= 0) {
+            _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_DEL, flow.socks_fd, null);
+            sys.close(flow.socks_fd);
+            flow.socks_fd = -1;
+        }
 
         flow.c_isn = client_isn;
         flow.rcv_nxt = client_isn +% 1;
@@ -567,7 +581,7 @@ pub const Engine = struct {
                             return;
                         };
                         flow.state = .socks5_connect_wait;
-                    } else if (n > 0 or n == 0) {
+                    } else { // N-1: simplified from 'else if (n > 0 or n == 0)' which was always true
                         self.sendRst(flow);
                         self.closeFlow(flow, 3000);
                     }
@@ -575,7 +589,10 @@ pub const Engine = struct {
             },
             .socks5_connect_wait => {
                 if ((events & linux.EPOLL.IN) != 0) {
-                    var resp: [10]u8 = undefined;
+                    // M-4: SOCKS5 CONNECT response is 10 bytes for IPv4 (ATYP=1) or 22 bytes for IPv6 (ATYP=4).
+                    // Use a 22-byte buffer to consume the full reply regardless of bound address type,
+                    // preventing leftover bytes from being misread as application data.
+                    var resp: [22]u8 = undefined;
                     const n = sys.read(fd, &resp) catch |err| {
                         if (err != error.WouldBlock) {
                             self.sendRst(flow);
@@ -595,7 +612,7 @@ pub const Engine = struct {
                         _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, fd, &ev);
 
                         self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_SYN | protocol.TcpHeader.FLAG_ACK, flow.s_isn, flow.rcv_nxt, 65535, null);
-                    } else if (n > 0 or n == 0) {
+                    } else { // N-1: 'n > 0 or n == 0' was always true — simplified to else
                         self.sendRst(flow);
                         self.closeFlow(flow, 3000);
                     }
@@ -803,9 +820,11 @@ pub const Engine = struct {
         if (self.udp_scratch_buf[2] != 0) return; // Discard fragmented packets
         if (self.udp_scratch_buf[3] != 0x01) return; // IPv4 only
 
-        // Read IP and Port safely
-        const remote_ip_raw = std.mem.readInt(u32, self.udp_scratch_buf[4..8], .native);
-        const remote_port_raw = std.mem.readInt(u16, self.udp_scratch_buf[8..10], .native);
+        // Read IP and Port as raw bytes — UdpTable stores ip_hdr.src_ip/dst_ip and udp_hdr.src_port/dst_port
+        // directly from the extern struct fields without any byte-swap, so they are in network byte order.
+        // Use @bitCast to read the same way (no endian conversion) so findDnsQuery/findByTarget match.
+        const remote_ip_raw = @as(u32, @bitCast(self.udp_scratch_buf[4..8][0..4].*));
+        const remote_port_raw = @as(u16, @bitCast(self.udp_scratch_buf[8..10][0..2].*));
         const remote_port_native = std.mem.bigToNative(u16, remote_port_raw);
         const payload = self.udp_scratch_buf[10..n];
 

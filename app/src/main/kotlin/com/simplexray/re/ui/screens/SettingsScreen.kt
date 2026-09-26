@@ -426,7 +426,7 @@ fun SettingsScreen(
                     summary = stringResource(R.string.ipv6_summary),
                     checked = settingsState.switches.ipv6Enabled,
                     onCheckedChange = { mainViewModel.setIpv6Enabled(it) },
-                    enabled = !vpnDisabled
+                    enabled = !vpnDisabled && !isSimpleTun
                 )
 
                 EditableListItemWithMiuixBottomSheet(
