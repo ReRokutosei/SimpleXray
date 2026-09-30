@@ -578,19 +578,24 @@ pub const Engine = struct {
 
     fn processTunPacket(self: *Engine, n: usize) void {
         const ip_hdr: *const protocol.Ipv4Header = @ptrCast(@alignCast(&self.rx_packet_buf[0]));
-        if (ip_hdr.version() != 4 or ip_hdr.ihl() < 5) return; // IPv4 only
+        if (ip_hdr.version() != 4 or ip_hdr.ihl() != 5) return; // Fixed 20-byte IPv4 header only
 
         const ip_hlen = ip_hdr.headerLen();
-        const ip_total_len = ip_hdr.getTotalLen();
-        if (n < ip_hlen or ip_total_len < ip_hlen) return;
-        const valid_len = @min(n, @as(usize, ip_total_len));
+        const ip_total_len: usize = ip_hdr.getTotalLen();
+        if (n < ip_total_len or ip_total_len < ip_hlen) return;
+        const fragment = std.mem.bigToNative(u16, ip_hdr.flags_fragment);
+        if ((fragment & 0x3fff) != 0) return; // Drop every IPv4 fragment
+        const valid_len: usize = ip_total_len;
 
         if (ip_hdr.protocol == 17) {
             // UDP Packet Forwarding
-            if (valid_len < ip_hlen + 8) return;
+            const ip_payload_len: usize = ip_total_len - ip_hlen;
+            if (ip_payload_len < 8) return;
             const udp_hdr: *const protocol.UdpHeader = @ptrCast(@alignCast(&self.rx_packet_buf[ip_hlen]));
             const total_hlen = ip_hlen + 8;
             if (valid_len < total_hlen) return;
+            const udp_len = std.mem.bigToNative(u16, udp_hdr.length);
+            if (@as(usize, udp_len) != ip_payload_len) return;
 
             const payload = self.rx_packet_buf[total_hlen..valid_len];
             const src_ip = ip_hdr.src_ip;

@@ -69,9 +69,10 @@ SimpleTUN is a purpose-built user-space network endpoint designed strictly for A
 ## 2. Protocol & Header Handling
 
 ### 2.1 IPv4 Constraints
-- Fixed 20-byte IPv4 header support. Packets with `IHL > 5` (IPv4 options) are dropped.
-- `Total Length` validation against buffer read size.
-- Standard 16-bit one's complement checksum verification on RX; recalculated on TX.
+- Fixed 20-byte IPv4 header support. Packets with `IHL != 5` (IPv4 options) are dropped.
+- `Total Length` must match the number of bytes read; truncated packets are dropped.
+- Any IPv4 fragment (`MF` set or non-zero fragment offset) is dropped before protocol dispatch.
+- RX transport checksum verification is intentionally not done because the TUN path may expose checksum-offload/partial checksums; all synthesized TX checksums are calculated in full.
 
 ### 2.2 TCP Options & Negotiation Parameters
 When generating `SYN-ACK` to the client kernel:
