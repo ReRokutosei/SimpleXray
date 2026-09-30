@@ -1,8 +1,8 @@
 # SimpleTUN Architecture & State Machine Specification
 
-**Version**: 0.3-perf  
-**Target Scope**: Android `VpnService` TUN-to-SOCKS5 transparent proxy endpoint  
-**Language Target**: Zig (C ABI export)  
+**Version**: 0.3-perf
+**Target Scope**: Android `VpnService` TUN-to-SOCKS5 transparent proxy endpoint
+**Language Target**: Zig (C ABI export)
 
 ---
 
@@ -58,7 +58,7 @@ SimpleTUN is a purpose-built user-space network endpoint designed strictly for A
 - Ultra-dense memory footprint via statically pinned 80-byte Flow slab tables (< 100 KiB total BSS).
 
 ### 1.2 Out-of-Scope (Deferred to Future Releases)
-- **IPv6 parsing & synthesis** (Deferred).
+- **IPv6 parsing & synthesis**: deferred for the current IPv4-only scope. See Section 9 for the planned `feat/simpletun-ipv6` work.
 - **0-RTT SYN spoofing with speculative payload buffering**.
 - **ICMP processing**: All ICMP packets are silently dropped.
 - **IP reassembly & fragmentation**: Path MTU discovery is assumed; fragmented IP packets are dropped.
@@ -357,3 +357,96 @@ Verification follows a multi-stage deterministic test pipeline:
     └── Standardized benchmark runner execution:
         python3 tools/benchmark.py --preset light --backends simpletun
 ```
+
+---
+
+## 9. Future TODO: IPv6 Support
+
+**Status**: Deferred.
+**Planned branch**: `feat/simpletun-ipv6`.
+**Goal**: add minimal IPv6 TCP/UDP/QUIC support while keeping the IPv4 fast path and static-memory model intact.
+
+### 9.1 Scope Boundary
+
+In scope for the first IPv6 pass:
+
+- IPv6 TCP (`SOCKS5 CMD CONNECT`, `ATYP=0x04`)
+- IPv6 UDP / DNS (`UDP ASSOCIATE`, `ATYP=0x04`)
+- IPv6 transport checksum generation
+- Android `VpnService` IPv6 address/route/DNS when explicitly enabled
+- QUIC / HTTP3 smoke over IPv6
+
+Explicitly deferred:
+
+- ICMPv6 forwarding or error translation
+- IPv6 extension-header chains
+- IPv6 fragment reassembly
+- NDP/proxy-NDP handling
+- IPv6-only strict mode
+
+Unsupported IPv6 packets are dropped, matching the current "unsupported protocol is dropped" policy.
+
+### 9.2 Work Packages
+
+1. **Address abstraction**
+   - Add a compact `Address { family, bytes[16] }` and `Endpoint`.
+   - Reference Zeptun `src/addr.zig` for API shape; do not copy the full module.
+   - Keep IPv4-only builds able to compile without the extra address bytes if possible.
+
+2. **Packet parser and synthesizer**
+   - Add `Ipv6Header` (40-byte fixed header, `payload_len`, `next_header`, `hop_limit`).
+   - Dispatch TCP/UDP directly; drop extension headers and fragments in the first pass.
+   - Add `writeIpv6` plus IPv6 TCP/UDP pseudo-header checksum.
+   - IPv6 MSS clamp uses `MTU - 60`.
+
+3. **Flow / UDP / DNS key migration**
+   - Replace `u32` 4-tuple addresses with `Address` keys.
+   - Measure BSS impact: current Flow is 80 B, Engine BSS is ~99.5 KiB; IPv6 keys will push this above the current budget unless gated.
+   - Preferred: compile-time `enable_ipv6` flag mirroring the Zeptun feature-flag approach.
+   - Re-evaluate the memory budget and update this document before implementation.
+
+4. **SOCKS5 ATYP=0x04**
+   - `formatConnectRequest` emits IPv6 ATYP and 16-byte address.
+   - CONNECT reply parser parses IPv4/IPv6 bound address.
+   - UDP ASSOCIATE reply parser accepts 22-byte IPv6 replies and records the relay family/address.
+   - Add `SockAddrIn6` connect/sendto helpers in `sys.zig`.
+
+5. **UDP and DNS IPv6**
+   - `formatUdpHeader` supports `ATYP=0x04`.
+   - `sendUdpPacket` builds IPv6 headers and mandatory IPv6 UDP checksums.
+   - `UdpSession` / `DnsQuery` matching uses the generic `Address`.
+   - AAAA responses map back to the original IPv6 client session.
+
+6. **Android integration**
+   - Re-enable the IPv6 switch for SimpleTun in the UI (currently disabled).
+   - When enabled, `getVpnBuilder()` must add IPv6 address, `::/0` route, and IPv6 DNS server.
+   - Keep an explicit IPv4-only fallback for networks with no usable IPv6.
+   - Update `TProxyService` and `SettingsScreen` to reflect the new capability.
+
+7. **Tests and verification**
+   - Unit tests: address parse/format, IPv6 checksums, ATYP=4 SOCKS5 request/reply.
+   - Android smoke: `curl -6`, AAAA DNS lookup, IPv6 QUIC/HTTP3 via the `tools/quic` helper, dual-stack web browsing.
+   - Regression: full existing IPv4 light benchmark and QUIC smoke must continue to pass.
+   - Update `docs/benchmark/*/simpletun/data/` with IPv6-enabled results only when explicitly benchmarked.
+
+### 9.3 Reference Implementations
+
+- **Zeptun**
+  - `src/addr.zig`: compact `Address` / `Endpoint` / prefix model.
+  - `src/stack/ip.zig`: IPv4/IPv6 header construction and length handling.
+  - `src/handler/socks5.zig`: `Atyp` enum and IPv4/IPv6 request/reply parsing.
+  - `src/config.zig`, `src/route/route.zig`: `enable_ipv6` feature gating and route configuration.
+
+- **hev-socks5-tunnel**
+  - `src/core/src/hev-socks5-misc.c`: `sockaddr_in6` conversion, IPv4-mapped IPv6 handling.
+  - `src/core/src/hev-socks5-client.c`: ATYP-dependent CONNECT request encoding/response parsing.
+  - `src/hev-socks5-tunnel.c` and `conf/main.yml`: dual-stack lwIP TUN and IPv6 address configuration.
+
+Both are references for behavior and edge cases only. SimpleTUN must not import lwIP or the Zeptun userspace stack; it remains a minimal packet shifter.
+
+### 9.4 Acceptance Criteria
+
+- IPv4 behavior and benchmark results show no regression.
+- IPv6 TCP, UDP/DNS, and HTTP/3 smoke pass through the same local SOCKS5 inbound.
+- Unsupported IPv6 packet classes are dropped safely, never forwarded or misinterpreted as IPv4.
+- Memory budget, feature flag default, and Android UI behavior are documented before the branch is merged.
