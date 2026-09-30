@@ -43,7 +43,7 @@ This directory contains automated testing scripts and profiling tools for benchm
 
 ### 1. Preset-Driven Benchmark (Recommended)
 
-#### Light Preset (Hev, SingTUN, Zeptun on Wi-Fi MTU 1500, no baseline)
+#### Light Preset (Hev and SingTUN on Wi-Fi MTU 1500, no baseline)
 ```bash
 python3 tools/benchmark.py \
   --preset light \
@@ -66,7 +66,7 @@ python3 tools/benchmark.py \
 ```bash
 # Run specific suite
 python3 tools/benchmark.py --mode throughput --wifi-server-ip 192.168.31.236 --duration 10
-python3 tools/benchmark.py --mode idle_memory --network tcp --backends hev,sing,zeptun
+python3 tools/benchmark.py --mode idle_memory --network tcp --backends hev,sing
 
 # Weak-network TCP download through host netem (requires root/sudo on the host)
 python3 tools/benchmark.py \
@@ -74,7 +74,7 @@ python3 tools/benchmark.py \
   --device <adb-serial> \
   --device-profile 778g \
   --wifi-server-ip 192.168.31.236 \
-  --backends hev,sing,zeptun \
+  --backends hev,sing \
   --netem-losses 3,5,8 \
   --netem-delay 50 \
   --weaknet-duration 10
@@ -85,7 +85,7 @@ python3 tools/benchmark.py \
   --device <adb-serial> \
   --device-profile 778g \
   --wifi-server-ip 192.168.31.236 \
-  --backends hev,sing,zeptun \
+  --backends hev,sing \
   --cps-workers 4,8 \
   --cps-connections 5000
 

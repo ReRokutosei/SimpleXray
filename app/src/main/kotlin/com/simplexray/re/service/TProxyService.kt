@@ -59,7 +59,6 @@ class TProxyService : VpnService() {
         NONE,
         HEV,
         SING,
-        ZEPTUN,
         SIMPLETUN
     }
 
@@ -614,40 +613,6 @@ class TProxyService : VpnService() {
                 stopXray()
                 return false
             }
-        } else if (prefs.tunnelMode == TunnelMode.Zeptun && !prefs.disableVpn) {
-            val fd = tunFd?.fd
-            if (fd == null) {
-                Log.e(TAG, "tunFd is null after establish()")
-                stopXray()
-                return false
-            }
-            Log.d(TAG, "Starting Zeptun backend on fd=$fd")
-            val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
-            val json = ZeptunConfigBuilder.build(
-                host = host,
-                port = prefs.socksPort,
-                username = prefs.socksUsername,
-                password = prefs.socksPassword,
-                mtu = tunMtu,
-                fd = fd,
-                udpInTcp = prefs.udpInTcp
-            )
-            val result = synchronized(nativeLifecycleLock) {
-                val res = runCatching {
-                    ZeptunNative.nativeStart(this, fd, json)
-                }.onFailure {
-                    Log.e(TAG, "Failed to start Zeptun backend", it)
-                }.getOrDefault(-1)
-                if (res == 0) {
-                    activeBackend = NativeBackend.ZEPTUN
-                }
-                res
-            }
-            if (result != 0) {
-                Log.e(TAG, "Zeptun nativeStart failed: $result")
-                stopXray()
-                return false
-            }
         } else if (prefs.tunnelMode == TunnelMode.SimpleTun && !prefs.disableVpn) {
             val fd = tunFd?.fd
             if (fd == null) {
@@ -864,7 +829,6 @@ class TProxyService : VpnService() {
                 NativeBackend.SING -> runCatching {
                     goTunBinder?.stop() ?: true
                 }
-                NativeBackend.ZEPTUN -> runCatching { ZeptunNative.nativeStop() }
                 NativeBackend.SIMPLETUN -> runCatching { SimpleTunNative.nativeStop() }
                 NativeBackend.NONE -> return
             }

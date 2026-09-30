@@ -150,12 +150,6 @@ fun SettingsScreen(
                     onClick = { mainViewModel.setTunnelMode(TunnelMode.SingTun) }
                 ),
                 DropdownItem(
-                    text = stringResource(R.string.tunnel_mode_zeptun),
-                    summary = stringResource(R.string.tunnel_mode_zeptun_summary),
-                    selected = settingsState.switches.tunnelMode == TunnelMode.Zeptun,
-                    onClick = { mainViewModel.setTunnelMode(TunnelMode.Zeptun) }
-                ),
-                DropdownItem(
                     text = stringResource(R.string.tunnel_mode_simpletun),
                     summary = stringResource(R.string.tunnel_mode_simpletun_summary),
                     selected = settingsState.switches.tunnelMode == TunnelMode.SimpleTun,

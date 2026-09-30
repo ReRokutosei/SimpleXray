@@ -390,7 +390,7 @@ Unsupported IPv6 packets are dropped, matching the current "unsupported protocol
 
 1. **Address abstraction**
    - Add a compact `Address { family, bytes[16] }` and `Endpoint`.
-   - Reference Zeptun `src/addr.zig` for API shape; do not copy the full module.
+   - Keep the abstraction dependency-free and compact.
    - Keep IPv4-only builds able to compile without the extra address bytes if possible.
 
 2. **Packet parser and synthesizer**
@@ -402,7 +402,7 @@ Unsupported IPv6 packets are dropped, matching the current "unsupported protocol
 3. **Flow / UDP / DNS key migration**
    - Replace `u32` 4-tuple addresses with `Address` keys.
    - Measure BSS impact: current Flow is 80 B, Engine BSS is ~99.5 KiB; IPv6 keys will push this above the current budget unless gated.
-   - Preferred: compile-time `enable_ipv6` flag mirroring the Zeptun feature-flag approach.
+   - Preferred: a compile-time `enable_ipv6` flag so IPv4-only builds stay lean.
    - Re-evaluate the memory budget and update this document before implementation.
 
 4. **SOCKS5 ATYP=0x04**
@@ -431,18 +431,12 @@ Unsupported IPv6 packets are dropped, matching the current "unsupported protocol
 
 ### 9.3 Reference Implementations
 
-- **Zeptun**
-  - `src/addr.zig`: compact `Address` / `Endpoint` / prefix model.
-  - `src/stack/ip.zig`: IPv4/IPv6 header construction and length handling.
-  - `src/handler/socks5.zig`: `Atyp` enum and IPv4/IPv6 request/reply parsing.
-  - `src/config.zig`, `src/route/route.zig`: `enable_ipv6` feature gating and route configuration.
-
 - **hev-socks5-tunnel**
   - `src/core/src/hev-socks5-misc.c`: `sockaddr_in6` conversion, IPv4-mapped IPv6 handling.
   - `src/core/src/hev-socks5-client.c`: ATYP-dependent CONNECT request encoding/response parsing.
   - `src/hev-socks5-tunnel.c` and `conf/main.yml`: dual-stack lwIP TUN and IPv6 address configuration.
 
-Both are references for behavior and edge cases only. SimpleTUN must not import lwIP or the Zeptun userspace stack; it remains a minimal packet shifter.
+This is a reference for behavior and edge cases only. SimpleTUN must not import lwIP; it remains a minimal packet shifter.
 
 ### 9.4 Acceptance Criteria
 
