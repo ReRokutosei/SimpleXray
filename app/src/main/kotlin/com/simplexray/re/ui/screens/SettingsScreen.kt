@@ -154,6 +154,12 @@ fun SettingsScreen(
                     summary = stringResource(R.string.tunnel_mode_zeptun_summary),
                     selected = settingsState.switches.tunnelMode == TunnelMode.Zeptun,
                     onClick = { mainViewModel.setTunnelMode(TunnelMode.Zeptun) }
+                ),
+                DropdownItem(
+                    text = stringResource(R.string.tunnel_mode_simpletun),
+                    summary = stringResource(R.string.tunnel_mode_simpletun_summary),
+                    selected = settingsState.switches.tunnelMode == TunnelMode.SimpleTun,
+                    onClick = { mainViewModel.setTunnelMode(TunnelMode.SimpleTun) }
                 )
             )
         )
@@ -403,14 +409,16 @@ fun SettingsScreen(
                     enabled = !vpnDisabled
                 )
 
+                val isSimpleTun = settingsState.switches.tunnelMode == TunnelMode.SimpleTun
+
                 EditableListItemWithMiuixBottomSheet(
                     headline = stringResource(R.string.tunnel_mtu_title),
-                    currentValue = settingsState.tunnelMtu.value,
+                    currentValue = if (isSimpleTun) "1500" else settingsState.tunnelMtu.value,
                     onValueConfirmed = { newValue -> mainViewModel.updateTunnelMtu(newValue) },
                     label = stringResource(R.string.tunnel_mtu_title),
                     supportingText = stringResource(R.string.tunnel_mtu_summary),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    enabled = !vpnDisabled
+                    enabled = !vpnDisabled && !isSimpleTun
                 )
 
                 SwitchPreference(
@@ -418,7 +426,7 @@ fun SettingsScreen(
                     summary = stringResource(R.string.ipv6_summary),
                     checked = settingsState.switches.ipv6Enabled,
                     onCheckedChange = { mainViewModel.setIpv6Enabled(it) },
-                    enabled = !vpnDisabled
+                    enabled = !vpnDisabled && !isSimpleTun
                 )
 
                 EditableListItemWithMiuixBottomSheet(
@@ -892,7 +900,7 @@ fun EditableListItemWithMiuixBottomSheet(
             if (customSummary == null) {
                 Text(
                     text = currentValue,
-                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                    color = if (enabled) MiuixTheme.colorScheme.onSurfaceVariantSummary else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
                     style = MiuixTheme.textStyles.body2,
                 )
             }

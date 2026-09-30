@@ -31,7 +31,7 @@ PALETTE = {
         'ipc': 'Local SOCKS5 Inbound'
     },
     'sing': {
-        'name': 'SingTUN (Go/userspace)',
+        'name': 'SingTUN (Go/sing-tun)',
         'fill': '#00ADD8',
         'edge': '#008bb3',
         'light': '#e0f7fa',
@@ -40,7 +40,7 @@ PALETTE = {
         'ipc': 'Local SOCKS5 Inbound'
     },
     'xray': {
-        'name': 'Xray TUN (gVisor)',
+        'name': 'Xray TUN (Go/gVisor)',
         'fill': '#e11d48',   # Rose 600
         'edge': '#be123c',   # Rose 700
         'light': '#ffe4e6',  # Rose 100
@@ -49,18 +49,27 @@ PALETTE = {
         'ipc': 'JNI Fork Child Process (FD Injected)'
     },
     'zeptun': {
-        'name': 'Zeptun (Zig/userspace)',
+        'name': 'Zeptun (Zig/smoltcp)',
         'fill': '#F7A41D',
         'edge': '#d97706',
         'light': '#fef3c7',
         'so_size_mb': 0.26,
         'runtime': 'Zig userspace stack',
         'ipc': 'Local SOCKS5 Inbound'
+    },
+    'simpletun': {
+        'name': 'SimpleTUN (Zig/Shifter)',
+        'fill': '#10b981',
+        'edge': '#059669',
+        'light': '#d1fae5',
+        'so_size_mb': 0.02,  # 19 KB
+        'runtime': 'Zig 0-heap lightweight stack',
+        'ipc': 'Local SOCKS5 Inbound'
     }
 }
 
-BACKEND_ORDER = ['hev', 'sing', 'xray', 'zeptun']
-TARGET_ORDER = ['direct_none', 'hev', 'sing', 'xray', 'zeptun']
+BACKEND_ORDER = ['hev', 'sing', 'xray', 'zeptun', 'simpletun']
+TARGET_ORDER = ['direct_none', 'hev', 'sing', 'xray', 'zeptun', 'simpletun']
 
 # Font Discovery
 FONT_DIRS = [

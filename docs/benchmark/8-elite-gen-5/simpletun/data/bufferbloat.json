@@ -1,0 +1,58 @@
+{
+  "metadata": {
+    "timestamp": "2026-09-30T19:42:23.158602",
+    "device": "adb-32fd960c-LIEwUJ._adb-tls-connect._tcp",
+    "wifi_server_ip": "192.168.31.236",
+    "rounds": 3,
+    "backends": [
+      "simpletun"
+    ]
+  },
+  "rounds": {
+    "round_1": [
+      {
+        "backend": "simpletun",
+        "parallel": 8,
+        "duration": 10,
+        "throughput_mbps": 758.38,
+        "idle_rtt_ms": 16.08,
+        "loaded_rtt_ms": 99.05,
+        "delta_rtt_ms": 82.96,
+        "valid": true,
+        "probe": "tcp_echo",
+        "probe_samples_idle": 15,
+        "probe_samples_loaded": 38
+      }
+    ],
+    "round_2": [
+      {
+        "backend": "simpletun",
+        "parallel": 8,
+        "duration": 10,
+        "throughput_mbps": 812.98,
+        "idle_rtt_ms": 18.9,
+        "loaded_rtt_ms": 93.58,
+        "delta_rtt_ms": 74.67,
+        "valid": true,
+        "probe": "tcp_echo",
+        "probe_samples_idle": 15,
+        "probe_samples_loaded": 38
+      }
+    ],
+    "round_3": [
+      {
+        "backend": "simpletun",
+        "parallel": 8,
+        "duration": 10,
+        "throughput_mbps": 785.08,
+        "idle_rtt_ms": 18.36,
+        "loaded_rtt_ms": 106.44,
+        "delta_rtt_ms": 88.08,
+        "valid": true,
+        "probe": "tcp_echo",
+        "probe_samples_idle": 15,
+        "probe_samples_loaded": 37
+      }
+    ]
+  }
+}

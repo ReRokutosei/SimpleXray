@@ -1,0 +1,137 @@
+{
+  "metadata": {
+    "timestamp": "2026-09-30T19:46:14.983664",
+    "device": "adb-32fd960c-LIEwUJ._adb-tls-connect._tcp",
+    "device_profile": "8-elite-gen-5",
+    "server_ip": "192.168.31.236",
+    "connections": 5000,
+    "workers": [
+      4,
+      8
+    ],
+    "timeout_sec": 120,
+    "rounds": 3
+  },
+  "rounds": {
+    "round_1": [
+      {
+        "server": "192.168.31.236:5302",
+        "connections": 5000,
+        "workers": 4,
+        "success": 5000,
+        "failed": 0,
+        "duration_sec": 23.861081606,
+        "cps": 209.54624281334853,
+        "p50_ms": 19.31,
+        "p95_ms": 29.951,
+        "p99_ms": 39.538,
+        "avg_ms": 19.080635399999995,
+        "backend": "simpletun",
+        "requested_connections": 5000,
+        "cpu_avg": 62.9,
+        "cpu_peak": 70.0,
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "server": "192.168.31.236:5302",
+        "connections": 5000,
+        "workers": 8,
+        "success": 5000,
+        "failed": 0,
+        "duration_sec": 7.708458435,
+        "cps": 648.6381216376112,
+        "p50_ms": 11.174,
+        "p95_ms": 21.187,
+        "p99_ms": 29.754,
+        "avg_ms": 12.306454200000017,
+        "backend": "simpletun",
+        "requested_connections": 5000,
+        "cpu_avg": 98.5,
+        "cpu_peak": 104.0,
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "round_2": [
+      {
+        "server": "192.168.31.236:5302",
+        "connections": 5000,
+        "workers": 4,
+        "success": 5000,
+        "failed": 0,
+        "duration_sec": 24.866502022,
+        "cps": 201.07371738800973,
+        "p50_ms": 19.785,
+        "p95_ms": 30.218,
+        "p99_ms": 39.04,
+        "avg_ms": 19.890321400000005,
+        "backend": "simpletun",
+        "requested_connections": 5000,
+        "cpu_avg": 63.1,
+        "cpu_peak": 69.0,
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "server": "192.168.31.236:5302",
+        "connections": 5000,
+        "workers": 8,
+        "success": 5000,
+        "failed": 0,
+        "duration_sec": 8.896857757,
+        "cps": 561.9961717456961,
+        "p50_ms": 13.478,
+        "p95_ms": 23.218,
+        "p99_ms": 30.641,
+        "avg_ms": 14.226322200000027,
+        "backend": "simpletun",
+        "requested_connections": 5000,
+        "cpu_avg": 116.6,
+        "cpu_peak": 143.0,
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "round_3": [
+      {
+        "server": "192.168.31.236:5302",
+        "connections": 5000,
+        "workers": 4,
+        "success": 5000,
+        "failed": 0,
+        "duration_sec": 23.577552908,
+        "cps": 212.06611303175023,
+        "p50_ms": 19.139,
+        "p95_ms": 28.816,
+        "p99_ms": 35.414,
+        "avg_ms": 18.856181599999974,
+        "backend": "simpletun",
+        "requested_connections": 5000,
+        "cpu_avg": 64.4,
+        "cpu_peak": 84.0,
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "server": "192.168.31.236:5302",
+        "connections": 5000,
+        "workers": 8,
+        "success": 5000,
+        "failed": 0,
+        "duration_sec": 7.385134945,
+        "cps": 677.035699040974,
+        "p50_ms": 10.876,
+        "p95_ms": 20.209,
+        "p99_ms": 28.158,
+        "avg_ms": 11.80544000000002,
+        "backend": "simpletun",
+        "requested_connections": 5000,
+        "cpu_avg": 93.9,
+        "cpu_peak": 112.0,
+        "rc": 0,
+        "stderr": ""
+      }
+    ]
+  }
+}

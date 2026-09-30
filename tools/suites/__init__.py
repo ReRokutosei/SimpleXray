@@ -35,6 +35,9 @@ from .cps import (
     run_cps_suite,
     render_cps_chart,
 )
+from .quic import (
+    run_quic_suite,
+)
 
 __all__ = [
     "run_throughput_case",
@@ -58,4 +61,5 @@ __all__ = [
     "run_cps_case",
     "run_cps_suite",
     "render_cps_chart",
+    "run_quic_suite",
 ]

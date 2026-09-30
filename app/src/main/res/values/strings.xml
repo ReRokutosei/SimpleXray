@@ -40,6 +40,8 @@
     <string name="tunnel_mode_sing_tun_summary">Use sing-tun Go stack to forward VPN traffic to Xray</string>
     <string name="tunnel_mode_zeptun">Zeptun</string>
     <string name="tunnel_mode_zeptun_summary">Use Zeptun userspace stack to forward VPN traffic to Xray</string>
+    <string name="tunnel_mode_simpletun">SimpleTUN</string>
+    <string name="tunnel_mode_simpletun_summary">Use SimpleTUN lightweight protocol shifter to forward VPN traffic to Xray</string>
     <string name="tunnel_mtu_title">TUN Interface MTU</string>
     <string name="tunnel_mtu_summary">Maximum transmission unit for system VPN interface. Valid range: 1280 to 9000 (default: 1500)</string>
     <string name="invalid_mtu">MTU must be an integer between 1280 and 9000</string>

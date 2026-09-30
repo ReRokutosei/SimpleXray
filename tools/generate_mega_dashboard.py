@@ -81,7 +81,7 @@ def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = Non
     print(f"[Mega Dashboard] Active Infographic Layout Mode: [{preset.upper()}]")
 
     is_light = (preset == "light")
-    active_backends = [b for b in ["hev", "sing", "zeptun"] if any(r.get("backend") == b for r in avg_records)] if is_light else list(BACKEND_ORDER)
+    active_backends = [b for b in ["hev", "sing", "zeptun", "simpletun"] if any(r.get("backend") == b for r in avg_records)] if is_light else list(BACKEND_ORDER)
 
     def get_rec(med: str, b: str, mtu: int, par: int, net: str = "tcp") -> Dict[str, Any]:
         for r in avg_records:
@@ -421,7 +421,7 @@ def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = Non
     ax5.grid(True, zorder=0)
     ax5.axhline(0, color='#64748b', linewidth=0.9, linestyle='--', zorder=2)
 
-    markers = {'hev': 'o', 'sing': 's', 'xray': 'D', 'zeptun': 'P'}
+    markers = {'hev': 'o', 'sing': 's', 'xray': 'D', 'zeptun': 'P', 'simpletun': '^'}
     for b in active_backends:
         for r in avg_records:
             if r.get("type") == "idle_memory" and r.get("backend") == b and r.get("network") == "tcp":

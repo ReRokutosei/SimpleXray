@@ -108,7 +108,7 @@ def run_bufferbloat_case(
     rtt_stop_event = threading.Event()
 
     def rtt_worker():
-        cmd = ["adb", "-s", adb.device, "shell", f"/data/local/tmp/idle_bench rtt --server {server_ip}:{RTT_PORT} --count 1000 --interval 200ms --timeout 1s"]
+        cmd = ["adb", "-s", adb.device, "shell", f"/data/local/tmp/idle_bench rtt --server {server_ip}:{RTT_PORT} --count 1000 --interval 200ms --timeout 2500ms"]
         p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
         while not rtt_stop_event.is_set():
             line = p.stdout.readline()

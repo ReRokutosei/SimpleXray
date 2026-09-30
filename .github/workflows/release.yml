@@ -99,6 +99,11 @@ jobs:
           cd third_party/zeptun
           ANDROID_NDK_HOME="${{ env.NDK_HOME }}" zig build android -Doptimize=ReleaseSmall
 
+      - name: Build simpletun
+        run: |
+          cd third_party/simpletun
+          zig build android
+
       - name: Set up signing keystore
         run: |
           [ -n "${{ secrets.SIGNING_KEY }}" ] || { echo "SIGNING_KEY secret is not set" >&2; exit 1; }
