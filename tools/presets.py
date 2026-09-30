@@ -2,7 +2,7 @@
 SimpleXray Benchmark Presets Contract.
 
 Defines standardized configurations for:
-- 'light': Lightweight fast suite focusing on Hev and SingTUN over Wi-Fi MTU 1500.
+- 'light': Lightweight fast suite focusing on Hev, SingTUN, and SimpleTUN over Wi-Fi MTU 1500.
 - 'full': Comprehensive hardware suite covering all physical media, MTU 9000, and all backends.
 """
 
@@ -35,8 +35,8 @@ class BenchmarkPreset:
 PRESETS = {
     "light": BenchmarkPreset(
         name="light",
-        description="Focused evaluation: Hev and SingTUN on Wi-Fi MTU 1500 plus HTTP/3 smoke (3 rounds, no baseline)",
-        backends=["hev", "sing"],
+        description="Focused evaluation: Hev, SingTUN, and SimpleTUN on Wi-Fi MTU 1500 plus HTTP/3 smoke (3 rounds, no baseline)",
+        backends=["hev", "sing", "simpletun"],
         modes=["throughput", "idle_memory", "bufferbloat", "stability", "cps", "weaknet", "quic"],
         networks=["tcp", "udp"],
         duration=10,
@@ -54,7 +54,7 @@ PRESETS = {
     "full": BenchmarkPreset(
         name="full",
         description="Comprehensive evaluation: All backends, physical baseline, MTU 1500/9000 across Wi-Fi, USB, Loopback, plus HTTP/3 smoke",
-        backends=["hev", "sing", "xray"],
+        backends=["hev", "sing", "xray", "simpletun"],
         modes=["throughput", "idle_memory", "bufferbloat", "stability", "cps", "weaknet", "quic"],
         networks=["tcp", "udp"],
         duration=10,
