@@ -9,6 +9,7 @@ as well as fine-grained manual arguments across all suites:
 - stability (60-second high-throughput stability & attenuation)
 - cps (short-lived connection-per-second rate)
 - weaknet (host netem loss & delay emulation)
+- quic (HTTP/3 smoke through the active TUN backend)
 """
 
 import argparse
@@ -47,6 +48,7 @@ from suites import (
     run_stability_suite,
     run_weaknet_suite,
     run_cps_suite,
+    run_quic_suite,
 )
 
 DEFAULT_DURATION = 10
@@ -146,6 +148,10 @@ def main():
                         help="Total short-lived connections per CPS case (default: 5000)")
     parser.add_argument("--cps-timeout", type=int, default=None,
                         help="Per-CPS-case timeout in seconds (default: 120)")
+    parser.add_argument("--quic-port", type=int, default=None,
+                        help="Host HTTP/3 UDP port for the QUIC smoke suite (default: 4433)")
+    parser.add_argument("--quic-timeout", type=int, default=None,
+                        help="Per-QUIC-request timeout in seconds (default: 30)")
     args = parser.parse_args()
 
     preset = get_preset(args.preset)
@@ -160,6 +166,7 @@ def main():
         profile["stability_json"] = os.path.join(out_dir, "stability.json")
         profile["cps_json"] = os.path.join(out_dir, "cps.json")
         profile["weaknet_json"] = os.path.join(out_dir, "weaknet.json")
+        profile["quic_json"] = os.path.join(out_dir, "quic.json")
         profile["microbench_json"] = os.path.join(out_dir, "microbench.json")
 
     # 1. Resolve configuration through Preset with CLI overrides
@@ -203,7 +210,7 @@ def main():
         cps_workers = [int(x) for x in (args.cps_workers or "4,8").split(",") if x.strip()]
         cps_connections = args.cps_connections or 5000
         cps_timeout = args.cps_timeout or 120
-        raw_modes = [m.strip().lower() for m in (args.mode or "throughput,idle_memory,bufferbloat,stability,cps,weaknet").split(",") if m.strip()]
+        raw_modes = [m.strip().lower() for m in (args.mode or "throughput,idle_memory,bufferbloat,stability,cps,weaknet,quic").split(",") if m.strip()]
 
     # Map legacy aliases to canonical suite names
     alias_map = {
@@ -218,9 +225,12 @@ def main():
     modes = set()
     for m in raw_modes:
         if m == "all":
-            modes.update(["throughput", "idle_memory", "bufferbloat", "stability", "cps", "weaknet"])
+            modes.update(["throughput", "idle_memory", "bufferbloat", "stability", "cps", "weaknet", "quic"])
         else:
             modes.add(alias_map.get(m, m))
+
+    quic_port = args.quic_port or 4433
+    quic_timeout = args.quic_timeout or 30
 
     log_info(f"Target Device Profile: {profile['name']} ({profile['key']})")
     log_info(f"Active Suites: {sorted(modes)}")
@@ -466,6 +476,46 @@ def main():
             with open(profile["cps_json"], "w", encoding="utf-8") as f:
                 json.dump(cps_data, f, indent=2, ensure_ascii=False)
             log_success(f"CPS round {round_idx} saved to: {profile['cps_json']}")
+
+    # -------------------------------------------------------------
+    # 7. QUIC / HTTP3 Smoke Suite
+    # -------------------------------------------------------------
+    if "quic" in modes:
+        quic_backends = [b for b in TARGET_ORDER if b in backends or (b == "direct_none" and not skip_baseline)]
+        quic_data: Dict[str, Any] = {
+            "metadata": {
+                "timestamp": datetime.now().isoformat(),
+                "device": adb.device,
+                "device_profile": profile["key"],
+                "host_ip": args.wifi_server_ip,
+                "port": quic_port,
+                "timeout_sec": quic_timeout,
+                "rounds": rounds,
+                "backends": quic_backends,
+            },
+            "rounds": {}
+        }
+        for round_idx in range(1, rounds + 1):
+            round_key = f"round_{round_idx}"
+            print(f"\n{Colors.CYAN}{Colors.BOLD}=======================================================")
+            print(f"       QUIC/HTTP3 SMOKE: ROUND {round_idx} OF {rounds}")
+            print(f"======================================================={Colors.RESET}")
+            try:
+                quic_results = run_quic_suite(
+                    adb=adb,
+                    host_ip=args.wifi_server_ip,
+                    backends=quic_backends,
+                    port=quic_port,
+                    timeout_sec=quic_timeout,
+                )
+                quic_data["rounds"][round_key] = quic_results
+            except RuntimeError as e:
+                log_error(str(e))
+                sys.exit(1)
+
+            with open(profile["quic_json"], "w", encoding="utf-8") as f:
+                json.dump(quic_data, f, indent=2, ensure_ascii=False)
+            log_success(f"QUIC/HTTP3 round {round_idx} saved to: {profile['quic_json']}")
 
     log_success(f"All requested benchmark operations completed successfully! Data stored in {profile['data_dir']}")
 

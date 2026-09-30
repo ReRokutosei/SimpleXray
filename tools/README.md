@@ -23,10 +23,12 @@ This directory contains automated testing scripts and profiling tools for benchm
   - `stability.py`: 60s continuous 8-stream TCP download stability, decay rate, and CV%.
   - `weaknet.py`: Bidirectional TCP throughput under host netem delay and packet loss.
   - `cps.py`: Short-lived TCP connection-per-second handshake stress suite.
+  - `quic.py`: Optional HTTP/3 smoke suite through the active TUN backend.
 - `update_benchmark_doc.py`: Non-destructive, in-place synchronizer for Section 3.1 tables in `android-tun-benchmark.md`.
 - `sync_versions.py`: Automated submodule and dependency commit hash synchronizer for `version.properties`.
 - `idle_bench/`: High-performance, zero-external-dependency Go probe (cross-compiled for Linux `amd64` and Android `arm64`).
 - `microbench/`: Standalone Linux user-namespace microbenchmark harness (Scheme 2).
+- `quic/`: Small Go HTTP/3 server/client helper used by `suites/quic.py`.
 
 ## Prerequisites
 
@@ -35,7 +37,7 @@ This directory contains automated testing scripts and profiling tools for benchm
 3. **Python 3**: Python 3.8+ with `matplotlib` and `numpy` (for chart generation).
 4. **iPerf3**: Installed on both host and Android device (`/data/local/tmp/iperf3`).
 5. **iproute2**: Required for `weaknet` mode host-side `tc netem`.
-6. **Go**: Go 1.22+ (for building `idle_bench` and `microbench/socks5_sink`).
+6. **Go**: Go 1.25+ (for building `idle_bench`, `microbench/socks5_sink`, and the QUIC smoke helper).
 
 ## Usage
 
@@ -86,6 +88,14 @@ python3 tools/benchmark.py \
   --backends hev,sing,zeptun \
   --cps-workers 4,8 \
   --cps-connections 5000
+
+# HTTP/3 smoke through the active TUN backend
+python3 tools/benchmark.py \
+  --mode quic \
+  --device <adb-serial> \
+  --device-profile 778g \
+  --wifi-server-ip 192.168.31.236 \
+  --backends simpletun
 ```
 
 ### 3. Publication Dashboard Generation

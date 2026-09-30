@@ -35,9 +35,9 @@ class BenchmarkPreset:
 PRESETS = {
     "light": BenchmarkPreset(
         name="light",
-        description="Focused evaluation: Hev, SingTUN, Zeptun on Wi-Fi MTU 1500 (3 rounds, no baseline)",
+        description="Focused evaluation: Hev, SingTUN, Zeptun on Wi-Fi MTU 1500 plus HTTP/3 smoke (3 rounds, no baseline)",
         backends=["hev", "sing", "zeptun"],
-        modes=["throughput", "idle_memory", "bufferbloat", "stability", "cps", "weaknet"],
+        modes=["throughput", "idle_memory", "bufferbloat", "stability", "cps", "weaknet", "quic"],
         networks=["tcp", "udp"],
         duration=10,
         rounds=3,
@@ -53,9 +53,9 @@ PRESETS = {
     ),
     "full": BenchmarkPreset(
         name="full",
-        description="Comprehensive evaluation: All backends, physical baseline, MTU 1500/9000 across Wi-Fi, USB, Loopback",
+        description="Comprehensive evaluation: All backends, physical baseline, MTU 1500/9000 across Wi-Fi, USB, Loopback, plus HTTP/3 smoke",
         backends=["hev", "sing", "xray", "zeptun"],
-        modes=["throughput", "idle_memory", "bufferbloat", "stability", "cps", "weaknet"],
+        modes=["throughput", "idle_memory", "bufferbloat", "stability", "cps", "weaknet", "quic"],
         networks=["tcp", "udp"],
         duration=10,
         rounds=3,
