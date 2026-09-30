@@ -98,7 +98,7 @@ def auto_detect_usb_ip() -> str:
 def main():
     parser = argparse.ArgumentParser(description="SimpleXray Unified TUN Benchmark Master Runner")
     parser.add_argument("--preset", choices=list(PRESETS.keys()), default=None,
-                        help="Benchmark preset contract: 'light' (Hev/SingTUN, Wi-Fi 1500) or 'full' (all backends/media)")
+                        help="Benchmark preset contract: 'light' (Hev/SingTUN/SimpleTUN, Wi-Fi 1500) or 'full' (all backends/media)")
     parser.add_argument(
         "--mode",
         default=None,
