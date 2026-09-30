@@ -23,6 +23,7 @@ PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../.."))
 HEV_BIN = os.path.join(PROJECT_ROOT, "third_party/hev-socks5-tunnel/bin/hev-socks5-tunnel")
 SING_BIN = os.path.join(PROJECT_ROOT, "third_party/sing-tun/bin/sing-tun")
 ZEPTUN_BIN = os.environ.get("ZEPTUN_BIN", os.path.join(PROJECT_ROOT, "third_party/zeptun/zig-out/bin/zeptun"))
+SIMPLETUN_BIN = os.environ.get("SIMPLETUN_BIN", os.path.join(PROJECT_ROOT, "third_party/simpletun/zig-out/bin/simpletun"))
 XRAY_BIN = "/home/vanitas/Downloads/Xray-linux-64/xray"
 SOCKS5_SINK_BIN = os.path.join(SCRIPT_DIR, "socks5_sink")
 IDLE_BENCH_BIN = os.path.join(PROJECT_ROOT, "tools/idle_bench/idle_bench_linux_amd64")
@@ -141,6 +142,14 @@ misc:
             ]
             self.proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
+        elif self.backend == "simpletun":
+            cmd = [
+                SIMPLETUN_BIN,
+                "--tun", self.tun_name,
+                "--socks5", f"127.0.0.1:{self.socks_port}",
+            ]
+            self.proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
         elif self.backend == "xray":
             self.tmp_cfg = f"/tmp/xray_micro_{os.getpid()}.json"
             cfg = {
@@ -248,7 +257,9 @@ elif backend == "sing":
     tun_proc = subprocess.Popen(["{SING_BIN}", "-tun", "tun0", "-socks-host", "127.0.0.1", "-socks-port", "{socks_port}", "-mtu", "1500"],
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 elif backend == "zeptun":
-    tun_proc = subprocess.Popen(["{ZEPTUN_BIN}", "run", "--tun", "tun0", "--mtu", "1500", "--handler", "socks5", "--socks5", "127.0.0.1:{socks_port}", "--address", "172.16.0.1/30"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    tun_proc = subprocess.Popen(["{ZEPTUN_BIN}", "run", "--preset", "mobile", "--tun", "tun0", "--mtu", "1500", "--handler", "socks5", "--socks5", "127.0.0.1:{socks_port}", "--address", "172.16.0.1/30"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+elif backend == "simpletun":
+    tun_proc = subprocess.Popen(["{SIMPLETUN_BIN}", "--tun", "tun0", "--socks5", "127.0.0.1:{socks_port}"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 elif backend == "xray":
     cfg_file = "/tmp/xray_inner_{os.getpid()}.json"
     with open(cfg_file, "w") as f:
@@ -317,6 +328,8 @@ for line in bench_proc.stdout:
                 "private_dirty_mb": pdirty,
                 "threads": threads
             }})
+            sys.stderr.write(f"  [+] Step {{step}}/{steps[-1]} settled: PSS={{pss}} MB, RSS={{rss}} MB\\n")
+            sys.stderr.flush()
             # Advance to next step
             if step != {steps[-1]}:
                 bench_proc.stdin.write("\\n")
@@ -340,15 +353,36 @@ print(json.dumps(measurements))
 """
 
     unshare_cmd = ["unshare", "-r", "-n", sys.executable, "-c", inner_py]
-    res = subprocess.run(unshare_cmd, capture_output=True, text=True)
-    if res.returncode != 0:
-        log_error(f"Unshare run failed: {res.stderr}\n{res.stdout}")
+    proc = subprocess.Popen(unshare_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    
+    # Read stderr in a background thread or poll
+    import threading
+    def forward_stderr():
+        for line in proc.stderr:
+            sys.stdout.write(line)
+            sys.stdout.flush()
+    err_thread = threading.Thread(target=forward_stderr, daemon=True)
+    err_thread.start()
+
+    timeout_sec = int(len(steps) * (settle_sec + 5) + 30)
+    try:
+        stdout, _ = proc.communicate(timeout=timeout_sec)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        stdout, _ = proc.communicate()
+        log_error(f"Namespace run timed out after {timeout_sec}s")
+        return {"backend": backend, "network": network, "flows": [], "slope": 0.0}
+
+    err_thread.join()
+
+    if proc.returncode != 0:
+        log_error(f"Unshare run failed: rc={proc.returncode}\n{stdout}")
         return {"backend": backend, "network": network, "flows": [], "slope": 0.0}
 
     try:
-        flows = json.loads(res.stdout.strip().splitlines()[-1])
+        flows = json.loads(stdout.strip().splitlines()[-1])
     except Exception as e:
-        log_error(f"Failed to parse flow measurements: {e}\nRaw output: {res.stdout}")
+        log_error(f"Failed to parse flow measurements: {e}\nRaw output: {stdout}")
         flows = []
 
     # Calculate slope
@@ -434,7 +468,7 @@ def format_markdown(all_data: Dict[str, Any]) -> str:
 
 def main():
     parser = argparse.ArgumentParser(description="SimpleXray Standalone TUN Microbenchmark (Scheme 2)")
-    parser.add_argument("--backends", default="hev,xray,sing", help="Comma-separated backends: hev,xray,sing,zeptun")
+    parser.add_argument("--backends", default="hev,simpletun,sing", help="Comma-separated backends: hev,simpletun,sing,zeptun,xray")
     parser.add_argument("--network", default="all", help="'tcp', 'udp', or 'all'")
     parser.add_argument("--rounds", type=int, default=3, help="Number of test rounds")
     parser.add_argument("--output-json", default="docs/benchmark/microbench_results.json", help="JSON output file")

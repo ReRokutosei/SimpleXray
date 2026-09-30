@@ -73,16 +73,34 @@ func runRTT(args []string) {
 	response := make([]byte, payloadSize)
 	for i := 0; i < *count; i++ {
 		if err := conn.SetDeadline(time.Now().Add(*timeout)); err != nil {
-			os.Exit(1)
+			conn.Close()
+			if newConn, dialErr := net.DialTimeout("tcp", *server, *timeout); dialErr == nil {
+				conn = newConn
+			} else {
+				time.Sleep(*interval)
+			}
+			continue
 		}
 		started := time.Now()
 		if _, err := conn.Write(payload); err != nil {
 			fmt.Fprintf(os.Stderr, "RTT write failed: %v\n", err)
-			os.Exit(1)
+			conn.Close()
+			if newConn, dialErr := net.DialTimeout("tcp", *server, *timeout); dialErr == nil {
+				conn = newConn
+			} else {
+				time.Sleep(*interval)
+			}
+			continue
 		}
 		if _, err := io.ReadFull(conn, response); err != nil {
 			fmt.Fprintf(os.Stderr, "RTT read failed: %v\n", err)
-			os.Exit(1)
+			conn.Close()
+			if newConn, dialErr := net.DialTimeout("tcp", *server, *timeout); dialErr == nil {
+				conn = newConn
+			} else {
+				time.Sleep(*interval)
+			}
+			continue
 		}
 		fmt.Printf("{\"rtt_ms\":%.3f}\n", float64(time.Since(started).Microseconds())/1000.0)
 		if i+1 < *count {

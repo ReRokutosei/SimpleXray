@@ -32,3 +32,5 @@ tools/merge_all_benchmarks.py
 tools/track.md
 *.log
 tools/run_light_benchmark.sh
+docs/benchmark/778g/simpletun/data/
+docs/benchmark/8-elite-gen-5/simpletun/data/

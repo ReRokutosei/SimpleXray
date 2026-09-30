@@ -59,7 +59,8 @@ class TProxyService : VpnService() {
         NONE,
         HEV,
         SING,
-        ZEPTUN
+        ZEPTUN,
+        SIMPLETUN
     }
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -554,7 +555,9 @@ class TProxyService : VpnService() {
 
         val selectedConfigPath = prefs.selectedConfigPath
         var tunMtu = prefs.tunnelMtu
-        if (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn && selectedConfigPath != null) {
+        if (prefs.tunnelMode == TunnelMode.SimpleTun) {
+            tunMtu = 1500
+        } else if (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn && selectedConfigPath != null) {
             val configFile = File(selectedConfigPath)
             if (configFile.exists()) {
                 val configContent = runCatching { configFile.readText() }.getOrDefault("")
@@ -642,6 +645,46 @@ class TProxyService : VpnService() {
             }
             if (result != 0) {
                 Log.e(TAG, "Zeptun nativeStart failed: $result")
+                stopXray()
+                return false
+            }
+        } else if (prefs.tunnelMode == TunnelMode.SimpleTun && !prefs.disableVpn) {
+            val fd = tunFd?.fd
+            if (fd == null) {
+                Log.e(TAG, "tunFd is null after establish()")
+                stopXray()
+                return false
+            }
+            Log.d(TAG, "Starting SimpleTUN backend on fd=$fd")
+            val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
+            if (prefs.socksUsername.isNotEmpty() || prefs.socksPassword.isNotEmpty()) {
+                Log.e(TAG, "SimpleTUN does not support authenticated SOCKS5 inbounds. Please clear credentials.")
+                stopXray()
+                return false
+            }
+            val isIpv4 = host.split('.').let { parts ->
+                parts.size == 4 && parts.all { part ->
+                    part.isNotEmpty() && part.length <= 3 && part.toIntOrNull() in 0..255
+                }
+            }
+            if (!isIpv4) {
+                Log.e(TAG, "SimpleTUN currently supports IPv4 dotted-decimal SOCKS5 inbounds only: $host")
+                stopXray()
+                return false
+            }
+            val result = synchronized(nativeLifecycleLock) {
+                val res = runCatching {
+                    SimpleTunNative.nativeStart(fd, host, prefs.socksPort)
+                }.onFailure {
+                    Log.e(TAG, "Failed to start SimpleTUN backend", it)
+                }.getOrDefault(-1)
+                if (res == 0) {
+                    activeBackend = NativeBackend.SIMPLETUN
+                }
+                res
+            }
+            if (result != 0) {
+                Log.e(TAG, "SimpleTUN nativeStart failed: $result")
                 stopXray()
                 return false
             }
@@ -743,7 +786,7 @@ class TProxyService : VpnService() {
                 excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("169.254.0.0"), 16))
                 excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("172.16.0.0"), 12))
                 excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("192.168.0.0"), 16))
-                if (prefs.ipv6) {
+                if (prefs.ipv6 && prefs.tunnelMode != TunnelMode.SimpleTun) {
                     excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("fc00::"), 7))
                     excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("fe80::"), 10))
                 }
@@ -757,7 +800,7 @@ class TProxyService : VpnService() {
             addRoute("0.0.0.0", 0)
             prefs.dnsIpv4.takeIf { it.isNotEmpty() }?.also { addDnsServer(it) }
         }
-        if (prefs.ipv6) {
+        if (prefs.ipv6 && prefs.tunnelMode != TunnelMode.SimpleTun) {
             addAddress(prefs.tunnelIpv6Address, prefs.tunnelIpv6Prefix)
             addRoute("::", 0)
             prefs.dnsIpv6.takeIf { it.isNotEmpty() }?.also { addDnsServer(it) }
@@ -822,6 +865,7 @@ class TProxyService : VpnService() {
                     goTunBinder?.stop() ?: true
                 }
                 NativeBackend.ZEPTUN -> runCatching { ZeptunNative.nativeStop() }
+                NativeBackend.SIMPLETUN -> runCatching { SimpleTunNative.nativeStop() }
                 NativeBackend.NONE -> return
             }
             goTunBinder = null

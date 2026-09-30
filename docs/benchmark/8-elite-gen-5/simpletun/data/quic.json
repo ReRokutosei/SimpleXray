@@ -1,0 +1,108 @@
+{
+  "metadata": {
+    "timestamp": "2026-09-30T20:32:15.692887",
+    "device": "adb-32fd960c-LIEwUJ._adb-tls-connect._tcp",
+    "device_profile": "8-elite-gen-5",
+    "host_ip": "192.168.31.236",
+    "port": 4433,
+    "backend": "simpletun",
+    "mtu": 1500,
+    "rounds": 3,
+    "backends": [
+      "simpletun"
+    ]
+  },
+  "summary": {
+    "hello_success": 3,
+    "payload_success": 3,
+    "total": 6,
+    "avg_hello_ms": 28.51,
+    "avg_payload_mbps": 346.49
+  },
+  "rounds": {
+    "round_1": [
+      {
+        "bytes": 10,
+        "mbps": 0.003562961765411925,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.02245323,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/hello",
+        "case": "hello",
+        "backend": "simpletun",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi"
+      },
+      {
+        "bytes": 10485760,
+        "mbps": 344.42576969258704,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.243553437,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/payload",
+        "case": "payload_10m",
+        "backend": "simpletun",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi"
+      }
+    ],
+    "round_2": [
+      {
+        "bytes": 10,
+        "mbps": 0.0018209602310252245,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.043932865,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/hello",
+        "case": "hello",
+        "backend": "simpletun",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi"
+      },
+      {
+        "bytes": 10485760,
+        "mbps": 344.32886697796675,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.243621979,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/payload",
+        "case": "payload_10m",
+        "backend": "simpletun",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi"
+      }
+    ],
+    "round_3": [
+      {
+        "bytes": 10,
+        "mbps": 0.004180911598648375,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.019134583,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/hello",
+        "case": "hello",
+        "backend": "simpletun",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi"
+      },
+      {
+        "bytes": 10485760,
+        "mbps": 350.7122605270437,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.23918776,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/payload",
+        "case": "payload_10m",
+        "backend": "simpletun",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi"
+      }
+    ]
+  }
+}
