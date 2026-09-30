@@ -48,15 +48,6 @@ PALETTE = {
         'runtime': 'Go / gVisor Netstack',
         'ipc': 'JNI Fork Child Process (FD Injected)'
     },
-    'zeptun': {
-        'name': 'Zeptun (Zig/smoltcp)',
-        'fill': '#F7A41D',
-        'edge': '#d97706',
-        'light': '#fef3c7',
-        'so_size_mb': 0.26,
-        'runtime': 'Zig userspace stack',
-        'ipc': 'Local SOCKS5 Inbound'
-    },
     'simpletun': {
         'name': 'SimpleTUN (Zig/Shifter)',
         'fill': '#10b981',
@@ -68,8 +59,8 @@ PALETTE = {
     }
 }
 
-BACKEND_ORDER = ['hev', 'sing', 'xray', 'zeptun', 'simpletun']
-TARGET_ORDER = ['direct_none', 'hev', 'sing', 'xray', 'zeptun', 'simpletun']
+BACKEND_ORDER = ['hev', 'sing', 'xray', 'simpletun']
+TARGET_ORDER = ['direct_none', 'hev', 'sing', 'xray', 'simpletun']
 
 # Font Discovery
 FONT_DIRS = [

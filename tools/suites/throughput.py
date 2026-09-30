@@ -264,7 +264,6 @@ def run_media_suite(
         "hev": "Hev",
         "xray": "Xray TUN",
         "sing": "SingTUN",
-        "zeptun": "Zeptun",
         "simpletun": "SimpleTUN",
     }
 
@@ -339,7 +338,6 @@ def run_loopback_suite(
         "hev": "Hev",
         "xray": "Xray TUN",
         "sing": "SingTUN",
-        "zeptun": "Zeptun",
         "simpletun": "SimpleTUN",
     }
 

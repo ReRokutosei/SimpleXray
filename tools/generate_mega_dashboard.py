@@ -7,7 +7,7 @@ and Advanced Benchmarks (60s Long-run Stability & UDP Jitter).
 
 Supports adaptive rendering for both:
   - 'full': All backends, physical baseline, Wi-Fi + USB 3.2 across MTU 1500 & 9000.
-  - 'light': Focused evaluation of Hev, SingTUN, and Zeptun over Wi-Fi MTU 1500.
+  - 'light': Focused evaluation of Hev, SingTUN, and SimpleTUN over Wi-Fi MTU 1500.
 """
 
 import argparse
@@ -81,7 +81,7 @@ def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = Non
     print(f"[Mega Dashboard] Active Infographic Layout Mode: [{preset.upper()}]")
 
     is_light = (preset == "light")
-    active_backends = [b for b in ["hev", "sing", "zeptun", "simpletun"] if any(r.get("backend") == b for r in avg_records)] if is_light else list(BACKEND_ORDER)
+    active_backends = [b for b in ["hev", "sing", "simpletun"] if any(r.get("backend") == b for r in avg_records)] if is_light else list(BACKEND_ORDER)
 
     def get_rec(med: str, b: str, mtu: int, par: int, net: str = "tcp") -> Dict[str, Any]:
         for r in avg_records:
@@ -101,9 +101,9 @@ def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = Non
     # 0. HEADER & TITLE
     # -------------------------------------------------------------
     subtitle = (
-        "Focused Evaluation of Hev, SingTUN, and Zeptun Across Wi-Fi 5GHz & Microbenchmarks (Light Preset)"
+        "Focused Evaluation of Hev, SingTUN, and SimpleTUN Across Wi-Fi 5GHz & Microbenchmarks (Light Preset)"
         if is_light else
-        "Comparative Evaluation of C/lwIP, sing-box, Zeptun, and Xray gVisor Across Physical Media & Microbenchmarks"
+        "Comparative Evaluation of C/lwIP, sing-box, SimpleTUN, and Xray gVisor Across Physical Media & Microbenchmarks"
     )
     fig.text(
         0.5, 0.984,
@@ -421,7 +421,7 @@ def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = Non
     ax5.grid(True, zorder=0)
     ax5.axhline(0, color='#64748b', linewidth=0.9, linestyle='--', zorder=2)
 
-    markers = {'hev': 'o', 'sing': 's', 'xray': 'D', 'zeptun': 'P', 'simpletun': '^'}
+    markers = {'hev': 'o', 'sing': 's', 'xray': 'D', 'simpletun': '^'}
     for b in active_backends:
         for r in avg_records:
             if r.get("type") == "idle_memory" and r.get("backend") == b and r.get("network") == "tcp":
@@ -609,13 +609,12 @@ def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = Non
     xray_ver = version_props.get("XRAY_CORE_VERSION", "v26.9.9")
     hev_ver = version_props.get("HEV_TUN_VERSION", "2.17.1 (b514150)")
     sing_ver = version_props.get("SING_TUN_VERSION", "aff4131a9e9e")
-    zeptun_ver = version_props.get("ZEPTUN_VERSION", "v1.1.1")
 
     if is_light:
-        backends_desc = f"hev-socks5-tunnel ({hev_ver}) | SingTUN ({sing_ver}) | Zeptun ({zeptun_ver})"
+        backends_desc = f"hev-socks5-tunnel ({hev_ver}) | SingTUN ({sing_ver}) | SimpleTUN"
         method_desc = "3-round arithmetic mean (Light Preset); 5GHz Wi-Fi (MTU 1500); Scheme 1 Android Host PSS; Scheme 2 Linux isolated user namespace"
     else:
-        backends_desc = f"hev-socks5-tunnel ({hev_ver}) | SingTUN ({sing_ver}) | Zeptun ({zeptun_ver}) | Xray Native TUN ({xray_ver})"
+        backends_desc = f"hev-socks5-tunnel ({hev_ver}) | SingTUN ({sing_ver}) | SimpleTUN | Xray Native TUN ({xray_ver})"
         method_desc = "3-round arithmetic mean (Full Preset); Physical Wi-Fi & USB 3.2 (MTU 1500/9000); Scheme 1 Android PSS; Scheme 2 Linux isolated user namespace"
 
     footnote_text = (

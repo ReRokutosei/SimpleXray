@@ -173,7 +173,7 @@ def render_cps_chart(results: List[Dict[str, Any]], output_path: str) -> None:
     prop_regular, prop_bold, prop_medium = setup_fonts()
 
     workers_list = [4, 8]
-    backend_order = ["direct_none", "hev", "sing", "xray", "zeptun", "simpletun"]
+    backend_order = ["direct_none", "hev", "sing", "xray", "simpletun"]
     valid_backends = {
         r.get("backend")
         for r in results
@@ -233,7 +233,6 @@ def render_cps_chart(results: List[Dict[str, Any]], output_path: str) -> None:
         "hev": "HEV",
         "sing": "SingTUN",
         "xray": "Xray",
-        "zeptun": "Zeptun",
         "simpletun": "SimpleTUN",
     }
     ax.set_xticklabels(

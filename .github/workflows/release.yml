@@ -94,11 +94,6 @@ jobs:
         env:
           ANDROID_NDK_HOME: ${{ env.NDK_HOME }}
 
-      - name: Build zeptun
-        run: |
-          cd third_party/zeptun
-          ANDROID_NDK_HOME="${{ env.NDK_HOME }}" zig build android -Doptimize=ReleaseSmall
-
       - name: Build simpletun
         run: |
           cd third_party/simpletun

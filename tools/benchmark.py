@@ -98,7 +98,7 @@ def auto_detect_usb_ip() -> str:
 def main():
     parser = argparse.ArgumentParser(description="SimpleXray Unified TUN Benchmark Master Runner")
     parser.add_argument("--preset", choices=list(PRESETS.keys()), default=None,
-                        help="Benchmark preset contract: 'light' (Hev/SingTUN/Zeptun, Wi-Fi 1500) or 'full' (all backends/media)")
+                        help="Benchmark preset contract: 'light' (Hev/SingTUN, Wi-Fi 1500) or 'full' (all backends/media)")
     parser.add_argument(
         "--mode",
         default=None,
@@ -107,7 +107,7 @@ def main():
     parser.add_argument("--network", default=None, choices=["tcp", "udp", "all"],
                         help="Network protocols to benchmark ('tcp', 'udp', or 'all')")
     parser.add_argument("--backends", default=None,
-                        help="TUN backends to benchmark (comma-separated: hev,sing,xray,zeptun,simpletun, or 'all')")
+                        help="TUN backends to benchmark (comma-separated: hev,sing,xray,simpletun, or 'all')")
     parser.add_argument("--skip-baseline", action="store_true", default=None,
                         help="Skip running physical baseline (No VPN) tests")
     parser.add_argument("--wifi-server-ip", default="192.168.31.236",

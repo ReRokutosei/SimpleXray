@@ -244,10 +244,6 @@ class PreferencesTest {
         assertEquals(TunnelMode.HevSocks5Tunnel, prefs.tunnelMode)
         assertEquals("hev_socks5_tunnel", fakeContext.sharedPrefs.getString(Preferences.TUNNEL_MODE, null))
 
-        prefs.tunnelMode = TunnelMode.Zeptun
-        assertEquals(TunnelMode.Zeptun, prefs.tunnelMode)
-        assertEquals("zeptun", fakeContext.sharedPrefs.getString(Preferences.TUNNEL_MODE, null))
-
         prefs.logLevel = LogLevel.Debug
         assertEquals(LogLevel.Debug, prefs.logLevel)
         assertEquals("debug", fakeContext.sharedPrefs.getString(Preferences.LOG_LEVEL, null))

@@ -61,7 +61,6 @@ class BenchmarkService : Service() {
                         "hev", "hev_socks5_tunnel" -> prefs.tunnelMode = TunnelMode.HevSocks5Tunnel
                         "xray", "xray_tun" -> prefs.tunnelMode = TunnelMode.XrayTun
                         "sing", "sing_tun", "singtun" -> prefs.tunnelMode = TunnelMode.SingTun
-                        "zeptun", "zep" -> prefs.tunnelMode = TunnelMode.Zeptun
                         "simpletun", "simple" -> prefs.tunnelMode = TunnelMode.SimpleTun
                     }
                 }

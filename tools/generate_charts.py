@@ -5,8 +5,8 @@ Generates clean, publication-quality 16:9 dashboards from standardized JSON data
 
 Design Language:
 - Fonts: JetBrains Mono via FontProperties.
-- Palette: Hev (#555555), SingTUN (#00ADD8), Zeptun (#F7A41D).
-- Backend Order: Alphabetical (Hev -> SingTUN -> Zeptun).
+- Palette: Hev (#555555), SingTUN (#00ADD8), SimpleTUN (#10B981).
+- Backend Order: Alphabetical (Hev -> SingTUN -> SimpleTUN).
 - Headers: Centered title and subtitle without ' · ' dots.
 - Direction indicators: (Higher is Better) or (Lower is Better) on all titles.
 - Output: Lossless WebP saved directly to docs/benchmark/<profile>/charts/.
@@ -38,15 +38,14 @@ from common.theme import (
     save_dashboard,
 )
 
-LIGHT_BACKENDS = ["hev", "sing", "zeptun", "simpletun"]
-FULL_BACKENDS = ["hev", "sing", "xray", "zeptun", "simpletun"]
+LIGHT_BACKENDS = ["hev", "sing", "simpletun"]
+FULL_BACKENDS = ["hev", "sing", "xray", "simpletun"]
 
 NAMES = {
     "direct_none": "Baseline",
     "hev": "Hev",
     "sing": "SingTUN",
     "xray": "Xray",
-    "zeptun": "Zeptun",
     "simpletun": "SimpleTUN",
 }
 COLORS = {
@@ -54,7 +53,6 @@ COLORS = {
     "hev": "#555555",
     "sing": "#00ADD8",
     "xray": "#e11d48",
-    "zeptun": "#F7A41D",
     "simpletun": "#10B981",
 }
 
@@ -921,7 +919,7 @@ def main() -> None:
     parser.add_argument("--device-profile", default=DEFAULT_DEVICE, choices=sorted(DEVICE_PROFILES),
                         help=f"Device profile to load data from and save charts to (default: {DEFAULT_DEVICE})")
     parser.add_argument("--preset", choices=["light", "full"], default="light",
-                        help="Backend selection preset: 'light' (Hev/SingTUN/Zeptun/SimpleTUN) or 'full' (all)")
+                        help="Backend selection preset: 'light' (Hev/SingTUN/SimpleTUN) or 'full' (all)")
     parser.add_argument("--data-dir", default=None,
                         help="Custom input directory containing benchmark JSON datasets (overrides profile data_dir)")
     args = parser.parse_args()
