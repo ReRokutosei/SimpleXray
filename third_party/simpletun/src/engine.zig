@@ -16,6 +16,7 @@ const FIN_WAIT_TIMEOUT_MS: i64 = 30_000;
 const SWEEP_INTERVAL_MS: i64 = 500;
 const UDP_SESSION_IDLE_MS: i64 = 30_000;
 const DNS_QUERY_TTL_MS: i64 = 10_000;
+const UDP_ASSOC_TIMEOUT_MS: i64 = 5_000;
 
 fn logCore(prio: c_int, comptime fmt: []const u8, args: anytype) void {
     _ = prio;
@@ -39,6 +40,9 @@ pub const Engine = struct {
     udp_relay_fd: sys.fd_t,
     udp_relay_port: u16,
     last_udp_associate_fail_ms: i64,
+    udp_hs: socks5.Handshake,
+    udp_assoc_pending: bool,
+    udp_assoc_deadline_ms: i64,
     stop_fd: sys.fd_t,
     running: bool,
     tun_out_armed: bool,
@@ -94,6 +98,9 @@ pub const Engine = struct {
         self.udp_relay_fd = udp_relay_fd;
         self.udp_relay_port = 0;
         self.last_udp_associate_fail_ms = 0;
+        self.udp_hs.reset();
+        self.udp_assoc_pending = false;
+        self.udp_assoc_deadline_ms = 0;
         self.stop_fd = stop_fd;
         self.running = true;
         self.tun_out_armed = false;
@@ -253,6 +260,10 @@ pub const Engine = struct {
             }
         }
 
+        if (self.udp_assoc_pending and now >= self.udp_assoc_deadline_ms) {
+            self.abortUdpAssociate(now);
+        }
+
         self.udp_table.sweep(now, UDP_SESSION_IDLE_MS);
     }
 
@@ -393,24 +404,7 @@ pub const Engine = struct {
                 } else if (fd == self.udp_relay_fd) {
                     self.handleUdpRelayRead();
                 } else if (fd == self.udp_ctrl_fd) {
-                    // UDP Associate TCP control connection status
-                    var should_close = false;
-                    if ((ev.events & (linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP)) != 0) {
-                        should_close = true;
-                    } else if ((ev.events & linux.EPOLL.IN) != 0) {
-                        var dummy: [16]u8 = undefined;
-                        const rn = sys.read(self.udp_ctrl_fd, &dummy) catch 0;
-                        if (rn == 0) {
-                            should_close = true;
-                        }
-                    }
-                    if (should_close) {
-                        logCore(4, "Engine.run udp_ctrl_fd disconnected (events=0x{x})", .{ev.events});
-                        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_DEL, self.udp_ctrl_fd, null);
-                        sys.close(self.udp_ctrl_fd);
-                        self.udp_ctrl_fd = -1;
-                        self.udp_relay_port = 0;
-                    }
+                    self.handleUdpCtrlEvent(ev.events);
                 }
             }
 
@@ -419,55 +413,155 @@ pub const Engine = struct {
         logCore(4, "Engine.run while loop terminated, self.running={}", .{self.running});
     }
 
-    pub fn initUdpAssociate(self: *Engine) !void {
-        if (self.udp_ctrl_fd >= 0) return;
+    fn armUdpCtrlEvents(self: *Engine, events: u32) void {
+        if (self.udp_ctrl_fd < 0) return;
+        var ev = linux.epoll_event{
+            .events = events,
+            .data = .{ .fd = self.udp_ctrl_fd },
+        };
+        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, self.udp_ctrl_fd, &ev);
+    }
 
-        const sock = try sys.createTcpSocket();
-        errdefer sys.close(sock);
+    fn abortUdpAssociate(self: *Engine, now: i64) void {
+        if (self.udp_ctrl_fd >= 0) {
+            _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_DEL, self.udp_ctrl_fd, null);
+            sys.close(self.udp_ctrl_fd);
+            self.udp_ctrl_fd = -1;
+        }
+        self.udp_assoc_pending = false;
+        self.udp_relay_port = 0;
+        self.last_udp_associate_fail_ms = now;
+    }
+
+    fn beginUdpAssociate(self: *Engine) void {
+        if (self.udp_ctrl_fd >= 0 or self.udp_assoc_pending) return;
+        const now = sys.monotonicMs();
+        if (now - self.last_udp_associate_fail_ms < 2000) return;
+
+        const sock = sys.createTcpSocket() catch {
+            self.last_udp_associate_fail_ms = now;
+            return;
+        };
+        self.udp_ctrl_fd = sock;
+        self.udp_assoc_pending = true;
+        self.udp_assoc_deadline_ms = now + UDP_ASSOC_TIMEOUT_MS;
+        self.udp_hs.beginGreeting();
 
         sys.connect(sock, self.cfg.socks_ip, self.cfg.socks_port) catch |err| {
-            if (err != error.ConnectionPending) return err;
+            if (err != error.ConnectionPending) {
+                self.abortUdpAssociate(now);
+                return;
+            }
         };
-
-        var pfd = [_]linux.pollfd{.{
-            .fd = sock,
-            .events = linux.POLL.OUT,
-            .revents = 0,
-        }};
-        _ = linux.poll(&pfd, 1, 50);
-
-        _ = try sys.writeSocket(sock, &socks5.Greeting);
-
-        var auth_resp: [2]u8 = undefined;
-        var pfd_in = [_]linux.pollfd{.{
-            .fd = sock,
-            .events = linux.POLL.IN,
-            .revents = 0,
-        }};
-        _ = linux.poll(&pfd_in, 1, 50);
-        const an = try sys.read(sock, &auth_resp);
-        if (an != 2 or auth_resp[0] != 0x05 or auth_resp[1] != 0x00) {
-            return error.Socks5AuthFailed;
-        }
-
-        _ = try sys.writeSocket(sock, &socks5.UdpAssociateReq);
-
-        _ = linux.poll(&pfd_in, 1, 50);
-        var resp_buf: [10]u8 = undefined;
-        const rn = try sys.read(sock, &resp_buf);
-        if (rn < 10 or resp_buf[0] != 0x05 or resp_buf[1] != 0x00 or resp_buf[3] != 0x01) {
-            return error.Socks5UdpAssociateFailed;
-        }
-
-        const relay_port = (@as(u16, resp_buf[8]) << 8) | @as(u16, resp_buf[9]);
-        self.udp_ctrl_fd = sock;
-        self.udp_relay_port = relay_port;
 
         var ev = linux.epoll_event{
-            .events = linux.EPOLL.IN | linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP,
+            .events = linux.EPOLL.OUT | linux.EPOLL.IN | linux.EPOLL.ERR,
             .data = .{ .fd = sock },
         };
-        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_ADD, sock, &ev);
+        const ctl_rc = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_ADD, sock, &ev);
+        if (linux.errno(ctl_rc) != .SUCCESS) {
+            self.abortUdpAssociate(now);
+        }
+    }
+
+    fn udpAssociateSucceeded(self: *Engine, relay_port: u16) void {
+        self.udp_assoc_pending = false;
+        self.udp_relay_port = relay_port;
+        self.last_udp_associate_fail_ms = 0;
+        self.armUdpCtrlEvents(linux.EPOLL.IN | linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP);
+    }
+
+    fn handleUdpAssociateEvent(self: *Engine, events: u32) void {
+        const fd = self.udp_ctrl_fd;
+        if ((events & (linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP)) != 0) {
+            self.abortUdpAssociate(sys.monotonicMs());
+            return;
+        }
+
+        if (self.udp_hs.phase == .greeting_tx or self.udp_hs.phase == .request_tx) {
+            if ((events & linux.EPOLL.OUT) == 0) return;
+            self.driveHandshakeTx(fd, &self.udp_hs) catch |err| {
+                if (err == error.WouldBlock) return;
+                self.abortUdpAssociate(sys.monotonicMs());
+                return;
+            };
+            if (self.udp_hs.phase == .greeting_tx) {
+                self.udp_hs.beginAuth();
+                self.armUdpCtrlEvents(linux.EPOLL.IN | linux.EPOLL.ERR);
+            } else {
+                self.udp_hs.beginReply();
+                self.armUdpCtrlEvents(linux.EPOLL.IN | linux.EPOLL.ERR);
+            }
+            return;
+        }
+
+        if ((events & linux.EPOLL.IN) == 0) return;
+
+        if (self.udp_hs.phase == .auth_rx) {
+            self.driveHandshakeRx(fd, &self.udp_hs) catch |err| {
+                if (err == error.WouldBlock) return;
+                self.abortUdpAssociate(sys.monotonicMs());
+                return;
+            };
+            const resp = self.udp_hs.incoming();
+            if (resp.len != 2 or resp[0] != 0x05 or resp[1] != 0x00) {
+                self.abortUdpAssociate(sys.monotonicMs());
+                return;
+            }
+            self.udp_hs.beginUdpAssociateRequest();
+            self.armUdpCtrlEvents(linux.EPOLL.OUT | linux.EPOLL.IN | linux.EPOLL.ERR);
+            self.driveHandshakeTx(fd, &self.udp_hs) catch |err| {
+                if (err == error.WouldBlock) return;
+                self.abortUdpAssociate(sys.monotonicMs());
+                return;
+            };
+            self.udp_hs.beginReply();
+            self.armUdpCtrlEvents(linux.EPOLL.IN | linux.EPOLL.ERR);
+        } else if (self.udp_hs.phase == .reply_rx) {
+            self.driveHandshakeRx(fd, &self.udp_hs) catch |err| {
+                if (err == error.WouldBlock) return;
+                self.abortUdpAssociate(sys.monotonicMs());
+                return;
+            };
+            const resp = self.udp_hs.incoming();
+            if (resp.len != 10 or resp[0] != 0x05 or resp[1] != 0x00 or resp[3] != 0x01) {
+                self.abortUdpAssociate(sys.monotonicMs());
+                return;
+            }
+            const relay_port = (@as(u16, resp[8]) << 8) | @as(u16, resp[9]);
+            self.udpAssociateSucceeded(relay_port);
+        } else {
+            self.abortUdpAssociate(sys.monotonicMs());
+        }
+    }
+
+    fn handleUdpCtrlEvent(self: *Engine, events: u32) void {
+        if (self.udp_ctrl_fd < 0) return;
+        if (self.udp_assoc_pending) {
+            self.handleUdpAssociateEvent(events);
+            return;
+        }
+
+        var should_close = false;
+        if ((events & (linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP)) != 0) {
+            should_close = true;
+        } else if ((events & linux.EPOLL.IN) != 0) {
+            var dummy: [16]u8 = undefined;
+            const rn = sys.read(self.udp_ctrl_fd, &dummy) catch |err| blk: {
+                if (err == error.WouldBlock) return;
+                should_close = true;
+                break :blk 0;
+            };
+            if (rn == 0) should_close = true;
+        }
+        if (should_close) {
+            logCore(4, "Engine.run udp_ctrl_fd disconnected (events=0x{x})", .{events});
+            _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_DEL, self.udp_ctrl_fd, null);
+            sys.close(self.udp_ctrl_fd);
+            self.udp_ctrl_fd = -1;
+            self.udp_relay_port = 0;
+            self.udp_assoc_pending = false;
+        }
     }
 
     fn handleTunRead(self: *Engine) void {
@@ -514,16 +608,9 @@ pub const Engine = struct {
             // Touch or allocate UDP session in table
             _ = self.udp_table.touchOrAllocate(src_ip, dst_ip, src_port, dst_port);
 
-            // Re-attempt UDP Associate if not established with 2000ms failure backoff
-            if (self.udp_ctrl_fd < 0 or self.udp_relay_port == 0) {
-                const now = sys.monotonicMs();
-                if (now - self.last_udp_associate_fail_ms < 2000) {
-                    return; // In backoff cooldown, drop gracefully without blocking main event loop
-                }
-                self.initUdpAssociate() catch {
-                    self.last_udp_associate_fail_ms = now;
-                    return;
-                };
+            if (self.udp_relay_port == 0) {
+                self.beginUdpAssociate();
+                return; // Drop until the asynchronous relay handshake completes.
             }
 
             // Pack SOCKS5 UDP header (10 bytes) + payload
@@ -769,30 +856,28 @@ pub const Engine = struct {
         self.closeFlow(flow, TOMBSTONE_MS);
     }
 
-    fn driveSocks5Tx(self: *Engine, flow: *flow_mod.Flow) !void {
+    fn driveHandshakeTx(self: *Engine, fd: sys.fd_t, hs: *socks5.Handshake) !void {
         _ = self;
-        const fd = flow.socks_fd;
-        while (!flow.hs.complete()) {
-            const offset: usize = flow.hs.have;
-            const chunk = flow.hs.outgoing()[offset..];
+        while (!hs.complete()) {
+            const offset: usize = hs.have;
+            const chunk = hs.outgoing()[offset..];
             const n = try sys.writeSocket(fd, chunk);
             if (n == 0) return error.Socks5WriteFailed;
-            flow.hs.commitSent(n);
+            hs.commitSent(n);
         }
     }
 
-    fn driveSocks5Rx(self: *Engine, flow: *flow_mod.Flow) !void {
+    fn driveHandshakeRx(self: *Engine, fd: sys.fd_t, hs: *socks5.Handshake) !void {
         _ = self;
-        const fd = flow.socks_fd;
         var scratch: [22]u8 = undefined;
-        while (!flow.hs.complete()) {
-            const want = flow.hs.remaining();
+        while (!hs.complete()) {
+            const want = hs.remaining();
             if (want == 0) return error.Socks5Malformed;
             const n = try sys.read(fd, scratch[0..want]);
             if (n == 0) return error.Socks5Eof;
             for (scratch[0..n]) |byte| {
-                flow.hs.consume(byte);
-                if (flow.hs.complete()) break;
+                hs.consume(byte);
+                if (hs.complete()) break;
             }
         }
     }
@@ -810,7 +895,7 @@ pub const Engine = struct {
         switch (flow.state) {
             .upstream_connect => {
                 if ((events & linux.EPOLL.OUT) != 0) {
-                    self.driveSocks5Tx(flow) catch |err| {
+                    self.driveHandshakeTx(fd, &flow.hs) catch |err| {
                         if (err == error.WouldBlock) return;
                         self.failSocksFlow(flow);
                         return;
@@ -822,7 +907,7 @@ pub const Engine = struct {
             },
             .socks5_auth_wait => {
                 if ((events & linux.EPOLL.IN) != 0) {
-                    self.driveSocks5Rx(flow) catch |err| {
+                    self.driveHandshakeRx(fd, &flow.hs) catch |err| {
                         if (err == error.WouldBlock) return;
                         self.failSocksFlow(flow);
                         return;
@@ -836,7 +921,7 @@ pub const Engine = struct {
                     flow.hs.beginConnectRequest(flow.dst_ip, flow.dst_port);
                     flow.state = .socks5_connect_wait;
                     self.armSocksEvents(flow, linux.EPOLL.IN | linux.EPOLL.OUT | linux.EPOLL.ERR);
-                    self.driveSocks5Tx(flow) catch |err| {
+                    self.driveHandshakeTx(fd, &flow.hs) catch |err| {
                         if (err == error.WouldBlock) return;
                         self.failSocksFlow(flow);
                         return;
@@ -848,7 +933,7 @@ pub const Engine = struct {
             .socks5_connect_wait => {
                 if (flow.hs.phase == .request_tx) {
                     if ((events & linux.EPOLL.OUT) != 0) {
-                        self.driveSocks5Tx(flow) catch |err| {
+                        self.driveHandshakeTx(fd, &flow.hs) catch |err| {
                             if (err == error.WouldBlock) return;
                             self.failSocksFlow(flow);
                             return;
@@ -858,7 +943,7 @@ pub const Engine = struct {
                     }
                 } else if (flow.hs.phase == .reply_rx) {
                     if ((events & linux.EPOLL.IN) != 0) {
-                        self.driveSocks5Rx(flow) catch |err| {
+                        self.driveHandshakeRx(fd, &flow.hs) catch |err| {
                             if (err == error.WouldBlock) return;
                             self.failSocksFlow(flow);
                             return;

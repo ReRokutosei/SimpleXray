@@ -32,6 +32,12 @@ pub const Handshake = struct {
         _ = formatConnectRequest(self.buf[0..10], dst_ip, dst_port);
     }
 
+    pub fn beginUdpAssociateRequest(self: *Handshake) void {
+        self.phase = .request_tx;
+        self.have = 0;
+        @memcpy(self.buf[0..UdpAssociateReq.len], &UdpAssociateReq);
+    }
+
     pub fn beginReply(self: *Handshake) void {
         self.phase = .reply_rx;
         self.have = 0;

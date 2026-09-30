@@ -53,7 +53,8 @@ SimpleTUN is a purpose-built user-space network endpoint designed strictly for A
 - Deterministic connection tear-down with explicit `upstream_fin` FIN wait, sequence-validated `RST`, and short-lived session tombstones with LRU/saturation eviction fallback under high CPS.
 - Single sweep loop drives handshake/idle/FIN/tombstone/UDP/DNS deadlines without adding timer threads.
 - Tombstones answer late FIN/data retransmissions with trailing ACKs instead of silently dropping them.
-- SOCKS5 UDP ASSOCIATE relay with dedicated 64-slot FIFO ring buffer (`DnsQueryTracker`) for concurrent DNS query matching and 2000ms failure backoff cooldown.
+- SOCKS5 UDP ASSOCIATE relay negotiated through the same non-blocking incremental handshake parser, with a 2s failure backoff instead of blocking the TUN event loop.
+- Dedicated 64-slot FIFO ring buffer (`DnsQueryTracker`) for concurrent DNS query matching, now with per-query TTL and sweep-based expiry.
 - Ultra-dense memory footprint via statically pinned 80-byte Flow slab tables (< 100 KiB total BSS).
 
 ### 1.2 Out-of-Scope (Deferred to Future Releases)
@@ -234,7 +235,8 @@ Upstream SOCKS5 Socket (EAGAIN on write)
 
 ### 5.4 UDP Session Demultiplexing & Single Relay Socket Trade-Off
 SimpleTUN is intentionally optimized for mobile VPN transparent proxy environments where the overwhelming majority (>99%) of UDP traffic consists of DNS queries:
-- **DNS Queries (`dst_port == 53`)**: SimpleTUN utilizes a dedicated 64-entry FIFO ring buffer (`DnsQueryTracker`) keyed on `(DNS Transaction ID, client_port)`. This guarantees accurate, concurrent matching and demultiplexing of multiple in-flight DNS queries even when targeting the same upstream DNS resolver.
+- **Asynchronous ASSOCIATE**: UDP relay setup is driven by the same non-blocking parser as TCP. Greeting/auth/request/reply progress on `EPOLLIN/EPOLLOUT`; a 5s handshake deadline and 2s failure backoff apply. The triggering datagram is dropped while the relay is not yet ready, so DNS relies on its normal retry behavior.
+- **DNS Queries (`dst_port == 53`)**: SimpleTUN utilizes a dedicated 64-entry FIFO ring buffer (`DnsQueryTracker`) keyed on `(DNS Transaction ID, target)`, with TTL-based expiry. This gives accurate matching for the common single-client DNS workload.
 - **Non-DNS Datagrams**: To strictly adhere to the zero-heap and fixed file-descriptor budget (< 100 KiB resident BSS), SimpleTUN multiplexes all UDP traffic through a single SOCKS5 `UDP ASSOCIATE` relay socket (`udp_relay_fd`) rather than spawning an unbounded number of OS socket FDs per foreign destination. In an Android single-host VpnService environment where all traffic originates locally from the device itself with ephemeral client ports, inbound return datagrams for identical `(target_ip, target_port)` tuples are dispatched to the most recently active session (`findByTarget`). This is a deliberate, documented architectural trade-off prioritizing deterministic resource boundaries and zero FD leakage over symmetric NAT tracking for generic non-DNS UDP.
 
 ### 5.5 Downstream Flow Control & TUN Backpressure
