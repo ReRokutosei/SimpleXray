@@ -38,6 +38,7 @@ def run_throughput_case(
     Executes bidirectional (Upload + Download) throughput benchmark for a specific backend configuration.
     """
     adb.wake_device()
+    adb.shell("pkill iperf3 || true")
 
     par_desc = f" [P={parallel}]" if parallel > 1 else " [Single Stream]"
     net_desc = f" [{network.upper()}]" if network != "tcp" else ""
@@ -76,6 +77,7 @@ def run_throughput_case(
         bitrate=bitrate
     )
     rc, up_out, _ = adb.shell(up_cmd, timeout=duration + 15)
+    adb.shell("pkill iperf3 || true")
     up_avg_cpu, up_peak_cpu = profiler.stop()
     kill_host_server(server_proc)
 
@@ -106,6 +108,7 @@ def run_throughput_case(
         bitrate=bitrate
     )
     rc, down_out, _ = adb.shell(down_cmd, timeout=duration + 15)
+    adb.shell("pkill iperf3 || true")
     down_avg_cpu, down_peak_cpu = profiler.stop()
     kill_host_server(server_proc)
 
