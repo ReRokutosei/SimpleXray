@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0-alpha.4](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0-alpha.3...v2.3.0-alpha.4) (2026-09-30)
+
+
+### Features
+
+* **simpletun:** add lightweight ipv4 tun-to-socks5 backend ([3e78d70](https://github.com/ReRokutosei/SimpleXray/commit/3e78d70e3055991627e82f76ce4d3255e127e5ea))
+
 ## [2.3.0-alpha.3](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0-alpha.2...v2.3.0-alpha.3) (2026-09-25)
 
 
