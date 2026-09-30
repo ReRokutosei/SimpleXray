@@ -46,7 +46,7 @@ def get_hev_version() -> str:
         tag = tag_match.group(1) if tag_match else desc
         return f"{tag} ({commit})"
     except Exception:
-        return "2.17.1 (b514150)"
+        return "2.18.0 (d9dca26)"
 
 
 def get_sing_tun_version() -> str:
@@ -73,7 +73,7 @@ def sync_versions(check_only: bool = False) -> bool:
     current = read_current_properties()
     
     expected = {
-        "XRAY_CORE_VERSION": current.get("XRAY_CORE_VERSION", "v26.9.9"),
+        "XRAY_CORE_VERSION": current.get("XRAY_CORE_VERSION", "v26.9.30"),
         "HEV_TUN_VERSION": get_hev_version(),
         "SING_TUN_VERSION": get_sing_tun_version(),
         "GO_VERSION": current.get("GO_VERSION", "1.27.1"),

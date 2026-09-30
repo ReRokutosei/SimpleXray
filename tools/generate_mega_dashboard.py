@@ -606,8 +606,8 @@ def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = Non
     # -------------------------------------------------------------
     # 7. ACADEMIC & METHODOLOGY FOOTNOTE
     # -------------------------------------------------------------
-    xray_ver = version_props.get("XRAY_CORE_VERSION", "v26.9.9")
-    hev_ver = version_props.get("HEV_TUN_VERSION", "2.17.1 (b514150)")
+    xray_ver = version_props.get("XRAY_CORE_VERSION", "v26.9.30")
+    hev_ver = version_props.get("HEV_TUN_VERSION", "2.18.0 (d9dca26)")
     sing_ver = version_props.get("SING_TUN_VERSION", "aff4131a9e9e")
 
     if is_light:

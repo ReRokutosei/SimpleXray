@@ -61,7 +61,7 @@ This repository is a personal fork based on the upstream [SimpleXray](https://gi
 | **Build System**                | Legacy `ndkBuild` (`Android.mk`) and standard Gradle configuration                | CMake (`CMakeLists.txt`); the native tunnel target includes Android 16 KB page-alignment linker options. Gradle Wrapper `9.7.0`, Android Gradle Plugin `9.3.1`, Version Catalogs, and Plugins DSL |
 | **UI & Layout**                 | Standard Material 3 UI                                                            | Xiaomi HyperOS / MIUI-inspired UI implemented with `compose-miuix-ui`, with adaptive layouts for phones and large screens, NavigationRail support, and Android 12+ dynamic colors |
 | **Persistence & Communication** | ContentProvider-backed `SharedPreferences` and `Gson`                             | Direct lightweight `SharedPreferences` with `kotlinx.serialization`; UI and background service communicate reactively via in-memory `StateFlow` and `SharedFlow` |
-| **Core Components**             | Xray-core `v26.3.27` and `hev-socks5-tunnel` `v2.14.3`                            | Xray-core `v26.9.9`, `sing-tun` (Go stack), and `hev-socks5-tunnel` `v2.17.0`, including updated `hev-socks5-core`, `hev-task-system`, and `lwip` components |
+| **Core Components**             | Xray-core `v26.3.27` and `hev-socks5-tunnel` `v2.14.3`                            | Xray-core `v26.9.30`, `sing-tun` (Go stack), and `hev-socks5-tunnel` `v2.18.0`, including updated `hev-socks5-core`, `hev-task-system`, and `lwip` components |
 | **ABI Packaging**               | `arm64-v8a` and `x86_64` split APKs, plus a universal APK                                | `arm64-v8a` APK only                                                                                                                                                |
 | **TUN Backend Setting**         | No Xray TUN backend setting                                      | `Xray TUN`, `SingTUN`, and `Hev Socks5 Tunnel` selector, defaulting to `Hev Socks5 Tunnel` |
 
@@ -225,7 +225,7 @@ wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosit
 Use Go and the Android NDK to compile the `arm64-v8a` core executable, placing it into the JNI libraries directory (ensure the tag matches `XRAY_CORE_VERSION` in `version.properties`):
 
 ```bash
-git clone --depth=1 --branch v26.9.9 https://github.com/XTLS/Xray-core.git
+git clone --depth=1 --branch v26.9.30 https://github.com/XTLS/Xray-core.git
 cd Xray-core
 COMMID=$(git rev-parse HEAD | cut -c 1-7)
 

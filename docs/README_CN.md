@@ -64,7 +64,7 @@ SimpleXray 主要负责在 Android 上运行和管理 Xray-core。应用接受�
 | **构建系统**     | 使用 `ndkBuild` 和 `Android.mk`，配合标准 Gradle 配置 | 使用 CMake 和 `CMakeLists.txt`；原生隧道目标包含 Android 16 KB 内存页对齐链接选项，并使用 Gradle Wrapper `9.7.0`、Android Gradle Plugin `9.3.1`、Version Catalog 和 Plugins DSL |
 | **界面与布局**    | 使用标准 Material 3 界面                                   | 使用 `compose-miuix-ui` 实现 Xiaomi HyperOS / MIUI 风格的界面，并针对手机和平板提供自适应布局                                                           |
 | **数据存储与通信架构** | 使用 ContentProvider 封装的 `SharedPreferences` 和 `Gson` | 直接使用轻量级原生 `SharedPreferences` 与 `kotlinx.serialization`；UI 与后台服务通过内存级 `StateFlow` / `SharedFlow` 实现零拷贝响应式通信 |
-| **核心组件**     | Xray-core `v26.3.27` 和 `hev-socks5-tunnel` `v2.14.3` | Xray-core `v26.9.9`、`sing-tun`（Go 栈）和 `hev-socks5-tunnel` `v2.17.0`，包含更新的 `hev-socks5-core`、`hev-task-system` 及 `lwip` 组件 |
+| **核心组件**     | Xray-core `v26.3.27` 和 `hev-socks5-tunnel` `v2.14.3` | Xray-core `v26.9.30`、`sing-tun`（Go 栈）和 `hev-socks5-tunnel` `v2.18.0`，包含更新的 `hev-socks5-core`、`hev-task-system` 及 `lwip` 组件 |
 | **ABI 打包**     | 提供 `arm64-v8a` 和 `x86_64` 分包 APK，以及通用 APK | 仅提供 `arm64-v8a` APK |
 | **TUN 后端设置** | 不提供 Xray TUN 后端设置 | 可选 `Xray TUN`、`SingTUN` 和 `Hev Socks5 Tunnel`，默认值为 `Hev Socks5 Tunnel` |
 
@@ -255,7 +255,7 @@ wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosit
 使用 Go 配合 Android NDK 编译目标架构（`arm64-v8a`）的内核可执行文件，并作为动态库放置于 JNI 目录（内核版本请参考 `version.properties` 中的 `XRAY_CORE_VERSION`）：
 
 ```bash
-git clone --depth=1 --branch v26.9.9 https://github.com/XTLS/Xray-core.git
+git clone --depth=1 --branch v26.9.30 https://github.com/XTLS/Xray-core.git
 cd Xray-core
 COMMID=$(git rev-parse HEAD | cut -c 1-7)
 
