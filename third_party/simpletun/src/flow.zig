@@ -27,11 +27,12 @@ pub const Flow = struct {
 
     // SOCKS5 and I/O state
     socks_fd: i32,
-    tombstone_until_ms: i64,
+    deadline_ms: i64,
     peer_wnd: u16,
     state: State,
     is_blocked: bool,
     client_fin: bool,
+    upstream_fin: bool,
     tun_blocked: bool,
     hs: socks5.Handshake = .{},
     _pad: [1]u8 = [_]u8{0} ** 1,
@@ -54,11 +55,12 @@ pub const Flow = struct {
         self.c_isn = 0;
         self.s_isn = 0;
         self.socks_fd = -1;
-        self.tombstone_until_ms = 0;
+        self.deadline_ms = 0;
         self.peer_wnd = 0;
         self.state = .free;
         self.is_blocked = false;
         self.client_fin = false;
+        self.upstream_fin = false;
         self.tun_blocked = false;
         self.hs.reset();
     }
@@ -117,7 +119,7 @@ pub const FlowTable = struct {
 
         for (&self.flows) |*flow| {
             if (flow.state == .tombstone) {
-                if (now >= flow.tombstone_until_ms) {
+                if (now >= flow.deadline_ms) {
                     flow.reset();
                     flow.src_ip = src_ip;
                     flow.dst_ip = dst_ip;
@@ -126,8 +128,8 @@ pub const FlowTable = struct {
                     flow.state = .upstream_connect;
                     return flow;
                 }
-                if (flow.tombstone_until_ms < oldest_tombstone_time) {
-                    oldest_tombstone_time = flow.tombstone_until_ms;
+                if (flow.deadline_ms < oldest_tombstone_time) {
+                    oldest_tombstone_time = flow.deadline_ms;
                     oldest_tombstone = flow;
                 }
             }
@@ -151,8 +153,8 @@ pub const FlowTable = struct {
         var oldest_flow: ?*Flow = null;
         var oldest_time: i64 = std.math.maxInt(i64);
         for (&self.flows) |*flow| {
-            if (flow.tombstone_until_ms < oldest_time) {
-                oldest_time = flow.tombstone_until_ms;
+            if (flow.deadline_ms < oldest_time) {
+                oldest_time = flow.deadline_ms;
                 oldest_flow = flow;
             }
         }
@@ -178,7 +180,7 @@ pub const FlowTable = struct {
             flow.socks_fd = -1;
         }
         flow.state = .tombstone;
-        flow.tombstone_until_ms = sys.monotonicMs() + duration_ms;
+        flow.deadline_ms = sys.monotonicMs() + duration_ms;
     }
 };
 
@@ -201,6 +203,7 @@ pub const UdpSession = struct {
 };
 
 pub const DnsQuery = struct {
+    expires_at_ms: i64,
     src_ip: u32,
     dst_ip: u32,
     src_port: u16,
@@ -234,28 +237,45 @@ pub const UdpTable = struct {
         return table;
     }
 
-    pub fn recordDnsQuery(self: *UdpTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16, dns_tx_id: u16) void {
+    pub fn recordDnsQuery(self: *UdpTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16, dns_tx_id: u16, ttl_ms: i64) void {
+        const now = sys.monotonicMs();
         const slot = &self.dns_queries[self.dns_query_head];
         slot.src_ip = src_ip;
         slot.dst_ip = dst_ip;
         slot.src_port = src_port;
         slot.dst_port = dst_port;
         slot.dns_tx_id = dns_tx_id;
+        slot.expires_at_ms = now + ttl_ms;
         slot.active = true;
         self.dns_query_head = (self.dns_query_head + 1) % DNS_QUERY_CAPACITY;
     }
 
     pub fn findDnsQuery(self: *UdpTable, dst_ip: u32, dst_port: u16, dns_tx_id: u16) ?DnsQuery {
+        const now = sys.monotonicMs();
         var i: usize = 0;
         while (i < DNS_QUERY_CAPACITY) : (i += 1) {
             const idx = (self.dns_query_head + DNS_QUERY_CAPACITY - 1 - i) % DNS_QUERY_CAPACITY;
             const q = &self.dns_queries[idx];
-            if (q.active and q.dst_ip == dst_ip and q.dst_port == dst_port and q.dns_tx_id == dns_tx_id) {
+            if (!q.active or now >= q.expires_at_ms) continue;
+            if (q.dst_ip == dst_ip and q.dst_port == dst_port and q.dns_tx_id == dns_tx_id) {
                 q.active = false; // Consumed
                 return q.*;
             }
         }
         return null;
+    }
+
+    pub fn sweep(self: *UdpTable, now: i64, session_idle_ms: i64) void {
+        for (&self.sessions) |*s| {
+            if (s.active and now - s.last_active_ms >= session_idle_ms) {
+                s.active = false;
+            }
+        }
+        for (&self.dns_queries) |*q| {
+            if (q.active and now >= q.expires_at_ms) {
+                q.active = false;
+            }
+        }
     }
 
     pub fn touchOrAllocate(self: *UdpTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) ?*UdpSession {
@@ -316,7 +336,7 @@ pub const UdpTable = struct {
 comptime {
     std.debug.assert(@sizeOf(Flow) == 80);
     std.debug.assert(@sizeOf(UdpSession) == 24);
-    std.debug.assert(@sizeOf(DnsQuery) == 16);
+    std.debug.assert(@sizeOf(DnsQuery) == 24);
 }
 
 test "FlowTable allocation and tombstone eviction" {
@@ -332,4 +352,24 @@ test "FlowTable allocation and tombstone eviction" {
     table.markTombstone(flow1.?, -10); // already expired
     const flow2 = table.allocate(5, 6, 7, 8);
     try std.testing.expect(flow2 != null);
+}
+
+test "UdpTable sweep expires sessions and dns queries" {
+    var table: UdpTable = undefined;
+    table.initInto();
+
+    const session = table.touchOrAllocate(1, 2, 3, 4);
+    try std.testing.expect(session != null);
+    try std.testing.expect(table.findByTarget(2, 4) != null);
+
+    const now = sys.monotonicMs();
+    session.?.last_active_ms = now - 60_000;
+    _ = table.recordDnsQuery(1, 2, 3, 4, 0x1234, -1);
+    table.sweep(now, 30_000);
+
+    try std.testing.expect(!session.?.active);
+    try std.testing.expect(table.findDnsQuery(2, 4, 0x1234) == null);
+
+    _ = table.recordDnsQuery(1, 2, 3, 4, 0x5678, 30_000);
+    try std.testing.expect(table.findDnsQuery(2, 4, 0x5678) != null);
 }

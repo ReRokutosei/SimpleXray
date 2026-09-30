@@ -9,6 +9,14 @@ const EPOLLRDHUP: u32 = 0x2000;
 const O_NONBLOCK: usize = 0x800;
 const FLOW_INDEX_OFFSET: u32 = 0x1000;
 
+const CONNECT_TIMEOUT_MS: i64 = 10_000;
+const IDLE_TIMEOUT_MS: i64 = 30 * 60 * 1000;
+const TOMBSTONE_MS: i64 = 3_000;
+const FIN_WAIT_TIMEOUT_MS: i64 = 30_000;
+const SWEEP_INTERVAL_MS: i64 = 500;
+const UDP_SESSION_IDLE_MS: i64 = 30_000;
+const DNS_QUERY_TTL_MS: i64 = 10_000;
+
 fn logCore(prio: c_int, comptime fmt: []const u8, args: anytype) void {
     _ = prio;
     _ = fmt;
@@ -34,6 +42,7 @@ pub const Engine = struct {
     stop_fd: sys.fd_t,
     running: bool,
     tun_out_armed: bool,
+    last_sweep_ms: i64,
 
     // Reusable I/O buffers (Single allocation, 0 dynamic malloc in fast path, aligned for IP/TCP headers)
     rx_packet_buf: [4096]u8 align(4),
@@ -88,6 +97,7 @@ pub const Engine = struct {
         self.stop_fd = stop_fd;
         self.running = true;
         self.tun_out_armed = false;
+        self.last_sweep_ms = 0;
     }
 
     pub fn init(cfg: EngineConfig) !Engine {
@@ -184,11 +194,107 @@ pub const Engine = struct {
         }
     }
 
+    fn closeSocksFdOnly(self: *Engine, flow: *flow_mod.Flow) void {
+        if (flow.tun_blocked) {
+            flow.tun_blocked = false;
+            self.armTunEvents();
+        }
+        flow.is_blocked = false;
+        if (flow.socks_fd >= 0) {
+            _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_DEL, flow.socks_fd, null);
+            sys.close(flow.socks_fd);
+            flow.socks_fd = -1;
+        }
+    }
+
+    fn sendUpstreamFin(self: *Engine, flow: *flow_mod.Flow) void {
+        if (flow.upstream_fin) return;
+        const win_to_announce: u16 = if (flow.is_blocked) 0 else 65535;
+        self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_FIN | protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, win_to_announce, null);
+        flow.snd_nxt +%= 1;
+        flow.upstream_fin = true;
+        flow.deadline_ms = sys.monotonicMs() + FIN_WAIT_TIMEOUT_MS;
+        self.closeSocksFdOnly(flow);
+        if (flow.client_fin) {
+            self.closeFlow(flow, TOMBSTONE_MS);
+        }
+    }
+
+    fn touchFlow(self: *Engine, flow: *flow_mod.Flow) void {
+        _ = self;
+        if (!flow.upstream_fin) {
+            flow.deadline_ms = sys.monotonicMs() + IDLE_TIMEOUT_MS;
+        }
+    }
+
+    fn sweepTimers(self: *Engine) void {
+        const now = sys.monotonicMs();
+        if (now - self.last_sweep_ms < SWEEP_INTERVAL_MS) return;
+        self.last_sweep_ms = now;
+
+        for (&self.table.flows) |*flow| {
+            switch (flow.state) {
+                .free => {},
+                .tombstone => {
+                    if (now >= flow.deadline_ms) {
+                        if (flow.tun_blocked) {
+                            flow.tun_blocked = false;
+                            self.armTunEvents();
+                        }
+                        flow.reset();
+                    }
+                },
+                else => {
+                    if (now >= flow.deadline_ms) {
+                        self.sendRst(flow);
+                        self.closeFlow(flow, TOMBSTONE_MS);
+                    }
+                },
+            }
+        }
+
+        self.udp_table.sweep(now, UDP_SESSION_IDLE_MS);
+    }
+
     fn updateSendWindow(self: *Engine, flow: *flow_mod.Flow, ack: u32, window: u16) void {
         _ = self;
         if (protocol.seqBetween(flow.snd_una, ack, flow.snd_nxt)) {
             flow.snd_una = ack;
             flow.peer_wnd = window;
+        }
+    }
+
+    fn rstSeqValid(flow: *const flow_mod.Flow, seq: u32) bool {
+        return protocol.seqBetween(flow.rcv_nxt -% 65535, seq, flow.rcv_nxt);
+    }
+
+    fn handleUpstreamFinPacket(self: *Engine, flow: *flow_mod.Flow, flags: u8, seq: u32, payload: []const u8, ack: u32, window: u16) void {
+        if ((flags & protocol.TcpHeader.FLAG_ACK) != 0) {
+            self.updateSendWindow(flow, ack, window);
+        }
+
+        if ((flags & protocol.TcpHeader.FLAG_FIN) != 0) {
+            if (!flow.client_fin and seq == flow.rcv_nxt) {
+                flow.rcv_nxt +%= 1;
+                flow.client_fin = true;
+            }
+            flow.deadline_ms = sys.monotonicMs() + FIN_WAIT_TIMEOUT_MS;
+            self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, 65535, null);
+            if (flow.snd_una == flow.snd_nxt) {
+                self.closeFlow(flow, TOMBSTONE_MS);
+            }
+            return;
+        }
+
+        if (flow.snd_una == flow.snd_nxt) {
+            self.closeFlow(flow, TOMBSTONE_MS);
+            return;
+        }
+
+        if (payload.len > 0) {
+            if (seq == flow.rcv_nxt) flow.rcv_nxt +%= @intCast(payload.len);
+            flow.deadline_ms = sys.monotonicMs() + FIN_WAIT_TIMEOUT_MS;
+            self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, 65535, null);
         }
     }
 
@@ -211,14 +317,11 @@ pub const Engine = struct {
             const n = sys.recvPeek(fd, self.tx_packet_buf[40 .. 40 + want]) catch |err| {
                 if (err == error.WouldBlock) break;
                 self.sendRst(flow);
-                self.closeFlow(flow, 3000);
+                self.closeFlow(flow, TOMBSTONE_MS);
                 return;
             };
             if (n == 0) {
-                const win_to_announce: u16 = if (flow.is_blocked) 0 else 65535;
-                self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_FIN | protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, win_to_announce, null);
-                flow.snd_nxt +%= 1;
-                self.closeFlow(flow, 3000);
+                self.sendUpstreamFin(flow);
                 return;
             }
 
@@ -228,21 +331,22 @@ pub const Engine = struct {
                     return;
                 }
                 self.sendRst(flow);
-                self.closeFlow(flow, 3000);
+                self.closeFlow(flow, TOMBSTONE_MS);
                 return;
             };
 
             const consumed = sys.read(fd, self.tx_packet_buf[40 .. 40 + n]) catch {
                 self.sendRst(flow);
-                self.closeFlow(flow, 3000);
+                self.closeFlow(flow, TOMBSTONE_MS);
                 return;
             };
             if (consumed != n) {
                 self.sendRst(flow);
-                self.closeFlow(flow, 3000);
+                self.closeFlow(flow, TOMBSTONE_MS);
                 return;
             }
             flow.snd_nxt +%= @intCast(n);
+            self.touchFlow(flow);
 
             if (n < want) break; // socket receive buffer drained
         }
@@ -309,6 +413,8 @@ pub const Engine = struct {
                     }
                 }
             }
+
+            self.sweepTimers();
         }
         logCore(4, "Engine.run while loop terminated, self.running={}", .{self.running});
     }
@@ -402,7 +508,7 @@ pub const Engine = struct {
             const dst_port_native = std.mem.bigToNative(u16, dst_port);
             if (dst_port_native == 53 and payload.len >= 2) {
                 const dns_tx_id = std.mem.readInt(u16, payload[0..2], .big);
-                self.udp_table.recordDnsQuery(src_ip, dst_ip, src_port, dst_port, dns_tx_id);
+                self.udp_table.recordDnsQuery(src_ip, dst_ip, src_port, dst_port, dns_tx_id, DNS_QUERY_TTL_MS);
             }
 
             // Touch or allocate UDP session in table
@@ -468,24 +574,42 @@ pub const Engine = struct {
 
         const f = flow.?;
 
-        // Fast Recycle: If we receive a new SYN for a flow in tombstone, immediately reset and re-allocate!
-        if ((flags & protocol.TcpHeader.FLAG_SYN) != 0 and (flags & protocol.TcpHeader.FLAG_ACK) == 0) {
-            if (f.state == .tombstone) {
+        if (f.state == .tombstone) {
+            if ((flags & protocol.TcpHeader.FLAG_SYN) != 0 and (flags & protocol.TcpHeader.FLAG_ACK) == 0) {
                 f.reset();
                 self.handleNewSyn(src_ip, dst_ip, src_port, dst_port, seq);
                 return;
-            } else if (f.state == .established) {
+            }
+            if ((flags & protocol.TcpHeader.FLAG_RST) != 0) {
+                f.reset();
+                return;
+            }
+            // Trailing ACK for late data/FIN retransmissions.
+            self.sendTcpPacket(f, protocol.TcpHeader.FLAG_ACK, f.snd_nxt, f.rcv_nxt, 0, null);
+            return;
+        }
+
+        if ((flags & protocol.TcpHeader.FLAG_SYN) != 0 and (flags & protocol.TcpHeader.FLAG_ACK) == 0) {
+            if (f.state == .established) {
                 self.sendTcpPacket(f, protocol.TcpHeader.FLAG_SYN | protocol.TcpHeader.FLAG_ACK, f.s_isn, f.rcv_nxt, 65535, null);
                 return;
             }
         }
 
         if ((flags & protocol.TcpHeader.FLAG_RST) != 0) {
-            self.closeFlow(f, 3000);
+            if (rstSeqValid(f, seq)) {
+                self.closeFlow(f, TOMBSTONE_MS);
+            }
             return;
         }
 
         if (f.state == .established) {
+            if (f.upstream_fin) {
+                self.handleUpstreamFinPacket(f, flags, seq, payload, tcp_hdr.getAck(), tcp_hdr.getWindow());
+                return;
+            }
+
+            self.touchFlow(f);
             if ((flags & protocol.TcpHeader.FLAG_ACK) != 0) {
                 self.updateSendWindow(f, tcp_hdr.getAck(), tcp_hdr.getWindow());
                 self.pumpDownstream(f);
@@ -542,7 +666,7 @@ pub const Engine = struct {
                         return;
                     }
                     self.sendRst(f);
-                    self.closeFlow(f, 3000);
+                    self.closeFlow(f, TOMBSTONE_MS);
                     return;
                 };
 
@@ -565,6 +689,7 @@ pub const Engine = struct {
                     if (!f.client_fin) {
                         f.rcv_nxt +%= 1;
                         f.client_fin = true;
+                        f.deadline_ms = sys.monotonicMs() + FIN_WAIT_TIMEOUT_MS;
                         sys.shutdown(f.socks_fd);
                     }
                 }
@@ -596,6 +721,7 @@ pub const Engine = struct {
         flow.snd_nxt = rand_val +% 1;
         flow.snd_una = rand_val;
         flow.peer_wnd = 0;
+        flow.deadline_ms = sys.monotonicMs() + CONNECT_TIMEOUT_MS;
 
         // Initiate non-blocking connect to local SOCKS5 inbound
         const sock = sys.createTcpSocket() catch {
@@ -640,7 +766,7 @@ pub const Engine = struct {
 
     fn failSocksFlow(self: *Engine, flow: *flow_mod.Flow) void {
         self.sendRst(flow);
-        self.closeFlow(flow, 3000);
+        self.closeFlow(flow, TOMBSTONE_MS);
     }
 
     fn driveSocks5Tx(self: *Engine, flow: *flow_mod.Flow) !void {
@@ -1012,4 +1138,44 @@ test "downstream pump consumes SOCKS data only after TUN write" {
     var drained: [4]u8 = undefined;
     const drain_rc = linux.read(socks_pair[0], &drained, drained.len);
     try std.testing.expectEqual(linux.E.AGAIN, linux.errno(drain_rc));
+}
+
+test "upstream FIN waits for client ACK before tombstone" {
+    var tun_pair: [2]i32 = undefined;
+    const rc = linux.socketpair(linux.AF.UNIX, linux.SOCK.STREAM, 0, &tun_pair);
+    try std.testing.expectEqual(@as(usize, 0), rc);
+    defer {
+        _ = linux.close(tun_pair[0]);
+        _ = linux.close(tun_pair[1]);
+    }
+
+    var eng: Engine = undefined;
+    try eng.initInto(.{
+        .tun_fd = tun_pair[0],
+        .socks_ip = 0x7f000001,
+        .socks_port = 10808,
+        .mtu = 1500,
+    });
+    defer eng.deinit();
+
+    var flow: flow_mod.Flow = undefined;
+    flow.reset();
+    flow.state = .established;
+    flow.socks_fd = -1;
+    flow.snd_una = 100;
+    flow.snd_nxt = 100;
+    flow.rcv_nxt = 200;
+    flow.peer_wnd = 65535;
+
+    eng.sendUpstreamFin(&flow);
+    try std.testing.expect(flow.upstream_fin);
+    try std.testing.expectEqual(@as(u32, 101), flow.snd_nxt);
+
+    var packet: [128]u8 = undefined;
+    const packet_len = linux.read(tun_pair[1], &packet, packet.len);
+    try std.testing.expectEqual(@as(usize, 40), packet_len);
+    try std.testing.expect((packet[33] & protocol.TcpHeader.FLAG_FIN) != 0);
+
+    eng.handleUpstreamFinPacket(&flow, protocol.TcpHeader.FLAG_ACK, flow.rcv_nxt, &.{}, flow.snd_nxt, 65535);
+    try std.testing.expectEqual(flow_mod.State.tombstone, flow.state);
 }

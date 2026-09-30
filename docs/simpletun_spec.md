@@ -50,7 +50,9 @@ SimpleTUN is a purpose-built user-space network endpoint designed strictly for A
 - Downstream client TCP flow control: `snd_una`/`peer_wnd` tracking prevents reading more from SOCKS than the client kernel can receive, including zero-window pause and window reopen.
 - Incremental SOCKS5 handshake parser that consumes exactly the bytes of each response, even when authentication or CONNECT replies are split across TCP segments.
 - Explicit per-flow upstream backpressure via standard TCP zero-window signaling (`Win=0`) and persist probe handling (0-byte and 1-byte probes). Unacknowledged bytes are retransmitted by the client TCP stack after the window reopens; no user-space payload buffer is required.
-- Deterministic connection tear-down (`FIN` half-close propagation, `RST` teardown, short-lived session tombstones with LRU/saturation eviction fallback under high CPS).
+- Deterministic connection tear-down with explicit `upstream_fin` FIN wait, sequence-validated `RST`, and short-lived session tombstones with LRU/saturation eviction fallback under high CPS.
+- Single sweep loop drives handshake/idle/FIN/tombstone/UDP/DNS deadlines without adding timer threads.
+- Tombstones answer late FIN/data retransmissions with trailing ACKs instead of silently dropping them.
 - SOCKS5 UDP ASSOCIATE relay with dedicated 64-slot FIFO ring buffer (`DnsQueryTracker`) for concurrent DNS query matching and 2000ms failure backoff cooldown.
 - Ultra-dense memory footprint via statically pinned 80-byte Flow slab tables (< 100 KiB total BSS).
 
@@ -251,20 +253,19 @@ SimpleTUN is intentionally optimized for mobile VPN transparent proxy environmen
 1. **Client Closes First**:
    - Client sends `FIN (seq = f_seq)`.
    - Advance `rcv_nxt = f_seq + 1`. Send immediate `ACK (ack = rcv_nxt)`.
-   - Call `shutdown(socks_fd, SHUT_WR)`. Transition to `CLIENT_CLOSE_1`.
-   - Continue reading remaining downstream data from `socks_fd` and writing to `tun_fd`.
+   - Call `shutdown(socks_fd, SHUT_WR)` and continue reading remaining downstream data.
    - When `read(socks_fd)` returns 0 (`EOF`), send `FIN` to `tun_fd`.
-   - Transition to `TOMBSTONE`.
+   - If both sides have sent FIN, transition directly to `TOMBSTONE`; otherwise wait for the client ACK with a finite FIN timeout.
 
 2. **Upstream Closes First**:
    - `read(socks_fd)` returns 0.
    - Send `FIN` to `tun_fd` (`seq = snd_nxt`). Advance `snd_nxt += 1`.
-   - Transition to `UPSTREAM_CLOSED`.
-   - Client replies `ACK`. Transition to `TOMBSTONE`.
+   - Mark `upstream_fin = true` and close only `socks_fd`; keep the 4-tuple alive to absorb client ACK/FIN.
+   - Once the client ACK covers the FIN, transition to `TOMBSTONE`.
 
 ### 6.2 Abrupt Teardown (RST)
-- If client sends `RST`: Validate sequence number within current window. If valid, close `socks_fd` immediately and mark slot `FREE`.
-- If upstream socket produces `ECONNRESET` or unrecoverable error: Send `RST` to `tun_fd` (`Seq = snd_nxt`), close `socks_fd`, transition to `TOMBSTONE`.
+- If client sends `RST`: accept only when its sequence number falls inside the current receive window. Valid RST closes the flow and enters `TOMBSTONE` for late packet absorption.
+- If upstream socket produces `ECONNRESET` or an unrecoverable error: Send `RST` to `tun_fd` (`Seq = snd_nxt`), close `socks_fd`, transition to `TOMBSTONE`.
 
 ### 6.3 Tombstone Slot Preservation
 - When a flow reaches termination, releasing the 4-tuple immediately introduces collision risks if delayed packets reside in the kernel or TUN queues.
@@ -272,7 +273,8 @@ SimpleTUN is intentionally optimized for mobile VPN transparent proxy environmen
 - While in `TOMBSTONE`:
   - Any duplicate `FIN` or data retransmissions are answered with identical trailing `ACK` or `RST`.
   - New `SYN` packets with the exact same 4-tuple matching higher sequence numbers may preemptively reclaim the slot (RFC 1122 fast recycle).
-- An intrusive timer wheel or sweep loop evicts expired tombstones back to `FREE`.
+- A single non-intrusive sweep loop evicts expired tombstones back to `FREE`.
+- The same sweep enforces connect/handshake, idle, FIN-wait, UDP session, and DNS query deadlines.
 
 ---
 
@@ -300,11 +302,12 @@ pub const Flow = struct {
 
     // File Descriptor, Window, Deadline, State & Handshake
     socks_fd: i32,               // 4B
-    tombstone_until_ms: i64,     // 8B
+    deadline_ms: i64,            // 8B (state-specific timeout)
     peer_wnd: u16,               // 2B
     state: State,                // 1B
     is_blocked: bool,            // 1B
     client_fin: bool,            // 1B
+    upstream_fin: bool,          // 1B
     tun_blocked: bool,           // 1B
     hs: socks5.Handshake,        // 24B (phase, offset, 22B response buffer)
     _pad: [1]u8 = [_]u8{0} ** 1, // 1B
@@ -319,11 +322,11 @@ pub const Flow = struct {
 | **TCP Flow Slab Table** | 1024 entries × 80 bytes/entry | **80 KiB (L2 D-Cache Resident)** |
 | **Payload Buffers** | None; TCP retransmission and `MSG_PEEK` are the queues | **0 KiB** |
 | **UDP Session Table** | 256 entries × 24 bytes/entry (Packed) | **6 KiB** |
-| **DNS Query Tracker** | 64 entries × 16 bytes FIFO ring | **1 KiB** |
+| **DNS Query Tracker** | 64 entries × 24 bytes (TTL + FIFO ring) | **1.5 KiB** |
 | **I/O Packet Buffers** | 3 buffers × 4096 bytes (RX / TX / UDP Relay) | **12 KiB** |
-| **Total Resident Memory (BSS)** | Statically pinned in BSS (`initInto`) | **~99 KiB (< 0.1 MiB)** |
+| **Total Resident Memory (BSS)** | Statically pinned in BSS (`initInto`) | **~99.5 KiB (< 0.1 MiB)** |
 
-> **Conclusion**: The entire state machine, including the incremental handshake parser and UDP/DNS tracking, strictly fits within **< 100 KiB total static memory** (actual Android app PSS growth is practically flat at 0 KiB / connection), completely immune to dynamic heap allocations and GC pauses.
+> **Conclusion**: The entire state machine, including the incremental handshake parser, lifecycle timers, and UDP/DNS tracking, strictly fits within **< 100 KiB total static memory** (actual Android app PSS growth is practically flat at 0 KiB / connection), completely immune to dynamic heap allocations and GC pauses.
 
 ---
 
