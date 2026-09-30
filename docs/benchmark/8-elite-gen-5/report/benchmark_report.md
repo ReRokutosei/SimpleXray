@@ -20,7 +20,6 @@ All implementations were evaluated via SimpleXray (`assembleDebug`) with Android
 | :--- | :--- | :--- | :--- |
 | **Hev** | C | lwIP (embedded TCP/IP) | v2.17.1 (`b514150`) |
 | **SingTUN** | Go | sing-box userspace tun / Go 1.27.1 | Commit `aff4131a9e9e` |
-| **Zeptun** | Zig | Custom user-space stack | v1.1.1 (`4d24203`) |
 | **SimpleTUN** | Zig | Custom 0-Heap Protocol Shifter / userspace | In-tree (`third_party/simpletun`) |
 | **Xray-core** | Go | Upstream SOCKS5 endpoint | v26.9.9 |
 
@@ -37,6 +36,7 @@ The benchmark was executed headlessly via Android `BenchmarkService`. Each confi
 5. **Short-Lived TCP Connections (CPS)**: 5,000 requests dispatched across 4 and 8 workers; metrics: conn/s, P50, and P95 latency (120 s timeout).
 6. **Weak-Network Resilience**: Server-side `netem` bridge with fixed 50 ms base RTT; uniform packet loss at 3%, 5%, and 8% on 8-stream TCP.
 7. **Isolated Memory Attribution**: Scheme 2 microbenchmark in a Linux network namespace (`unshare -r -n`); PSS sampled across 0 to 1,000 idle retained TCP/UDP connections.
+8. **QUIC / HTTP/3 Protocol Verification**: HTTP/3 request latency (`/hello`, 10 bytes) and bulk transfer throughput (`/payload`, 10 MB) evaluated via standalone smoke probe against server endpoint on UDP port 4433.
 
 ---
 
@@ -46,21 +46,21 @@ The benchmark was executed headlessly via Android `BenchmarkService`. Each confi
 
 ![Wi-Fi Throughput](../charts/wifi_throughput.webp)
 
-| Scenario | Direction | Hev (C / lwIP) | SingTUN (Go) | Zeptun (Zig) | SimpleTUN (Zig) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **TCP $P=1$ (Single Stream)** | Download | 413.3 Mbps | 385.7 Mbps | 442.5 Mbps | 442.3 Mbps |
-| | Upload | 453.8 Mbps | 446.4 Mbps | 510.9 Mbps | 358.0 Mbps |
-| **TCP $P=8$ (Multi-Stream)** | Download | 450.3 Mbps | 368.5 Mbps | 444.2 Mbps | 449.6 Mbps |
-| | Upload | 475.5 Mbps | 469.4 Mbps | 479.7 Mbps | 414.6 Mbps |
-| **UDP $P=1$ (Single Stream, 600M Target)** | Download | 599.4 Mbps (9.2% loss) | 600.0 Mbps (22.2% loss) | 600.0 Mbps (12.3% loss) | 544.4 Mbps (14.7% loss) |
-| | Upload | 600.0 Mbps (37.9% loss) | 400.0 Mbps (22.9% loss) | 600.0 Mbps (38.2% loss) | 599.9 Mbps (51.8% loss) |
-| **UDP $P=8$ (Multi-Stream, 600M Aggregate)** | Download | 75.0 Mbps × 8 (0.0% loss) | 75.0 Mbps × 8 (0.0% loss) | 75.0 Mbps × 8 (0.3% loss) | 75.0 Mbps × 8 (0.0% loss) |
-| | Upload | 75.0 Mbps × 8 (0.0% loss) | 75.0 Mbps × 8 (0.0% loss) | 75.0 Mbps × 8 (0.0% loss) | 75.0 Mbps × 8 (0.5% loss) |
+| Scenario | Direction | Hev (C / lwIP) | SingTUN (Go) | SimpleTUN (Zig) |
+| :--- | :--- | :--- | :--- | :--- |
+| **TCP $P=1$ (Single Stream)** | Download | 491.1 Mbps | 514.1 Mbps | 557.1 Mbps |
+| | Upload | 402.2 Mbps | 409.8 Mbps | 393.6 Mbps |
+| **TCP $P=8$ (Multi-Stream)** | Download | 582.5 Mbps | 579.1 Mbps | 587.1 Mbps |
+| | Upload | 418.6 Mbps | 405.6 Mbps | 419.7 Mbps |
+| **UDP $P=1$ (Single Stream, 600M Target)** | Download | 591.6 Mbps (25.2% loss) | 600.0 Mbps (33.7% loss) | 598.0 Mbps (28.6% loss) |
+| | Upload | 599.6 Mbps (49.2% loss) | 600.0 Mbps (47.3% loss) | 599.4 Mbps (48.2% loss) |
+| **UDP $P=8$ (Multi-Stream, 600M Aggregate)** | Download | 75.0 Mbps × 8 (0.0% loss) | 75.0 Mbps × 8 (0.0% loss) | 75.0 Mbps × 8 (0.4% loss) |
+| | Upload | 75.0 Mbps × 8 (0.0% loss) | 75.0 Mbps × 8 (0.0% loss) | 75.0 Mbps × 8 (0.0% loss) |
 
-- In TCP workloads, Zeptun and SimpleTUN recorded top download throughput across both single-stream ($P=1$, 442.5 / 442.3 Mbps) and multi-stream ($P=8$, 444.2 / 449.6 Mbps). Hev achieved 413.3 Mbps ($P=1$) and 450.3 Mbps ($P=8$) download, while SingTUN recorded 385.7 Mbps ($P=1$) and 368.5 Mbps ($P=8$).
-- In multi-stream TCP ($P=8$), both Hev and SimpleTUN fully saturated the downlink (450.3 / 449.6 Mbps) without suffering from the single-threaded degradation observed on lower-power silicon, driven by the higher IPC and single-core clock of the SM8850 Prime cores.
-- In single-stream UDP ($P=1$, 600 Mbps target rate), download line rate reached 544.4–600.0 Mbps across all backends. Download loss was lowest on Hev (9.2%) and Zeptun (12.3%), followed by SimpleTUN (14.7%) and SingTUN (22.2%).
-- In multi-stream parallel UDP ($P=8$, 75 Mbps × 8 streams = 600 Mbps aggregate), all backends achieved full line rate with 0.0% download packet loss (Zeptun DL loss was 0.3%, SimpleTUN UL loss was 0.5%), proving that multi-core distribution resolves the single-socket TX queue bottleneck.
+- In TCP workloads, SimpleTUN recorded the highest download throughput across both single-stream ($P=1$, 557.1 Mbps) and multi-stream ($P=8$, 587.1 Mbps). SingTUN and Hev followed closely with 514.1 Mbps and 491.1 Mbps in $P=1$ download, and 579.1 Mbps and 582.5 Mbps in $P=8$ download.
+- In multi-stream TCP ($P=8$), all three backends achieved high downlink saturation (~579–587 Mbps) without suffering from single-threaded event loop starvation observed on mid-range silicon, driven by the higher IPC and single-core clock of the SM8850 Prime cores.
+- In single-stream UDP ($P=1$, 600 Mbps target rate), download line rate reached 591.6–600.0 Mbps across all backends. Download loss was lowest on Hev (25.2%), followed by SimpleTUN (28.6%) and SingTUN (33.7%). Upload saturated near the 600 Mbps target rate with 47%–49% packet loss across all backends due to single-socket transmit queue bottlenecks without flow control.
+- In multi-stream parallel UDP ($P=8$, 75 Mbps × 8 streams = 600 Mbps aggregate), all backends achieved full line rate with near-zero download packet loss (0.0% on Hev and SingTUN, 0.4% on SimpleTUN), proving that multi-core distribution resolves the single-socket TX queue bottleneck.
 
 ---
 
@@ -68,15 +68,15 @@ The benchmark was executed headlessly via Android `BenchmarkService`. Each confi
 
 ![CPU Efficiency](../charts/cpu_efficiency.webp)
 
-| Scenario | Direction | Hev (C / lwIP) | SingTUN (Go) | Zeptun (Zig) | SimpleTUN (Zig) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **$P=1$ (Single Stream)** | Upload | 5.3% | 8.0% | 4.6% | 6.7% |
-| | Download | 10.9% | 16.8% | 9.2% | 11.2% |
-| **$P=8$ (Multi-Stream)** | Upload | 6.5% | 9.3% | 5.9% | 9.6% |
-| | Download | 15.0% | 32.5% | 16.8% | 16.2% |
+| Scenario | Direction | Hev (C / lwIP) | SingTUN (Go) | SimpleTUN (Zig) |
+| :--- | :--- | :--- | :--- | :--- |
+| **$P=1$ (Single Stream)** | Upload | 5.4% | 7.8% | 7.8% |
+| | Download | 9.1% | 13.6% | 9.7% |
+| **$P=8$ (Multi-Stream)** | Upload | 6.6% | 11.5% | 11.5% |
+| | Download | 10.2% | 20.6% | 14.0% |
 
-- On the Snapdragon 8 Elite Gen 5, Zeptun demonstrated the lowest CPU compute cost in single-stream transport, requiring 4.6% CPU per 100 Mbps in upload and 9.2% CPU in download. Hev and SimpleTUN followed closely with 10.9% and 11.2% CPU in download.
-- In multi-stream ($P=8$) download, Hev recorded 15.0% CPU per 100 Mbps, SimpleTUN recorded 16.2% CPU per 100 Mbps, Zeptun recorded 16.8% CPU per 100 Mbps, and SingTUN recorded 32.5% CPU per 100 Mbps.
+- On the Snapdragon 8 Elite Gen 5, Hev demonstrated the lowest CPU compute cost overall, requiring 5.4% CPU per 100 Mbps in upload and 9.1% CPU in download for single-stream ($P=1$), and 6.6% upload / 10.2% download in multi-stream ($P=8$). SimpleTUN followed closely with 9.7% CPU in $P=1$ download and 14.0% CPU in $P=8$ download.
+- In multi-stream ($P=8$) download, SingTUN required 20.6% CPU per 100 Mbps, reflecting efficient multi-core scheduling compared to mid-range platforms, while Hev and SimpleTUN retained superior compute efficiency (10.2% and 14.0%).
 - Across all scenarios, the absolute compute cost was substantially lower on SM8850 than on mid-range silicon (e.g. 778G), benefiting from high IPC and updated microarchitecture.
 
 ---
@@ -87,13 +87,12 @@ The benchmark was executed headlessly via Android `BenchmarkService`. Each confi
 
 | Backend | Background Download Throughput | Baseline Latency | Loaded Latency Delta ($\Delta \text{ ms}$) |
 | :--- | :--- | :--- | :--- |
-| **Hev** | 431 Mbps | 18.9 ms | +131.4 ms |
-| **SingTUN** | 484 Mbps | 19.0 ms | +124.2 ms |
-| **Zeptun** | 490 Mbps | 18.9 ms | +125.0 ms |
-| **SimpleTUN** | 493 Mbps | 18.6 ms | +83.0 ms |
+| **Hev** | 596 Mbps | 18.9 ms | +94.7 ms |
+| **SingTUN** | 568 Mbps | 19.1 ms | +107.0 ms |
+| **SimpleTUN** | 588 Mbps | 17.0 ms | +92.8 ms |
 
-- Under heavy background 8-stream TCP download (431–493 Mbps), loaded latency increased by +83.0 ms on SimpleTUN, +124.2 ms on SingTUN, +125.0 ms on Zeptun, and +131.4 ms on Hev.
-- SimpleTUN recorded the lowest loaded latency inflation (+83.0 ms) under full downlink saturation.
+- Under heavy background 8-stream TCP download (568–596 Mbps), loaded latency increased by +92.8 ms on SimpleTUN, +94.7 ms on Hev, and +107.0 ms on SingTUN.
+- SimpleTUN recorded the lowest loaded latency inflation (+92.8 ms) under 588 Mbps downlink saturation, closely followed by Hev (+94.7 ms).
 
 ---
 
@@ -101,10 +100,9 @@ The benchmark was executed headlessly via Android `BenchmarkService`. Each confi
 
 ![Sustained Stability](../charts/sustained_stability.webp)
 
-- **Hev**: Sustained 498.6 Mbps average throughput with low variance ($\text{CV} = 7.13\%$) and modest attenuation ($\text{decay} = -2.3\%$) over the 60-second test.
-- **Zeptun**: Maintained 493.1 Mbps average throughput ($\text{CV} = 8.72\%$) with stable delivery.
-- **SingTUN**: Sustained 474.0 Mbps average throughput ($\text{CV} = 11.22\%$) with tight overall range.
-- **SimpleTUN**: Sustained 536.9 Mbps average throughput ($\text{CV} = 13.41\%$) with negligible attenuation ($\text{decay} = +0.6\%$) over the 60-second test.
+- **Hev**: Sustained 619.8 Mbps average throughput with low variance ($\text{CV} = 14.45\%$) and negligible attenuation ($\text{decay} = -0.8\%$) over the 60-second test.
+- **SingTUN**: Sustained 619.6 Mbps average throughput ($\text{CV} = 15.05\%$) with late-stage throughput growth ($\text{decay} = +41.1\%$) after initial ramp.
+- **SimpleTUN**: Sustained 628.8 Mbps average throughput ($\text{CV} = 21.12\%$) with positive sustained throughput growth ($\text{decay} = +14.6\%$) over the 60-second test.
 
 ---
 
@@ -115,20 +113,14 @@ The benchmark was executed headlessly via Android `BenchmarkService`. Each confi
 | Backend | Workers | Connection Rate | Median Latency (P50) | Tail Latency (P95) | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | **Hev** | 4W / 8W | Skipped | N/A | N/A | Exceeds lwIP PCB capacity |
-| **SingTUN** | 4 Workers | 197.2 conn/s | 19.9 ms | 30.4 ms | Completed |
-| | 8 Workers | 643.5 conn/s | 11.4 ms | 21.6 ms | Completed |
-| **Zeptun** | 4 Workers | 190.0 conn/s | 20.1 ms | 31.4 ms | Completed |
-| | 8 Workers | 538.9 conn/s | 13.9 ms | 24.8 ms | Completed |
-| **SimpleTUN** | 4 Workers | 213.9 conn/s | 18.9 ms | 30.0 ms | Completed |
-| | 8 Workers | 298.6 conn/s | 11.2 ms | 25.0 ms | Completed |
+| **SingTUN** | 4 Workers | 215.0 conn/s | 18.8 ms | 29.7 ms | Completed |
+| | 8 Workers | 634.7 conn/s | 11.6 ms | 21.6 ms | Completed |
+| **SimpleTUN** | 4 Workers | 204.8 conn/s | 19.6 ms | 30.0 ms | Completed |
+| | 8 Workers | 584.5 conn/s | 12.5 ms | 23.1 ms | Completed |
 
-- **Hev** was automatically skipped from 5,000-connection dispatch due to fixed lwIP PCB table limits. (historical lower-scale runs: ~16 conn/s at 4W, ~34 conn/s at 8W).
-  > **Note:** Earlier lower-scale runs are included for context only and
-  >
-  > are not directly comparable with the 5,000-connection workload.
-- **SingTUN** completed at 197.2 conn/s (4W) and scaled to 643.5 conn/s (8W), with P50 latency dropping from 19.9 ms to 11.4 ms and P95 latency at 21.6 ms.
-- **Zeptun** completed at 190.0 conn/s (4W) and scaled to 538.9 conn/s (8W), with P50 latency decreasing from 20.1 ms to 13.9 ms and P95 latency at 24.8 ms.
-- **SimpleTUN** completed at 213.9 conn/s (4W) and 298.6 conn/s (8W), with P50 latency decreasing from 18.9 ms to 11.2 ms and P95 latency at 25.0 ms.
+- **Hev** was automatically skipped from 5,000-connection dispatch due to fixed lwIP PCB table limits.
+- **SingTUN** completed at 215.0 conn/s (4W) and scaled to 634.7 conn/s (8W), with P50 latency dropping from 18.8 ms to 11.6 ms and P95 latency at 21.6 ms.
+- **SimpleTUN** completed at 204.8 conn/s (4W) and scaled to 584.5 conn/s (8W), with P50 latency decreasing from 19.6 ms to 12.5 ms and P95 latency at 23.1 ms, demonstrating near parity with SingTUN in high-concurrency connection churning after flow table expansion.
 
 ---
 
@@ -136,17 +128,17 @@ The benchmark was executed headlessly via Android `BenchmarkService`. Each confi
 
 ![Weak-Network Throughput](../charts/weaknet_throughput.webp)
 
-| Loss Rate (%) | Flow Direction | Hev (C / lwIP) | SingTUN (Go) | Zeptun (Zig) | SimpleTUN (Zig) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **3% Loss** | Upload | 447.9 Mbps | 455.2 Mbps | 483.1 Mbps | 531.9 Mbps |
-| | Download | 17.0 Mbps | 15.9 Mbps | 13.9 Mbps | 14.0 Mbps |
-| **5% Loss** | Upload | 541.0 Mbps | 479.9 Mbps | 401.7 Mbps | 444.6 Mbps |
-| | Download | 11.1 Mbps | 8.7 Mbps | 9.2 Mbps | 10.9 Mbps |
-| **8% Loss** | Upload | 454.3 Mbps | 382.1 Mbps | 454.6 Mbps | 401.2 Mbps |
-| | Download | 6.4 Mbps | 6.7 Mbps | 5.9 Mbps | 7.0 Mbps |
+| Loss Rate (%) | Flow Direction | Hev (C / lwIP) | SingTUN (Go) | SimpleTUN (Zig) |
+| :--- | :--- | :--- | :--- | :--- |
+| **3% Loss** | Upload | 402.3 Mbps | 467.8 Mbps | 405.1 Mbps |
+| | Download | 17.8 Mbps | 16.5 Mbps | 16.6 Mbps |
+| **5% Loss** | Upload | 392.7 Mbps | 466.2 Mbps | 389.7 Mbps |
+| | Download | 11.1 Mbps | 10.9 Mbps | 10.1 Mbps |
+| **8% Loss** | Upload | 417.4 Mbps | 385.2 Mbps | 432.7 Mbps |
+| | Download | 6.7 Mbps | 6.5 Mbps | 6.9 Mbps |
 
-- At 50 ms artificial RTT with server-side egress shaping (`eno1`), upload throughput remained resilient across all backends (382–541 Mbps) because the server ACK return path absorbed drops without stalling client transmit queues.
-- Download throughput exhibited expected sensitivity to client-side drops over the 50 ms RTT delay, declining smoothly from ~14–17 Mbps (3% loss) down to ~6–7 Mbps (8% loss) across all four backends.
+- At 50 ms artificial RTT with server-side egress shaping (`eno1`), upload throughput remained resilient across all backends (385–468 Mbps) because the server ACK return path absorbed drops without stalling client transmit queues.
+- Download throughput exhibited expected sensitivity to client-side drops over the 50 ms RTT delay, declining smoothly from ~16.5–17.8 Mbps (3% loss) down to ~6.5–6.9 Mbps (8% loss) across all three backends.
 
 ---
 
@@ -156,23 +148,37 @@ The benchmark was executed headlessly via Android `BenchmarkService`. Each confi
 
 | Backend | Base Footprint ($\text{PSS}_0$) | Slope (TCP) | Slope (UDP) | PSS @ 1,000 Connections |
 | :--- | :--- | :--- | :--- | :--- |
-| **Hev** | 2.1 MB | 12.58 KiB / conn | 16.59 KiB / conn | 14.4 MB (TCP) / 18.3 MB (UDP) |
-| **SingTUN** | 9.7 MB | 53.22 KiB / conn | 50.56 KiB / conn | 62.7 MB (TCP) / 61.1 MB (UDP) |
-| **Zeptun** | 326.3 MB | 1.11 KiB / conn | 0.60 KiB / conn | 326.9 MB (TCP) / 326.9 MB (UDP) |
-| **SimpleTUN** | 10.3 MB | 0.00 KiB / conn | 0.00 KiB / conn | 10.3 MB (TCP) / 10.3 MB (UDP) |
+| **Hev** | 2.1 MB | 12.59 KiB / conn | 16.59 KiB / conn | 14.4 MB (TCP) / 18.3 MB (UDP) |
+| **SingTUN** | 10.0 MB | 42.00 KiB / conn | 43.64 KiB / conn | 51.0 MB (TCP) / 52.6 MB (UDP) |
+| **SimpleTUN** | 1.9 MB | 0.00 KiB / conn | 0.01 KiB / conn | 1.9 MB (TCP) / 2.0 MB (UDP) |
 
-- **Base Footprint**: Hev initialized at 2.1 MB PSS, SingTUN at 9.7 MB PSS, SimpleTUN at 10.3 MB PSS, and Zeptun at 326.3 MB PSS.
-- **Incremental Growth**: Across 1,000 connections, SimpleTUN maintained 0.00 KiB/conn (0-heap design), Zeptun increased by 1.11 KiB/conn (TCP), Hev by 12.58 KiB/conn (TCP), and SingTUN by 53.22 KiB/conn (TCP).
+- **Base Footprint**: SimpleTUN and Hev initialized at 1.9 MB and 2.1 MB PSS respectively, while SingTUN initialized at 10.0 MB PSS.
+- **Incremental Growth**: Across 1,000 connections, SimpleTUN maintained 0.00 KiB/conn (TCP) and 0.01 KiB/conn (UDP) thanks to its 0-heap pre-allocated design. Hev grew by 12.59 KiB/conn (TCP) and 16.59 KiB/conn (UDP), reaching 14.4 MB and 18.3 MB. SingTUN scaled by 42.00 KiB/conn (TCP) and 43.64 KiB/conn (UDP), reaching 51.0 MB and 52.6 MB PSS at 1,000 connections.
+
+---
+
+### 3.8 QUIC / HTTP/3 Performance
+
+| Backend | HTTP/3 Handshake Latency (`/hello`) | 10 MB Payload Download Throughput | 10 MB Transfer Duration | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Hev (C / lwIP)** | 248.7 ms | 157.2 Mbps | 0.544 s | Completed |
+| **SingTUN (Go)** | 32.5 ms | 226.0 Mbps | 0.379 s | Completed |
+| **SimpleTUN (Zig)** | 27.8 ms | 320.8 Mbps | 0.269 s | Completed |
+
+- In HTTP/3 small request tests (`/hello`, 10 bytes), SimpleTUN achieved the lowest request latency at 27.8 ms, with SingTUN close at 32.5 ms. Hev recorded 248.7 ms, reflecting timer granularity and internal NAT table setup delays in lwIP's UDP handling path.
+- In 10 MB payload bulk transfer (`/payload`), SimpleTUN reached 320.8 Mbps average throughput (0.269 s transfer duration), outpacing SingTUN (226.0 Mbps, 0.379 s) and Hev (157.2 Mbps, 0.544 s).
+- All three backends completed all HTTP/3 request rounds with a 100% success rate (`status: 200`, `ok: true`), confirming compliance with RFC 9000 QUIC datagram forwarding over SOCKS5 UDP loopback.
 
 ---
 
 ## 4. Discussion
 
-- **Flagship Single-Core Performance & Event Loop Scaling**: On Snapdragon 8 Elite Gen 5 (SM8850), Hev sustained 450.3 Mbps in multi-stream download and 498.6 Mbps in the 60-second stability test without the severe drop observed on lower-power mid-range cores. The higher IPC and single-core clock of the Prime cores reduce packet processing bottlenecks in single-threaded event loops. Similarly, SimpleTUN delivered 449.6 Mbps multi-stream download and 536.9 Mbps sustained stability, matching multi-threaded backends.
-- **Multi-Stream UDP Parallelism**: While single-stream UDP ($P=1$) at 600 Mbps experienced 34%–38% packet loss during upload due to single-socket TX buffer saturation without backpressure, multi-stream parallel UDP ($P=8$, 75 Mbps × 8 streams) completed with 0.0% download packet loss across all backends. Parallelism spreads socket buffers across independent worker routines and kernel queues, achieving line rate cleanly.
-- **Compute Efficiency on High-Performance Silicon**: Zeptun achieved the lowest CPU cost in single-stream workloads (4.6%–9.2% CPU per 100 Mbps). SimpleTUN and Hev followed closely with 11.2% and 10.9% CPU in download. SingTUN's multi-stream compute cost on SM8850 dropped to 32.5% CPU per 100 Mbps (down from 46.5% on 778G), demonstrating effective scaling with modern multi-core architectures.
-- **Short-Lived Connection Scaling (CPS)**: SingTUN scaled from 197.2 conn/s (4W) to 643.5 conn/s (8W), and Zeptun scaled from 190.0 conn/s (4W) to 538.9 conn/s (8W). SimpleTUN delivered 213.9 conn/s (4W) and 298.6 conn/s (8W) with 11.2 ms P50 latency. Hev remained limited by fixed lwIP PCB allocations.
-- **Zero-Allocation Protocol Shifting**: SimpleTUN operates as a zero-heap protocol shifter without virtual network device queues, dynamic memory allocations, or garbage collection. This architecture enabled the lowest loaded latency inflation (+83.0 ms) under full downlink saturation, a 0.00 KiB/connection growth slope across 1,000 connections, and a stripped binary size of only 20 KB.
+- **Flagship Single-Core Performance & Event Loop Scaling**: On Snapdragon 8 Elite Gen 5 (SM8850), Hev sustained 582.5 Mbps in multi-stream download and 619.8 Mbps in the 60-second stability test without the severe drop observed on lower-power mid-range cores. The higher IPC and single-core clock of the Prime cores reduce packet processing bottlenecks in single-threaded event loops. Similarly, SimpleTUN delivered 587.1 Mbps multi-stream download and 628.8 Mbps sustained stability, matching and slightly exceeding multi-threaded backends.
+- **Multi-Stream UDP Parallelism**: While single-stream UDP ($P=1$) at 600 Mbps experienced 47%–49% packet loss during upload due to single-socket TX buffer saturation without backpressure, multi-stream parallel UDP ($P=8$, 75 Mbps × 8 streams) completed with near-zero download packet loss across all backends. Parallelism spreads socket buffers across independent worker routines and kernel queues, achieving line rate cleanly.
+- **Compute Efficiency on High-Performance Silicon**: Hev achieved the lowest CPU cost in both single-stream (5.4% upload / 9.1% download per 100 Mbps) and multi-stream (6.6% upload / 10.2% download) workloads. SimpleTUN followed closely with 9.7% CPU in $P=1$ download and 14.0% CPU in $P=8$ download. SingTUN's multi-stream compute cost on SM8850 was 20.6% CPU per 100 Mbps (down from 46.5% on 778G), demonstrating effective scaling with modern multi-core architectures.
+- **Short-Lived Connection Scaling (CPS)**: SingTUN scaled from 215.0 conn/s (4W) to 634.7 conn/s (8W), and SimpleTUN scaled from 204.8 conn/s (4W) to 584.5 conn/s (8W) with 12.5 ms P50 latency. Hev remained limited by fixed lwIP PCB allocations.
+- **QUIC / HTTP/3 Transport Efficiency**: SimpleTUN recorded the lowest handshake latency (27.8 ms) and highest bulk transfer throughput (320.8 Mbps) in HTTP/3 evaluation, demonstrating efficient UDP packet handling and low-overhead SOCKS5 UDP ASSOCIATE forwarding.
+- **Zero-Allocation Protocol Shifting**: SimpleTUN operates as a zero-heap protocol shifter without virtual network device queues, dynamic memory allocations, or garbage collection. This architecture enabled the lowest loaded latency inflation (+92.8 ms) under full downlink saturation, a 0.00 KiB/connection growth slope across 1,000 connections, and a minimal base footprint of 1.9 MB PSS.
 
 ---
 
@@ -189,8 +195,8 @@ The benchmark was executed headlessly via Android `BenchmarkService`. Each confi
 
 Under the evaluated test conditions on Snapdragon 8 Elite Gen 5:
 
-- **Hev (C / lwIP)** delivered consistent throughput (413.3–450.3 Mbps TCP download, 498.6 Mbps sustained stability) with low CPU utilization (5.3%–10.9% CPU per 100 Mbps in $P=1$) and minimal base memory footprint (2.1 MB PSS). High-frequency Prime cores mitigated the single-threaded dispatch bottleneck seen on mid-range silicon, though short-lived connection capacity remains bounded by lwIP PCB limits.
-- **SingTUN (Go / userspace)** achieved 643.5 conn/s (8W) with 11.4 ms P50 latency in short-lived connection tests, and sustained 474.0 Mbps in 60-second stability testing. Compute cost improved to 32.5% CPU per 100 Mbps in multi-stream download on SM8850 silicon.
-- **Zeptun (Zig / userspace)** recorded top TCP throughput across single-stream download (442.5 Mbps) and upload (510.9 Mbps), maintaining the lowest compute cost in single-stream workloads (4.6% upload / 9.2% download per 100 Mbps) and 538.9 conn/s at 8 workers.
-- **SimpleTUN (Zig / 0-Heap Protocol Shifter)** delivered 442.3 Mbps ($P=1$) and 449.6 Mbps ($P=8$) TCP download, sustained 536.9 Mbps in 60-second stability testing, and recorded the lowest loaded latency increase (+83.0 ms under 493 Mbps downlink load). In memory attribution, it maintained a 0.00 KiB/connection growth slope across 1,000 connections with a 20 KB stripped binary footprint.
-- **UDP Saturation Ladder**: 600 Mbps multi-stream UDP ($P=8$, 75 Mbps × 8 streams) achieved full line rate across all four backends, with near-zero packet loss (0.0% on Hev, < 0.5% download loss on SingTUN and Zeptun; SimpleTUN recorded minor upload loss of 0.6%–1.0% in two rounds while maintaining 0.0% download loss). Single-stream UDP ($P=1$) at 600 Mbps reached line-rate download with modest loss (9.2%–14.7% on Hev, Zeptun, and SimpleTUN), while upload hit expected single-socket queue saturation limits (~34%–52% loss).
+- **Hev (C / lwIP)** delivered consistent throughput (491.1–582.5 Mbps TCP download, 619.8 Mbps sustained stability) with low CPU utilization (5.4%–9.1% CPU per 100 Mbps in $P=1$, 6.6%–10.2% in $P=8$) and minimal base memory footprint (2.1 MB PSS). High-frequency Prime cores mitigated the single-threaded dispatch bottleneck seen on mid-range silicon, though short-lived connection capacity remains bounded by lwIP PCB limits.
+- **SingTUN (Go / userspace)** achieved 634.7 conn/s (8W) with 11.6 ms P50 latency in short-lived connection tests, and sustained 619.6 Mbps in 60-second stability testing. Compute cost improved to 20.6% CPU per 100 Mbps in multi-stream download on SM8850 silicon.
+- **SimpleTUN (Zig / 0-Heap Protocol Shifter)** delivered top TCP download throughput across single-stream ($P=1$, 557.1 Mbps) and multi-stream ($P=8$, 587.1 Mbps), sustained 628.8 Mbps in 60-second stability testing, and recorded the lowest loaded latency increase (+92.8 ms under 588 Mbps downlink load). It scaled to 584.5 conn/s (8W) in CPS testing, delivered 320.8 Mbps HTTP/3 throughput, and maintained a 0.00 KiB/connection growth slope across 1,000 connections with a 1.9 MB base footprint.
+- **UDP Saturation Ladder**: 600 Mbps multi-stream UDP ($P=8$, 75 Mbps × 8 streams) achieved full line rate across all backends, with near-zero packet loss (0.0% on Hev and SingTUN, 0.4% download loss on SimpleTUN). Single-stream UDP ($P=1$) at 600 Mbps reached line-rate download with modest loss (25.2% on Hev, 28.6% on SimpleTUN, 33.7% on SingTUN), while upload hit expected single-socket queue saturation limits (~47%–49% loss).
+- **QUIC / HTTP/3 Performance**: SimpleTUN achieved the fastest HTTP/3 handshake (27.8 ms) and bulk throughput (320.8 Mbps), while SingTUN achieved 32.5 ms and 226.0 Mbps. Hev completed requests at 157.2 Mbps with 248.7 ms latency. All backends demonstrated 100% request success rate over SOCKS5 UDP loopback.

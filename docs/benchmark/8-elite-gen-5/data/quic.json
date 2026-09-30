@@ -1,0 +1,258 @@
+{
+  "metadata": {
+    "timestamp": "2026-09-30T22:08:53.699916",
+    "device": "adb-32fd960c-LIEwUJ._adb-tls-connect._tcp",
+    "device_profile": "8-elite-gen-5",
+    "host_ip": "192.168.31.236",
+    "port": 4433,
+    "timeout_sec": 30,
+    "rounds": 3,
+    "backends": [
+      "hev",
+      "sing",
+      "simpletun"
+    ]
+  },
+  "rounds": {
+    "round_1": [
+      {
+        "bytes": 10,
+        "mbps": 0.00033606333826063803,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.238050364,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/hello",
+        "backend": "hev",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "hello"
+      },
+      {
+        "bytes": 10485760,
+        "mbps": 132.22923180766014,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.634398906,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/payload",
+        "backend": "hev",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "payload_10m"
+      },
+      {
+        "bytes": 10,
+        "mbps": 0.0036097689914797275,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.022162083,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/hello",
+        "backend": "sing",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "hello"
+      },
+      {
+        "bytes": 10485760,
+        "mbps": 270.86593648143344,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.309695937,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/payload",
+        "backend": "sing",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "payload_10m"
+      },
+      {
+        "bytes": 10,
+        "mbps": 0.0030052650741466515,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.026619948,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/hello",
+        "backend": "simpletun",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "hello"
+      },
+      {
+        "bytes": 10485760,
+        "mbps": 381.87815396235766,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.219667135,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/payload",
+        "backend": "simpletun",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "payload_10m"
+      }
+    ],
+    "round_2": [
+      {
+        "bytes": 10,
+        "mbps": 0.00033536180695087906,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.238548333,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/hello",
+        "backend": "hev",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "hello"
+      },
+      {
+        "bytes": 10485760,
+        "mbps": 185.29042385297552,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.452727552,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/payload",
+        "backend": "hev",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "payload_10m"
+      },
+      {
+        "bytes": 10,
+        "mbps": 0.0017947489638633803,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.044574479,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/hello",
+        "backend": "sing",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "hello"
+      },
+      {
+        "bytes": 10485760,
+        "mbps": 217.86387651713937,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.385038958,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/payload",
+        "backend": "sing",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "payload_10m"
+      },
+      {
+        "bytes": 10,
+        "mbps": 0.0036920148871270294,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.021668385,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/hello",
+        "backend": "simpletun",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "hello"
+      },
+      {
+        "bytes": 10485760,
+        "mbps": 328.036453893104,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.255721823,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/payload",
+        "backend": "simpletun",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "payload_10m"
+      }
+    ],
+    "round_3": [
+      {
+        "bytes": 10,
+        "mbps": 0.0002969719305360827,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.269385729,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/hello",
+        "backend": "hev",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "hello"
+      },
+      {
+        "bytes": 10485760,
+        "mbps": 153.96078676863957,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.544853542,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/payload",
+        "backend": "hev",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "payload_10m"
+      },
+      {
+        "bytes": 10,
+        "mbps": 0.002599173917549655,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.03077901,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/hello",
+        "backend": "sing",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "hello"
+      },
+      {
+        "bytes": 10485760,
+        "mbps": 189.1215612383693,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.443556406,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/payload",
+        "backend": "sing",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "payload_10m"
+      },
+      {
+        "bytes": 10,
+        "mbps": 0.002278154328211302,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.035116146,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/hello",
+        "backend": "simpletun",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "hello"
+      },
+      {
+        "bytes": 10485760,
+        "mbps": 252.41445756032547,
+        "ok": true,
+        "proto": "HTTP/3.0",
+        "seconds": 0.332334688,
+        "status": 200,
+        "url": "https://192.168.31.236:4433/payload",
+        "backend": "simpletun",
+        "network": "http3",
+        "medium": "5GHz Wi-Fi",
+        "case": "payload_10m"
+      }
+    ]
+  }
+}
