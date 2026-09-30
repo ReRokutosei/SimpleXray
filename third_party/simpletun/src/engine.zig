@@ -17,6 +17,7 @@ const SWEEP_INTERVAL_MS: i64 = 500;
 const UDP_SESSION_IDLE_MS: i64 = 30_000;
 const DNS_QUERY_TTL_MS: i64 = 10_000;
 const UDP_ASSOC_TIMEOUT_MS: i64 = 5_000;
+const UDP_PREWARM_MS: i64 = 10_000;
 
 fn logCore(prio: c_int, comptime fmt: []const u8, args: anytype) void {
     _ = prio;
@@ -43,6 +44,7 @@ pub const Engine = struct {
     udp_hs: socks5.Handshake,
     udp_assoc_pending: bool,
     udp_assoc_deadline_ms: i64,
+    udp_retry_until_ms: i64,
     stop_fd: sys.fd_t,
     running: bool,
     tun_out_armed: bool,
@@ -101,10 +103,12 @@ pub const Engine = struct {
         self.udp_hs.reset();
         self.udp_assoc_pending = false;
         self.udp_assoc_deadline_ms = 0;
+        self.udp_retry_until_ms = sys.monotonicMs() + UDP_PREWARM_MS;
         self.stop_fd = stop_fd;
         self.running = true;
         self.tun_out_armed = false;
         self.last_sweep_ms = 0;
+        self.beginUdpAssociate();
     }
 
     pub fn init(cfg: EngineConfig) !Engine {
@@ -262,6 +266,9 @@ pub const Engine = struct {
 
         if (self.udp_assoc_pending and now >= self.udp_assoc_deadline_ms) {
             self.abortUdpAssociate(now);
+        }
+        if (self.udp_relay_port == 0 and !self.udp_assoc_pending and now <= self.udp_retry_until_ms) {
+            self.beginUdpAssociate();
         }
 
         self.udp_table.sweep(now, UDP_SESSION_IDLE_MS);
@@ -471,6 +478,15 @@ pub const Engine = struct {
         self.armUdpCtrlEvents(linux.EPOLL.IN | linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP);
     }
 
+    fn ensureUdpAssociate(self: *Engine) void {
+        if (self.udp_relay_port != 0 or self.udp_assoc_pending) return;
+        self.udp_retry_until_ms = sys.monotonicMs() + UDP_PREWARM_MS;
+        // A successful SOCKS5 TCP handshake proves the local inbound is ready.
+        // Force an immediate UDP ASSOCIATE attempt instead of waiting for backoff.
+        self.last_udp_associate_fail_ms = 0;
+        self.beginUdpAssociate();
+    }
+
     fn handleUdpAssociateEvent(self: *Engine, events: u32) void {
         const fd = self.udp_ctrl_fd;
         if ((events & (linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP)) != 0) {
@@ -614,6 +630,8 @@ pub const Engine = struct {
             _ = self.udp_table.touchOrAllocate(src_ip, dst_ip, src_port, dst_port);
 
             if (self.udp_relay_port == 0) {
+                const now = sys.monotonicMs();
+                self.udp_retry_until_ms = @max(self.udp_retry_until_ms, now + UDP_PREWARM_MS);
                 self.beginUdpAssociate();
                 return; // Drop until the asynchronous relay handshake completes.
             }
@@ -962,6 +980,7 @@ pub const Engine = struct {
                         flow.state = .established;
                         self.refreshSocksEvents(flow);
                         self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_SYN | protocol.TcpHeader.FLAG_ACK, flow.s_isn, flow.rcv_nxt, 65535, null);
+                        self.ensureUdpAssociate();
                     }
                 } else {
                     self.failSocksFlow(flow);
