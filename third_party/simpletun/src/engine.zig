@@ -19,6 +19,13 @@ const DNS_QUERY_TTL_MS: i64 = 10_000;
 const UDP_ASSOC_TIMEOUT_MS: i64 = 5_000;
 const UDP_PREWARM_MS: i64 = 10_000;
 
+const HIGH_WATERMARK: usize = 820; // ~80% of CAPACITY (1024)
+const CRITICAL_WATERMARK: usize = 940; // ~92% of CAPACITY (1024)
+const ADAPTIVE_IDLE_HIGH_MS: i64 = 180 * 1000; // 3 minutes under high watermark
+const ADAPTIVE_IDLE_CRITICAL_MS: i64 = 60 * 1000; // 1 minute under critical watermark
+const ADAPTIVE_CONNECT_HIGH_MS: i64 = 3_000; // 3 seconds under high watermark
+const ADAPTIVE_CONNECT_CRITICAL_MS: i64 = 1_500; // 1.5 seconds under critical watermark
+
 fn logCore(prio: c_int, comptime fmt: []const u8, args: anytype) void {
     _ = prio;
     _ = fmt;
@@ -148,7 +155,14 @@ pub const Engine = struct {
             sys.close(flow.socks_fd);
             flow.socks_fd = -1;
         }
-        self.table.markTombstone(flow, tombstone_ms);
+        const active = self.table.activeCount();
+        const effective_tombstone: i64 = if (active >= CRITICAL_WATERMARK)
+            100
+        else if (active >= HIGH_WATERMARK)
+            @min(tombstone_ms, 500)
+        else
+            tombstone_ms;
+        self.table.markTombstone(flow, effective_tombstone);
     }
 
     fn anyTunBlocked(self: *const Engine) bool {
@@ -243,11 +257,22 @@ pub const Engine = struct {
         if (now - self.last_sweep_ms < SWEEP_INTERVAL_MS) return;
         self.last_sweep_ms = now;
 
+        const active = self.table.activeCount();
+        const is_critical = active >= CRITICAL_WATERMARK;
+        const is_high = active >= HIGH_WATERMARK;
+
         for (&self.table.flows) |*flow| {
             switch (flow.state) {
                 .free => {},
                 .tombstone => {
-                    if (now >= flow.deadline_ms) {
+                    const tombstone_slack: i64 = if (is_critical)
+                        2900
+                    else if (is_high)
+                        2500
+                    else
+                        0;
+
+                    if (now + tombstone_slack >= flow.deadline_ms) {
                         if (flow.tun_blocked) {
                             flow.tun_blocked = false;
                             self.armTunEvents();
@@ -255,10 +280,32 @@ pub const Engine = struct {
                         flow.reset();
                     }
                 },
-                else => {
-                    if (now >= flow.deadline_ms) {
+                .upstream_connect, .socks5_auth_wait, .socks5_connect_wait => {
+                    const connect_limit = if (is_critical)
+                        ADAPTIVE_CONNECT_CRITICAL_MS
+                    else if (is_high)
+                        ADAPTIVE_CONNECT_HIGH_MS
+                    else
+                        CONNECT_TIMEOUT_MS;
+
+                    const elapsed = now - (flow.deadline_ms - CONNECT_TIMEOUT_MS);
+                    if (now >= flow.deadline_ms or elapsed >= connect_limit) {
                         self.sendRst(flow);
-                        self.closeFlow(flow, TOMBSTONE_MS);
+                        self.closeFlow(flow, if (is_high) 100 else TOMBSTONE_MS);
+                    }
+                },
+                .established => {
+                    const idle_limit = if (is_critical)
+                        ADAPTIVE_IDLE_CRITICAL_MS
+                    else if (is_high)
+                        ADAPTIVE_IDLE_HIGH_MS
+                    else
+                        IDLE_TIMEOUT_MS;
+
+                    const idle_elapsed = now - (flow.deadline_ms - IDLE_TIMEOUT_MS);
+                    if (now >= flow.deadline_ms or idle_elapsed >= idle_limit) {
+                        self.sendRst(flow);
+                        self.closeFlow(flow, if (is_high) 100 else TOMBSTONE_MS);
                     }
                 },
             }
@@ -1287,4 +1334,45 @@ test "upstream FIN waits for client ACK before tombstone" {
 
     eng.handleUpstreamFinPacket(&flow, protocol.TcpHeader.FLAG_ACK, flow.rcv_nxt, &.{}, flow.snd_nxt, 65535);
     try std.testing.expectEqual(flow_mod.State.tombstone, flow.state);
+}
+
+test "adaptive high watermark sweeps long-idle established flows" {
+    var tun_pair: [2]i32 = undefined;
+    const rc = linux.socketpair(linux.AF.UNIX, linux.SOCK.STREAM, 0, &tun_pair);
+    try std.testing.expectEqual(@as(usize, 0), rc);
+    defer {
+        _ = linux.close(tun_pair[0]);
+        _ = linux.close(tun_pair[1]);
+    }
+
+    var eng: Engine = undefined;
+    try eng.initInto(.{
+        .tun_fd = tun_pair[0],
+        .socks_ip = 0x7f000001,
+        .socks_port = 10808,
+        .mtu = 1500,
+    });
+    defer eng.deinit();
+
+    // Fill table up to critical watermark (950 flows)
+    var i: u16 = 0;
+    while (i < 950) : (i += 1) {
+        const f = eng.table.allocate(0x0a000001, 0x0a000002, 1000 + i, 80);
+        try std.testing.expect(f != null);
+        f.?.state = .established;
+        // set deadline to standard 30 min idle
+        f.?.deadline_ms = sys.monotonicMs() + IDLE_TIMEOUT_MS;
+    }
+    try std.testing.expect(eng.table.activeCount() >= CRITICAL_WATERMARK);
+
+    // Make flow 0 idle for 65 seconds (exceeding critical 60s limit, but far below 30m)
+    const now = sys.monotonicMs();
+    eng.table.flows[0].deadline_ms = now + IDLE_TIMEOUT_MS - 65_000;
+
+    // Run sweepTimers
+    eng.last_sweep_ms = 0; // force sweep
+    eng.sweepTimers();
+
+    // Flow 0 should have been closed into tombstone because of critical watermark!
+    try std.testing.expectEqual(flow_mod.State.tombstone, eng.table.flows[0].state);
 }
