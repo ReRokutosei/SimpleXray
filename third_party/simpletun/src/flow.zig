@@ -98,6 +98,14 @@ pub const FlowTable = struct {
         return null;
     }
 
+    pub fn activeCount(self: *const FlowTable) usize {
+        var count: usize = 0;
+        for (&self.flows) |*flow| {
+            if (flow.state != .free) count += 1;
+        }
+        return count;
+    }
+
     pub fn allocate(self: *FlowTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) ?*Flow {
         // First pass: try to find a completely free slot
         for (&self.flows) |*flow| {
@@ -112,14 +120,22 @@ pub const FlowTable = struct {
             }
         }
 
-        // Second pass: evict expired tombstones
+        // Second pass: evict expired tombstones (with adaptive threshold under high watermark)
         const now = sys.monotonicMs();
+        const active = self.activeCount();
+        const tombstone_slack: i64 = if (active >= 940)
+            2900 // under critical watermark (>=940/1024), tombstone kept for only 100ms
+        else if (active >= 820)
+            2500 // under high watermark (>=820/1024), tombstone kept for only 500ms
+        else
+            0;
+
         var oldest_tombstone: ?*Flow = null;
         var oldest_tombstone_time: i64 = std.math.maxInt(i64);
 
         for (&self.flows) |*flow| {
             if (flow.state == .tombstone) {
-                if (now >= flow.deadline_ms) {
+                if (now + tombstone_slack >= flow.deadline_ms) {
                     flow.reset();
                     flow.src_ip = src_ip;
                     flow.dst_ip = dst_ip;
@@ -372,4 +388,28 @@ test "UdpTable sweep expires sessions and dns queries" {
 
     _ = table.recordDnsQuery(1, 2, 3, 4, 0x5678, 30_000);
     try std.testing.expect(table.findDnsQuery(2, 4, 0x5678) != null);
+}
+
+test "FlowTable adaptive high watermark tombstone eviction" {
+    var table: FlowTable = undefined;
+    table.initInto();
+
+    try std.testing.expectEqual(@as(usize, 0), table.activeCount());
+
+    // Fill table up to high watermark (850 flows)
+    var i: u16 = 0;
+    while (i < 850) : (i += 1) {
+        const f = table.allocate(0x0a000001, 0x0a000002, 1000 + i, 80);
+        try std.testing.expect(f != null);
+        f.?.state = .established;
+    }
+    try std.testing.expectEqual(@as(usize, 850), table.activeCount());
+
+    // Mark one flow as tombstone with 2000ms deadline (normally unexpired since TOMBSTONE_MS=3000)
+    const victim = &table.flows[0];
+    table.markTombstone(victim, 2000);
+
+    // Because active >= 820, tombstone_slack is 2500ms, so 2000ms deadline is adaptively treated as expired!
+    const new_flow = table.allocate(0x0a000001, 0x0a000002, 9999, 80);
+    try std.testing.expect(new_flow != null);
 }
