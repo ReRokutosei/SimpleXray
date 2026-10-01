@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0-alpha.5](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0-alpha.4...v2.3.0-alpha.5) (2026-10-01)
+
+
+### Features
+
+* **simpletun:** add adaptive high-watermark flow recycling ([19e5015](https://github.com/ReRokutosei/SimpleXray/commit/19e50151b627b22f1b057345a43982114b491ea1))
+
+
+### Bug Fixes
+
+* **simpletun:** check epoll_wait errno instead of unsigned comparison ([05a9622](https://github.com/ReRokutosei/SimpleXray/commit/05a962242ffd8d0eea442f3a9dd9e74c0badbe4b))
+
 ## [2.3.0-alpha.4](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0-alpha.3...v2.3.0-alpha.4) (2026-09-30)
 
 
