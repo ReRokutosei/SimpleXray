@@ -377,15 +377,15 @@ pub const Engine = struct {
         logCore(4, "Engine.run entering loop: epoll_fd={d}, tun_fd={d}, stop_fd={d}", .{ self.epoll_fd, self.cfg.tun_fd, self.stop_fd });
 
         while (self.running) {
-            const num_events = linux.epoll_wait(self.epoll_fd, &events, 64, 100);
-            if (num_events < 0) {
-                const err = linux.errno(num_events);
+            const ep_rc = linux.epoll_wait(self.epoll_fd, &events, 64, 100);
+            const err = linux.errno(ep_rc);
+            if (err != .SUCCESS) {
                 if (err == .INTR) continue;
                 logCore(6, "Engine.run epoll_wait returned error: {}", .{err});
                 return error.EpollWaitFailed;
             }
 
-            const count: usize = @intCast(num_events);
+            const count: usize = ep_rc;
             for (events[0..count]) |ev| {
                 const raw_data = ev.data.u32;
                 if (raw_data >= FLOW_INDEX_OFFSET) {
