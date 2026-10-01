@@ -69,6 +69,16 @@ def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = Non
         except Exception:
             pass
 
+    # Load weaknet.json for weak-network panel in light preset
+    weaknet_json_path = profile.get("weaknet_json") or os.path.join(data_dir, "weaknet.json")
+    weaknet_root = {}
+    if os.path.exists(weaknet_json_path):
+        try:
+            with open(weaknet_json_path, "r", encoding="utf-8") as f:
+                weaknet_root = json.load(f)
+        except Exception:
+            pass
+
     version_props = load_version_properties()
     tp_avg = compute_clean_averages(bench_root)
     idle_avg = compute_clean_averages(idle_root) if idle_root else []
@@ -344,69 +354,172 @@ def generate_mega_dashboard(device: str = DEFAULT_DEVICE, output_path: str = Non
     cbar.ax.tick_params(labelsize=7)
 
     # -------------------------------------------------------------
-    # CHART 4: Dual-Layer Full-Stack Memory Attribution (Middle Left)
+    # CHART 4: Weak-Network TCP Throughput (Light) / Full-Stack Memory (Full)
     # -------------------------------------------------------------
-    ax4 = fig.add_axes([0.06, 0.385, 0.25, 0.23])
-    ax4.set_facecolor('#ffffff')
+    if is_light:
+        ax4_up = fig.add_axes([0.06, 0.385, 0.115, 0.23])
+        ax4_dl = fig.add_axes([0.195, 0.385, 0.115, 0.23])
+        ax4_up.set_facecolor('#ffffff')
+        ax4_dl.set_facecolor('#ffffff')
 
-    mb_rounds = micro_root.get("rounds", {})
-    pure_tcp_slopes = {b: [] for b in active_backends}
-    for r_list in mb_rounds.values():
-        for rec in r_list:
-            b = rec.get("backend")
-            if b in active_backends and rec.get("network") == "tcp":
-                pure_tcp_slopes[b].append(rec.get("slope_kib_per_conn", 0.0))
-    pure_tcp_avg = {b: round(sum(pure_tcp_slopes[b]) / len(pure_tcp_slopes[b]), 2) if pure_tcp_slopes[b] else 0.0 for b in active_backends}
+        fig.text(
+            0.185, 0.627, "Weak-Network TCP Throughput (Higher is Better)",
+            ha='center', va='bottom', fontsize=11, fontweight='bold',
+            fontproperties=prop_bold, color='#1e293b'
+        )
 
-    android_tcp_avg = {}
-    for b in active_backends:
-        for r in avg_records:
-            if r.get("type") == "idle_memory" and r.get("backend") == b and r.get("network") == "tcp":
-                flows = r.get("idle_flows", [])
-                if len(flows) >= 2:
-                    slope = (flows[-1]["pss_mb"] - flows[0]["pss_mb"]) * 1024.0 / (flows[-1]["connections"] - flows[0]["connections"])
-                    android_tcp_avg[b] = round(slope, 2)
-                break
+        import matplotlib.ticker as ticker
 
-    y_indices_4 = np.arange(len(active_backends))[::-1]
-    bh = 0.25
+        weaknet_results = weaknet_root.get("results", [])
+        loss_rates = [3.0, 5.0, 8.0]
+        y_centers = np.array([2.0, 1.0, 0.0])
+        bh = 0.22
+        offsets_h = np.linspace((len(active_backends) - 1) * 0.25 / 2, -(len(active_backends) - 1) * 0.25 / 2, len(active_backends))
 
-    ax4.set_title("Full-Stack Memory Footprint (Lower is Better)", fontsize=11, fontweight='bold',
-                  fontproperties=prop_bold, color='#1e293b', pad=14)
-    ax4.set_yticks(y_indices_4)
-    ax4.set_yticklabels([PALETTE[b]['name'].split()[0] for b in active_backends], fontsize=9.5, fontproperties=prop_medium, color='#334155')
-    ax4.set_xlabel("TCP Connection Footprint (KiB/conn)", fontsize=9, color='#64748b', fontproperties=prop_regular)
-    ax4.set_xlim(0, 75 if is_light else 100)
-    ax4.grid(True, axis='x', zorder=0)
+        ax4_up.set_title("Upload (Host ← Dev)", fontsize=9.5, fontweight='bold', fontproperties=prop_bold, color='#334155', pad=8)
+        ax4_up.set_yticks(y_centers)
+        ax4_up.set_yticklabels([f"{int(l)}%" for l in loss_rates], fontsize=9, fontproperties=prop_medium, color='#475569')
+        ax4_up.set_ylabel("Loss Rate", fontsize=8.5, color='#64748b', fontproperties=prop_regular)
+        ax4_up.set_xlabel("Throughput (Mbps)", fontsize=8.5, color='#64748b', fontproperties=prop_regular)
+        ax4_up.xaxis.set_major_locator(ticker.MaxNLocator(integer=True, nbins=4))
+        ax4_up.xaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
+        ax4_up.tick_params(axis='both', labelsize=8)
+        for label in ax4_up.get_xticklabels() + ax4_up.get_yticklabels():
+            label.set_fontproperties(prop_regular)
+            label.set_color('#475569')
+        ax4_up.grid(True, axis='x', zorder=0)
 
-    c_pure = '#fdba74'       # Orange 300
-    c_android = '#ea580c'    # Orange 600
-    edge_pure = '#fb923c'    # Orange 400
-    edge_android = '#c2410c' # Orange 700
+        ax4_dl.set_title("Download (Host → Dev)", fontsize=9.5, fontweight='bold', fontproperties=prop_bold, color='#334155', pad=8)
+        ax4_dl.set_yticks(y_centers)
+        ax4_dl.set_yticklabels([])
+        ax4_dl.tick_params(axis='y', left=False)
+        ax4_dl.set_xlabel("Throughput (Mbps)", fontsize=8.5, color='#64748b', fontproperties=prop_regular)
+        ax4_dl.xaxis.set_major_locator(ticker.MaxNLocator(integer=True, nbins=4))
+        ax4_dl.xaxis.set_major_formatter(ticker.FormatStrFormatter('%d'))
+        ax4_dl.tick_params(axis='x', labelsize=8)
+        for label in ax4_dl.get_xticklabels():
+            label.set_fontproperties(prop_regular)
+            label.set_color('#475569')
+        ax4_dl.grid(True, axis='x', zorder=0)
 
-    for idx, b in enumerate(active_backends):
-        y = y_indices_4[idx]
-        v_pure = pure_tcp_avg.get(b, 0.0)
-        v_and = android_tcp_avg.get(b, 0.0)
+        max_up = 0.0
+        max_dl = 0.0
+        up_by_backend = []
+        dl_by_backend = []
 
-        ax4.barh(y + bh / 2 + 0.02, v_pure, bh, color=c_pure, edgecolor=edge_pure, linewidth=0.8, zorder=3)
-        ax4.barh(y - bh / 2 - 0.02, v_and, bh, color=c_android, edgecolor=edge_android, linewidth=0.8, zorder=3)
+        for b in active_backends:
+            up_vals = []
+            dl_vals = []
+            for l in loss_rates:
+                rec_up = next((r for r in weaknet_results if r.get("backend") == b and float(r.get("loss_percent", 0.0)) == l and r.get("direction") == "upload"), None)
+                v_up = float(rec_up.get("upload_mbps", rec_up.get("throughput_mbps", 0.0))) if rec_up else 0.0
+                up_vals.append(v_up)
+                max_up = max(max_up, v_up)
 
-        ax4.text(v_pure + 1.2, y + bh / 2 + 0.02, f"{v_pure:.1f} KiB", ha='left', va='center', fontsize=7.8, fontweight='bold', color='#9a3412', fontproperties=prop_bold)
+                rec_dl = next((r for r in weaknet_results if r.get("backend") == b and float(r.get("loss_percent", 0.0)) == l and r.get("direction") == "download"), None)
+                v_dl = float(rec_dl.get("download_mbps", rec_dl.get("throughput_mbps", 0.0))) if rec_dl else 0.0
+                dl_vals.append(v_dl)
+                max_dl = max(max_dl, v_dl)
+            up_by_backend.append(up_vals)
+            dl_by_backend.append(dl_vals)
 
-        note = " (IPC fd)" if b == 'xray' else ("*" if b == 'sing' else "")
-        ax4.text(v_and + 1.2, y - bh / 2 - 0.02, f"{v_and:.1f} KiB{note}", ha='left', va='center', fontsize=7.8, fontweight='bold', color='#7c2d12' if b != 'xray' else '#b45309', fontproperties=prop_bold)
+        for b_idx, b in enumerate(active_backends):
+            up_vals = up_by_backend[b_idx]
+            dl_vals = dl_by_backend[b_idx]
+            y_pos = y_centers + offsets_h[b_idx]
 
-    ax4.legend(
-        handles=[plt.Rectangle((0, 0), 1, 1, facecolor=c_pure, edgecolor=edge_pure), plt.Rectangle((0, 0), 1, 1, facecolor=c_android, edgecolor=edge_android)],
-        labels=["Scheme 2: Pure Stack Microbench", "Scheme 1: Android Host App PSS"],
-        loc='lower right', fontsize=7.5, frameon=True, facecolor='#ffffff'
-    )
-    ax4.text(
-        0.02, -0.22,
-        "* SingTUN Scheme 1 is lower due to Go runtime heap steady-state reuse & periodic GC in Android host.",
-        transform=ax4.transAxes, fontsize=6.8, color='#64748b', fontproperties=prop_regular
-    )
+            bars_up = ax4_up.barh(
+                y_pos, up_vals, bh,
+                color=PALETTE[b]['fill'], edgecolor=PALETTE[b]['edge'], linewidth=0.8, zorder=3
+            )
+            bars_dl = ax4_dl.barh(
+                y_pos, dl_vals, bh,
+                color=PALETTE[b]['fill'], edgecolor=PALETTE[b]['edge'], linewidth=0.8, zorder=3
+            )
+
+            for bar, val in zip(bars_up, up_vals):
+                if val > 0:
+                    ax4_up.text(
+                        bar.get_width() + max_up * 0.025, bar.get_y() + bar.get_height() / 2,
+                        f"{val:.0f}", ha='left', va='center',
+                        fontsize=7.0, fontweight='bold', fontproperties=prop_bold, color='#1e293b'
+                    )
+
+            for bar, val in zip(bars_dl, dl_vals):
+                if val > 0:
+                    ax4_dl.text(
+                        bar.get_width() + max_dl * 0.03, bar.get_y() + bar.get_height() / 2,
+                        f"{val:.1f}", ha='left', va='center',
+                        fontsize=6.8, fontweight='bold', fontproperties=prop_bold, color='#1e293b'
+                    )
+
+        ax4_up.set_ylim(-0.55, 2.55)
+        ax4_dl.set_ylim(-0.55, 2.55)
+        ax4_up.set_xlim(0, max_up * 1.18 if max_up > 0 else 550)
+        ax4_dl.set_xlim(0, max_dl * 1.25 if max_dl > 0 else 25)
+
+    else:
+        ax4 = fig.add_axes([0.06, 0.385, 0.25, 0.23])
+        ax4.set_facecolor('#ffffff')
+
+        mb_rounds = micro_root.get("rounds", {})
+        pure_tcp_slopes = {b: [] for b in active_backends}
+        for r_list in mb_rounds.values():
+            for rec in r_list:
+                b = rec.get("backend")
+                if b in active_backends and rec.get("network") == "tcp":
+                    pure_tcp_slopes[b].append(rec.get("slope_kib_per_conn", 0.0))
+        pure_tcp_avg = {b: round(sum(pure_tcp_slopes[b]) / len(pure_tcp_slopes[b]), 2) if pure_tcp_slopes[b] else 0.0 for b in active_backends}
+
+        android_tcp_avg = {}
+        for b in active_backends:
+            for r in avg_records:
+                if r.get("type") == "idle_memory" and r.get("backend") == b and r.get("network") == "tcp":
+                    flows = r.get("idle_flows", [])
+                    if len(flows) >= 2:
+                        slope = (flows[-1]["pss_mb"] - flows[0]["pss_mb"]) * 1024.0 / (flows[-1]["connections"] - flows[0]["connections"])
+                        android_tcp_avg[b] = round(slope, 2)
+                    break
+
+        y_indices_4 = np.arange(len(active_backends))[::-1]
+        bh = 0.25
+
+        ax4.set_title("Full-Stack Memory Footprint (Lower is Better)", fontsize=11, fontweight='bold',
+                      fontproperties=prop_bold, color='#1e293b', pad=14)
+        ax4.set_yticks(y_indices_4)
+        ax4.set_yticklabels([PALETTE[b]['name'].split()[0] for b in active_backends], fontsize=9.5, fontproperties=prop_medium, color='#334155')
+        ax4.set_xlabel("TCP Connection Footprint (KiB/conn)", fontsize=9, color='#64748b', fontproperties=prop_regular)
+        ax4.set_xlim(0, 100)
+        ax4.grid(True, axis='x', zorder=0)
+
+        c_pure = '#fdba74'       # Orange 300
+        c_android = '#ea580c'    # Orange 600
+        edge_pure = '#fb923c'    # Orange 400
+        edge_android = '#c2410c' # Orange 700
+
+        for idx, b in enumerate(active_backends):
+            y = y_indices_4[idx]
+            v_pure = pure_tcp_avg.get(b, 0.0)
+            v_and = android_tcp_avg.get(b, 0.0)
+
+            ax4.barh(y + bh / 2 + 0.02, v_pure, bh, color=c_pure, edgecolor=edge_pure, linewidth=0.8, zorder=3)
+            ax4.barh(y - bh / 2 - 0.02, v_and, bh, color=c_android, edgecolor=edge_android, linewidth=0.8, zorder=3)
+
+            ax4.text(v_pure + 1.2, y + bh / 2 + 0.02, f"{v_pure:.1f} KiB", ha='left', va='center', fontsize=7.8, fontweight='bold', color='#9a3412', fontproperties=prop_bold)
+
+            note = " (IPC fd)" if b == 'xray' else ("*" if b == 'sing' else "")
+            ax4.text(v_and + 1.2, y - bh / 2 - 0.02, f"{v_and:.1f} KiB{note}", ha='left', va='center', fontsize=7.8, fontweight='bold', color='#7c2d12' if b != 'xray' else '#b45309', fontproperties=prop_bold)
+
+        ax4.legend(
+            handles=[plt.Rectangle((0, 0), 1, 1, facecolor=c_pure, edgecolor=edge_pure), plt.Rectangle((0, 0), 1, 1, facecolor=c_android, edgecolor=edge_android)],
+            labels=["Scheme 2: Pure Stack Microbench", "Scheme 1: Android Host App PSS"],
+            loc='lower right', fontsize=7.5, frameon=True, facecolor='#ffffff'
+        )
+        ax4.text(
+            0.02, -0.22,
+            "* SingTUN Scheme 1 is lower due to Go runtime heap steady-state reuse & periodic GC in Android host.",
+            transform=ax4.transAxes, fontsize=6.8, color='#64748b', fontproperties=prop_regular
+        )
 
     # -------------------------------------------------------------
     # CHART 5: 0 -> 1000 Idle Flows Step Growth Band (Middle Center)
