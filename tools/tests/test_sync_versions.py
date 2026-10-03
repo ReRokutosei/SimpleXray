@@ -36,6 +36,23 @@ class SyncVersionsValidationTest(unittest.TestCase):
         self.assertTrue(any("GO_VERSION" in error for error in errors))
         self.assertEqual([], sync_versions.validate_go_minimum({"GO_VERSION": "1.27.1"}))
 
+    @unittest.skipUnless(
+        os.path.isdir(os.path.join(sync_versions.REPO_ROOT, "third_party", "hev-socks5-tunnel")),
+        "hev submodule is not checked out",
+    )
+    def test_hev_version_falls_back_to_source_constants(self):
+        self.assertEqual("2.18.0", sync_versions.get_hev_config_version())
+
+        def fake_check_output(args, **kwargs):
+            if "describe" in args:
+                return "d9dca26\n"  # shallow CI checkout without tags
+            if "rev-parse" in args:
+                return "d9dca26\n"
+            raise AssertionError(f"unexpected subprocess call: {args}")
+
+        with patch.object(sync_versions.subprocess, "check_output", side_effect=fake_check_output):
+            self.assertEqual("2.18.0 (d9dca26)", sync_versions.get_hev_version())
+
     def test_check_mode_fails_on_invalid_properties(self):
         invalid = sync_versions.read_current_properties()
         invalid["XRAY_CORE_COMMIT"] = "invalid"

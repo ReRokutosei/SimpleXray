@@ -104,27 +104,74 @@ def read_current_properties() -> dict:
     return props
 
 
+HEV_CONFIG_CONST_PATH = os.path.join(
+    REPO_ROOT, "third_party", "hev-socks5-tunnel", "src", "hev-config-const.h"
+)
+
+
+def get_hev_config_version() -> str | None:
+    """Read the version constants used by the Hev source tree.
+
+    CI checks out submodules without tags, so ``git describe`` can return a bare
+    commit hash.  The checked-out source always contains the canonical
+    MAJOR/MINOR/MICRO values, which makes this deterministic for both local and
+    shallow CI checkouts.
+    """
+    if not os.path.exists(HEV_CONFIG_CONST_PATH):
+        return None
+
+    values = {}
+    with open(HEV_CONFIG_CONST_PATH, "r", encoding="utf-8") as f:
+        for line in f:
+            m = re.match(
+                r"^\s*#define\s+(MAJOR_VERSION|MINOR_VERSION|MICRO_VERSION)\s+\((\d+)\)",
+                line,
+            )
+            if m:
+                values[m.group(1)] = m.group(2)
+
+    if {"MAJOR_VERSION", "MINOR_VERSION", "MICRO_VERSION"} <= values.keys():
+        return "{}.{}.{}".format(
+            values["MAJOR_VERSION"], values["MINOR_VERSION"], values["MICRO_VERSION"]
+        )
+    return None
+
+
 def get_hev_version() -> str:
     hev_dir = os.path.join(REPO_ROOT, "third_party", "hev-socks5-tunnel")
     if not os.path.exists(hev_dir):
         return "unknown"
+
+    tag = None
     try:
         desc = subprocess.check_output(
             ["git", "-C", hev_dir, "describe", "--tags", "--always"],
             stderr=subprocess.DEVNULL,
             text=True
         ).strip()
+        # If tag has -g<commit>, extract base tag.
+        tag_match = re.match(r"^([0-9]+\.[0-9]+\.[0-9]+)", desc)
+        if tag_match:
+            tag = tag_match.group(1)
+    except Exception:
+        pass
+
+    if tag is None:
+        tag = get_hev_config_version()
+    if tag is None:
+        return "unknown"
+
+    try:
         commit = subprocess.check_output(
             ["git", "-C", hev_dir, "rev-parse", "--short", "HEAD"],
             stderr=subprocess.DEVNULL,
             text=True
         ).strip()
-        # If tag has -g<commit>, extract base tag
-        tag_match = re.match(r"^([0-9\.]+)", desc)
-        tag = tag_match.group(1) if tag_match else desc
-        return f"{tag} ({commit})"
+        if commit:
+            return f"{tag} ({commit})"
     except Exception:
-        return "2.18.0 (d9dca26)"
+        pass
+    return tag
 
 
 def get_sing_tun_version() -> str:
