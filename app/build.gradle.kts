@@ -169,6 +169,9 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
+            // Never ship the removed mipstack experiment even if a stale
+            // local artifact is left in the ignored jniLibs directory.
+            excludes += "**/libmipstun.so"
         }
     }
 
