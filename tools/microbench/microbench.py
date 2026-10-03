@@ -9,6 +9,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -23,7 +24,21 @@ PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "../.."))
 HEV_BIN = os.path.join(PROJECT_ROOT, "third_party/hev-socks5-tunnel/bin/hev-socks5-tunnel")
 SING_BIN = os.path.join(PROJECT_ROOT, "third_party/sing-tun/bin/sing-tun")
 SIMPLETUN_BIN = os.environ.get("SIMPLETUN_BIN", os.path.join(PROJECT_ROOT, "third_party/simpletun/zig-out/bin/simpletun"))
-XRAY_BIN = "/home/example/Downloads/Xray-linux-64/xray"
+def _resolve_xray_bin() -> Optional[str]:
+    """Resolve the host Xray binary without relying on a machine-specific path."""
+    env_bin = os.environ.get("XRAY_BIN", "").strip()
+    if env_bin:
+        return env_bin
+    path_bin = shutil.which("xray")
+    if path_bin:
+        return path_bin
+    local_bin = os.path.join(PROJECT_ROOT, "tools", "bin", "xray")
+    if os.path.isfile(local_bin) and os.access(local_bin, os.X_OK):
+        return local_bin
+    return None
+
+
+XRAY_BIN = _resolve_xray_bin()
 SOCKS5_SINK_BIN = os.path.join(SCRIPT_DIR, "socks5_sink")
 IDLE_BENCH_BIN = os.path.join(PROJECT_ROOT, "tools/idle_bench/idle_bench_linux_amd64")
 
@@ -140,6 +155,11 @@ misc:
             self.proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
         elif self.backend == "xray":
+            if not XRAY_BIN:
+                raise RuntimeError(
+                    "Xray binary not found. Set XRAY_BIN, add 'xray' to PATH, "
+                    f"or place it at {os.path.join(PROJECT_ROOT, 'tools', 'bin', 'xray')}."
+                )
             self.tmp_cfg = f"/tmp/xray_micro_{os.getpid()}.json"
             cfg = {
                 "log": {"loglevel": "none"},
@@ -200,10 +220,17 @@ def run_case_in_namespace(backend: str, network: str, steps: List[int], settle_s
     """
     Executes a single test case inside a dedicated unshare user/network namespace.
     """
+    if backend.lower() == "xray" and not XRAY_BIN:
+        raise RuntimeError(
+            "Xray binary not found. Set XRAY_BIN, add 'xray' to PATH, "
+            f"or place it at {os.path.join(PROJECT_ROOT, 'tools', 'bin', 'xray')}."
+        )
+
     # Orchestrator script run inside namespace
     steps_str = ",".join(str(s) for s in steps)
     socks_port = 10800
     target_ip = "10.0.0.2:10801"
+    xray_bin_json = json.dumps(XRAY_BIN)
 
     # We use a python child script inside unshare to coordinate
     inner_py = f"""
@@ -249,7 +276,7 @@ elif backend == "xray":
             "inbounds": [{{"tag": "tun-in", "protocol": "tun", "settings": {{"name": "tun0", "mtu": 1500}}}}],
             "outbounds": [{{"protocol": "socks", "tag": "socks-out", "settings": {{"servers": [{{"address": "127.0.0.1", "port": {socks_port}}}]}}}}]
         }}, f)
-    tun_proc = subprocess.Popen(["{XRAY_BIN}", "run", "-c", cfg_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    tun_proc = subprocess.Popen([{xray_bin_json}, "run", "-c", cfg_file], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 time.sleep(0.6)
 

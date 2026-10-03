@@ -38,6 +38,7 @@ This directory contains automated testing scripts and profiling tools for benchm
 4. **iPerf3**: Installed on both host and Android device (`/data/local/tmp/iperf3`).
 5. **iproute2**: Required for `weaknet` mode host-side `tc netem`.
 6. **Go**: Go 1.25+ (for building `idle_bench`, `microbench/socks5_sink`, and the QUIC smoke helper).
+7. **Host Xray binary** (for `microbench` `xray` case): set `XRAY_BIN`, add `xray` to `PATH`, or place it at `tools/bin/xray` (gitignored).
 
 ## Usage
 
