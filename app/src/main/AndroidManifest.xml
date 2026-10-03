@@ -22,7 +22,9 @@
         android:banner="@mipmap/ic_banner"
         android:icon="@mipmap/ic_launcher_lineal"
         android:label="@string/app_name"
-        android:theme="@style/Theme.Material3.DynamicColors.DayNight.NoActionBar">
+        android:theme="@style/Theme.Material3.DynamicColors.DayNight.NoActionBar"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules">
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
