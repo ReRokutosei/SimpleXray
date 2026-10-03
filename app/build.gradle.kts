@@ -31,11 +31,31 @@ protobuf {
 
 fun computeVersionCode(versionName: String): Int {
     val clean = versionName.trim().removePrefix("v").removePrefix("V")
-    val parts = clean.split("-")[0].split(".")
-    val major = parts.getOrNull(0)?.toIntOrNull() ?: 1
-    val minor = parts.getOrNull(1)?.toIntOrNull() ?: 0
-    val patch = parts.getOrNull(2)?.toIntOrNull() ?: 0
-    return major * 10000 + minor * 100 + patch
+    val withoutBuild = clean.substringBefore('+')
+    val core = withoutBuild.substringBefore('-').split('.')
+    val major = core.getOrNull(0)?.toIntOrNull() ?: 1
+    val minor = core.getOrNull(1)?.toIntOrNull() ?: 0
+    val patch = core.getOrNull(2)?.toIntOrNull() ?: 0
+    val prerelease = withoutBuild.substringAfter('-', "").ifBlank { null }
+
+    // Keep versionCode strictly increasing across prerelease channels and the
+    // final stable release. The previous core-only layout gave alpha.N,
+    // beta.N, rc.N, and stable the same versionCode.
+    val base = major.toLong() * 10_000_000L + minor.toLong() * 100_000L + patch.toLong() * 1_000L
+    val stage = if (prerelease == null) {
+        999L
+    } else {
+        val match = Regex("""(?i)(alpha|beta|rc)[.-]?(\d+)?""").find(prerelease)
+        val channel = when (match?.groupValues?.get(1)?.lowercase()) {
+            "alpha" -> 1L
+            "beta" -> 2L
+            "rc" -> 3L
+            else -> 0L
+        }
+        val sequence = match?.groupValues?.get(2)?.toLongOrNull() ?: 0L
+        channel * 100L + sequence.coerceIn(0L, 99L)
+    }
+    return (base + stage).coerceIn(1L, 2_100_000_000L).toInt()
 }
 
 val versionProps = Properties().apply {
