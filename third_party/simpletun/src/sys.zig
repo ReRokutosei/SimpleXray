@@ -42,7 +42,7 @@ pub fn writeSocket(fd: fd_t, buf: []const u8) !usize {
             .SUCCESS => return @intCast(rc),
             .INTR => continue,
             .AGAIN => return error.WouldBlock,
-            .PIPE => return error.BrokenPipe,
+            .PIPE, .BADF, .NODEV, .NOTCONN => return error.BrokenPipe,
             .CONNRESET => return error.ConnectionReset,
             else => return error.WriteFailed,
         }

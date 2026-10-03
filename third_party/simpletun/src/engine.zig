@@ -60,6 +60,7 @@ pub const Engine = struct {
     udp_pending: [UDP_PENDING_CAPACITY]UdpPending,
     udp_pending_next: usize,
     udp_retry_after_ms: i64,
+    tun_send_errors: u64,
     stop_fd: sys.fd_t,
     running: bool,
     tun_out_armed: bool,
@@ -106,6 +107,7 @@ pub const Engine = struct {
         }
         self.udp_pending_next = 0;
         self.udp_retry_after_ms = 0;
+        self.tun_send_errors = 0;
         self.stop_fd = stop_fd;
         self.running = true;
         self.tun_out_armed = false;
@@ -139,6 +141,14 @@ pub const Engine = struct {
         self.running = false;
         if (self.stop_fd >= 0) {
             sys.signalEventFd(self.stop_fd);
+        }
+    }
+
+    fn onTunWriteError(self: *Engine, err: anyerror) void {
+        self.tun_send_errors +|= 1;
+        switch (err) {
+            error.BrokenPipe, error.ConnectionReset => self.stop(),
+            else => {},
         }
     }
 
@@ -400,6 +410,8 @@ pub const Engine = struct {
                     self.markTunBlocked(flow);
                     return;
                 }
+                self.onTunWriteError(err);
+                if (!self.running) return;
                 self.sendRst(flow);
                 self.closeFlow(flow, TOMBSTONE_MS);
                 return;
@@ -710,7 +722,9 @@ pub const Engine = struct {
             self.udp_scratch_buf[0..send_len],
             self.cfg.socks_ip,
             session.relay_port,
-        ) catch {};
+        ) catch |err| {
+            if (err != error.WouldBlock) self.resetUdpSession(session);
+        };
     }
 
     fn handleUdpUpstream(
@@ -892,6 +906,7 @@ pub const Engine = struct {
         while (batch < 32) : (batch += 1) {
             const n = sys.read(self.cfg.tun_fd, &self.rx_packet_buf) catch |err| {
                 if (err == error.WouldBlock) return;
+                self.stop();
                 return;
             };
             if (n < 20) continue; // M-3: skip malformed/short packet, do not abort the entire read batch
@@ -1355,7 +1370,7 @@ pub const Engine = struct {
             self.tx_packet_buf[20..total_len],
         );
 
-        _ = sys.writeTun(self.cfg.tun_fd, self.tx_packet_buf[0..total_len]) catch {};
+        _ = sys.writeTun(self.cfg.tun_fd, self.tx_packet_buf[0..total_len]) catch |err| self.onTunWriteError(err);
     }
 
     // Direct 0-copy fast path: tx_packet_buf[40 .. 40 + payload_len] already holds data from sys.recvPeek().
@@ -1432,7 +1447,7 @@ pub const Engine = struct {
             self.tx_packet_buf[20..total_len],
         );
 
-        _ = sys.writeTun(self.cfg.tun_fd, self.tx_packet_buf[0..total_len]) catch {};
+        _ = sys.writeTun(self.cfg.tun_fd, self.tx_packet_buf[0..total_len]) catch |err| self.onTunWriteError(err);
     }
 };
 
@@ -1807,4 +1822,39 @@ test "flow eviction sends RST for the oldest active flow" {
     try std.testing.expectEqualSlices(u8, &[2]u8{ 3, 0xE8 }, packet[22..24]);
     try std.testing.expectEqual(@as(u32, 0x1111_0000), std.mem.readInt(u32, packet[24..28], .big));
     try std.testing.expectEqual(@as(u32, 0x2222_0000), std.mem.readInt(u32, packet[28..32], .big));
+}
+
+test "send error handling distinguishes transient and fatal errors" {
+    var tun_pair: [2]i32 = undefined;
+    const rc = linux.socketpair(linux.AF.UNIX, linux.SOCK.STREAM, 0, &tun_pair);
+    try std.testing.expectEqual(@as(usize, 0), rc);
+    defer {
+        _ = linux.close(tun_pair[0]);
+        _ = linux.close(tun_pair[1]);
+    }
+
+    var eng: Engine = undefined;
+    try eng.initInto(.{
+        .tun_fd = tun_pair[0],
+        .socks_ip = 0x7f000001,
+        .socks_port = 10808,
+        .mtu = 1500,
+    });
+    defer eng.deinit();
+
+    try std.testing.expect(eng.running);
+    eng.onTunWriteError(error.WouldBlock);
+    try std.testing.expectEqual(@as(u64, 1), eng.tun_send_errors);
+    try std.testing.expect(eng.running);
+
+    eng.onTunWriteError(error.BrokenPipe);
+    try std.testing.expectEqual(@as(u64, 2), eng.tun_send_errors);
+    try std.testing.expect(!eng.running);
+
+    const session = eng.udp_table.claim(@bitCast([4]u8{ 10, 0, 0, 1 }), @bitCast([2]u8{ 0x9c, 0x40 }));
+    try std.testing.expect(session != null);
+    session.?.state = .established;
+    session.?.relay_fd = -1;
+    eng.sendUdpRelayDatagram(session.?, 0, 0, "ping");
+    try std.testing.expectEqual(flow_mod.UdpState.free, session.?.state);
 }
