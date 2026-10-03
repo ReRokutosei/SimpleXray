@@ -101,6 +101,7 @@ class TProxyService : VpnService() {
     private var activeBackend = NativeBackend.NONE
     private var goTunBinder: IGoTunBackend? = null
     private var goTunConnection: ServiceConnection? = null
+    private var goTunGeneration = 0
     private var wakeLock: android.os.PowerManager.WakeLock? = null
 
     @Volatile
@@ -126,6 +127,15 @@ class TProxyService : VpnService() {
 
     private var connectivityManager: ConnectivityManager? = null
     private var defaultNetworkCallback: ConnectivityManager.NetworkCallback? = null
+    private val underlyingNetworks = mutableSetOf<Network>()
+
+    private fun updateUnderlyingNetworks(mutate: (MutableSet<Network>) -> Unit) {
+        synchronized(underlyingNetworks) {
+            mutate(underlyingNetworks)
+            val networks = underlyingNetworks.toTypedArray()
+            setUnderlyingNetworks(if (networks.isEmpty()) null else networks)
+        }
+    }
 
     private fun registerNetworkCallback() {
         if (defaultNetworkCallback != null) return
@@ -135,24 +145,24 @@ class TProxyService : VpnService() {
         val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 Log.d(TAG, "Underlying network available: $network")
-                setUnderlyingNetworks(arrayOf(network))
+                updateUnderlyingNetworks { it.add(network) }
             }
 
             override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
                 Log.d(TAG, "Underlying network capabilities changed: $network")
-                setUnderlyingNetworks(arrayOf(network))
+                updateUnderlyingNetworks { it.add(network) }
             }
 
             override fun onLost(network: Network) {
                 Log.d(TAG, "Underlying network lost: $network")
-                setUnderlyingNetworks(null)
+                updateUnderlyingNetworks { it.remove(network) }
             }
         }
         defaultNetworkCallback = callback
         runCatching {
             cm.registerDefaultNetworkCallback(callback)
             cm.activeNetwork?.let { activeNet ->
-                setUnderlyingNetworks(arrayOf(activeNet))
+                updateUnderlyingNetworks { it.add(activeNet) }
             }
         }.onFailure {
             Log.w(TAG, "Failed to register default network callback", it)
@@ -163,6 +173,9 @@ class TProxyService : VpnService() {
         val cm = connectivityManager
         val callback = defaultNetworkCallback
         defaultNetworkCallback = null
+        synchronized(underlyingNetworks) {
+            underlyingNetworks.clear()
+        }
         if (cm != null && callback != null) {
             runCatching {
                 cm.unregisterNetworkCallback(callback)
@@ -738,14 +751,31 @@ class TProxyService : VpnService() {
         username: String,
         password: String
     ): Boolean {
+        val generation = ++goTunGeneration
         val connection = object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName, service: IBinder) {
+                if (generation != goTunGeneration) {
+                    Log.w(TAG, "Ignoring stale ${serviceClass.simpleName} connection")
+                    runCatching { unbindService(this) }
+                    return
+                }
                 val binder = IGoTunBackend.Stub.asInterface(service)
                 goTunBinder = binder
+                val fd = tunFd?.fileDescriptor
+                if (fd == null) {
+                    Log.e(TAG, "tunFd is null for ${serviceClass.simpleName}")
+                    Handler(mainLooper).post {
+                        if (generation == goTunGeneration) stopXray()
+                    }
+                    return
+                }
                 val pfd = runCatching {
-                    ParcelFileDescriptor.dup(tunFd?.fileDescriptor ?: return)
+                    ParcelFileDescriptor.dup(fd)
                 }.getOrElse {
                     Log.e(TAG, "Failed to duplicate VPN fd for ${serviceClass.simpleName}", it)
+                    Handler(mainLooper).post {
+                        if (generation == goTunGeneration) stopXray()
+                    }
                     return
                 }
                 val ok = runCatching {
@@ -756,21 +786,27 @@ class TProxyService : VpnService() {
                 runCatching { pfd.close() }
                 if (!ok) {
                     Log.e(TAG, "${serviceClass.simpleName} backend rejected start")
-                    Handler(mainLooper).post { stopXray() }
+                    Handler(mainLooper).post {
+                        if (generation == goTunGeneration) stopXray()
+                    }
                 }
             }
 
             override fun onServiceDisconnected(name: ComponentName) {
+                if (generation != goTunGeneration) return
                 goTunBinder = null
                 Log.w(TAG, "${serviceClass.simpleName} process disconnected")
-                Handler(mainLooper).post { if (tunFd != null) stopXray() }
+                Handler(mainLooper).post {
+                    if (generation == goTunGeneration && tunFd != null) stopXray()
+                }
             }
         }
+        goTunConnection?.let { runCatching { unbindService(it) } }
         goTunConnection = connection
         return runCatching {
             bindService(Intent(this, serviceClass), connection, Context.BIND_AUTO_CREATE)
         }.onFailure {
-            goTunConnection = null
+            if (goTunConnection === connection) goTunConnection = null
             Log.e(TAG, "Failed to bind ${serviceClass.simpleName}", it)
         }.getOrDefault(false)
     }
