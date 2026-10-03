@@ -146,7 +146,9 @@ jobs:
       - name: Set up signing keystore
         run: |
           [ -n "${{ secrets.SIGNING_KEY }}" ] || { echo "SIGNING_KEY secret is not set" >&2; exit 1; }
+          umask 077
           echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.jks
+          test "$(stat -c '%a' release.jks)" = "600" || { echo "release.jks permissions are not 600" >&2; exit 1; }
 
       - name: Build release APK
         run: bash ./gradlew assembleRelease -x lint -PappVerName="${{ env.RELEASE_VERSION }}"
