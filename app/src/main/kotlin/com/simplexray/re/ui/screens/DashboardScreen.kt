@@ -21,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -51,8 +52,6 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
-private val LatencyGood = Color(0xFF4CAF50)
-private val LatencyFair = Color(0xFFFF9800)
 private const val LatencyStaleSeconds = 60L
 
 @Composable
@@ -243,14 +242,16 @@ private fun OutboundNodeCard(
 ) {
     val nowSeconds = System.currentTimeMillis() / 1000
     val stale = latency != null && nowSeconds - latency.lastTryTime > LatencyStaleSeconds
+    val goodColor = MiuixTheme.colorScheme.primary
+    val fairColor = lerp(goodColor, MiuixTheme.colorScheme.error, 0.5f)
 
     val (text, color) = when {
         !serviceEnabled || latency == null || stale || !latency.alive ->
             "-ms" to MiuixTheme.colorScheme.onSurfaceVariantSummary
         latency.delayMs <= 100 ->
-            "${latency.delayMs}ms" to LatencyGood
+            "${latency.delayMs}ms" to goodColor
         latency.delayMs <= 300 ->
-            "${latency.delayMs}ms" to LatencyFair
+            "${latency.delayMs}ms" to fairColor
         else ->
             "${latency.delayMs}ms" to MiuixTheme.colorScheme.error
     }
