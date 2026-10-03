@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
     <files-path
-        name="my_internal_files"
-        path="." />
+        name="app_log"
+        path="app_log.txt" />
 </paths>
