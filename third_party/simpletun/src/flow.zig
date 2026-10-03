@@ -274,51 +274,52 @@ pub const FlowTable = struct {
     }
 };
 
+pub const UdpState = enum(u8) {
+    free = 0,
+    waiting,
+    associating,
+    established,
+};
+
 pub const UdpSession = struct {
     last_active_ms: i64,
     src_ip: u32,
-    dst_ip: u32,
     src_port: u16,
-    dst_port: u16,
-    active: bool,
-    _pad: [3]u8 = [_]u8{0} ** 3,
+    ctrl_fd: i32,
+    relay_fd: i32,
+    relay_port: u16,
+    state: UdpState,
+    pending_slot: i16 = -1,
+    deadline_ms: i64,
+    hs: socks5.Handshake = .{},
 
-    pub fn matches(self: *const UdpSession, s_ip: u32, d_ip: u32, s_port: u16, d_port: u16) bool {
-        return self.active and
-            self.src_ip == s_ip and
-            self.dst_ip == d_ip and
-            self.src_port == s_port and
-            self.dst_port == d_port;
+    pub fn matchesClient(self: *const UdpSession, src_ip: u32, src_port: u16) bool {
+        return self.state != .free and self.src_ip == src_ip and self.src_port == src_port;
     }
-};
 
-pub const DnsQuery = struct {
-    expires_at_ms: i64,
-    src_ip: u32,
-    dst_ip: u32,
-    src_port: u16,
-    dst_port: u16,
-    dns_tx_id: u16,
-    active: bool,
-    _pad: u8 = 0,
+    pub fn reset(self: *UdpSession) void {
+        self.last_active_ms = 0;
+        self.src_ip = 0;
+        self.src_port = 0;
+        self.ctrl_fd = -1;
+        self.relay_fd = -1;
+        self.relay_port = 0;
+        self.state = .free;
+        self.pending_slot = -1;
+        self.deadline_ms = 0;
+        self.hs.reset();
+    }
 };
 
 pub const UdpTable = struct {
     pub const CAPACITY: usize = 256;
-    pub const DNS_QUERY_CAPACITY: usize = 64;
 
     sessions: [CAPACITY]UdpSession,
-    dns_queries: [DNS_QUERY_CAPACITY]DnsQuery,
-    dns_query_head: usize,
 
     pub fn initInto(self: *UdpTable) void {
-        for (&self.sessions) |*s| {
-            s.active = false;
+        for (&self.sessions) |*session| {
+            session.reset();
         }
-        for (&self.dns_queries) |*q| {
-            q.active = false;
-        }
-        self.dns_query_head = 0;
     }
 
     pub fn init() UdpTable {
@@ -327,106 +328,48 @@ pub const UdpTable = struct {
         return table;
     }
 
-    pub fn recordDnsQuery(self: *UdpTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16, dns_tx_id: u16, ttl_ms: i64) void {
-        const now = sys.monotonicMs();
-        const slot = &self.dns_queries[self.dns_query_head];
-        slot.src_ip = src_ip;
-        slot.dst_ip = dst_ip;
-        slot.src_port = src_port;
-        slot.dst_port = dst_port;
-        slot.dns_tx_id = dns_tx_id;
-        slot.expires_at_ms = now + ttl_ms;
-        slot.active = true;
-        self.dns_query_head = (self.dns_query_head + 1) % DNS_QUERY_CAPACITY;
+    pub fn indexOf(self: *const UdpTable, session: *const UdpSession) usize {
+        const base = @intFromPtr(&self.sessions[0]);
+        const ptr = @intFromPtr(session);
+        return (ptr - base) / @sizeOf(UdpSession);
     }
 
-    pub fn findDnsQuery(self: *UdpTable, dst_ip: u32, dst_port: u16, dns_tx_id: u16) ?DnsQuery {
-        const now = sys.monotonicMs();
-        var i: usize = 0;
-        while (i < DNS_QUERY_CAPACITY) : (i += 1) {
-            const idx = (self.dns_query_head + DNS_QUERY_CAPACITY - 1 - i) % DNS_QUERY_CAPACITY;
-            const q = &self.dns_queries[idx];
-            if (!q.active or now >= q.expires_at_ms) continue;
-            if (q.dst_ip == dst_ip and q.dst_port == dst_port and q.dns_tx_id == dns_tx_id) {
-                q.active = false; // Consumed
-                return q.*;
+    pub fn findByClient(self: *UdpTable, src_ip: u32, src_port: u16) ?*UdpSession {
+        for (&self.sessions) |*session| {
+            if (session.matchesClient(src_ip, src_port)) return session;
+        }
+        return null;
+    }
+
+    pub fn claim(self: *UdpTable, src_ip: u32, src_port: u16) ?*UdpSession {
+        for (&self.sessions) |*session| {
+            if (session.state == .free) {
+                session.reset();
+                session.src_ip = src_ip;
+                session.src_port = src_port;
+                session.state = .waiting;
+                return session;
             }
         }
         return null;
     }
 
-    pub fn sweep(self: *UdpTable, now: i64, session_idle_ms: i64) void {
-        for (&self.sessions) |*s| {
-            if (s.active and now - s.last_active_ms >= session_idle_ms) {
-                s.active = false;
+    pub fn oldest(self: *UdpTable) ?*UdpSession {
+        var victim: ?*UdpSession = null;
+        var oldest_time: i64 = std.math.maxInt(i64);
+        for (&self.sessions) |*session| {
+            if (session.state != .free and session.last_active_ms < oldest_time) {
+                oldest_time = session.last_active_ms;
+                victim = session;
             }
         }
-        for (&self.dns_queries) |*q| {
-            if (q.active and now >= q.expires_at_ms) {
-                q.active = false;
-            }
-        }
-    }
-
-    pub fn touchOrAllocate(self: *UdpTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) ?*UdpSession {
-        const now = sys.monotonicMs();
-        for (&self.sessions) |*s| {
-            if (s.matches(src_ip, dst_ip, src_port, dst_port)) {
-                s.last_active_ms = now;
-                return s;
-            }
-        }
-
-        // Find free slot
-        for (&self.sessions) |*s| {
-            if (!s.active) {
-                s.src_ip = src_ip;
-                s.dst_ip = dst_ip;
-                s.src_port = src_port;
-                s.dst_port = dst_port;
-                s.last_active_ms = now;
-                s.active = true;
-                return s;
-            }
-        }
-
-        // Evict oldest session (LRU-like eviction if table full)
-        var oldest_idx: usize = 0;
-        var oldest_time: i64 = self.sessions[0].last_active_ms;
-        for (self.sessions[1..], 1..) |*s, idx| {
-            if (s.last_active_ms < oldest_time) {
-                oldest_time = s.last_active_ms;
-                oldest_idx = idx;
-            }
-        }
-
-        const s = &self.sessions[oldest_idx];
-        s.src_ip = src_ip;
-        s.dst_ip = dst_ip;
-        s.src_port = src_port;
-        s.dst_port = dst_port;
-        s.last_active_ms = now;
-        s.active = true;
-        return s;
-    }
-
-    pub fn findByTarget(self: *UdpTable, dst_ip: u32, dst_port: u16) ?*UdpSession {
-        var latest: ?*UdpSession = null;
-        for (&self.sessions) |*s| {
-            if (s.active and s.dst_ip == dst_ip and s.dst_port == dst_port) {
-                if (latest == null or s.last_active_ms > latest.?.last_active_ms) {
-                    latest = s;
-                }
-            }
-        }
-        return latest;
+        return victim;
     }
 };
 
 comptime {
     std.debug.assert(@sizeOf(Flow) == 80);
-    std.debug.assert(@sizeOf(UdpSession) == 24);
-    std.debug.assert(@sizeOf(DnsQuery) == 24);
+    std.debug.assert(@sizeOf(UdpSession) == 64);
 }
 
 test "FlowTable allocation and tombstone eviction" {
@@ -444,24 +387,27 @@ test "FlowTable allocation and tombstone eviction" {
     try std.testing.expect(flow2 != null);
 }
 
-test "UdpTable sweep expires sessions and dns queries" {
+test "UdpTable keys sessions by client source tuple" {
     var table: UdpTable = undefined;
     table.initInto();
 
-    const session = table.touchOrAllocate(1, 2, 3, 4);
-    try std.testing.expect(session != null);
-    try std.testing.expect(table.findByTarget(2, 4) != null);
+    const session_a = table.claim(0x0a000001, 40000);
+    const session_b = table.claim(0x0a000001, 40001);
+    try std.testing.expect(session_a != null);
+    try std.testing.expect(session_b != null);
+    try std.testing.expectEqual(session_a, table.findByClient(0x0a000001, 40000));
+    try std.testing.expectEqual(session_b, table.findByClient(0x0a000001, 40001));
+    try std.testing.expect(table.findByClient(0x0a000001, 40002) == null);
 
-    const now = sys.monotonicMs();
-    session.?.last_active_ms = now - 60_000;
-    _ = table.recordDnsQuery(1, 2, 3, 4, 0x1234, -1);
-    table.sweep(now, 30_000);
+    session_a.?.state = .established;
+    session_b.?.state = .established;
+    session_a.?.last_active_ms = 100;
+    session_b.?.last_active_ms = 200;
+    try std.testing.expectEqual(session_a, table.oldest());
 
-    try std.testing.expect(!session.?.active);
-    try std.testing.expect(table.findDnsQuery(2, 4, 0x1234) == null);
-
-    _ = table.recordDnsQuery(1, 2, 3, 4, 0x5678, 30_000);
-    try std.testing.expect(table.findDnsQuery(2, 4, 0x5678) != null);
+    table.sessions[table.indexOf(session_a.?)].reset();
+    try std.testing.expect(table.findByClient(0x0a000001, 40000) == null);
+    try std.testing.expectEqual(session_b, table.findByClient(0x0a000001, 40001));
 }
 
 test "FlowTable adaptive high watermark tombstone eviction" {

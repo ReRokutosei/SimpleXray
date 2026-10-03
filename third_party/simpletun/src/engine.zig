@@ -7,7 +7,9 @@ const sys = @import("sys.zig");
 
 const EPOLLRDHUP: u32 = 0x2000;
 const O_NONBLOCK: usize = 0x800;
-const FLOW_INDEX_OFFSET: u32 = 0x1000;
+const FLOW_INDEX_OFFSET: u32 = 0x10_000;
+const UDP_CTRL_INDEX_OFFSET: u32 = 0x20_000;
+const UDP_RELAY_INDEX_OFFSET: u32 = 0x30_000;
 
 const CONNECT_TIMEOUT_MS: i64 = 10_000;
 const IDLE_TIMEOUT_MS: i64 = 30 * 60 * 1000;
@@ -15,9 +17,12 @@ const TOMBSTONE_MS: i64 = 3_000;
 const FIN_WAIT_TIMEOUT_MS: i64 = 30_000;
 const SWEEP_INTERVAL_MS: i64 = 500;
 const UDP_SESSION_IDLE_MS: i64 = 30_000;
-const DNS_QUERY_TTL_MS: i64 = 10_000;
 const UDP_ASSOC_TIMEOUT_MS: i64 = 5_000;
-const UDP_PREWARM_MS: i64 = 10_000;
+const UDP_RETRY_BACKOFF_MS: i64 = 2_000;
+const UDP_RELAY_BATCH: usize = 16;
+const UDP_PENDING_CAPACITY: usize = 32;
+const UDP_PENDING_PAYLOAD_MAX: usize = 1500;
+const UDP_PENDING_NONE: u16 = std.math.maxInt(u16);
 
 const HIGH_WATERMARK: usize = 820; // ~80% of CAPACITY (1024)
 const CRITICAL_WATERMARK: usize = 940; // ~92% of CAPACITY (1024)
@@ -32,6 +37,14 @@ fn logCore(prio: c_int, comptime fmt: []const u8, args: anytype) void {
     _ = args;
 }
 
+const UdpPending = struct {
+    session_idx: u16 = UDP_PENDING_NONE,
+    dst_ip: u32 = 0,
+    dst_port: u16 = 0,
+    payload_len: u16 = 0,
+    payload: [UDP_PENDING_PAYLOAD_MAX]u8 = undefined,
+};
+
 pub const EngineConfig = struct {
     tun_fd: sys.fd_t,
     socks_ip: u32 = 0x7f000001, // 127.0.0.1
@@ -44,14 +57,9 @@ pub const Engine = struct {
     epoll_fd: sys.fd_t,
     table: flow_mod.FlowTable,
     udp_table: flow_mod.UdpTable,
-    udp_ctrl_fd: sys.fd_t,
-    udp_relay_fd: sys.fd_t,
-    udp_relay_port: u16,
-    last_udp_associate_fail_ms: i64,
-    udp_hs: socks5.Handshake,
-    udp_assoc_pending: bool,
-    udp_assoc_deadline_ms: i64,
-    udp_retry_until_ms: i64,
+    udp_pending: [UDP_PENDING_CAPACITY]UdpPending,
+    udp_pending_next: usize,
+    udp_retry_after_ms: i64,
     stop_fd: sys.fd_t,
     running: bool,
     tun_out_armed: bool,
@@ -79,16 +87,6 @@ pub const Engine = struct {
         const ctl_rc = linux.epoll_ctl(epoll_fd, linux.EPOLL.CTL_ADD, cfg.tun_fd, &event);
         if (linux.errno(ctl_rc) != .SUCCESS) return error.EpollCtlFailed;
 
-        // Create local UDP socket for relay exchange
-        const udp_relay_fd = try sys.createUdpSocket();
-        errdefer sys.close(udp_relay_fd);
-
-        var udp_ev = linux.epoll_event{
-            .events = linux.EPOLL.IN,
-            .data = .{ .fd = udp_relay_fd },
-        };
-        _ = linux.epoll_ctl(epoll_fd, linux.EPOLL.CTL_ADD, udp_relay_fd, &udp_ev);
-
         // Create stop eventfd
         const stop_fd = try sys.createEventFd();
         errdefer sys.close(stop_fd);
@@ -103,19 +101,15 @@ pub const Engine = struct {
         self.epoll_fd = epoll_fd;
         self.table.initInto();
         self.udp_table.initInto();
-        self.udp_ctrl_fd = -1;
-        self.udp_relay_fd = udp_relay_fd;
-        self.udp_relay_port = 0;
-        self.last_udp_associate_fail_ms = 0;
-        self.udp_hs.reset();
-        self.udp_assoc_pending = false;
-        self.udp_assoc_deadline_ms = 0;
-        self.udp_retry_until_ms = sys.monotonicMs() + UDP_PREWARM_MS;
+        for (&self.udp_pending) |*pending| {
+            pending.session_idx = UDP_PENDING_NONE;
+        }
+        self.udp_pending_next = 0;
+        self.udp_retry_after_ms = 0;
         self.stop_fd = stop_fd;
         self.running = true;
         self.tun_out_armed = false;
         self.last_sweep_ms = 0;
-        self.beginUdpAssociate();
     }
 
     pub fn init(cfg: EngineConfig) !Engine {
@@ -127,13 +121,16 @@ pub const Engine = struct {
     pub fn deinit(self: *Engine) void {
         sys.close(self.epoll_fd);
         if (self.stop_fd >= 0) sys.close(self.stop_fd);
-        if (self.udp_ctrl_fd >= 0) sys.close(self.udp_ctrl_fd);
-        if (self.udp_relay_fd >= 0) sys.close(self.udp_relay_fd);
         for (&self.table.flows) |*flow| {
             if (flow.socks_fd >= 0) {
                 sys.close(flow.socks_fd);
                 flow.socks_fd = -1;
             }
+        }
+        for (&self.udp_table.sessions) |*session| {
+            if (session.ctrl_fd >= 0) sys.close(session.ctrl_fd);
+            if (session.relay_fd >= 0) sys.close(session.relay_fd);
+            session.reset();
         }
     }
 
@@ -311,14 +308,7 @@ pub const Engine = struct {
             }
         }
 
-        if (self.udp_assoc_pending and now >= self.udp_assoc_deadline_ms) {
-            self.abortUdpAssociate(now);
-        }
-        if (self.udp_relay_port == 0 and !self.udp_assoc_pending and now <= self.udp_retry_until_ms) {
-            self.beginUdpAssociate();
-        }
-
-        self.udp_table.sweep(now, UDP_SESSION_IDLE_MS);
+        self.sweepUdpSessions(now);
     }
 
     fn updateSendWindow(self: *Engine, flow: *flow_mod.Flow, ack: u32, window: u16) void {
@@ -450,6 +440,26 @@ pub const Engine = struct {
             const count: usize = ep_rc;
             for (events[0..count]) |ev| {
                 const raw_data = ev.data.u32;
+                if (raw_data >= UDP_RELAY_INDEX_OFFSET) {
+                    const session_idx = raw_data - UDP_RELAY_INDEX_OFFSET;
+                    if (session_idx < flow_mod.UdpTable.CAPACITY) {
+                        const session = &self.udp_table.sessions[session_idx];
+                        if (session.state == .established and session.relay_fd >= 0) {
+                            self.handleUdpSessionRelay(session, ev.events);
+                        }
+                    }
+                    continue;
+                }
+                if (raw_data >= UDP_CTRL_INDEX_OFFSET) {
+                    const session_idx = raw_data - UDP_CTRL_INDEX_OFFSET;
+                    if (session_idx < flow_mod.UdpTable.CAPACITY) {
+                        const session = &self.udp_table.sessions[session_idx];
+                        if (session.ctrl_fd >= 0 and (session.state == .associating or session.state == .established)) {
+                            self.handleUdpSessionCtrlEvent(session, ev.events);
+                        }
+                    }
+                    continue;
+                }
                 if (raw_data >= FLOW_INDEX_OFFSET) {
                     // O(1) SOCKS Flow Event dispatch
                     const flow_idx = raw_data - FLOW_INDEX_OFFSET;
@@ -470,10 +480,6 @@ pub const Engine = struct {
                 } else if (fd == self.cfg.tun_fd) {
                     if ((ev.events & linux.EPOLL.OUT) != 0) self.flushTunBlocked();
                     if ((ev.events & linux.EPOLL.IN) != 0) self.handleTunRead();
-                } else if (fd == self.udp_relay_fd) {
-                    self.handleUdpRelayRead();
-                } else if (fd == self.udp_ctrl_fd) {
-                    self.handleUdpCtrlEvent(ev.events);
                 }
             }
 
@@ -482,163 +488,402 @@ pub const Engine = struct {
         logCore(4, "Engine.run while loop terminated, self.running={}", .{self.running});
     }
 
-    fn armUdpCtrlEvents(self: *Engine, events: u32) void {
-        if (self.udp_ctrl_fd < 0) return;
+    fn closeUdpSessionFds(self: *Engine, session: *flow_mod.UdpSession) void {
+        if (session.ctrl_fd >= 0) {
+            _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_DEL, session.ctrl_fd, null);
+            sys.close(session.ctrl_fd);
+            session.ctrl_fd = -1;
+        }
+        if (session.relay_fd >= 0) {
+            _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_DEL, session.relay_fd, null);
+            sys.close(session.relay_fd);
+            session.relay_fd = -1;
+        }
+    }
+
+    fn resetUdpSession(self: *Engine, session: *flow_mod.UdpSession) void {
+        self.clearUdpPending(session);
+        self.closeUdpSessionFds(session);
+        session.reset();
+    }
+
+    fn failUdpSession(self: *Engine, session: *flow_mod.UdpSession, now: i64) void {
+        self.closeUdpSessionFds(session);
+        session.state = .waiting;
+        session.relay_port = 0;
+        session.deadline_ms = now + UDP_RETRY_BACKOFF_MS;
+        session.hs.reset();
+        self.udp_retry_after_ms = now + UDP_RETRY_BACKOFF_MS;
+    }
+
+    fn armUdpSessionEvents(
+        self: *Engine,
+        session: *flow_mod.UdpSession,
+        fd: sys.fd_t,
+        events: u32,
+        offset: u32,
+    ) void {
+        const session_idx: u32 = @intCast(self.udp_table.indexOf(session));
         var ev = linux.epoll_event{
             .events = events,
-            .data = .{ .fd = self.udp_ctrl_fd },
+            .data = .{ .u32 = session_idx + offset },
         };
-        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, self.udp_ctrl_fd, &ev);
+        _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_MOD, fd, &ev);
     }
 
-    fn abortUdpAssociate(self: *Engine, now: i64) void {
-        if (self.udp_ctrl_fd >= 0) {
-            _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_DEL, self.udp_ctrl_fd, null);
-            sys.close(self.udp_ctrl_fd);
-            self.udp_ctrl_fd = -1;
-        }
-        self.udp_assoc_pending = false;
-        self.udp_relay_port = 0;
-        self.last_udp_associate_fail_ms = now;
-    }
+    fn beginUdpAssociate(self: *Engine, session: *flow_mod.UdpSession) void {
+        if (session.state == .associating or session.state == .established) return;
 
-    fn beginUdpAssociate(self: *Engine) void {
-        if (self.udp_ctrl_fd >= 0 or self.udp_assoc_pending) return;
         const now = sys.monotonicMs();
-        if (now - self.last_udp_associate_fail_ms < 2000) return;
+        if (now < self.udp_retry_after_ms) {
+            session.state = .waiting;
+            session.deadline_ms = self.udp_retry_after_ms;
+            return;
+        }
 
         const sock = sys.createTcpSocket() catch {
-            self.last_udp_associate_fail_ms = now;
+            self.failUdpSession(session, now);
             return;
         };
-        self.udp_ctrl_fd = sock;
-        self.udp_assoc_pending = true;
-        self.udp_assoc_deadline_ms = now + UDP_ASSOC_TIMEOUT_MS;
-        self.udp_hs.beginGreeting();
+        session.ctrl_fd = sock;
+        session.state = .associating;
+        session.deadline_ms = now + UDP_ASSOC_TIMEOUT_MS;
+        session.relay_port = 0;
+        session.hs.beginGreeting();
 
         sys.connect(sock, self.cfg.socks_ip, self.cfg.socks_port) catch |err| {
             if (err != error.ConnectionPending) {
-                self.abortUdpAssociate(now);
+                self.failUdpSession(session, now);
                 return;
             }
         };
 
+        const session_idx: u32 = @intCast(self.udp_table.indexOf(session));
         var ev = linux.epoll_event{
             .events = linux.EPOLL.OUT | linux.EPOLL.IN | linux.EPOLL.ERR,
-            .data = .{ .fd = sock },
+            .data = .{ .u32 = session_idx + UDP_CTRL_INDEX_OFFSET },
         };
         const ctl_rc = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_ADD, sock, &ev);
         if (linux.errno(ctl_rc) != .SUCCESS) {
-            self.abortUdpAssociate(now);
+            self.failUdpSession(session, now);
         }
     }
 
-    fn udpAssociateSucceeded(self: *Engine, relay_port: u16) void {
-        self.udp_assoc_pending = false;
-        self.udp_relay_port = relay_port;
-        self.last_udp_associate_fail_ms = 0;
-        self.armUdpCtrlEvents(linux.EPOLL.IN | linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP);
-    }
+    fn udpAssociateSucceeded(self: *Engine, session: *flow_mod.UdpSession, relay_port: u16) void {
+        const now = sys.monotonicMs();
+        const relay_fd = sys.createUdpSocket() catch {
+            self.failUdpSession(session, now);
+            return;
+        };
 
-    fn ensureUdpAssociate(self: *Engine) void {
-        if (self.udp_relay_port != 0 or self.udp_assoc_pending) return;
-        self.udp_retry_until_ms = sys.monotonicMs() + UDP_PREWARM_MS;
-        // A successful SOCKS5 TCP handshake proves the local inbound is ready.
-        // Force an immediate UDP ASSOCIATE attempt instead of waiting for backoff.
-        self.last_udp_associate_fail_ms = 0;
-        self.beginUdpAssociate();
-    }
+        session.hs.reset();
+        session.relay_fd = relay_fd;
+        session.relay_port = relay_port;
+        session.state = .established;
+        session.deadline_ms = 0;
 
-    fn handleUdpAssociateEvent(self: *Engine, events: u32) void {
-        const fd = self.udp_ctrl_fd;
-        if ((events & (linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP)) != 0) {
-            self.abortUdpAssociate(sys.monotonicMs());
+        const session_idx: u32 = @intCast(self.udp_table.indexOf(session));
+        var ev = linux.epoll_event{
+            .events = linux.EPOLL.IN | linux.EPOLL.ERR,
+            .data = .{ .u32 = session_idx + UDP_RELAY_INDEX_OFFSET },
+        };
+        const ctl_rc = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_ADD, relay_fd, &ev);
+        if (linux.errno(ctl_rc) != .SUCCESS) {
+            self.failUdpSession(session, now);
             return;
         }
 
-        if (self.udp_hs.phase == .greeting_tx or self.udp_hs.phase == .request_tx) {
+        self.armUdpSessionEvents(
+            session,
+            session.ctrl_fd,
+            linux.EPOLL.IN | linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP,
+            UDP_CTRL_INDEX_OFFSET,
+        );
+        self.flushUdpPending(session);
+    }
+
+    fn getOrCreateUdpSession(self: *Engine, src_ip: u32, src_port: u16, now: i64) ?*flow_mod.UdpSession {
+        if (self.udp_table.findByClient(src_ip, src_port)) |session| {
+            session.last_active_ms = now;
+            return session;
+        }
+
+        var session = self.udp_table.claim(src_ip, src_port);
+        if (session == null) {
+            const victim = self.udp_table.oldest() orelse return null;
+            self.resetUdpSession(victim);
+            session = self.udp_table.claim(src_ip, src_port);
+        }
+        if (session) |claimed| {
+            claimed.last_active_ms = now;
+        }
+        return session;
+    }
+
+    fn queueUdpPending(
+        self: *Engine,
+        session: *flow_mod.UdpSession,
+        dst_ip: u32,
+        dst_port: u16,
+        payload: []const u8,
+    ) void {
+        if (session.pending_slot >= 0) return;
+        if (payload.len == 0 or payload.len > UDP_PENDING_PAYLOAD_MAX) return;
+
+        const start = self.udp_pending_next;
+        var slot: ?usize = null;
+        var i: usize = 0;
+        while (i < UDP_PENDING_CAPACITY) : (i += 1) {
+            const idx = (start + i) % UDP_PENDING_CAPACITY;
+            if (self.udp_pending[idx].session_idx == UDP_PENDING_NONE) {
+                slot = idx;
+                break;
+            }
+        }
+        const pending_index = slot orelse return;
+
+        const session_idx: u16 = @intCast(self.udp_table.indexOf(session));
+        const pending = &self.udp_pending[pending_index];
+        pending.session_idx = session_idx;
+        pending.dst_ip = dst_ip;
+        pending.dst_port = dst_port;
+        pending.payload_len = @intCast(payload.len);
+        @memcpy(pending.payload[0..payload.len], payload);
+        session.pending_slot = @intCast(pending_index);
+        self.udp_pending_next = (pending_index + 1) % UDP_PENDING_CAPACITY;
+    }
+
+    fn clearUdpPending(self: *Engine, session: *flow_mod.UdpSession) void {
+        if (session.pending_slot < 0) return;
+        const slot: usize = @intCast(session.pending_slot);
+        session.pending_slot = -1;
+        if (slot >= UDP_PENDING_CAPACITY) return;
+
+        const session_idx: u16 = @intCast(self.udp_table.indexOf(session));
+        const pending = &self.udp_pending[slot];
+        if (pending.session_idx == session_idx) {
+            pending.session_idx = UDP_PENDING_NONE;
+            pending.payload_len = 0;
+        }
+    }
+
+    fn flushUdpPending(self: *Engine, session: *flow_mod.UdpSession) void {
+        if (session.pending_slot < 0) return;
+        const slot: usize = @intCast(session.pending_slot);
+        session.pending_slot = -1;
+        if (slot >= UDP_PENDING_CAPACITY) return;
+
+        const session_idx: u16 = @intCast(self.udp_table.indexOf(session));
+        const pending = &self.udp_pending[slot];
+        if (pending.session_idx != session_idx) {
+            pending.session_idx = UDP_PENDING_NONE;
+            pending.payload_len = 0;
+            return;
+        }
+
+        const payload_len = pending.payload_len;
+        const dst_ip = pending.dst_ip;
+        const dst_port = pending.dst_port;
+        pending.session_idx = UDP_PENDING_NONE;
+        pending.payload_len = 0;
+
+        if (payload_len == 0) return;
+        self.sendUdpRelayDatagram(session, dst_ip, dst_port, pending.payload[0..payload_len]);
+    }
+
+    fn sendUdpRelayDatagram(
+        self: *Engine,
+        session: *flow_mod.UdpSession,
+        dst_ip: u32,
+        dst_port: u16,
+        payload: []const u8,
+    ) void {
+        var socks5_udp_hdr: [10]u8 = undefined;
+        _ = socks5.formatUdpHeader(&socks5_udp_hdr, dst_ip, dst_port);
+        const send_len = 10 + payload.len;
+        if (send_len > self.udp_scratch_buf.len) return;
+
+        @memcpy(self.udp_scratch_buf[0..10], &socks5_udp_hdr);
+        @memcpy(self.udp_scratch_buf[10..send_len], payload);
+        _ = sys.sendto(
+            session.relay_fd,
+            self.udp_scratch_buf[0..send_len],
+            self.cfg.socks_ip,
+            session.relay_port,
+        ) catch {};
+    }
+
+    fn handleUdpUpstream(
+        self: *Engine,
+        src_ip: u32,
+        dst_ip: u32,
+        src_port: u16,
+        dst_port: u16,
+        payload: []const u8,
+    ) void {
+        const now = sys.monotonicMs();
+        const session = self.getOrCreateUdpSession(src_ip, src_port, now) orelse return;
+        session.last_active_ms = now;
+
+        if (session.state != .established) {
+            self.queueUdpPending(session, dst_ip, dst_port, payload);
+            switch (session.state) {
+                .free => self.beginUdpAssociate(session),
+                .waiting => {
+                    if (now >= session.deadline_ms) self.beginUdpAssociate(session);
+                },
+                .associating => {},
+                .established => {},
+            }
+            return;
+        }
+
+        self.sendUdpRelayDatagram(session, dst_ip, dst_port, payload);
+    }
+
+    fn handleUdpSessionCtrlEvent(self: *Engine, session: *flow_mod.UdpSession, events: u32) void {
+        const fd = session.ctrl_fd;
+        if (fd < 0) return;
+
+        if (session.state == .established) {
+            var should_close = false;
+            if ((events & (linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP)) != 0) {
+                should_close = true;
+            } else if ((events & linux.EPOLL.IN) != 0) {
+                var dummy: [16]u8 = undefined;
+                const rn = sys.read(fd, &dummy) catch |err| blk: {
+                    if (err == error.WouldBlock) return;
+                    should_close = true;
+                    break :blk 0;
+                };
+                if (rn == 0) should_close = true;
+            }
+            if (should_close) self.resetUdpSession(session);
+            return;
+        }
+
+        if (session.state != .associating) return;
+        if ((events & (linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP)) != 0) {
+            self.failUdpSession(session, sys.monotonicMs());
+            return;
+        }
+
+        if (session.hs.phase == .greeting_tx or session.hs.phase == .request_tx) {
             if ((events & linux.EPOLL.OUT) == 0) return;
-            self.driveHandshakeTx(fd, &self.udp_hs) catch |err| {
+            self.driveHandshakeTx(fd, &session.hs) catch |err| {
                 if (err == error.WouldBlock) return;
-                self.abortUdpAssociate(sys.monotonicMs());
+                self.failUdpSession(session, sys.monotonicMs());
                 return;
             };
-            if (self.udp_hs.phase == .greeting_tx) {
-                self.udp_hs.beginAuth();
-                self.armUdpCtrlEvents(linux.EPOLL.IN | linux.EPOLL.ERR);
+            if (session.hs.phase == .greeting_tx) {
+                session.hs.beginAuth();
+                self.armUdpSessionEvents(session, fd, linux.EPOLL.IN | linux.EPOLL.ERR, UDP_CTRL_INDEX_OFFSET);
             } else {
-                self.udp_hs.beginReply();
-                self.armUdpCtrlEvents(linux.EPOLL.IN | linux.EPOLL.ERR);
+                session.hs.beginReply();
+                self.armUdpSessionEvents(session, fd, linux.EPOLL.IN | linux.EPOLL.ERR, UDP_CTRL_INDEX_OFFSET);
             }
             return;
         }
 
         if ((events & linux.EPOLL.IN) == 0) return;
 
-        if (self.udp_hs.phase == .auth_rx) {
-            self.driveHandshakeRx(fd, &self.udp_hs) catch |err| {
+        if (session.hs.phase == .auth_rx) {
+            self.driveHandshakeRx(fd, &session.hs) catch |err| {
                 if (err == error.WouldBlock) return;
-                self.abortUdpAssociate(sys.monotonicMs());
+                self.failUdpSession(session, sys.monotonicMs());
                 return;
             };
-            const resp = self.udp_hs.incoming();
+            const resp = session.hs.incoming();
             if (resp.len != 2 or resp[0] != 0x05 or resp[1] != 0x00) {
-                self.abortUdpAssociate(sys.monotonicMs());
+                self.failUdpSession(session, sys.monotonicMs());
                 return;
             }
-            self.udp_hs.beginUdpAssociateRequest();
-            self.armUdpCtrlEvents(linux.EPOLL.OUT | linux.EPOLL.IN | linux.EPOLL.ERR);
-            self.driveHandshakeTx(fd, &self.udp_hs) catch |err| {
+            session.hs.beginUdpAssociateRequest();
+            self.armUdpSessionEvents(
+                session,
+                fd,
+                linux.EPOLL.OUT | linux.EPOLL.IN | linux.EPOLL.ERR,
+                UDP_CTRL_INDEX_OFFSET,
+            );
+            self.driveHandshakeTx(fd, &session.hs) catch |err| {
                 if (err == error.WouldBlock) return;
-                self.abortUdpAssociate(sys.monotonicMs());
+                self.failUdpSession(session, sys.monotonicMs());
                 return;
             };
-            self.udp_hs.beginReply();
-            self.armUdpCtrlEvents(linux.EPOLL.IN | linux.EPOLL.ERR);
-        } else if (self.udp_hs.phase == .reply_rx) {
-            self.driveHandshakeRx(fd, &self.udp_hs) catch |err| {
+            session.hs.beginReply();
+            self.armUdpSessionEvents(session, fd, linux.EPOLL.IN | linux.EPOLL.ERR, UDP_CTRL_INDEX_OFFSET);
+        } else if (session.hs.phase == .reply_rx) {
+            self.driveHandshakeRx(fd, &session.hs) catch |err| {
                 if (err == error.WouldBlock) return;
-                self.abortUdpAssociate(sys.monotonicMs());
+                self.failUdpSession(session, sys.monotonicMs());
                 return;
             };
-            const resp = self.udp_hs.incoming();
+            const resp = session.hs.incoming();
             if (resp.len != 10 or resp[0] != 0x05 or resp[1] != 0x00 or resp[3] != 0x01) {
-                self.abortUdpAssociate(sys.monotonicMs());
+                self.failUdpSession(session, sys.monotonicMs());
                 return;
             }
             const relay_port = (@as(u16, resp[8]) << 8) | @as(u16, resp[9]);
-            self.udpAssociateSucceeded(relay_port);
+            if (relay_port == 0) {
+                self.failUdpSession(session, sys.monotonicMs());
+                return;
+            }
+            self.udpAssociateSucceeded(session, relay_port);
         } else {
-            self.abortUdpAssociate(sys.monotonicMs());
+            self.failUdpSession(session, sys.monotonicMs());
         }
     }
 
-    fn handleUdpCtrlEvent(self: *Engine, events: u32) void {
-        if (self.udp_ctrl_fd < 0) return;
-        if (self.udp_assoc_pending) {
-            self.handleUdpAssociateEvent(events);
+    fn handleUdpSessionRelay(self: *Engine, session: *flow_mod.UdpSession, events: u32) void {
+        if (session.state != .established or session.relay_fd < 0) return;
+
+        if ((events & (linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP)) != 0) {
+            self.resetUdpSession(session);
             return;
         }
+        if ((events & linux.EPOLL.IN) == 0) return;
 
-        var should_close = false;
-        if ((events & (linux.EPOLL.ERR | linux.EPOLL.HUP | EPOLLRDHUP)) != 0) {
-            should_close = true;
-        } else if ((events & linux.EPOLL.IN) != 0) {
-            var dummy: [16]u8 = undefined;
-            const rn = sys.read(self.udp_ctrl_fd, &dummy) catch |err| blk: {
+        var batch: usize = 0;
+        while (batch < UDP_RELAY_BATCH) : (batch += 1) {
+            const n = sys.recvfrom(session.relay_fd, &self.udp_scratch_buf) catch |err| {
                 if (err == error.WouldBlock) return;
-                should_close = true;
-                break :blk 0;
+                self.resetUdpSession(session);
+                return;
             };
-            if (rn == 0) should_close = true;
+            self.handleUdpRelayDatagram(session, n);
         }
-        if (should_close) {
-            logCore(4, "Engine.run udp_ctrl_fd disconnected (events=0x{x})", .{events});
-            _ = linux.epoll_ctl(self.epoll_fd, linux.EPOLL.CTL_DEL, self.udp_ctrl_fd, null);
-            sys.close(self.udp_ctrl_fd);
-            self.udp_ctrl_fd = -1;
-            self.udp_relay_port = 0;
-            self.udp_assoc_pending = false;
+    }
+
+    fn handleUdpRelayDatagram(self: *Engine, session: *flow_mod.UdpSession, n: usize) void {
+        if (n < 10) return;
+        if (self.udp_scratch_buf[0] != 0 or self.udp_scratch_buf[1] != 0) return;
+        if (self.udp_scratch_buf[2] != 0) return; // FRAG is always standalone
+        if (self.udp_scratch_buf[3] != 0x01) return; // IPv4 only
+
+        const remote_ip = @as(u32, @bitCast(self.udp_scratch_buf[4..8][0..4].*));
+        const remote_port = @as(u16, @bitCast(self.udp_scratch_buf[8..10][0..2].*));
+        const payload = self.udp_scratch_buf[10..n];
+
+        session.last_active_ms = sys.monotonicMs();
+        self.sendUdpPacket(remote_ip, session.src_ip, remote_port, session.src_port, payload);
+    }
+
+    fn sweepUdpSessions(self: *Engine, now: i64) void {
+        for (&self.udp_table.sessions) |*session| {
+            switch (session.state) {
+                .free => {},
+                .waiting => {
+                    if (now >= session.deadline_ms) self.beginUdpAssociate(session);
+                },
+                .associating => {
+                    if (now >= session.deadline_ms) self.failUdpSession(session, now);
+                },
+                .established => {
+                    if (now - session.last_active_ms >= UDP_SESSION_IDLE_MS) {
+                        self.resetUdpSession(session);
+                    }
+                },
+            }
         }
     }
 
@@ -676,44 +921,13 @@ pub const Engine = struct {
             if (@as(usize, udp_len) != ip_payload_len) return;
 
             const payload = self.rx_packet_buf[total_hlen..valid_len];
-            const src_ip = ip_hdr.src_ip;
-            const dst_ip = ip_hdr.dst_ip;
-            const src_port = udp_hdr.src_port;
-            const dst_port = udp_hdr.dst_port;
-
-            // If DNS query (target port 53), extract DNS transaction ID (first 2 bytes of payload)
-            const dst_port_native = std.mem.bigToNative(u16, dst_port);
-            if (dst_port_native == 53 and payload.len >= 2) {
-                const dns_tx_id = std.mem.readInt(u16, payload[0..2], .big);
-                self.udp_table.recordDnsQuery(src_ip, dst_ip, src_port, dst_port, dns_tx_id, DNS_QUERY_TTL_MS);
-            }
-
-            // Touch or allocate UDP session in table
-            _ = self.udp_table.touchOrAllocate(src_ip, dst_ip, src_port, dst_port);
-
-            if (self.udp_relay_port == 0) {
-                const now = sys.monotonicMs();
-                self.udp_retry_until_ms = @max(self.udp_retry_until_ms, now + UDP_PREWARM_MS);
-                self.beginUdpAssociate();
-                return; // Drop until the asynchronous relay handshake completes.
-            }
-
-            // Pack SOCKS5 UDP header (10 bytes) + payload
-            var socks5_udp_hdr: [10]u8 = undefined;
-            _ = socks5.formatUdpHeader(&socks5_udp_hdr, dst_ip, dst_port);
-
-            const send_len = 10 + payload.len;
-            if (send_len <= self.udp_scratch_buf.len) {
-                @memcpy(self.udp_scratch_buf[0..10], &socks5_udp_hdr);
-                @memcpy(self.udp_scratch_buf[10..send_len], payload);
-
-                _ = sys.sendto(
-                    self.udp_relay_fd,
-                    self.udp_scratch_buf[0..send_len],
-                    self.cfg.socks_ip,
-                    self.udp_relay_port,
-                ) catch {};
-            }
+            self.handleUdpUpstream(
+                ip_hdr.src_ip,
+                ip_hdr.dst_ip,
+                udp_hdr.src_port,
+                udp_hdr.dst_port,
+                payload,
+            );
             return;
         }
 
@@ -1042,7 +1256,6 @@ pub const Engine = struct {
                         flow.state = .established;
                         self.refreshSocksEvents(flow);
                         self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_SYN | protocol.TcpHeader.FLAG_ACK, flow.s_isn, flow.rcv_nxt, 65535, null);
-                        self.ensureUdpAssociate();
                     }
                 } else {
                     self.failSocksFlow(flow);
@@ -1171,39 +1384,6 @@ pub const Engine = struct {
         );
 
         _ = try sys.writeTun(self.cfg.tun_fd, self.tx_packet_buf[0..total_len]);
-    }
-
-    fn handleUdpRelayRead(self: *Engine) void {
-        const n = sys.recvfrom(self.udp_relay_fd, &self.udp_scratch_buf) catch return;
-        // SOCKS5 UDP response format:
-        // [0..2]: RSV(0x00, 0x00), [2]: FRAG(0x00), [3]: ATYP
-        // If ATYP=1 (IPv4): [4..8]: IP, [8..10]: Port, [10..n]: Payload
-        if (n < 10) return;
-        if (self.udp_scratch_buf[0] != 0 or self.udp_scratch_buf[1] != 0) return;
-        if (self.udp_scratch_buf[2] != 0) return; // Discard fragmented packets
-        if (self.udp_scratch_buf[3] != 0x01) return; // IPv4 only
-
-        // Read IP and Port as raw bytes — UdpTable stores ip_hdr.src_ip/dst_ip and udp_hdr.src_port/dst_port
-        // directly from the extern struct fields without any byte-swap, so they are in network byte order.
-        // Use @bitCast to read the same way (no endian conversion) so findDnsQuery/findByTarget match.
-        const remote_ip_raw = @as(u32, @bitCast(self.udp_scratch_buf[4..8][0..4].*));
-        const remote_port_raw = @as(u16, @bitCast(self.udp_scratch_buf[8..10][0..2].*));
-        const remote_port_native = std.mem.bigToNative(u16, remote_port_raw);
-        const payload = self.udp_scratch_buf[10..n];
-
-        // Find corresponding session to map back to original client
-        if (remote_port_native == 53 and payload.len >= 2) {
-            const dns_tx_id = std.mem.readInt(u16, payload[0..2], .big);
-            if (self.udp_table.findDnsQuery(remote_ip_raw, remote_port_raw, dns_tx_id)) |q| {
-                self.sendUdpPacket(q.dst_ip, q.src_ip, q.dst_port, q.src_port, payload);
-                return;
-            }
-        }
-
-        const session = self.udp_table.findByTarget(remote_ip_raw, remote_port_raw);
-        const s = session orelse return;
-
-        self.sendUdpPacket(s.dst_ip, s.src_ip, s.dst_port, s.src_port, payload);
     }
 
     fn sendUdpPacket(self: *Engine, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16, payload: []const u8) void {
@@ -1444,4 +1624,130 @@ test "adaptive high watermark sweeps long-idle established flows" {
 
     // Flow 0 should have been closed into tombstone because of critical watermark!
     try std.testing.expectEqual(flow_mod.State.tombstone, eng.table.flows[0].state);
+}
+
+test "UDP relay replies map to the originating client session" {
+    var tun_pair: [2]i32 = undefined;
+    const rc = linux.socketpair(linux.AF.UNIX, linux.SOCK.STREAM, 0, &tun_pair);
+    try std.testing.expectEqual(@as(usize, 0), rc);
+    defer {
+        _ = linux.close(tun_pair[0]);
+        _ = linux.close(tun_pair[1]);
+    }
+
+    var eng: Engine = undefined;
+    try eng.initInto(.{
+        .tun_fd = tun_pair[0],
+        .socks_ip = 0x7f000001,
+        .socks_port = 10808,
+        .mtu = 1500,
+    });
+    defer eng.deinit();
+
+    var session_a: flow_mod.UdpSession = undefined;
+    session_a.reset();
+    session_a.state = .established;
+    session_a.relay_fd = -1;
+    session_a.src_ip = @bitCast([4]u8{ 10, 0, 0, 1 });
+    session_a.src_port = @bitCast([2]u8{ 0x9c, 0x40 }); // 40000
+
+    var session_b: flow_mod.UdpSession = undefined;
+    session_b.reset();
+    session_b.state = .established;
+    session_b.relay_fd = -1;
+    session_b.src_ip = @bitCast([4]u8{ 10, 0, 0, 1 });
+    session_b.src_port = @bitCast([2]u8{ 0x9c, 0x41 }); // 40001
+
+    const remote_ip = [4]u8{ 203, 0, 113, 7 };
+    const remote_port = [2]u8{ 0, 53 };
+    const payload_a = "pong-a";
+    const payload_b = "pong-b";
+
+    var response: [64]u8 = undefined;
+    @memcpy(response[0..4], &[4]u8{ 0, 0, 0, 1 });
+    @memcpy(response[4..8], &remote_ip);
+    @memcpy(response[8..10], &remote_port);
+
+    @memcpy(response[10 .. 10 + payload_a.len], payload_a);
+    const len_a = 10 + payload_a.len;
+    @memcpy(eng.udp_scratch_buf[0..len_a], response[0..len_a]);
+    eng.handleUdpRelayDatagram(&session_a, len_a);
+
+    var packet_a: [128]u8 = undefined;
+    const packet_len_a = linux.read(tun_pair[1], &packet_a, packet_a.len);
+    try std.testing.expectEqual(@as(usize, 20 + 8 + payload_a.len), packet_len_a);
+    try std.testing.expectEqualSlices(u8, &remote_ip, packet_a[12..16]);
+    try std.testing.expectEqualSlices(u8, &[4]u8{ 10, 0, 0, 1 }, packet_a[16..20]);
+    try std.testing.expectEqualSlices(u8, &remote_port, packet_a[20..22]);
+    try std.testing.expectEqualSlices(u8, &[2]u8{ 0x9c, 0x40 }, packet_a[22..24]);
+    try std.testing.expectEqualSlices(u8, payload_a, packet_a[28 .. 28 + payload_a.len]);
+
+    @memcpy(response[10 .. 10 + payload_b.len], payload_b);
+    const len_b = 10 + payload_b.len;
+    @memcpy(eng.udp_scratch_buf[0..len_b], response[0..len_b]);
+    eng.handleUdpRelayDatagram(&session_b, len_b);
+
+    var packet_b: [128]u8 = undefined;
+    const packet_len_b = linux.read(tun_pair[1], &packet_b, packet_b.len);
+    try std.testing.expectEqual(@as(usize, 20 + 8 + payload_b.len), packet_len_b);
+    try std.testing.expectEqualSlices(u8, &remote_ip, packet_b[12..16]);
+    try std.testing.expectEqualSlices(u8, &[4]u8{ 10, 0, 0, 1 }, packet_b[16..20]);
+    try std.testing.expectEqualSlices(u8, &remote_port, packet_b[20..22]);
+    try std.testing.expectEqualSlices(u8, &[2]u8{ 0x9c, 0x41 }, packet_b[22..24]);
+    try std.testing.expectEqualSlices(u8, payload_b, packet_b[28 .. 28 + payload_b.len]);
+}
+
+test "UDP pending datagram survives association setup" {
+    var tun_pair: [2]i32 = undefined;
+    const rc = linux.socketpair(linux.AF.UNIX, linux.SOCK.STREAM, 0, &tun_pair);
+    try std.testing.expectEqual(@as(usize, 0), rc);
+    defer {
+        _ = linux.close(tun_pair[0]);
+        _ = linux.close(tun_pair[1]);
+    }
+
+    var eng: Engine = undefined;
+    try eng.initInto(.{
+        .tun_fd = tun_pair[0],
+        .socks_ip = 0x7f000001,
+        .socks_port = 10808,
+        .mtu = 1500,
+    });
+    defer eng.deinit();
+
+    const receiver_fd = try sys.createUdpSocket();
+    defer sys.close(receiver_fd);
+
+    var bind_addr = sys.SockAddrIn{
+        .sin_family = linux.AF.INET,
+        .sin_port = 0,
+        .sin_addr = std.mem.nativeToBig(u32, 0x7f000001),
+    };
+    const bind_rc = linux.bind(receiver_fd, @ptrCast(&bind_addr), @sizeOf(sys.SockAddrIn));
+    try std.testing.expectEqual(linux.E.SUCCESS, linux.errno(bind_rc));
+
+    var bound_addr: sys.SockAddrIn = undefined;
+    var bound_len: linux.socklen_t = @sizeOf(sys.SockAddrIn);
+    const name_rc = linux.getsockname(receiver_fd, @ptrCast(&bound_addr), &bound_len);
+    try std.testing.expectEqual(linux.E.SUCCESS, linux.errno(name_rc));
+    const relay_port = std.mem.bigToNative(u16, bound_addr.sin_port);
+
+    const session = eng.udp_table.claim(@bitCast([4]u8{ 10, 0, 0, 1 }), @bitCast([2]u8{ 0x9c, 0x40 }));
+    try std.testing.expect(session != null);
+    const dst_ip = @as(u32, @bitCast([4]u8{ 203, 0, 113, 7 }));
+    const dst_port = @as(u16, @bitCast([2]u8{ 0, 53 }));
+    eng.queueUdpPending(session.?, dst_ip, dst_port, "hello");
+    try std.testing.expect(session.?.pending_slot >= 0);
+
+    session.?.relay_fd = try sys.createUdpSocket();
+    session.?.relay_port = relay_port;
+    session.?.state = .established;
+    eng.flushUdpPending(session.?);
+    try std.testing.expect(session.?.pending_slot < 0);
+
+    var datagram: [64]u8 = undefined;
+    const n = try sys.recvfrom(receiver_fd, &datagram);
+    try std.testing.expectEqual(@as(usize, 15), n);
+    try std.testing.expectEqualSlices(u8, &[10]u8{ 0, 0, 0, 1, 203, 0, 113, 7, 0, 53 }, datagram[0..10]);
+    try std.testing.expectEqualSlices(u8, "hello", datagram[10..n]);
 }
