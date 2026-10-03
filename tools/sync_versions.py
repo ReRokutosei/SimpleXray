@@ -13,6 +13,84 @@ import sys
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VERSION_PROPS_PATH = os.path.join(REPO_ROOT, "version.properties")
 
+REQUIRED_KEYS = (
+    "XRAY_CORE_VERSION",
+    "XRAY_CORE_COMMIT",
+    "XRAY_CORE_ZIP_SHA256",
+    "GEOIP_SHA256",
+    "GEOSITE_SHA256",
+    "HEV_TUN_VERSION",
+    "SING_TUN_VERSION",
+    "GO_VERSION",
+    "NDK_VERSION",
+)
+
+PROPERTY_PATTERNS = {
+    "XRAY_CORE_VERSION": re.compile(r"^v\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$"),
+    "XRAY_CORE_COMMIT": re.compile(r"^[0-9a-f]{40}$"),
+    "XRAY_CORE_ZIP_SHA256": re.compile(r"^[0-9a-f]{64}$"),
+    "GEOIP_SHA256": re.compile(r"^[0-9a-f]{64}$"),
+    "GEOSITE_SHA256": re.compile(r"^[0-9a-f]{64}$"),
+    "HEV_TUN_VERSION": re.compile(r"^\d+\.\d+\.\d+(?: \([0-9a-f]{7,40}\))?$"),
+    "SING_TUN_VERSION": re.compile(r"^(?:v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?|[0-9a-f]{12})$"),
+    "GO_VERSION": re.compile(r"^\d+\.\d+\.\d+$"),
+    "NDK_VERSION": re.compile(r"^\d+\.\d+\.\d+$"),
+}
+
+
+def version_tuple(value: str) -> tuple:
+    return tuple(int(part) for part in value.split("."))
+
+
+def parse_go_directive(go_mod_path: str) -> str | None:
+    if not os.path.exists(go_mod_path):
+        return None
+    with open(go_mod_path, "r", encoding="utf-8") as f:
+        for line in f:
+            m = re.match(r"^go\s+(\d+\.\d+(?:\.\d+)?)\s*$", line.strip())
+            if m:
+                return m.group(1)
+    return None
+
+
+def validate_go_minimum(properties: dict) -> list:
+    """Ensure GO_VERSION is not older than the go directives in the repo."""
+    errors = []
+    pin = properties.get("GO_VERSION", "")
+    if not PROPERTY_PATTERNS["GO_VERSION"].match(pin):
+        return errors  # format error is reported separately
+
+    for rel_path in ("third_party/sing-tun/go.mod", "tools/quic/go.mod"):
+        go_mod = os.path.join(REPO_ROOT, rel_path)
+        directive = parse_go_directive(go_mod)
+        if directive is None:
+            continue
+        if version_tuple(pin) < version_tuple(directive):
+            errors.append(
+                f"  GO_VERSION {pin} is older than {rel_path} directive 'go {directive}'."
+            )
+    return errors
+
+
+def validate_properties(properties: dict) -> list:
+    errors = []
+
+    missing = [key for key in REQUIRED_KEYS if key not in properties or not properties[key]]
+    if missing:
+        errors.append(f"  Missing or empty keys: {', '.join(missing)}")
+
+    extra = sorted(set(properties.keys()) - set(REQUIRED_KEYS))
+    if extra:
+        errors.append(f"  Unknown keys: {', '.join(extra)}")
+
+    for key, pattern in PROPERTY_PATTERNS.items():
+        value = properties.get(key)
+        if value and not pattern.match(value):
+            errors.append(f"  Invalid {key} format: '{value}'")
+
+    errors.extend(validate_go_minimum(properties))
+    return errors
+
 
 def read_current_properties() -> dict:
     props = {}
@@ -71,7 +149,14 @@ def get_sing_tun_version() -> str:
 
 def sync_versions(check_only: bool = False) -> bool:
     current = read_current_properties()
-    
+
+    validation_errors = validate_properties(current)
+    if validation_errors:
+        print("version.properties is invalid:")
+        for error in validation_errors:
+            print(error)
+        return False
+
     expected = {
         "XRAY_CORE_VERSION": current.get("XRAY_CORE_VERSION", "v26.9.30"),
         "XRAY_CORE_COMMIT": current.get("XRAY_CORE_COMMIT", ""),
@@ -83,7 +168,7 @@ def sync_versions(check_only: bool = False) -> bool:
         "GO_VERSION": current.get("GO_VERSION", "1.27.1"),
         "NDK_VERSION": current.get("NDK_VERSION", "28.2.13676358"),
     }
-    
+
     is_synced = True
     diffs = []
     for k, v in expected.items():
