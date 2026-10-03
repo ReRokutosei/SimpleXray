@@ -202,6 +202,93 @@ SimpleXray 可以直接导入完整的 Xray-core 配置文件。配置启动前�
 
 ---
 
+
+## 已知问题
+
+### Telegram 客户端可能在网络切换后滞留于失效的本地 SOCKS5 连接
+
+当 Android 切换默认网络（例如在蜂窝数据已连接时关闭 Wi-Fi），客户端到 `127.0.0.1:<socksPort>` 的既有 TCP 连接可能仍然保持打开，而其对应的 Xray 上游连接已经失效。观察到的 Telegram 官方客户端会继续复用这条本地连接而不主动重连，因此会一直卡住，直到重启 Xray 内核或重新连接网络接口。
+
+具备自行心跳检测或重连能力的客户端以及通过 TUN 转发的应用可以自行恢复。这是客户端侧对失效连接的复用行为，不属于 SimpleXray 监听器或 Xray 内核的缺陷；SimpleXray 不会强制关闭仍然健康的本地回环 TCP 会话。
+
+临时处理方式：
+
+* 关闭再开启 VPN / Xray 内核；
+* 重新连接当前网络接口；
+* 改用会在网络切换后重建 SOCKS5 连接的客户端。
+
+SimpleXray 会注入更短的 outbound keepalive 和 TCP user-timeout，以便更快发现已被黑洞化的上游传输，但无法强制客户端放弃仍然打开的本地连接。
+
+---
+
+## 配置覆写与删除
+
+启动时，SimpleXray 会先对配置执行 sanitizer，再交给 Xray。通过应用导入或保存 JSON 配置时，也会应用同一套处理并重写存储的 JSON。YAML 配置会在运行时解析并转换为 JSON。如需完整保留原始字段，请自行保留外部备份。
+
+### 顶层字段
+
+| 字段 | 处理 |
+| --- | --- |
+| `geodata` | 整块删除；Geo 数据更新由应用管理。 |
+| `log` | 缺失时创建。 |
+| `api` | 运行时替换为本地 `StatsService` API 对象。 |
+| `stats` | 运行时替换为空对象。 |
+| `policy` | 运行时替换为启用出站上/下行统计的策略。 |
+| `inbounds` | 缺失时创建；具体规则见下文。 |
+
+### 日志块
+
+| 字段 | 处理 |
+| --- | --- |
+| `log.error` | 删除。 |
+| `log.access` | 应用关闭访问日志时改为 `"none"`；开启时删除该字段。 |
+| `log.dnsLog` | 覆盖为应用中的 DNS 日志偏好。 |
+| `log.loglevel` | 覆盖为应用日志级别；当选择 `Auto` 且缺失/为空时写为 `"warning"`。 |
+
+### Inbounds
+
+| 字段 | 处理 |
+| --- | --- |
+| 非 Xray 原生 TUN 模式下的 `tun` inbound | 删除。 |
+| Xray 原生 TUN 模式下的 `tun` inbound | 保留；`settings.name` 缺失时写为 `tun-inbound`；删除 `settings.autoSystemRoutingTable` 和 `settings.autoOutboundsInterface`；创建/更新 `sniffing`，并向 `destOverride` 追加 `fakedns`。 |
+| 主 SOCKS inbound（tag 为 `socks-in`，否则第一个 SOCKS inbound） | `port` 覆盖为应用 SOCKS 端口；`listen` 覆盖为应用 SOCKS 地址；配置了应用 SOCKS 用户名/密码时，替换 `settings.auth` 和 `settings.accounts`。 |
+| 其他 `listen` 为 `::` 或 `0.0.0.0` 的 inbound | `listen` 改为 `127.0.0.1`。 |
+| 缺少 SOCKS inbound | 注入默认 `socks-in`，使用应用 SOCKS 地址/端口并开启 UDP。 |
+| Xray 原生 TUN 模式缺少 `tun` inbound | 注入默认 `tun-inbound`，网络为 `tcp,udp`，并使用默认 sniffing。 |
+
+### 路由规则
+
+| 字段 | 处理 |
+| --- | --- |
+| `routing.domainMatcher` | `mph` 改为 `hybrid`。 |
+| 规则 `geosite` | 条目迁移到 `domain` 并加 `geosite:` 前缀；原 `geosite` 键删除。 |
+| 规则 `geoip` | 条目迁移到 `ip` 并加 `geoip:` 前缀；原 `geoip` 键删除。 |
+| 规则 `process` | 删除以 `.exe` 结尾的条目；若全部删除则移除 `process`。 |
+| 空/无效规则 | 不含有效匹配字段的规则会被删除。 |
+| 开启 LAN 绕过时的 `geoip:private` | 若不存在，则注入最高优先级的 `geoip:private` -> `direct` 规则。 |
+| 关闭 LAN 绕过时的 `geoip:private` | 从直连规则中删除 `geoip:private` 条目；`ip` 数组为空时移除该字段。 |
+
+### DNS 与 Outbounds
+
+| 字段 | 处理 |
+| --- | --- |
+| `dns.hosts` | 缺失时创建。 |
+| `https://...alidns.com` DoH 服务器 | 缺失时注入静态 hosts：`223.5.5.5`、`223.6.6.6`。 |
+| 以 `http://` 或 `https://` 开头的 outbound `tlsSettings.echConfigList` | 删除。 |
+| TCP 流式代理 outbound（`vless`、`vmess`、`trojan`、`shadowsocks`、`socks`、`http`） | 缺失时注入：`tcpKeepAliveIdle=15`、`tcpKeepAliveInterval=3`、`tcpUserTimeout=15000`，以及 `customSockopt` 的 `TCP_KEEPCNT=3`（已有用户值时不覆盖）。 |
+| `observatory.probeTimeout` | 缺失时写为 `"2s"`。 |
+
+### 运行时统计注入
+
+| 字段 | 处理 |
+| --- | --- |
+| `api` | 替换为 `tag=api`、应用 API 监听地址和 `services=["StatsService"]`。 |
+| `stats` | 替换为空对象。 |
+| `policy` | 替换为启用 `system.statsOutboundUplink` 与 `system.statsOutboundDownlink` 的策略。 |
+| HTTP inbound | 开启应用 HTTP 代理且不存在 HTTP inbound 时，在 `127.0.0.1:<httpPort>` 注入 `http-inbound`。 |
+
+未列出的字段保持不变。
+
 ## 构建要求
 
 构建本项目需要以下环境。
@@ -213,7 +300,7 @@ SimpleXray 可以直接导入完整的 Xray-core 配置文件。配置启动前�
 * Zig `0.16.0`（构建 SimpleTUN Android 原生库所需）。
 * CMake 3.22.1 或更高版本。
 * JDK 25（作为 Gradle Java toolchain；source/target 兼容级别仍为 Java 21）。
-* Go（用于交叉编译 Xray-core 内核，推荐版本请参考 `version.properties` 中的 `GO_VERSION`）。
+* Go（用于构建 in-tree `sing-tun` 桥接层，推荐版本请参考 `version.properties` 中的 `GO_VERSION`）。
 * 支持子模块操作的 Git。
 
 项目使用 Gradle Wrapper，因此构建时会根据仓库中的 Wrapper 配置使用指定的 Gradle 版本。

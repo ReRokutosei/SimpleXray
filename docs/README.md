@@ -172,6 +172,93 @@ The native build system has been migrated from the legacy Android NDK build syst
 
 ---
 
+
+## Known Issues
+
+### Official Telegram clients may remain stuck on a stale local SOCKS5 connection
+
+When Android changes its default network (for example, Wi-Fi is turned off while cellular is active), an existing TCP connection from a client to `127.0.0.1:<socksPort>` may remain open while the corresponding Xray upstream transport has already become stale. The official Telegram client has been observed to keep reusing that local connection without reconnecting, so it remains stuck until the Xray core is restarted or the network interface is reconnected.
+
+Clients that perform their own liveness detection or reconnect, and apps routed through the TUN interface recover normally. This is client-side stale connection reuse; it is not a SimpleXray listener or Xray-core defect. SimpleXray does not forcibly close otherwise healthy loopback TCP sessions.
+
+Workarounds:
+
+* Toggle the VPN/Xray core off and on.
+* Reconnect the network interface.
+* Use a client that recreates its SOCKS5 connection after network changes.
+
+SimpleXray injects shorter outbound keepalive and TCP user-timeout values to detect blackholed upstream transports faster, but it cannot force a client to abandon an open loopback socket.
+
+---
+
+## Configuration Overrides and Removals
+
+At launch, SimpleXray applies a sanitizer to the configuration before passing it to Xray. When a JSON configuration is imported or saved through the app, the same sanitizer is applied and the stored JSON is rewritten. YAML input is parsed and converted to JSON for the runtime configuration. Keep an external backup if every original field/value must be preserved.
+
+### Top-Level Fields
+
+| Field | Action |
+| --- | --- |
+| `geodata` | Removed entirely; Geo data updates are managed by the app. |
+| `log` | Created if missing. |
+| `api` | Replaced at runtime with the local `StatsService` API object. |
+| `stats` | Replaced at runtime with an empty object. |
+| `policy` | Replaced at runtime with a policy enabling outbound up/down statistics. |
+| `inbounds` | Created if missing; see inbound rules below. |
+
+### Log Block
+
+| Field | Action |
+| --- | --- |
+| `log.error` | Removed. |
+| `log.access` | Set to `"none"` when the app access log is disabled; removed when it is enabled. |
+| `log.dnsLog` | Overwritten with the app DNS log preference. |
+| `log.loglevel` | Overwritten with the app log level; when set to `Auto` and missing/empty, set to `"warning"`. |
+
+### Inbounds
+
+| Field | Action |
+| --- | --- |
+| `tun` inbound when native Xray TUN is not active | Removed. |
+| `tun` inbound when native Xray TUN is active | Kept; `settings.name` defaults to `tun-inbound`; `settings.autoSystemRoutingTable` and `settings.autoOutboundsInterface` are removed; `sniffing` is created/updated and `fakedns` is added to `destOverride`. |
+| Primary SOCKS inbound (tag `socks-in`, or first SOCKS inbound) | `port` is replaced with the app SOCKS port; `listen` with the app SOCKS address; `settings.auth` and `settings.accounts` are replaced when app SOCKS credentials are configured. |
+| Other inbounds with `listen` set to `::` or `0.0.0.0` | `listen` is replaced with `127.0.0.1`. |
+| Missing SOCKS inbound | A default `socks-in` inbound is injected using the app SOCKS address/port and UDP enabled. |
+| Missing `tun` inbound when native Xray TUN is active | A default `tun-inbound` is injected with `tcp,udp` and default sniffing. |
+
+### Routing Rules
+
+| Field | Action |
+| --- | --- |
+| `routing.domainMatcher` | `mph` is changed to `hybrid`. |
+| Rule `geosite` | Entries are moved into `domain` as `geosite:<entry>`; the original `geosite` key is removed. |
+| Rule `geoip` | Entries are moved into `ip` as `geoip:<entry>`; the original `geoip` key is removed. |
+| Rule `process` | Entries ending in `.exe` are removed; if nothing remains, `process` is removed. |
+| Empty/invalid rules | Rules without any effective matching field are removed. |
+| `geoip:private` with LAN bypass enabled | A top-priority `geoip:private` -> `direct` rule is injected if absent. |
+| `geoip:private` with LAN bypass disabled | `geoip:private` entries are removed from direct rules; an empty `ip` array is removed. |
+
+### DNS and Outbounds
+
+| Field | Action |
+| --- | --- |
+| `dns.hosts` | Created if missing. |
+| `https://...alidns.com` DoH servers | Static hosts `223.5.5.5` and `223.6.6.6` are injected if absent. |
+| Outbound `tlsSettings.echConfigList` starting with `http://` or `https://` | Removed. |
+| TCP-based proxy outbounds (`vless`, `vmess`, `trojan`, `shadowsocks`, `socks`, `http`) | Missing `streamSettings.sockopt` values are injected: `tcpKeepAliveIdle=15`, `tcpKeepAliveInterval=3`, `tcpUserTimeout=15000`, plus `customSockopt` `TCP_KEEPCNT=3` unless already present. Existing user values are not overwritten. |
+| `observatory.probeTimeout` | Set to `"2s"` if missing. |
+
+### Runtime Statistics Injection
+
+| Field | Action |
+| --- | --- |
+| `api` | Replaced with `tag=api`, the app API listen address, and `services=["StatsService"]`. |
+| `stats` | Replaced with an empty object. |
+| `policy` | Replaced with a policy whose `system` enables `statsOutboundUplink` and `statsOutboundDownlink`. |
+| HTTP inbound | When the app HTTP proxy is enabled and no HTTP inbound exists, `http-inbound` is injected on `127.0.0.1:<httpPort>`. |
+
+Fields not listed above are left unchanged.
+
 ## Requirements
 
 The following environment is required to build the project:
@@ -182,7 +269,7 @@ The following environment is required to build the project:
 * Zig `0.16.0` (required to build the SimpleTUN Android native library).
 * CMake 3.22.1 or higher.
 * JDK 25 (used as the Gradle Java toolchain; source/target compatibility remains Java 21).
-* Go (for cross-compiling Xray-core, see `version.properties` for the recommended `GO_VERSION`).
+* Go (for building the in-tree `sing-tun` bridge, see `version.properties` for the recommended `GO_VERSION`).
 * Git with submodule support.
 
 The project uses Gradle Wrapper, so the required Gradle version is obtained automatically from the repository's Gradle Wrapper configuration.
