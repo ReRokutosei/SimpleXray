@@ -42,13 +42,12 @@
 
 /*
  * Close every open fd > 2 except keep_fd.
- * Uses only async-signal-safe syscalls so it is safe to call after fork().
+ * Only async-signal-safe calls are used after fork(): max_fd is resolved by
+ * the parent via sysconf() before fork().
  */
-static void close_extra_fds(int keep_fd)
+static void close_extra_fds(int max_fd, int keep_fd)
 {
-    long max_fd = sysconf(_SC_OPEN_MAX);
-    if (max_fd <= 0 || max_fd > 65536) max_fd = 1024;
-    for (int fd = 3; fd < (int)max_fd; fd++) {
+    for (int fd = 3; fd < max_fd; fd++) {
         if (fd != keep_fd) close(fd);
     }
 }
@@ -62,6 +61,9 @@ Java_com_simplexray_re_service_TProxyService_nativeSpawnXray(
 {
     const char *xray_path = (*env)->GetStringUTFChars(env, xray_path_j, NULL);
     const char *asset_dir = (*env)->GetStringUTFChars(env, asset_dir_j,  NULL);
+
+    int max_fd = (int)sysconf(_SC_OPEN_MAX);
+    if (max_fd <= 0 || max_fd > 65536) max_fd = 1024;
 
     int stdin_pipe[2]  = {-1, -1};
     int stdout_pipe[2] = {-1, -1};
@@ -143,7 +145,7 @@ Java_com_simplexray_re_service_TProxyService_nativeSpawnXray(
             }
         }
 
-        close_extra_fds(CHILD_TUN_FD);
+        close_extra_fds(max_fd, CHILD_TUN_FD);
 
         execve(xray_path, argv, new_env);
         _exit(1);
