@@ -72,6 +72,19 @@ PRESETS = {
 }
 
 
+def resolve_backends(
+    selection: Optional[str],
+    fallback: List[str],
+    all_backends: List[str],
+) -> List[str]:
+    """Resolve a comma-separated --backends value, including the 'all' alias."""
+    if selection is None or not selection.strip():
+        return list(fallback)
+    if selection.strip().lower() == "all":
+        return list(all_backends)
+    return [item.strip() for item in selection.split(",") if item.strip()]
+
+
 def get_preset(name: Optional[str]) -> Optional[BenchmarkPreset]:
     if not name:
         return None

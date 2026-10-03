@@ -39,7 +39,7 @@ from common.logging import (
     run_cmd,
 )
 from common.theme import BACKEND_ORDER, TARGET_ORDER
-from presets import PRESETS, get_preset
+from presets import PRESETS, get_preset, resolve_backends
 from suites import (
     run_media_suite,
     run_loopback_suite,
@@ -172,7 +172,7 @@ def main():
     # 1. Resolve configuration through Preset with CLI overrides
     if preset:
         log_info(f"Loaded Benchmark Preset: [{preset.name.upper()}] - {preset.description}")
-        backends = args.backends.split(",") if args.backends else list(preset.backends)
+        backends = resolve_backends(args.backends, list(preset.backends), list(BACKEND_ORDER))
         networks = ["tcp", "udp"] if (args.network == "all" or (not args.network and "tcp" in preset.networks and "udp" in preset.networks)) else ([args.network] if args.network else list(preset.networks))
         duration = args.duration or preset.duration
         rounds = args.rounds or preset.rounds
@@ -197,7 +197,7 @@ def main():
             raw_modes = list(preset.modes)
     else:
         # Default manual behavior
-        backends = [b.strip() for b in args.backends.split(",") if b.strip()] if args.backends and args.backends != "all" else list(BACKEND_ORDER)
+        backends = resolve_backends(args.backends, list(BACKEND_ORDER), list(BACKEND_ORDER))
         networks = ["tcp", "udp"] if (args.network == "all" or not args.network) else [args.network]
         duration = args.duration or DEFAULT_DURATION
         rounds = args.rounds or 3
