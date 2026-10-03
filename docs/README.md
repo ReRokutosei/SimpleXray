@@ -58,12 +58,12 @@ This repository is a personal fork based on the upstream [SimpleXray](https://gi
 | **Configuration Import**        | JSON configurations, `vless://` links, and `simplexray://config/` links | Full JSON and YAML configurations imported through the Storage Access Framework (SAF) or clipboard; share links are not supported |
 | **Rule Files**                  | Embedded `geoip.dat` and `geosite.dat` files, with local replacement and URL updates for these two files | Retains the standard rule-file management and adds arbitrary custom `.dat` files, `ext:` file references, per-file update URLs, validation, and background updates |
 | **Configuration Sanitization**  | JSON formatting with removal of `log.access` and `log.error` | SnakeYAML-based parsing with a one-way Android compatibility pipeline that modifies inbounds, routing rules, DNS bootstrap hosts, logging, and selected outbound settings |
-| **Build System**                | Legacy `ndkBuild` (`Android.mk`) and standard Gradle configuration                | CMake (`CMakeLists.txt`); the native tunnel target includes Android 16 KB page-alignment linker options. Gradle Wrapper `9.7.0`, Android Gradle Plugin `9.3.1`, Version Catalogs, and Plugins DSL |
+| **Build System**                | Legacy `ndkBuild` (`Android.mk`) and standard Gradle configuration                | CMake (`CMakeLists.txt`); the native tunnel target includes Android 16 KB page-alignment linker options. Gradle Wrapper `9.8.0`, Android Gradle Plugin `9.4.1`, Version Catalogs, and Plugins DSL |
 | **UI & Layout**                 | Standard Material 3 UI                                                            | Xiaomi HyperOS / MIUI-inspired UI implemented with `compose-miuix-ui`, with adaptive layouts for phones and large screens, NavigationRail support, and Android 12+ dynamic colors |
 | **Persistence & Communication** | ContentProvider-backed `SharedPreferences` and `Gson`                             | Direct lightweight `SharedPreferences` with `kotlinx.serialization`; UI and background service communicate reactively via in-memory `StateFlow` and `SharedFlow` |
-| **Core Components**             | Xray-core `v26.3.27` and `hev-socks5-tunnel` `v2.14.3`                            | Xray-core `v26.9.30`, `sing-tun` (Go stack), and `hev-socks5-tunnel` `v2.18.0`, including updated `hev-socks5-core`, `hev-task-system`, and `lwip` components |
+| **Core Components**             | Xray-core `v26.3.27` and `hev-socks5-tunnel` `v2.14.3`                            | Xray-core `v26.9.30`, `sing-tun` (Go stack), `hev-socks5-tunnel` `v2.18.0`, and the in-tree SimpleTUN Zig engine, including updated `hev-socks5-core`, `hev-task-system`, and `lwip` components |
 | **ABI Packaging**               | `arm64-v8a` and `x86_64` split APKs, plus a universal APK                                | `arm64-v8a` APK only                                                                                                                                                |
-| **TUN Backend Setting**         | No Xray TUN backend setting                                      | `Xray TUN`, `SingTUN`, and `Hev Socks5 Tunnel` selector, defaulting to `Hev Socks5 Tunnel` |
+| **TUN Backend Setting**         | No Xray TUN backend setting                                      | `Xray TUN`, `SingTUN`, `SimpleTUN`, and `Hev Socks5 Tunnel` selector, defaulting to `Hev Socks5 Tunnel` |
 
 </details>
 
@@ -164,8 +164,8 @@ The native build system has been migrated from the legacy Android NDK build syst
 
 * **CMake**: Uses `CMakeLists.txt` instead of `Android.mk` / `ndkBuild`.
 * **Android 16 KB page alignment**: The native build configuration includes support for Android devices using 16 KB memory page sizes.
-* **Gradle Wrapper**: Updated to `v9.7.0`.
-* **Android Gradle Plugin**: Uses `v9.3.1`.
+* **Gradle Wrapper**: Updated to `v9.8.0`.
+* **Android Gradle Plugin**: Uses `v9.4.1`.
 * **Version Catalogs**: Project dependencies are managed through Gradle Version Catalogs.
 * **Plugins DSL**: Gradle plugins are configured through the Plugins DSL.
 * **Serialization**: `Gson` has been replaced with `kotlinx.serialization` for type-safe serialization and deserialization.
@@ -181,7 +181,7 @@ The following environment is required to build the project:
 * Android NDK (see `version.properties` for the recommended `NDK_VERSION`).
 * Zig `0.16.0` (required to build the SimpleTUN Android native library).
 * CMake 3.22.1 or higher.
-* JDK 21.
+* JDK 25 (used as the Gradle Java toolchain; source/target compatibility remains Java 21).
 * Go (for cross-compiling Xray-core, see `version.properties` for the recommended `GO_VERSION`).
 * Git with submodule support.
 

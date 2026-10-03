@@ -61,12 +61,12 @@ SimpleXray 主要负责在 Android 上运行和管理 Xray-core。应用接受�
 | **配置导入**     | 支持 JSON 配置、`vless://` 链接和 `simplexray://config/` 链接 | 仅支持通过 Android Storage Access Framework 或剪贴板导入完整 JSON、YAML 配置，不支持节点分享链接 |
 | **规则文件**     | 内置 `geoip.dat` 和 `geosite.dat`，并支持本地替换及这两个文件的 URL 更新 | 保留标准规则文件管理，并增加任意自定义 `.dat` 文件、`ext:` 文件引用、独立更新地址、文件校验和后台更新 |
 | **配置处理**     | 对 JSON 进行格式化，并删除 `log.access` 和 `log.error` | 使用 SnakeYAML 解析配置，并通过单向 Android 兼容处理流程调整入站、路由规则、DNS 引导主机、日志及部分出站配置 |
-| **构建系统**     | 使用 `ndkBuild` 和 `Android.mk`，配合标准 Gradle 配置 | 使用 CMake 和 `CMakeLists.txt`；原生隧道目标包含 Android 16 KB 内存页对齐链接选项，并使用 Gradle Wrapper `9.7.0`、Android Gradle Plugin `9.3.1`、Version Catalog 和 Plugins DSL |
+| **构建系统**     | 使用 `ndkBuild` 和 `Android.mk`，配合标准 Gradle 配置 | 使用 CMake 和 `CMakeLists.txt`；原生隧道目标包含 Android 16 KB 内存页对齐链接选项，并使用 Gradle Wrapper `9.8.0`、Android Gradle Plugin `9.4.1`、Version Catalog 和 Plugins DSL |
 | **界面与布局**    | 使用标准 Material 3 界面                                   | 使用 `compose-miuix-ui` 实现 Xiaomi HyperOS / MIUI 风格的界面，并针对手机和平板提供自适应布局                                                           |
 | **数据存储与通信架构** | 使用 ContentProvider 封装的 `SharedPreferences` 和 `Gson` | 直接使用轻量级原生 `SharedPreferences` 与 `kotlinx.serialization`；UI 与后台服务通过内存级 `StateFlow` / `SharedFlow` 实现零拷贝响应式通信 |
-| **核心组件**     | Xray-core `v26.3.27` 和 `hev-socks5-tunnel` `v2.14.3` | Xray-core `v26.9.30`、`sing-tun`（Go 栈）和 `hev-socks5-tunnel` `v2.18.0`，包含更新的 `hev-socks5-core`、`hev-task-system` 及 `lwip` 组件 |
+| **核心组件**     | Xray-core `v26.3.27` 和 `hev-socks5-tunnel` `v2.14.3` | Xray-core `v26.9.30`、`sing-tun`（Go 栈）、`hev-socks5-tunnel` `v2.18.0` 以及源码内的 SimpleTUN Zig 引擎，包含更新的 `hev-socks5-core`、`hev-task-system` 及 `lwip` 组件 |
 | **ABI 打包**     | 提供 `arm64-v8a` 和 `x86_64` 分包 APK，以及通用 APK | 仅提供 `arm64-v8a` APK |
-| **TUN 后端设置** | 不提供 Xray TUN 后端设置 | 可选 `Xray TUN`、`SingTUN` 和 `Hev Socks5 Tunnel`，默认值为 `Hev Socks5 Tunnel` |
+| **TUN 后端设置** | 不提供 Xray TUN 后端设置 | 可选 `Xray TUN`、`SingTUN`、`SimpleTUN` 和 `Hev Socks5 Tunnel`，默认值为 `Hev Socks5 Tunnel` |
 
 </details>
 
@@ -194,8 +194,8 @@ SimpleXray 可以直接导入完整的 Xray-core 配置文件。配置启动前�
 
 * 使用 `CMakeLists.txt` 替代 `Android.mk` 和 `ndkBuild`。
 * 原生构建配置支持 Android 16 KB 内存页。
-* Gradle Wrapper 更新至 `v9.7.0`。
-* Android Gradle Plugin 使用 `v9.3.1`。
+* Gradle Wrapper 更新至 `v9.8.0`。
+* Android Gradle Plugin 使用 `v9.4.1`。
 * 使用 Gradle Version Catalog 管理项目依赖。
 * 使用 Gradle Plugins DSL 管理 Gradle 插件。
 * 使用 `kotlinx.serialization` 替代 `Gson`，负责类型安全的序列化和反序列化。
@@ -210,8 +210,9 @@ SimpleXray 可以直接导入完整的 Xray-core 配置文件。配置启动前�
 * Android SDK，包括项目所需的 Build Tools 和 Android Platform SDK。
 * Target SDK 36。
 * Android NDK（推荐版本请参考 `version.properties` 中的 `NDK_VERSION`）。
+* Zig `0.16.0`（构建 SimpleTUN Android 原生库所需）。
 * CMake 3.22.1 或更高版本。
-* JDK 21。
+* JDK 25（作为 Gradle Java toolchain；source/target 兼容级别仍为 Java 21）。
 * Go（用于交叉编译 Xray-core 内核，推荐版本请参考 `version.properties` 中的 `GO_VERSION`）。
 * 支持子模块操作的 Git。
 
