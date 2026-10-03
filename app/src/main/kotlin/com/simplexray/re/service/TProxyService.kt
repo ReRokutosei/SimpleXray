@@ -113,6 +113,13 @@ class TProxyService : VpnService() {
     }
 
     private var periodicGeoUpdateJob: Job? = null
+    private var socksHealthJob: Job? = null
+
+    @Volatile
+    private var socksHealthFailures = 0
+
+    @Volatile
+    private var lastSocksRecoveryMs = 0L
 
     private fun startPeriodicGeoUpdateCheck() {
         periodicGeoUpdateJob?.cancel()
@@ -122,6 +129,80 @@ class TProxyService : VpnService() {
                 // Check periodically every hour while VPN is running
                 delay(1 * 60 * 60 * 1000L)
             }
+        }
+    }
+
+    /**
+     * Detects the case where Xray's SOCKS inbound disappears while the
+     * service still believes it is connected, then restarts the core once.
+     * The probe and recovery are logged so the event remains diagnosable.
+     */
+    private fun startSocksHealthCheck() {
+        if (socksHealthJob?.isActive == true) return
+        socksHealthFailures = 0
+        socksHealthJob = serviceScope.launch {
+            while (isActive) {
+                delay(SOCKS_HEALTH_INTERVAL_MS)
+                if (isStopping || startupFailed || !xrayStarted) {
+                    socksHealthFailures = 0
+                    continue
+                }
+
+                if (probeSocksListener()) {
+                    if (socksHealthFailures > 0) {
+                        Log.d(TAG, "SOCKS listener recovered after $socksHealthFailures failed probe(s).")
+                    }
+                    socksHealthFailures = 0
+                    continue
+                }
+
+                socksHealthFailures++
+                val pid = xrayPid
+                val processAlive = pid > 0 && runCatching {
+                    Os.kill(pid, 0)
+                    true
+                }.getOrDefault(false)
+                Log.w(
+                    TAG,
+                    "SOCKS listener probe failed ($socksHealthFailures/$SOCKS_HEALTH_FAILURE_THRESHOLD): " +
+                        "xrayPid=$pid processAlive=$processAlive xrayStarted=$xrayStarted"
+                )
+                if (socksHealthFailures >= SOCKS_HEALTH_FAILURE_THRESHOLD) {
+                    socksHealthFailures = 0
+                    recoverSocksListener(processAlive)
+                }
+            }
+        }
+    }
+
+    private fun stopSocksHealthCheck() {
+        socksHealthJob?.cancel()
+        socksHealthJob = null
+        socksHealthFailures = 0
+    }
+
+    private fun probeSocksListener(): Boolean {
+        val port = Preferences(applicationContext).socksPort
+        return runCatching {
+            java.net.Socket().use { socket ->
+                socket.connect(java.net.InetSocketAddress("127.0.0.1", port), SOCKS_PROBE_TIMEOUT_MS)
+            }
+            true
+        }.getOrDefault(false)
+    }
+
+    private fun recoverSocksListener(processAlive: Boolean) {
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastSocksRecoveryMs < SOCKS_RECOVERY_COOLDOWN_MS) {
+            Log.w(TAG, "Skipping SOCKS listener recovery; cooldown is active.")
+            return
+        }
+        lastSocksRecoveryMs = now
+        Log.e(TAG, "SOCKS listener unavailable; restarting Xray core (processAlive=$processAlive).")
+        Handler(mainLooper).post {
+            if (isStopping || startupFailed) return@post
+            killXrayProcess()
+            launchXrayProcess()
         }
     }
 
@@ -259,6 +340,7 @@ class TProxyService : VpnService() {
         unregisterNetworkCallback()
         periodicGeoUpdateJob?.cancel()
         periodicGeoUpdateJob = null
+        stopSocksHealthCheck()
         serviceScope.cancel()
         killXrayProcess()
         val pfd = tunFd
@@ -461,6 +543,7 @@ class TProxyService : VpnService() {
                             Log.d(TAG, "Xray core ready (gRPC API reachable), updating VpnStateHub.")
                             VpnStateHub.updateState(VpnRunningState.Connected)
                             startPeriodicGeoUpdateCheck()
+                            startSocksHealthCheck()
                             break
                         }
                         delay(STARTUP_PROBE_INTERVAL_MS)
@@ -872,6 +955,7 @@ class TProxyService : VpnService() {
     }
 
     private fun stopService(finalState: VpnRunningState = VpnRunningState.Disconnected) {
+        stopSocksHealthCheck()
         isStartingLock.set(false)
         unregisterNetworkCallback()
         stopForeground(Service.STOP_FOREGROUND_REMOVE)
@@ -958,6 +1042,10 @@ class TProxyService : VpnService() {
         private const val MAX_START_ATTEMPTS = 2
         private const val STARTUP_PROBE_TIMEOUT_MS: Long = 15000
         private const val STARTUP_PROBE_INTERVAL_MS: Long = 500
+        private const val SOCKS_HEALTH_INTERVAL_MS: Long = 5_000
+        private const val SOCKS_PROBE_TIMEOUT_MS: Int = 1_000
+        private const val SOCKS_HEALTH_FAILURE_THRESHOLD: Int = 3
+        private const val SOCKS_RECOVERY_COOLDOWN_MS: Long = 30_000
         private val GO_LOG_TIMESTAMP_PREFIX = Regex("""^\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}(\.\d+)? """)
         private val logTimestampFormat = SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS", Locale.US)
 
