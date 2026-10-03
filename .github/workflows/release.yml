@@ -18,13 +18,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
           submodules: recursive
 
       - name: Set up JDK 25
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
         with:
           java-version: '25'
           distribution: 'zulu'
@@ -45,6 +45,27 @@ jobs:
           fi
           echo "GO_VERSION=$GO_VERSION" >> "$GITHUB_ENV"
 
+          XRAY_CORE_COMMIT="$(grep '^XRAY_CORE_COMMIT=' release-pins.properties | cut -d '=' -f 2 | tr -d '\r ')"
+          if [[ ! "$XRAY_CORE_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Invalid XRAY_CORE_COMMIT: $XRAY_CORE_COMMIT" >&2
+            exit 1
+          fi
+          echo "XRAY_CORE_COMMIT=$XRAY_CORE_COMMIT" >> "$GITHUB_ENV"
+
+          GEOIP_SHA256="$(grep '^GEOIP_SHA256=' release-pins.properties | cut -d '=' -f 2 | tr -d '\r ')"
+          if [[ ! "$GEOIP_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "Invalid GEOIP_SHA256: $GEOIP_SHA256" >&2
+            exit 1
+          fi
+          echo "GEOIP_SHA256=$GEOIP_SHA256" >> "$GITHUB_ENV"
+
+          GEOSITE_SHA256="$(grep '^GEOSITE_SHA256=' release-pins.properties | cut -d '=' -f 2 | tr -d '\r ')"
+          if [[ ! "$GEOSITE_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "Invalid GEOSITE_SHA256: $GEOSITE_SHA256" >&2
+            exit 1
+          fi
+          echo "GEOSITE_SHA256=$GEOSITE_SHA256" >> "$GITHUB_ENV"
+
           RELEASE_VERSION="${GITHUB_REF#refs/tags/}"
           # Validate the tag as a semver-like release tag before it is used in
           # shell commands below (guards against tag-name command injection).
@@ -55,18 +76,18 @@ jobs:
           echo "RELEASE_VERSION=$RELEASE_VERSION" >> "$GITHUB_ENV"
 
       - name: Set up Go
-        uses: actions/setup-go@v7
+        uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
 
       - name: Set up Zig
-        uses: mlugg/setup-zig@v2
+        uses: mlugg/setup-zig@d1434d08867e3ee9daa34448df10607b98908d29 # v2
         with:
           version: 0.16.0
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v6.4.0
+        uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
 
       - name: Check Version Consistency
         run: python3 tools/sync_versions.py --check
@@ -75,7 +96,9 @@ jobs:
         run: |
           mkdir -p ./app/src/main/assets/
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat -O ./app/src/main/assets/geoip.dat
+          echo "$GEOIP_SHA256  ./app/src/main/assets/geoip.dat" | sha256sum -c -
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O ./app/src/main/assets/geosite.dat
+          echo "$GEOSITE_SHA256  ./app/src/main/assets/geosite.dat" | sha256sum -c -
 
       - name: Build Xray-core from Source
         run: |
@@ -90,7 +113,12 @@ jobs:
           # (pathspec did not match). --branch accepts a tag and checks it out.
           git clone --depth=1 --branch "${{ env.XRAY_VERSION }}" https://github.com/XTLS/Xray-core.git
           cd Xray-core
-          COMMID=$(git rev-parse HEAD | cut -c 1-7)
+          ACTUAL_COMMIT="$(git rev-parse HEAD)"
+          if [[ "$ACTUAL_COMMIT" != "$XRAY_CORE_COMMIT" ]]; then
+            echo "Xray-core $XRAY_VERSION resolved to $ACTUAL_COMMIT, expected $XRAY_CORE_COMMIT" >&2
+            exit 1
+          fi
+          COMMID="$(git rev-parse --short=7 HEAD)"
 
           export GOOS=android
           export CGO_ENABLED=1

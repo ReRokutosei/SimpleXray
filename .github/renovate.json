@@ -68,6 +68,11 @@
       "matchUpdateTypes": ["minor"],
       "prPriority": -1,
       "automerge": false
+    },
+    {
+      "description": "Require review for GitHub Actions updates",
+      "matchManagers": ["github-actions"],
+      "automerge": false
     }
   ]
 }
