@@ -89,6 +89,10 @@ class TProxyService : VpnService() {
     private var xrayPid: Int = -1
     private var xrayJob: Job? = null
     private var isStopping = false
+
+    @Volatile
+    private var startupFailed = false
+
     @Volatile
     private var xrayStarted = false
     private var xrayStartAttempt = 0
@@ -258,7 +262,9 @@ class TProxyService : VpnService() {
             wakeLock = null
         }
         stopForeground(Service.STOP_FOREGROUND_REMOVE)
-        VpnStateHub.updateState(VpnRunningState.Disconnected)
+        if (!startupFailed) {
+            VpnStateHub.updateState(VpnRunningState.Disconnected)
+        }
         Log.d(TAG, "TProxyService destroyed.")
     }
 
@@ -287,7 +293,7 @@ class TProxyService : VpnService() {
         }
         logFileManager.clearLogs()
         if (!startService()) {
-            Log.e(TAG, "VPN service establishment failed, aborting Xray process launch.")
+            failStart("VPN service establishment failed")
             return
         }
         launchXrayProcess()
@@ -303,8 +309,28 @@ class TProxyService : VpnService() {
             return false
         }
         isStopping = false
+        startupFailed = false
         xrayStartAttempt = 0
         return true
+    }
+
+    /**
+     * Terminal transition for every startup failure that happens before Xray
+     * process supervision is running. Without this, early returns left the UI
+     * in Connecting and kept the start lock held.
+     */
+    private fun failStart(reason: String) {
+        if (startupFailed) {
+            Log.d(TAG, "Ignoring duplicate startup failure: $reason")
+            return
+        }
+        startupFailed = true
+        Log.e(TAG, "Xray startup failed: $reason")
+        val failedState = VpnRunningState.Failed(
+            applicationContext.getString(R.string.core_start_failed)
+        )
+        VpnStateHub.updateState(failedState)
+        stopService(failedState)
     }
 
     private fun runXrayProcess() {
@@ -315,17 +341,24 @@ class TProxyService : VpnService() {
 
         try {
             val prefs = Preferences(applicationContext)
-            if (isStopping || (!prefs.disableVpn && tunFd == null)) {
-                Log.e(TAG, "Aborting Xray process startup: isStopping=$isStopping, tunFd=$tunFd")
+            if (isStopping) {
+                Log.d(TAG, "Aborting Xray process startup after intentional stop.")
+                return
+            }
+            if (!prefs.disableVpn && tunFd == null) {
+                failStart("VPN tunnel is not established")
                 return
             }
             Log.d(TAG, "Attempting to start native Xray process with TUN fd & local gRPC API.")
             val libraryDir = getNativeLibraryDir(applicationContext)
-            val selectedConfigPath = prefs.selectedConfigPath ?: return
+            val selectedConfigPath = prefs.selectedConfigPath ?: run {
+                failStart("No configuration file selected")
+                return
+            }
             val xrayPath = "$libraryDir/libxray.so"
             val configFile = File(selectedConfigPath)
             if (!configFile.exists()) {
-                Log.e(TAG, "Selected config file does not exist: $selectedConfigPath")
+                failStart("Selected config file does not exist: $selectedConfigPath")
                 return
             }
 
@@ -338,7 +371,10 @@ class TProxyService : VpnService() {
             val format = "json"
 
             val ports = runCatching { extractPortsFromJson(sanitizedConfigContent) }.getOrDefault(emptySet())
-            val apiPort = findAvailablePort(ports) ?: return
+            val apiPort = findAvailablePort(ports) ?: run {
+                failStart("No local port available for the stats API")
+                return
+            }
             prefs.apiPort = apiPort
             prefs.apiAddress = "127.0.0.1"
 
@@ -350,12 +386,12 @@ class TProxyService : VpnService() {
 
             if (useXrayTun) {
                 val vpnFd = tunFd?.fd ?: run {
-                    Log.e(TAG, "tunFd is null for Xray TUN mode")
+                    failStart("tunFd is null for Xray TUN mode")
                     return
                 }
                 val spawnResult = nativeSpawnXray(xrayPath, applicationContext.filesDir.path, vpnFd)
                     ?: run {
-                        Log.e(TAG, "nativeSpawnXray returned null - spawn failed")
+                        failStart("nativeSpawnXray returned null - spawn failed")
                         return
                     }
                 currentPid = spawnResult[0]
@@ -400,10 +436,13 @@ class TProxyService : VpnService() {
                 try {
                     val deadline = System.currentTimeMillis() + STARTUP_PROBE_TIMEOUT_MS
                     while (!xrayStarted &&
+                        !startupFailed &&
+                        !isStopping &&
                         (probeProcess?.isAlive == true || currentPid > 0) &&
                         System.currentTimeMillis() < deadline
                     ) {
                         if (client.getSystemStats() != null) {
+                            if (startupFailed || isStopping) return@launch
                             xrayStarted = true
                             xrayStartAttempt = 0
                             Log.d(TAG, "Xray core ready (gRPC API reachable), updating VpnStateHub.")
@@ -451,6 +490,8 @@ class TProxyService : VpnService() {
                 onXrayExited(currentProcess, -1)
             } else if (currentPid > 0) {
                 onXrayExited(null, currentPid)
+            } else {
+                failStart("Error executing native Xray: ${e.message}")
             }
         } finally {
             stdoutPfd?.close()
@@ -489,11 +530,7 @@ class TProxyService : VpnService() {
             Log.w(TAG, "Xray failed to start, retrying (attempt $xrayStartAttempt/$MAX_START_ATTEMPTS).")
             launchXrayProcess()
         } else {
-            Log.e(TAG, "Xray failed to start after $MAX_START_ATTEMPTS attempts, stopping service.")
-            stopXray()
-            VpnStateHub.updateState(
-                VpnRunningState.Failed(applicationContext.getString(R.string.core_start_failed))
-            )
+            failStart("Xray failed to start after $MAX_START_ATTEMPTS attempts")
         }
     }
 
@@ -798,7 +835,7 @@ class TProxyService : VpnService() {
             addDisallowedApplication(BuildConfig.APPLICATION_ID)
     }
 
-    private fun stopService() {
+    private fun stopService(finalState: VpnRunningState = VpnRunningState.Disconnected) {
         isStartingLock.set(false)
         unregisterNetworkCallback()
         stopForeground(Service.STOP_FOREGROUND_REMOVE)
@@ -814,7 +851,7 @@ class TProxyService : VpnService() {
             }
             wakeLock = null
         }
-        exit()
+        exit(finalState)
     }
 
     /**
@@ -857,9 +894,9 @@ class TProxyService : VpnService() {
         startForeground(1, notify, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
     }
 
-    private fun exit() {
+    private fun exit(finalState: VpnRunningState = VpnRunningState.Disconnected) {
         isStartingLock.set(false)
-        VpnStateHub.updateState(VpnRunningState.Disconnected)
+        VpnStateHub.updateState(finalState)
         stopSelf()
     }
 
