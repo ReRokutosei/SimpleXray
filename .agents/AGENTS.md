@@ -4,7 +4,14 @@ description: General instructions and context for developing the SimpleXray proj
 
 # SimpleXray Project Context
 
-This file provides the necessary context and constraints for AI agents interacting with the SimpleXray project. SimpleXray is an Android application acting as a VPN client/proxy tool using Xray-core, sing-tun, hev-socks5-tunnel, SimpleTUN, and Mihomo mipstack.
+This file provides the necessary context and constraints for AI agents interacting with the SimpleXray project. SimpleXray is an Android application acting as a VPN client/proxy tool using Xray-core, hev-socks5-tunnel, sing-tun, and SimpleTUN. The Mihomo mipstack integration is experimental and lives on the separate `feat/mips-tun` branch, not on current `main`.
+
+## Current Status (2026-10)
+- `main` is at `v2.3.0-alpha.5`; current development focus is the SimpleTUN Zig engine (`third_party/simpletun`) and its benchmark/publication data.
+- SimpleTUN passed a continuous 2-day run on an 8 Elite Gen 5 device with no crashes and no obvious DNS, Wi-Fi/cellular handover, or connectivity regressions. Treat this baseline as stable, but still require real-device verification for every behavioral change.
+- SimpleTUN is IPv4-only today: dotted-decimal SOCKS5 inbound, SOCKS5 no-auth only, MTU locked to 1500, and no IPv6 route/address is added. IPv6 support is deliberately deferred to 2027; do not start that work unless explicitly requested.
+- `feat/simpletun` is a historical development branch whose SimpleTUN source is already reflected in `main`. Base new work on `main`, not on that branch.
+- `feat/mips-tun` (Mihomo mipstack) is unmerged; `libmipstun.so` and related artifacts are development remnants unless that branch is explicitly checked out.
 
 ## Tech Stack
 - **OS Target**: Android (minSdk 34, targetSdk 36, compileSdk 37)
@@ -13,7 +20,7 @@ This file provides the necessary context and constraints for AI agents interacti
 - **Architecture**: MVVM with Android ViewModels.
 - **Data Persistence**: Direct Android `SharedPreferences`.
 - **Communication/RPC**: gRPC with Protocol Buffers (protobuf) to query Xray core status and traffic statistics through a dynamically allocated `127.0.0.1` TCP port. Service status and process logs are communicated reactively via in-memory `VpnStateHub` (`StateFlow` and `SharedFlow`).
-- **Native Components & TUN Backends**: Uses CMake to build `hev-socks5-tunnel` (C/lwIP) and dependencies as native JNI libraries, integrates `sing-tun` (Go stack), `simpletun` (custom Zig 0-heap lightweight TUN-to-SOCKS5 protocol shifter), and integrates `mipstack` (Mihomo pure Go stack). Supports 4 primary TUN backends: Hev (default, C/lwIP for optimal throughput and low power consumption), SingTUN (Go/sing-box), SimpleTUN (custom Zig 0-heap lightweight engine), and native Xray TUN (Go/gVisor). In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. In Hev, SingTUN, and SimpleTUN modes, the tunnel forwards traffic to Xray through its local SOCKS5 inbound.
+- **Native Components & TUN Backends**: Uses CMake to build `hev-socks5-tunnel` (C/lwIP) and dependencies as native JNI libraries, integrates `sing-tun` (Go stack), and integrates the in-tree `simpletun` Zig engine (custom Zig 0-heap lightweight TUN-to-SOCKS5 protocol shifter, built with `zig build android`). Supports 4 primary TUN backends: Hev (default, C/lwIP for optimal throughput and low power consumption), SingTUN (Go/sing-box), SimpleTUN (custom Zig 0-heap lightweight engine), and native Xray TUN (Go/gVisor). In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. In Hev, SingTUN, and SimpleTUN modes, the tunnel forwards traffic to Xray through its local SOCKS5 inbound.
 
 ## Project Structure
 - `app/src/main/kotlin/com/simplexray/re/`:
@@ -24,12 +31,14 @@ This file provides the necessary context and constraints for AI agents interacti
   - `data/`: Data models and networking logic.
   - `common/`: Shared utilities and callbacks.
   - `activity/`: Android Activity classes (primarily `MainActivity` hosting Compose).
-- `app/src/main/jni/`: C/C++ source code for native tunnels built via CMake.
+- `app/src/main/cpp/`: C/C++ source code for native tunnels built via CMake (`CMakeLists.txt`, `xray_exec.c`).
 - `app/src/main/proto/`: Protobuf definitions for gRPC.
-- `third_party/miuix/`: Submodule containing the Miuix UI component library used for the application's design system. See `third_party/miuix/AGENTS.md` for specific UI constraints.
+- `third_party/simpletun/`: In-tree Zig SimpleTUN engine, Android JNI bridge (`android/bridge.c`), architecture spec/tests, and host test harnesses. It is not a Git submodule; build it with `zig build android` (and `zig build test`) before Gradle native builds.
+- `third_party/hev-socks5-tunnel/` and `third_party/miuix/`: Git submodules for the Hev C/lwIP tunnel and the Miuix UI component library. See `third_party/miuix/AGENTS.md` for specific UI constraints.
+- `third_party/sing-tun/`: In-tree Go sing-tun stack used by the SingTUN backend.
 - `docs/benchmark/`: Benchmark whitepaper (`android-tun-benchmark.md`), device dataset directories (`docs/benchmark/<profile>/data/`), and generated chart dashboards (`docs/benchmark/<profile>/charts/`).
 - `docs/images/`: Standardized 16:9 light-theme WebP dashboards, master infographic (`mega_benchmark_infographic.webp`), and architectural diagrams.
-- `version.properties`: Root version contract tracking live core (`XRAY_CORE_VERSION`) and tunnel backend commits/hashes (`HEV_TUN_VERSION`, `SING_TUN_VERSION`, `MIPS_TUN_VERSION`, `GO_VERSION`, `NDK_VERSION`).
+- `version.properties`: Root version contract tracking `XRAY_CORE_VERSION`, `HEV_TUN_VERSION`, `SING_TUN_VERSION`, `GO_VERSION`, and `NDK_VERSION`. SimpleTUN is in-tree and is not hash-pinned there.
 - `tools/`: Automated benchmarking tools & modular pipeline:
   - `benchmark.py`: Unified master CLI runner orchestrating throughput, idle memory, bufferbloat, stability, weaknet, and CPS suites. Supports `--preset light` and `--preset full`.
   - `presets.py`: Formal benchmark contract definitions (`light` vs `full`).
@@ -45,7 +54,7 @@ This file provides the necessary context and constraints for AI agents interacti
 ## Build and Execution
 - **Build System**: Gradle with Kotlin DSL/Groovy.
 - **Native Build**: NDK via CMake (`externalNativeBuild`).
-- **Standalone TUN CLI**: Go stacks (`third_party/sing-tun`, `third_party/mips-tun`) support standalone CLI compilation via standard `go build` with `#if defined(__ANDROID__)` guards for dual host/Android compatibility.
+- **Standalone TUN CLI**: `third_party/sing-tun` supports standalone CLI compilation via standard `go build` with `#if defined(__ANDROID__)` guards for dual host/Android compatibility. SimpleTUN's standalone CLI and unit tests are built with `cd third_party/simpletun && zig build` / `zig build test`.
 - **Version Verification**: Run `python3 tools/sync_versions.py --check` before committing to verify that `version.properties` matches all submodules and `go.mod` dependency hashes.
 - **Headless Benchmark Service**: `BenchmarkService` operates headlessly via `am start-foreground-service` intents (`--es cmd start/stop --es backend ... --ei mtu ...`), validated by active `tun0` hardware interface polling.
 
@@ -55,12 +64,13 @@ This file provides the necessary context and constraints for AI agents interacti
 3. **Coroutines**: Use Kotlin Coroutines and Flows for all asynchronous operations.
 4. **Service Lifecycle**: When modifying `VpnService` or background tasks, respect Android's strict background execution limits and ensure proper foreground service notifications.
 5. **Protobuf/gRPC**: If data models change, ensure corresponding `.proto` files are updated and Gradle is synced to regenerate Java/Kotlin stubs.
-6. **Native Code**: Native code changes in `jni/` require understanding of POSIX sockets, lwIP, and hev-socks5-tunnel architecture. Ensure ABI compatibility (`arm64-v8a` is the primary target).
+6. **Native Code**: App native code lives in `app/src/main/cpp/`; the SimpleTUN engine is Zig under `third_party/simpletun/`. Changes require understanding of POSIX sockets, TCP/UDP state machines, and lwIP/hev architecture where applicable, plus the SimpleTUN spec (`docs/simpletun_spec.md`). Ensure ABI compatibility (`arm64-v8a` is the only target).
 
 ## Key Constraints
 - NEVER break the `VpnService` transparent proxy behavior. Testing native traffic routing is critical.
 - Keep the UI responsive and aesthetic, prioritizing the `miuix` design system.
-- **SOCKS5 UDP ASSOCIATE Protocol Compliance**: When integrating or modifying user-space TUN handlers in Go (`sing-tun`, `mips-tun`), `client.ListenPacket` must pass an unspecified bind address (`0.0.0.0:0` / `M.Socksaddr{}`) as `BND.ADDR`, NOT the remote target destination. Passing foreign destinations violates RFC 1928 and causes Xray's SOCKS5 inbound to drop client packets.
+- **SOCKS5 UDP ASSOCIATE Protocol Compliance**: When integrating or modifying user-space TUN handlers in Go (`sing-tun`, or `mips-tun` if that branch is used), `client.ListenPacket` must pass an unspecified bind address (`0.0.0.0:0` / `M.Socksaddr{}`) as `BND.ADDR`, NOT the remote target destination. Passing foreign destinations violates RFC 1928 and causes Xray's SOCKS5 inbound to drop client packets.
+- **SimpleTUN Scope (current)**: IPv4-only, dotted-decimal no-auth SOCKS5 inbound, MTU fixed at 1500, and no IPv6 route/address. Authenticated SOCKS5, IPv6, and IP fragment reassembly are out of scope until the 2027 IPv6 work; do not change these paths without explicit request.
 - **Android 14+ Foreground Service Limits**: Calling `ContextCompat.startForegroundService()` from background components (such as `BroadcastReceiver`) will throw `ForegroundServiceStartNotAllowedException` on Android 14+ unless an activity is brought to the foreground first (e.g. `startActivity` with `FLAG_ACTIVITY_NEW_TASK`).
 - **Rule File Background Updates**: Rule files (geoip/geosite) default to GitHub URLs. In mainland network environments, downloading from GitHub requires an active proxy; additionally, Chinese OEM ROMs (e.g. HyperOS/MIUI) restrict background WorkManager execution. Retain the in-service periodic check coroutine (`startPeriodicGeoUpdateCheck`) in `TProxyService`—it executes while the VPN is active as a foreground service with guaranteed local proxy availability.
 
@@ -91,3 +101,10 @@ This file provides the necessary context and constraints for AI agents interacti
 ## Device Testing and Commits
 - For Android/VPN/TUN or other device-dependent changes, do not create a commit until the user confirms that the change has passed real-device testing.
 - Keep such changes uncommitted in the working tree while waiting for real-device verification.
+- The current SimpleTUN baseline (8 Elite Gen 5, 2-day continuous run) is considered stable as of 2026-10. This does not waive the real-device verification requirement for future changes.
+
+## Repository Operating Policy
+- This repository is maintained as a personal experimental project. It is public for reference, but it is not operated as a community-maintained product.
+- Backward compatibility, public API stability, external user expectations, and open-source etiquette are not first-class constraints when they conflict with the author's maintenance needs.
+- Destructive Git operations such as force-push, rebase, amend, and full history rewrite are acceptable when they simplify maintenance or remove sensitive information.
+- GitHub immutable releases/tags cannot be rewritten by a normal force-push. Older objects reachable through those tags remain unless the releases/tags themselves are handled separately.
