@@ -66,6 +66,17 @@ pub const Flow = struct {
     }
 };
 
+pub const Eviction = struct {
+    valid: bool = false,
+    src_ip: u32 = 0,
+    dst_ip: u32 = 0,
+    src_port: u16 = 0,
+    dst_port: u16 = 0,
+    snd_nxt: u32 = 0,
+    rcv_nxt: u32 = 0,
+    socks_fd: i32 = -1,
+};
+
 pub const FlowTable = struct {
     pub const CAPACITY: usize = 1024;
     pub const HASH_CAPACITY: usize = 2 * CAPACITY;
@@ -200,6 +211,19 @@ pub const FlowTable = struct {
     }
 
     pub fn allocate(self: *FlowTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) ?*Flow {
+        return self.allocateTracked(src_ip, dst_ip, src_port, dst_port, null);
+    }
+
+    pub fn allocateTracked(
+        self: *FlowTable,
+        src_ip: u32,
+        dst_ip: u32,
+        src_port: u16,
+        dst_port: u16,
+        evicted: ?*Eviction,
+    ) ?*Flow {
+        if (evicted) |out| out.* = .{};
+
         // First pass: try to find a completely free slot
         for (&self.flows) |*flow| {
             if (flow.state == .free) {
@@ -254,6 +278,18 @@ pub const FlowTable = struct {
             }
         }
         if (oldest_flow) |flow| {
+            if (evicted) |out| {
+                out.* = .{
+                    .valid = true,
+                    .src_ip = flow.src_ip,
+                    .dst_ip = flow.dst_ip,
+                    .src_port = flow.src_port,
+                    .dst_port = flow.dst_port,
+                    .snd_nxt = flow.snd_nxt,
+                    .rcv_nxt = flow.rcv_nxt,
+                    .socks_fd = flow.socks_fd,
+                };
+            }
             const old_fd = flow.socks_fd;
             self.resetFlow(flow);
             flow.socks_fd = old_fd; // Preserved for Engine to epoll_ctl(DEL) and sys.close()
@@ -485,4 +521,35 @@ test "FlowTable hash index keeps tombstones discoverable until reset" {
 
     table.resetFlow(flow.?);
     try std.testing.expect(table.findFlow(0x0a000001, 0x08080808, 40000, 443) == null);
+}
+
+test "FlowTable tracked allocation reports fourth-pass eviction" {
+    var table: FlowTable = undefined;
+    table.initInto();
+
+    var i: u16 = 0;
+    while (i < FlowTable.CAPACITY) : (i += 1) {
+        const flow = table.allocate(0x0a000001, 0x0a000002, 1000 + i, 80);
+        try std.testing.expect(flow != null);
+        flow.?.state = .established;
+        flow.?.deadline_ms = 1000 + @as(i64, i);
+        flow.?.snd_nxt = @as(u32, 0x1111_0000) + i;
+        flow.?.rcv_nxt = @as(u32, 0x2222_0000) + i;
+    }
+    table.flows[0].socks_fd = 42;
+
+    var evicted: Eviction = .{};
+    const new_flow = table.allocateTracked(0x0a0000ff, 0x0a0000fe, 50000, 443, &evicted);
+    try std.testing.expect(new_flow != null);
+    try std.testing.expectEqual(&table.flows[0], new_flow.?);
+    try std.testing.expect(evicted.valid);
+    try std.testing.expectEqual(@as(u32, 0x0a000001), evicted.src_ip);
+    try std.testing.expectEqual(@as(u32, 0x0a000002), evicted.dst_ip);
+    try std.testing.expectEqual(@as(u16, 1000), evicted.src_port);
+    try std.testing.expectEqual(@as(u16, 80), evicted.dst_port);
+    try std.testing.expectEqual(@as(u32, 0x1111_0000), evicted.snd_nxt);
+    try std.testing.expectEqual(@as(u32, 0x2222_0000), evicted.rcv_nxt);
+    try std.testing.expectEqual(@as(i32, 42), evicted.socks_fd);
+    try std.testing.expectEqual(@as(i32, 42), new_flow.?.socks_fd);
+    try std.testing.expectEqual(State.upstream_connect, new_flow.?.state);
 }

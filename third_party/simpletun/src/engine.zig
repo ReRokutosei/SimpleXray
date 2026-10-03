@@ -1086,8 +1086,21 @@ pub const Engine = struct {
     }
 
     fn handleNewSyn(self: *Engine, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16, client_isn: u32) void {
-        const flow = self.table.allocate(src_ip, dst_ip, src_port, dst_port) orelse return;
+        var evicted: flow_mod.Eviction = .{};
+        const flow = self.table.allocateTracked(src_ip, dst_ip, src_port, dst_port, &evicted) orelse return;
         self.armTunEvents();
+
+        if (evicted.valid) {
+            var old_flow: flow_mod.Flow = undefined;
+            old_flow.reset();
+            old_flow.src_ip = evicted.src_ip;
+            old_flow.dst_ip = evicted.dst_ip;
+            old_flow.src_port = evicted.src_port;
+            old_flow.dst_port = evicted.dst_port;
+            old_flow.snd_nxt = evicted.snd_nxt;
+            old_flow.rcv_nxt = evicted.rcv_nxt;
+            self.sendRst(&old_flow);
+        }
 
         // C-2: If fourth-pass recycling returned a slot that still has a live socks_fd (flow.zig
         // intentionally did NOT close it so we can call epoll_ctl(DEL) here first), deregister and close it now.
@@ -1750,4 +1763,48 @@ test "UDP pending datagram survives association setup" {
     try std.testing.expectEqual(@as(usize, 15), n);
     try std.testing.expectEqualSlices(u8, &[10]u8{ 0, 0, 0, 1, 203, 0, 113, 7, 0, 53 }, datagram[0..10]);
     try std.testing.expectEqualSlices(u8, "hello", datagram[10..n]);
+}
+
+test "flow eviction sends RST for the oldest active flow" {
+    var tun_pair: [2]i32 = undefined;
+    const rc = linux.socketpair(linux.AF.UNIX, linux.SOCK.STREAM, 0, &tun_pair);
+    try std.testing.expectEqual(@as(usize, 0), rc);
+    defer {
+        _ = linux.close(tun_pair[0]);
+        _ = linux.close(tun_pair[1]);
+    }
+
+    var eng: Engine = undefined;
+    try eng.initInto(.{
+        .tun_fd = tun_pair[0],
+        .socks_ip = 0x7f000001,
+        .socks_port = 10808,
+        .mtu = 1500,
+    });
+    defer eng.deinit();
+
+    const dst_port_raw: u16 = @bitCast([2]u8{ 0, 80 });
+    var i: u16 = 0;
+    while (i < flow_mod.FlowTable.CAPACITY) : (i += 1) {
+        const port = 1000 + i;
+        const src_port_raw: u16 = @bitCast([2]u8{ @intCast(port >> 8), @intCast(port & 0xff) });
+        const flow = eng.table.allocate(0x0a000001, 0x0a000002, src_port_raw, dst_port_raw);
+        try std.testing.expect(flow != null);
+        flow.?.state = .established;
+        flow.?.deadline_ms = 1000 + @as(i64, i);
+        flow.?.snd_nxt = @as(u32, 0x1111_0000) + i;
+        flow.?.rcv_nxt = @as(u32, 0x2222_0000) + i;
+    }
+
+    eng.handleNewSyn(0x0a0000ff, 0x0a0000fe, 50000, 443, 1234);
+
+    var packet: [64]u8 = undefined;
+    const packet_len = linux.read(tun_pair[1], &packet, packet.len);
+    try std.testing.expectEqual(@as(usize, 40), packet_len);
+    try std.testing.expect((packet[33] & protocol.TcpHeader.FLAG_RST) != 0);
+    try std.testing.expect((packet[33] & protocol.TcpHeader.FLAG_ACK) != 0);
+    try std.testing.expectEqualSlices(u8, &[2]u8{ 0, 80 }, packet[20..22]);
+    try std.testing.expectEqualSlices(u8, &[2]u8{ 3, 0xE8 }, packet[22..24]);
+    try std.testing.expectEqual(@as(u32, 0x1111_0000), std.mem.readInt(u32, packet[24..28], .big));
+    try std.testing.expectEqual(@as(u32, 0x2222_0000), std.mem.readInt(u32, packet[28..32], .big));
 }
