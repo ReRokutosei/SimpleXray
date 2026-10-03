@@ -1,7 +1,6 @@
 package com.simplexray.re.viewmodel
 
 import android.app.Application
-import android.content.Context
 import android.content.Intent
 import android.content.ComponentName
 import android.content.pm.PackageManager
@@ -11,8 +10,6 @@ import android.net.VpnService
 import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.simplexray.re.BuildConfig
@@ -20,6 +17,7 @@ import com.simplexray.re.R
 import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.CoreStatsClient
 import com.simplexray.re.common.ReleaseVersion
+import com.simplexray.re.common.SocksAuthenticatorInstaller
 import com.simplexray.re.common.ROUTE_APP_LIST
 import com.simplexray.re.common.ROUTE_CONFIG_EDIT
 import com.simplexray.re.common.TcpPing
@@ -195,7 +193,7 @@ class MainViewModel(application: Application) :
     init {
         Log.d(TAG, "MainViewModel initialized.")
 
-        setupGlobalSocksAuthenticator()
+        SocksAuthenticatorInstaller.install(application)
 
         viewModelScope.launch {
             VpnStateHub.state.collect { state ->
@@ -314,10 +312,6 @@ class MainViewModel(application: Application) :
                 )
             )
         }
-    }
-
-    private fun setupGlobalSocksAuthenticator() {
-        installSocksAuthenticator(application)
     }
 
     fun setControlMenuClickable(isClickable: Boolean) {
@@ -1421,49 +1415,6 @@ class MainViewModel(application: Application) :
             "^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80::(fe80(:[0-9a-fA-F]{0,4})?){0,4}%[0-9a-zA-Z]+|::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?\\d)?\\d)\\.){3}(25[0-5]|(2[0-4]|1?\\d)?\\d)|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?\\d)?\\d)\\.){3}(25[0-5]|(2[0-4]|1?\\d)?\\d))$"
         private val IPV6_PATTERN: Pattern = Pattern.compile(IPV6_REGEX)
 
-        private val isAuthenticatorInstalled = java.util.concurrent.atomic.AtomicBoolean(false)
-
-        fun installSocksAuthenticator(context: Context) {
-            if (isAuthenticatorInstalled.compareAndSet(false, true)) {
-                java.net.Authenticator.setDefault(AppSocksAuthenticator(context.applicationContext))
-            }
-        }
-    }
-}
-
-private class AppSocksAuthenticator(private val appContext: Context) : java.net.Authenticator() {
-    override fun getPasswordAuthentication(): java.net.PasswordAuthentication? {
-        val prefs = Preferences(appContext)
-        val user = prefs.socksUsername
-        val pass = prefs.socksPassword
-
-        if (user.isEmpty() && pass.isEmpty()) {
-            return null
-        }
-
-        val isProxy = requestorType == RequestorType.PROXY
-        val isMatchingHost = requestingHost.isNullOrEmpty() ||
-            requestingHost.equals(prefs.socksAddress, ignoreCase = true) ||
-            requestingHost == "127.0.0.1" || requestingHost == "localhost"
-        val isMatchingPort = requestingPort == -1 || requestingPort == prefs.socksPort
-
-        return if (isProxy || (isMatchingHost && isMatchingPort)) {
-            java.net.PasswordAuthentication(user, pass.toCharArray())
-        } else {
-            null
-        }
-    }
-}
-
-class MainViewModelFactory(
-    private val application: Application
-) : ViewModelProvider.AndroidViewModelFactory(application) {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return MainViewModel(application) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }
 

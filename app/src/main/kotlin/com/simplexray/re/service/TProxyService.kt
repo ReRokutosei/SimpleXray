@@ -8,12 +8,7 @@ import android.content.Context
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
-import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.net.ProxyInfo
 import android.net.VpnService
 import android.os.IBinder
 import android.os.Handler
@@ -24,7 +19,6 @@ import android.system.Os
 import android.system.OsConstants
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.simplexray.re.BuildConfig
 import com.simplexray.re.R
 import com.simplexray.re.activity.MainActivity
 import com.simplexray.re.common.ConfigUtils
@@ -206,64 +200,8 @@ class TProxyService : VpnService() {
         }
     }
 
-    private var connectivityManager: ConnectivityManager? = null
-    private var defaultNetworkCallback: ConnectivityManager.NetworkCallback? = null
-    private val underlyingNetworks = mutableSetOf<Network>()
-
-    private fun updateUnderlyingNetworks(mutate: (MutableSet<Network>) -> Unit) {
-        synchronized(underlyingNetworks) {
-            mutate(underlyingNetworks)
-            val networks = underlyingNetworks.toTypedArray()
-            setUnderlyingNetworks(if (networks.isEmpty()) null else networks)
-        }
-    }
-
-    private fun registerNetworkCallback() {
-        if (defaultNetworkCallback != null) return
-        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
-        connectivityManager = cm
-
-        val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                Log.d(TAG, "Underlying network available: $network")
-                updateUnderlyingNetworks { it.add(network) }
-            }
-
-            override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
-                Log.d(TAG, "Underlying network capabilities changed: $network")
-                updateUnderlyingNetworks { it.add(network) }
-            }
-
-            override fun onLost(network: Network) {
-                Log.d(TAG, "Underlying network lost: $network")
-                updateUnderlyingNetworks { it.remove(network) }
-            }
-        }
-        defaultNetworkCallback = callback
-        runCatching {
-            cm.registerDefaultNetworkCallback(callback)
-            cm.activeNetwork?.let { activeNet ->
-                updateUnderlyingNetworks { it.add(activeNet) }
-            }
-        }.onFailure {
-            Log.w(TAG, "Failed to register default network callback", it)
-        }
-    }
-
-    private fun unregisterNetworkCallback() {
-        val cm = connectivityManager
-        val callback = defaultNetworkCallback
-        defaultNetworkCallback = null
-        synchronized(underlyingNetworks) {
-            underlyingNetworks.clear()
-        }
-        if (cm != null && callback != null) {
-            runCatching {
-                cm.unregisterNetworkCallback(callback)
-            }.onFailure {
-                Log.w(TAG, "Failed to unregister default network callback", it)
-            }
-        }
+    private val networkMonitor by lazy {
+        VpnNetworkMonitor(this, TAG) { networks -> setUnderlyingNetworks(networks) }
     }
 
     private val isStartingLock = java.util.concurrent.atomic.AtomicBoolean(false)
@@ -337,7 +275,7 @@ class TProxyService : VpnService() {
     override fun onDestroy() {
         super.onDestroy()
         isStartingLock.set(false)
-        unregisterNetworkCallback()
+        networkMonitor.stop()
         periodicGeoUpdateJob?.cancel()
         periodicGeoUpdateJob = null
         stopSocksHealthCheck()
@@ -699,7 +637,7 @@ class TProxyService : VpnService() {
                 }
             }
         }
-        val builder = getVpnBuilder(prefs, tunMtu)
+        val builder = VpnBuilderFactory.create(this, prefs, tunMtu)
         var establishAttempts = 0
         while (tunFd == null && establishAttempts < 3) {
             tunFd = builder.establish()
@@ -714,7 +652,7 @@ class TProxyService : VpnService() {
             stopXray()
             return false
         }
-        registerNetworkCallback()
+        networkMonitor.start()
 
         if (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn) {
             Log.d(TAG, "Using Xray Native TUN mode, skipping external tunnel.")
@@ -894,70 +832,10 @@ class TProxyService : VpnService() {
         }.getOrDefault(false)
     }
 
-    private fun getVpnBuilder(prefs: Preferences, tunMtu: Int): Builder = Builder().apply {
-        setBlocking(false)
-        setMtu(tunMtu)
-
-        setMetered(false)
-
-        if (prefs.bypassLan) {
-            runCatching {
-                excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("10.0.0.0"), 8))
-                excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("100.64.0.0"), 10))
-                excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("169.254.0.0"), 16))
-                excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("172.16.0.0"), 12))
-                excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("192.168.0.0"), 16))
-                if (prefs.ipv6 && prefs.tunnelMode != TunnelMode.SimpleTun) {
-                    excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("fc00::"), 7))
-                    excludeRoute(android.net.IpPrefix(java.net.InetAddress.getByName("fe80::"), 10))
-                }
-            }.onFailure { Log.w(TAG, "Failed to exclude LAN routes", it) }
-        }
-        if (prefs.httpProxyEnabled) {
-            setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", prefs.httpPort))
-        }
-        if (prefs.ipv4) {
-            addAddress(prefs.tunnelIpv4Address, prefs.tunnelIpv4Prefix)
-            addRoute("0.0.0.0", 0)
-            prefs.dnsIpv4.takeIf { it.isNotEmpty() }?.also { addDnsServer(it) }
-        }
-        if (prefs.ipv6 && prefs.tunnelMode != TunnelMode.SimpleTun) {
-            addAddress(prefs.tunnelIpv6Address, prefs.tunnelIpv6Prefix)
-            addRoute("::", 0)
-            prefs.dnsIpv6.takeIf { it.isNotEmpty() }?.also { addDnsServer(it) }
-        }
-
-        val rawApps = prefs.apps
-        if (!rawApps.isNullOrEmpty()) {
-            val validApps = mutableSetOf<String>()
-            var hadInvalid = false
-            for (appName in rawApps) {
-                if (appName.isNullOrBlank()) continue
-                try {
-                    packageManager.getPackageInfo(appName, 0)
-                    validApps.add(appName)
-                    if (prefs.bypassSelectedApps) {
-                        addDisallowedApplication(appName)
-                    } else {
-                        addAllowedApplication(appName)
-                    }
-                } catch (e: PackageManager.NameNotFoundException) {
-                    hadInvalid = true
-                    Log.d(TAG, "Pruning uninstalled app package from VPN routing: $appName")
-                }
-            }
-            if (hadInvalid) {
-                prefs.apps = validApps
-            }
-        }
-        if (prefs.bypassSelectedApps || prefs.apps.isNullOrEmpty())
-            addDisallowedApplication(BuildConfig.APPLICATION_ID)
-    }
-
     private fun stopService(finalState: VpnRunningState = VpnRunningState.Disconnected) {
         stopSocksHealthCheck()
         isStartingLock.set(false)
-        unregisterNetworkCallback()
+        networkMonitor.stop()
         stopForeground(Service.STOP_FOREGROUND_REMOVE)
         val pfd = tunFd
         tunFd = null
