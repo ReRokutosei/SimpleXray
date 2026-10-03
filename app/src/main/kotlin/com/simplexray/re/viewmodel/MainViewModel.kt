@@ -19,6 +19,7 @@ import com.simplexray.re.BuildConfig
 import com.simplexray.re.R
 import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.CoreStatsClient
+import com.simplexray.re.common.ReleaseVersion
 import com.simplexray.re.common.ROUTE_APP_LIST
 import com.simplexray.re.common.ROUTE_CONFIG_EDIT
 import com.simplexray.re.common.TcpPing
@@ -1346,7 +1347,7 @@ class MainViewModel(application: Application) :
             }.build()
 
             val apiUrl = application.getString(R.string.source_url)
-                .replace("github.com", "api.github.com/repos") + "/releases/latest"
+                .replace("github.com", "api.github.com/repos") + "/releases?per_page=20"
             val request = Request.Builder()
                 .url(apiUrl)
                 .header("Accept", "application/vnd.github+json")
@@ -1356,12 +1357,23 @@ class MainViewModel(application: Application) :
             try {
                 val response = client.newCall(request).await()
                 val responseBody = response.body.string()
-                val json = org.json.JSONObject(responseBody)
-                val tagName = json.optString("tag_name", "").removePrefix("v")
-                Log.d(TAG, "Latest version tag: $tagName")
-                val updateAvailable = tagName.isNotEmpty() && compareVersions(tagName) > 0
+                val releases = org.json.JSONArray(responseBody)
+                var latestTag = ""
+                for (i in 0 until releases.length()) {
+                    val release = releases.optJSONObject(i) ?: continue
+                    if (release.optBoolean("draft", false)) continue
+                    val candidate = release.optString("tag_name", "").removePrefix("v")
+                    if (candidate.isNotEmpty() &&
+                        (latestTag.isEmpty() || ReleaseVersion.compare(candidate, latestTag) > 0)
+                    ) {
+                        latestTag = candidate
+                    }
+                }
+                Log.d(TAG, "Latest version tag: $latestTag")
+                val updateAvailable =
+                    latestTag.isNotEmpty() && ReleaseVersion.compare(latestTag, BuildConfig.VERSION_NAME) > 0
                 if (updateAvailable) {
-                    _newVersionAvailable.value = tagName
+                    _newVersionAvailable.value = latestTag
                 } else {
                     _uiEvent.trySend(
                         MainViewUiEvent.ShowSnackbar(
@@ -1394,21 +1406,6 @@ class MainViewModel(application: Application) :
         _newVersionAvailable.value = null
     }
 
-    private fun compareVersions(version1: String): Int {
-        val parts1 = version1.removePrefix("v").split(".").map { it.toIntOrNull() ?: 0 }
-        val parts2 =
-            BuildConfig.VERSION_NAME.removePrefix("v").split(".").map { it.toIntOrNull() ?: 0 }
-
-        val maxLen = maxOf(parts1.size, parts2.size)
-        for (i in 0 until maxLen) {
-            val p1 = parts1.getOrElse(i) { 0 }
-            val p2 = parts2.getOrElse(i) { 0 }
-            if (p1 != p2) {
-                return p1.compareTo(p2)
-            }
-        }
-        return 0
-    }
 
     companion object {
         private const val IPV4_REGEX =
