@@ -1,6 +1,6 @@
 # SimpleTUN Architecture & State Machine Specification
 
-**Version**: 0.3-perf
+**Version**: 0.4-udp
 **Target Scope**: Android `VpnService` TUN-to-SOCKS5 transparent proxy endpoint
 **Language Target**: Zig (C ABI export)
 
@@ -31,7 +31,7 @@ SimpleTUN is a purpose-built user-space network endpoint designed strictly for A
        ^
        | non-blocking stream & datagram I/O (epoll)
        v
- [ socks_fd / udp_relay_fd ] (Local Sockets)
+ [ socks_fd / per-session relay_fd ] (Local Sockets)
        ^
        v
  +---------------------------------------------------------+
@@ -45,17 +45,17 @@ SimpleTUN is a purpose-built user-space network endpoint designed strictly for A
 - TCP stream translation to local SOCKS5 client (`NO AUTHENTICATION REQUIRED`, `CMD 0x01 CONNECT`).
 - Conservative 3-way handshake with 4-byte TCP MSS Option (`Kind=2, Len=4, Value=MTU-40`, e.g. 1460).
 - Level-triggered epoll safety: explicit disarming of `EPOLLOUT` during handshake to avoid 100% CPU spinning; immediate socket closure and mandatory `EPOLL_CTL_DEL` upon EOF/RST.
-- O(1) SOCKS event dispatch via epoll union data (`flow_idx + 0x1000`), completely eliminating O(N) table searches.
+- O(1) flow lookup via a statically sized open-addressing hash index, and O(1) epoll event dispatch via tagged `epoll_event.data` (`flow_idx + 0x10000`, UDP session control/relay registers use separate tag ranges).
 - Direct downstream packet synthesis via `recv(MSG_PEEK)`: SOCKS data is consumed only after the synthesized packet has been accepted by the TUN device, so TUN `EAGAIN` never drops payload.
 - Downstream client TCP flow control: `snd_una`/`peer_wnd` tracking prevents reading more from SOCKS than the client kernel can receive, including zero-window pause and window reopen.
 - Incremental SOCKS5 handshake parser that consumes exactly the bytes of each response, even when authentication or CONNECT replies are split across TCP segments.
 - Explicit per-flow upstream backpressure via standard TCP zero-window signaling (`Win=0`) and persist probe handling (0-byte and 1-byte probes). Unacknowledged bytes are retransmitted by the client TCP stack after the window reopens; no user-space payload buffer is required.
-- Deterministic connection tear-down with explicit `upstream_fin` FIN wait, sequence-validated `RST`, and short-lived session tombstones with LRU/saturation eviction fallback under high CPS.
-- Single sweep loop drives handshake/idle/FIN/tombstone/UDP/DNS deadlines without adding timer threads.
+- Deterministic connection tear-down with explicit `upstream_fin` FIN wait, sequence-validated `RST`, and short-lived session tombstones; saturated active-flow tables forcibly recycle the oldest flow and send it a client-facing `RST`.
+- Single sweep loop drives handshake/idle/FIN/tombstone/UDP association/UDP session deadlines without adding timer threads.
 - Tombstones answer late FIN/data retransmissions with trailing ACKs instead of silently dropping them.
-- SOCKS5 UDP ASSOCIATE relay negotiated through the same non-blocking incremental handshake parser, with a 2s failure backoff instead of blocking the TUN event loop.
-- Dedicated 64-slot FIFO ring buffer (`DnsQueryTracker`) for concurrent DNS query matching, now with per-query TTL and sweep-based expiry.
-- Ultra-dense memory footprint via statically pinned 80-byte Flow slab tables (< 100 KiB total BSS).
+- SOCKS5 UDP ASSOCIATE is negotiated per client UDP source tuple through the same non-blocking incremental handshake parser, with a 2s failure backoff instead of blocking the TUN event loop.
+- Each established UDP session owns its local relay socket and reply mapping; replies are demultiplexed by session instead of by target endpoint. A bounded 32-entry pending pool absorbs the first datagram of a session while its association is being established.
+- Fixed static memory footprint via pinned slab tables and bounded pools (engine BSS ~159 KiB as documented in Section 7).
 
 ### 1.2 Out-of-Scope (Deferred to Future Releases)
 - **IPv6 parsing & synthesis**: deferred for the current IPv4-only scope. See Section 9 for the planned `feat/simpletun-ipv6` work.
@@ -234,11 +234,12 @@ Upstream SOCKS5 Socket (EAGAIN on write)
   - `Window`: `65535`
 - The client TCP stack retransmits from `rcv_nxt`; SimpleTUN does not keep an upstream payload copy.
 
-### 5.4 UDP Session Demultiplexing & Single Relay Socket Trade-Off
-SimpleTUN is intentionally optimized for mobile VPN transparent proxy environments where the overwhelming majority (>99%) of UDP traffic consists of DNS queries:
-- **Asynchronous ASSOCIATE with prewarm**: UDP relay setup is driven by the same non-blocking parser as TCP. Greeting/auth/request/reply progress on `EPOLLIN/EPOLLOUT`; a 5s handshake deadline and 2s failure backoff apply. The engine attempts prewarm at startup, retries during a bounded window, and forces an immediate attempt after any successful SOCKS5 TCP handshake proves the local inbound is ready. The triggering datagram is dropped while the relay is not yet ready, so DNS relies on its normal retry behavior.
-- **DNS Queries (`dst_port == 53`)**: SimpleTUN utilizes a dedicated 64-entry FIFO ring buffer (`DnsQueryTracker`) keyed on `(DNS Transaction ID, target)`, with TTL-based expiry. This gives accurate matching for the common single-client DNS workload.
-- **Non-DNS Datagrams**: To strictly adhere to the zero-heap and fixed file-descriptor budget (< 100 KiB resident BSS), SimpleTUN multiplexes all UDP traffic through a single SOCKS5 `UDP ASSOCIATE` relay socket (`udp_relay_fd`) rather than spawning an unbounded number of OS socket FDs per foreign destination. In an Android single-host VpnService environment where all traffic originates locally from the device itself with ephemeral client ports, inbound return datagrams for identical `(target_ip, target_port)` tuples are dispatched to the most recently active session (`findByTarget`). This is a deliberate, documented architectural trade-off prioritizing deterministic resource boundaries and zero FD leakage over symmetric NAT tracking for generic non-DNS UDP.
+### 5.4 UDP Session Demultiplexing by Client Source
+SimpleTUN keys UDP state on the client source tuple `(src_ip, src_port)`, mirroring the kernel UDP socket identity. This allows one session to carry datagrams for multiple destinations while keeping return traffic unambiguous:
+- **Asynchronous per-session ASSOCIATE**: The first datagram from a new client source creates a bounded `UdpSession` slot and starts a non-blocking SOCKS5 `UDP ASSOCIATE` control connection. Greeting/auth/request/reply progress on `EPOLLIN/EPOLLOUT`; a 5s handshake deadline and 2s failure backoff apply before the session is retried.
+- **Bounded first-datagram queue**: The first datagram is copied into a fixed 32-entry pending pool (payload bounded by `UDP_PENDING_PAYLOAD_MAX`). When the association succeeds, SimpleTUN opens the session relay socket, registers it with epoll, and flushes the queued datagram. Pending entries are capped; overflow is dropped rather than buffered without bound.
+- **Per-session reply demultiplexing**: Every established session owns its relay socket, so the engine maps a reply to the originating client directly. Multiple clients sending to the same `(target_ip, target_port)` no longer race over a shared "most recently active" lookup. DNS needs no separate transaction-ID side table.
+- **Lifecycle**: Sessions idle out after 30s, are evicted with their file descriptors closed when the `UdpTable` is full, and failed association attempts schedule a retry instead of dropping the session state. The table is a fixed slab (`256` entries); resource usage remains deterministic and heap-free.
 
 ### 5.5 Downstream Flow Control & TUN Backpressure
 - SimpleTUN tracks the client-side send state with `snd_una` and `peer_wnd`.
@@ -269,6 +270,7 @@ SimpleTUN is intentionally optimized for mobile VPN transparent proxy environmen
 ### 6.2 Abrupt Teardown (RST)
 - If client sends `RST`: accept only when its sequence number falls inside the current receive window. Valid RST closes the flow and enters `TOMBSTONE` for late packet absorption.
 - If upstream socket produces `ECONNRESET` or an unrecoverable error: Send `RST` to `tun_fd` (`Seq = snd_nxt`), close `socks_fd`, transition to `TOMBSTONE`.
+- If the flow table is saturated with active flows, the oldest active slot is recycled and the evicted client receives `RST | ACK` (`Seq = snd_nxt`, `Ack = rcv_nxt`) before its SOCKS socket is closed.
 
 ### 6.3 Tombstone Slot Preservation
 - When a flow reaches termination, releasing the 4-tuple immediately introduces collision risks if delayed packets reside in the kernel or TUN queues.
@@ -277,7 +279,7 @@ SimpleTUN is intentionally optimized for mobile VPN transparent proxy environmen
   - Any duplicate `FIN` or data retransmissions are answered with identical trailing `ACK` or `RST`.
   - New `SYN` packets with the exact same 4-tuple matching higher sequence numbers may preemptively reclaim the slot (RFC 1122 fast recycle).
 - A single non-intrusive sweep loop evicts expired tombstones back to `FREE`.
-- The same sweep enforces connect/handshake, idle, FIN-wait, UDP session, and DNS query deadlines.
+- The same sweep enforces connect/handshake, idle, FIN-wait, UDP association, and UDP session deadlines.
 
 ---
 
@@ -323,13 +325,14 @@ pub const Flow = struct {
 | Component | Sizing Formula | Static Footprint |
 | :--- | :--- | :--- |
 | **TCP Flow Slab Table** | 1024 entries × 80 bytes/entry | **80 KiB (L2 D-Cache Resident)** |
-| **Payload Buffers** | None; TCP retransmission and `MSG_PEEK` are the queues | **0 KiB** |
-| **UDP Session Table** | 256 entries × 24 bytes/entry (Packed) | **6 KiB** |
-| **DNS Query Tracker** | 64 entries × 24 bytes (TTL + FIFO ring) | **1.5 KiB** |
-| **I/O Packet Buffers** | 3 buffers × 4096 bytes (RX / TX / UDP Relay) | **12 KiB** |
-| **Total Resident Memory (BSS)** | Statically pinned in BSS (`initInto`) | **~99.5 KiB (< 0.1 MiB)** |
+| **Flow Hash Index** | 2048 slots × 2 bytes | **4 KiB** |
+| **UDP Session Table** | 256 entries × 64 bytes/entry (includes TCP control fd, UDP relay fd, relay port, handshake state, pending-slot index) | **16 KiB** |
+| **UDP Pending Pool** | 32 entries × 1512 bytes (first datagram + target + session index) | **~47.3 KiB** |
+| **TCP Payload Buffers** | None; TCP retransmission and `MSG_PEEK` are the queues | **0 KiB** |
+| **I/O Packet Buffers** | 3 buffers × 4096 bytes (RX / TX / UDP scratch) | **12 KiB** |
+| **Total Engine BSS** | `@sizeOf(Engine)` measured on host build | **163,128 bytes (~159.3 KiB)** |
 
-> **Conclusion**: The entire state machine, including the incremental handshake parser, lifecycle timers, and UDP/DNS tracking, strictly fits within **< 100 KiB total static memory** (actual Android app PSS growth is practically flat at 0 KiB / connection), completely immune to dynamic heap allocations and GC pauses.
+> **Conclusion**: The entire state machine, including the incremental handshake parser, lifecycle timers, flow hash index, per-session UDP association state, and bounded pending-datagram pool, remains under **0.2 MiB static memory** and performs **zero dynamic heap allocations** at runtime.
 
 ---
 
@@ -401,7 +404,7 @@ Unsupported IPv6 packets are dropped, matching the current "unsupported protocol
 
 3. **Flow / UDP / DNS key migration**
    - Replace `u32` 4-tuple addresses with `Address` keys.
-   - Measure BSS impact: current Flow is 80 B, Engine BSS is ~99.5 KiB; IPv6 keys will push this above the current budget unless gated.
+   - Measure BSS impact: current Flow is 80 B, Engine BSS is ~159 KiB; IPv6 keys will push this above the current budget unless gated.
    - Preferred: a compile-time `enable_ipv6` flag so IPv4-only builds stay lean.
    - Re-evaluate the memory budget and update this document before implementation.
 
@@ -414,8 +417,8 @@ Unsupported IPv6 packets are dropped, matching the current "unsupported protocol
 5. **UDP and DNS IPv6**
    - `formatUdpHeader` supports `ATYP=0x04`.
    - `sendUdpPacket` builds IPv6 headers and mandatory IPv6 UDP checksums.
-   - `UdpSession` / `DnsQuery` matching uses the generic `Address`.
-   - AAAA responses map back to the original IPv6 client session.
+   - `UdpSession` client-source matching uses the generic `Address`.
+   - AAAA responses map back to the original IPv6 client session through its per-session relay socket.
 
 6. **Android integration**
    - Re-enable the IPv6 switch for SimpleTun in the UI (currently disabled).
