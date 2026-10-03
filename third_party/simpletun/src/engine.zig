@@ -339,9 +339,24 @@ pub const Engine = struct {
         }
 
         if ((flags & protocol.TcpHeader.FLAG_FIN) != 0) {
-            if (!flow.client_fin and seq == flow.rcv_nxt) {
-                flow.rcv_nxt +%= 1;
-                flow.client_fin = true;
+            if (!flow.client_fin) {
+                const payload_len: u32 = @intCast(payload.len);
+                const seq_delta = @as(i32, @bitCast(seq -% flow.rcv_nxt));
+                if (seq_delta <= 0) {
+                    const already_received = flow.rcv_nxt -% seq;
+                    if (already_received < payload_len) {
+                        // Consume the payload that accompanies FIN, including
+                        // the unseen tail of a partially retransmitted segment.
+                        flow.rcv_nxt +%= payload_len - already_received;
+                    }
+                    // FIN consumes the next sequence number after the payload.
+                    // This is true for the initial in-order segment and for a
+                    // retransmitted FIN after its payload was already consumed.
+                    if (seq +% payload_len == flow.rcv_nxt) {
+                        flow.rcv_nxt +%= 1;
+                        flow.client_fin = true;
+                    }
+                }
             }
             flow.deadline_ms = sys.monotonicMs() + FIN_WAIT_TIMEOUT_MS;
             self.sendTcpPacket(flow, protocol.TcpHeader.FLAG_ACK, flow.snd_nxt, flow.rcv_nxt, 65535, null);
@@ -1334,6 +1349,60 @@ test "upstream FIN waits for client ACK before tombstone" {
 
     eng.handleUpstreamFinPacket(&flow, protocol.TcpHeader.FLAG_ACK, flow.rcv_nxt, &.{}, flow.snd_nxt, 65535);
     try std.testing.expectEqual(flow_mod.State.tombstone, flow.state);
+}
+
+test "upstream FIN consumes payload before advancing receive sequence" {
+    var tun_pair: [2]i32 = undefined;
+    const rc = linux.socketpair(linux.AF.UNIX, linux.SOCK.STREAM, 0, &tun_pair);
+    try std.testing.expectEqual(@as(usize, 0), rc);
+    defer {
+        _ = linux.close(tun_pair[0]);
+        _ = linux.close(tun_pair[1]);
+    }
+
+    var eng: Engine = undefined;
+    try eng.initInto(.{
+        .tun_fd = tun_pair[0],
+        .socks_ip = 0x7f000001,
+        .socks_port = 10808,
+        .mtu = 1500,
+    });
+    defer eng.deinit();
+
+    var flow: flow_mod.Flow = undefined;
+    flow.reset();
+    flow.state = .established;
+    flow.socks_fd = -1;
+    flow.snd_una = 100;
+    flow.snd_nxt = 100;
+    flow.rcv_nxt = 200;
+    flow.peer_wnd = 65535;
+
+    eng.sendUpstreamFin(&flow);
+    try std.testing.expect(flow.upstream_fin);
+
+    var fin_packet: [40]u8 = undefined;
+    try std.testing.expectEqual(@as(usize, 40), linux.read(tun_pair[1], &fin_packet, fin_packet.len));
+
+    const payload = "abc";
+    eng.handleUpstreamFinPacket(&flow, protocol.TcpHeader.FLAG_FIN, 200, payload, 0, 65535);
+
+    try std.testing.expect(flow.client_fin);
+    // Payload (3 bytes) + FIN consume four sequence numbers.
+    try std.testing.expectEqual(@as(u32, 204), flow.rcv_nxt);
+
+    var ack_packet: [40]u8 = undefined;
+    try std.testing.expectEqual(@as(usize, 40), linux.read(tun_pair[1], &ack_packet, ack_packet.len));
+    try std.testing.expect((ack_packet[33] & protocol.TcpHeader.FLAG_ACK) != 0);
+    try std.testing.expectEqual(@as(u32, 204), std.mem.readInt(u32, ack_packet[28..32], .big));
+
+    // A retransmitted FIN+payload must be ACKed without advancing twice.
+    eng.handleUpstreamFinPacket(&flow, protocol.TcpHeader.FLAG_FIN, 200, payload, 0, 65535);
+    try std.testing.expectEqual(@as(u32, 204), flow.rcv_nxt);
+
+    var retransmit_ack: [40]u8 = undefined;
+    try std.testing.expectEqual(@as(usize, 40), linux.read(tun_pair[1], &retransmit_ack, retransmit_ack.len));
+    try std.testing.expectEqual(@as(u32, 204), std.mem.readInt(u32, retransmit_ack[28..32], .big));
 }
 
 test "adaptive high watermark sweeps long-idle established flows" {
