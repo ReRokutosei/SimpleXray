@@ -13,7 +13,7 @@ set(HEV_DIR "${PROJECT_ROOT}/third_party/hev-socks5-tunnel")
 # -----------------------------------------------------------------------------
 
 # YAML static lib
-file(GLOB_RECURSE YAML_SOURCES ${HEV_DIR}/third-part/yaml/src/*.c)
+file(GLOB_RECURSE YAML_SOURCES CONFIGURE_DEPENDS ${HEV_DIR}/third-part/yaml/src/*.c)
 add_library(yaml STATIC ${YAML_SOURCES})
 target_include_directories(yaml PUBLIC ${HEV_DIR}/third-part/yaml/include)
 target_compile_definitions(yaml PRIVATE
@@ -24,7 +24,7 @@ target_compile_definitions(yaml PRIVATE
 )
 
 # lwIP static lib
-file(GLOB_RECURSE LWIP_SOURCES ${HEV_DIR}/third-part/lwip/src/*.c)
+file(GLOB_RECURSE LWIP_SOURCES CONFIGURE_DEPENDS ${HEV_DIR}/third-part/lwip/src/*.c)
 add_library(lwip STATIC ${LWIP_SOURCES})
 target_include_directories(lwip PUBLIC
     ${HEV_DIR}/third-part/lwip/src/include
@@ -38,7 +38,7 @@ target_compile_definitions(lwip PRIVATE
 )
 
 # hev-task-system static lib (arm64-v8a dedicated assembly & architecture header)
-file(GLOB_RECURSE TASK_SYS_C_SOURCES ${HEV_DIR}/third-part/hev-task-system/src/*.c)
+file(GLOB_RECURSE TASK_SYS_C_SOURCES CONFIGURE_DEPENDS ${HEV_DIR}/third-part/hev-task-system/src/*.c)
 set(TASK_SYS_ASM ${HEV_DIR}/third-part/hev-task-system/src/arch/arm/hev-task-execute-aarch64.s)
 set(TASK_SYS_ARCH_INC ${HEV_DIR}/third-part/hev-task-system/src/arch/arm)
 
@@ -66,7 +66,7 @@ target_compile_options(hev-task-system PRIVATE -fvisibility=hidden)
 # -----------------------------------------------------------------------------
 # 2. hev-socks5-tunnel shared library
 # -----------------------------------------------------------------------------
-file(GLOB_RECURSE TUNNEL_SOURCES
+file(GLOB_RECURSE TUNNEL_SOURCES CONFIGURE_DEPENDS
     ${HEV_DIR}/src/*.c
 )
 
