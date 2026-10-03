@@ -1,8 +1,8 @@
 import java.util.Properties
 import java.net.URI
-import java.net.URL
 import java.net.HttpURLConnection
 import java.net.URLConnection
+import java.security.MessageDigest
 import java.util.zip.ZipFile
 import com.google.protobuf.gradle.proto
 
@@ -286,38 +286,42 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
 }
 
 val xrayVersion = versionProps.getProperty("XRAY_CORE_VERSION")?.trim() ?: "v26.9.30"
+val xrayZipSha256 = versionProps.getProperty("XRAY_CORE_ZIP_SHA256")?.trim()?.lowercase()
+    ?: error("XRAY_CORE_ZIP_SHA256 is missing from version.properties")
+require(xrayZipSha256.matches(Regex("^[0-9a-f]{64}$"))) {
+    "XRAY_CORE_ZIP_SHA256 must be a 64-character lowercase hex SHA-256"
+}
 val targetJniFile = layout.projectDirectory.file("src/main/jniLibs/arm64-v8a/libxray.so")
-val cachedLibXray = layout.buildDirectory.file("xray-core-cache/$xrayVersion/libxray.so")
+val cachedLibXray = layout.buildDirectory.file("xray-core-cache/$xrayVersion-${xrayZipSha256.take(12)}/libxray.so")
 
-abstract class EnsureXrayTask : DefaultTask() {
-    @get:Input
-    abstract val version: Property<String>
+val ensureXrayCore = tasks.register("ensureXrayCore") {
+    group = "build"
+    description = "Ensures the verified Xray prebuilt matches version.properties"
 
-    @get:OutputFile
-    abstract val cachedFile: RegularFileProperty
+    val version = xrayVersion
+    val expectedZipSha = xrayZipSha256
+    val cachedFile = cachedLibXray.get().asFile
+    val targetFile = targetJniFile.asFile
 
-    @get:OutputFile
-    abstract val targetFile: RegularFileProperty
+    inputs.property("xrayVersion", version)
+    inputs.property("xrayZipSha256", expectedZipSha)
+    outputs.file(cachedFile)
+    outputs.file(targetFile)
 
-    @TaskAction
-    fun run() {
-        val ver = version.get()
-        val target = targetFile.get().asFile
-        val cache = cachedFile.get().asFile
-
-        if (cache.exists()) {
-            if (!target.exists() || target.length() != cache.length()) {
-                target.parentFile?.mkdirs()
-                cache.copyTo(target, overwrite = true)
-                target.setExecutable(true)
+    doLast {
+        if (cachedFile.exists()) {
+            if (!targetFile.exists() || targetFile.length() != cachedFile.length()) {
+                targetFile.parentFile?.mkdirs()
+                cachedFile.copyTo(targetFile, overwrite = true)
+                targetFile.setExecutable(true)
             }
-            return
+            return@doLast
         }
 
-        println("Downloading Xray-core $ver for arm64-v8a...")
-        val downloadUrl = "https://github.com/XTLS/Xray-core/releases/download/$ver/Xray-android-arm64-v8a.zip"
-        val zipFile = File(cache.parentFile, "xray-$ver.zip")
-        cache.parentFile?.mkdirs()
+        println("Downloading Xray-core $version for arm64-v8a...")
+        val downloadUrl = "https://github.com/XTLS/Xray-core/releases/download/$version/Xray-android-arm64-v8a.zip"
+        val zipFile = File(cachedFile.parentFile, "xray-$version.zip")
+        cachedFile.parentFile?.mkdirs()
 
         try {
             val connection = URI(downloadUrl).toURL().openConnection() as HttpURLConnection
@@ -332,9 +336,8 @@ abstract class EnsureXrayTask : DefaultTask() {
                     val code = currentConn.responseCode
                     if (code in 301..308) {
                         val location = currentConn.getHeaderField("Location") ?: break
-                        val nextUrl = URI(location).toURL()
                         currentConn.disconnect()
-                        currentConn = nextUrl.openConnection()
+                        currentConn = URI(location).toURL().openConnection()
                         redirects++
                         continue
                     }
@@ -348,34 +351,43 @@ abstract class EnsureXrayTask : DefaultTask() {
                 }
             }
 
+            val digest = MessageDigest.getInstance("SHA-256")
+            zipFile.inputStream().use { input ->
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read <= 0) break
+                    digest.update(buffer, 0, read)
+                }
+            }
+            val actualZipSha = digest.digest().joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+            if (!actualZipSha.equals(expectedZipSha, ignoreCase = true)) {
+                throw GradleException(
+                    "Xray archive SHA-256 mismatch for $version: expected $expectedZipSha, got $actualZipSha"
+                )
+            }
+
             ZipFile(zipFile).use { zip ->
                 val entry = zip.getEntry("xray") ?: error("Entry 'xray' not found in downloaded archive")
                 zip.getInputStream(entry).use { entryIn ->
-                    cache.outputStream().use { fileOut ->
+                    cachedFile.outputStream().use { fileOut ->
                         entryIn.copyTo(fileOut)
                     }
                 }
             }
             zipFile.delete()
-            cache.setExecutable(true)
+            cachedFile.setExecutable(true)
 
-            target.parentFile?.mkdirs()
-            cache.copyTo(target, overwrite = true)
-            target.setExecutable(true)
-            println("Successfully cached and installed libxray.so ($ver)")
+            targetFile.parentFile?.mkdirs()
+            cachedFile.copyTo(targetFile, overwrite = true)
+            targetFile.setExecutable(true)
+            println("Successfully verified and installed libxray.so ($version)")
         } catch (e: Exception) {
             zipFile.delete()
-            cache.delete()
-            throw org.gradle.api.GradleException("Failed to download or extract Xray-core $ver: ${e.message}", e)
+            cachedFile.delete()
+            throw GradleException("Failed to download or extract Xray-core $version: ${e.message}", e)
         }
     }
-}
-
-val ensureXrayCore = tasks.register<EnsureXrayTask>("ensureXrayCore") {
-    description = "Ensures libxray.so matches XRAY_CORE_VERSION in version.properties without redundant downloads"
-    version.set(xrayVersion)
-    cachedFile.set(cachedLibXray)
-    targetFile.set(targetJniFile)
 }
 
 tasks.named("preBuild").configure {

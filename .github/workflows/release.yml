@@ -52,6 +52,13 @@ jobs:
           fi
           echo "XRAY_CORE_COMMIT=$XRAY_CORE_COMMIT" >> "$GITHUB_ENV"
 
+          XRAY_CORE_ZIP_SHA256="$(grep '^XRAY_CORE_ZIP_SHA256=' version.properties | cut -d '=' -f 2 | tr -d '\r ')"
+          if [[ ! "$XRAY_CORE_ZIP_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
+            echo "Invalid XRAY_CORE_ZIP_SHA256: $XRAY_CORE_ZIP_SHA256" >&2
+            exit 1
+          fi
+          echo "XRAY_CORE_ZIP_SHA256=$XRAY_CORE_ZIP_SHA256" >> "$GITHUB_ENV"
+
           GEOIP_SHA256="$(grep '^GEOIP_SHA256=' version.properties | cut -d '=' -f 2 | tr -d '\r ')"
           if [[ ! "$GEOIP_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
             echo "Invalid GEOIP_SHA256: $GEOIP_SHA256" >&2
@@ -74,6 +81,19 @@ jobs:
             exit 1
           fi
           echo "RELEASE_VERSION=$RELEASE_VERSION" >> "$GITHUB_ENV"
+
+      - name: Verify Xray Release Tag
+        run: |
+          REMOTE="https://github.com/XTLS/Xray-core.git"
+          DEREF_COMMIT="$(git ls-remote "$REMOTE" "refs/tags/${XRAY_VERSION}^{}" | awk '{print $1}')"
+          if [ -z "$DEREF_COMMIT" ]; then
+            DEREF_COMMIT="$(git ls-remote "$REMOTE" "refs/tags/${XRAY_VERSION}" | awk '{print $1}')"
+          fi
+          if [ "$DEREF_COMMIT" != "$XRAY_CORE_COMMIT" ]; then
+            echo "Xray tag $XRAY_VERSION resolves to '${DEREF_COMMIT:-<not found>}', expected $XRAY_CORE_COMMIT" >&2
+            exit 1
+          fi
+          echo "Verified Xray tag $XRAY_VERSION -> $DEREF_COMMIT"
 
       - name: Set up Go
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
@@ -100,36 +120,13 @@ jobs:
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O ./app/src/main/assets/geosite.dat
           echo "$GEOSITE_SHA256  ./app/src/main/assets/geosite.dat" | sha256sum -c -
 
-      - name: Build Xray-core from Source
+      - name: Set up Android NDK
         run: |
           wget -qO android-ndk.zip https://dl.google.com/android/repository/android-ndk-r28c-linux.zip
           unzip -q android-ndk.zip
           rm android-ndk.zip
           NDK_HOME=$(realpath android-ndk-*)
           echo "NDK_HOME=$NDK_HOME" >> "$GITHUB_ENV"
-
-          # Shallow-clone the exact tag: a plain --depth=1 clone of the default
-          # branch does not fetch any tags, so `git checkout <tag>` would fail
-          # (pathspec did not match). --branch accepts a tag and checks it out.
-          git clone --depth=1 --branch "${{ env.XRAY_VERSION }}" https://github.com/XTLS/Xray-core.git
-          cd Xray-core
-          ACTUAL_COMMIT="$(git rev-parse HEAD)"
-          if [[ "$ACTUAL_COMMIT" != "$XRAY_CORE_COMMIT" ]]; then
-            echo "Xray-core $XRAY_VERSION resolved to $ACTUAL_COMMIT, expected $XRAY_CORE_COMMIT" >&2
-            exit 1
-          fi
-          COMMID="$(git rev-parse --short=7 HEAD)"
-
-          export GOOS=android
-          export CGO_ENABLED=1
-          export GOARCH=arm64
-          export CC=$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
-          # -checklinkname=0: wlynxg/anet still linknames net internal symbols
-          # (net.zoneCache), which Go 1.26's strict check rejects. Xray's own
-          # release workflow uses the same flag for Android builds.
-          go build -o xray -trimpath -buildvcs=false -ldflags="-X github.com/xtls/xray-core/core.build=${COMMID} -s -w -buildid= -checklinkname=0" -v ./main
-          mkdir -p ../app/src/main/jniLibs/arm64-v8a
-          mv xray ../app/src/main/jniLibs/arm64-v8a/libxray.so
 
       - name: Build SingTUN Bridge from Source
         run: |
