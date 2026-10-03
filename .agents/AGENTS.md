@@ -38,8 +38,7 @@ This file provides the necessary context and constraints for AI agents interacti
 - `third_party/sing-tun/`: In-tree Go sing-tun stack used by the SingTUN backend.
 - `docs/benchmark/`: Benchmark whitepaper (`android-tun-benchmark.md`), device dataset directories (`docs/benchmark/<profile>/data/`), and generated chart dashboards (`docs/benchmark/<profile>/charts/`).
 - `docs/images/`: Standardized 16:9 light-theme WebP dashboards, master infographic (`mega_benchmark_infographic.webp`), and architectural diagrams.
-- `version.properties`: Root version contract tracking `XRAY_CORE_VERSION`, `HEV_TUN_VERSION`, `SING_TUN_VERSION`, `GO_VERSION`, and `NDK_VERSION`. SimpleTUN is in-tree and is not hash-pinned there.
-- `release-pins.properties`: Manual release-artifact pins. `XRAY_CORE_COMMIT` must match `XRAY_CORE_VERSION`; `GEOIP_SHA256`/`GEOSITE_SHA256` pin the rolling `meta-rules-dat` assets. The release workflow refuses to build on mismatch.
+- `version.properties`: Root version and release contract tracking `XRAY_CORE_VERSION`, `XRAY_CORE_COMMIT`, `GEOIP_SHA256`, `GEOSITE_SHA256`, `HEV_TUN_VERSION`, `SING_TUN_VERSION`, `GO_VERSION`, and `NDK_VERSION`. SimpleTUN is in-tree and is not hash-pinned there. The release workflow refuses to build on mismatch.
 - `tools/`: Automated benchmarking tools & modular pipeline:
   - `benchmark.py`: Unified master CLI runner orchestrating throughput, idle memory, bufferbloat, stability, weaknet, and CPS suites. Supports `--preset light` and `--preset full`.
   - `presets.py`: Formal benchmark contract definitions (`light` vs `full`).

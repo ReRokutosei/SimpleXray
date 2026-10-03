@@ -45,21 +45,21 @@ jobs:
           fi
           echo "GO_VERSION=$GO_VERSION" >> "$GITHUB_ENV"
 
-          XRAY_CORE_COMMIT="$(grep '^XRAY_CORE_COMMIT=' release-pins.properties | cut -d '=' -f 2 | tr -d '\r ')"
+          XRAY_CORE_COMMIT="$(grep '^XRAY_CORE_COMMIT=' version.properties | cut -d '=' -f 2 | tr -d '\r ')"
           if [[ ! "$XRAY_CORE_COMMIT" =~ ^[0-9a-f]{40}$ ]]; then
             echo "Invalid XRAY_CORE_COMMIT: $XRAY_CORE_COMMIT" >&2
             exit 1
           fi
           echo "XRAY_CORE_COMMIT=$XRAY_CORE_COMMIT" >> "$GITHUB_ENV"
 
-          GEOIP_SHA256="$(grep '^GEOIP_SHA256=' release-pins.properties | cut -d '=' -f 2 | tr -d '\r ')"
+          GEOIP_SHA256="$(grep '^GEOIP_SHA256=' version.properties | cut -d '=' -f 2 | tr -d '\r ')"
           if [[ ! "$GEOIP_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
             echo "Invalid GEOIP_SHA256: $GEOIP_SHA256" >&2
             exit 1
           fi
           echo "GEOIP_SHA256=$GEOIP_SHA256" >> "$GITHUB_ENV"
 
-          GEOSITE_SHA256="$(grep '^GEOSITE_SHA256=' release-pins.properties | cut -d '=' -f 2 | tr -d '\r ')"
+          GEOSITE_SHA256="$(grep '^GEOSITE_SHA256=' version.properties | cut -d '=' -f 2 | tr -d '\r ')"
           if [[ ! "$GEOSITE_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
             echo "Invalid GEOSITE_SHA256: $GEOSITE_SHA256" >&2
             exit 1

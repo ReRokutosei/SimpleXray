@@ -1,4 +1,9 @@
 import java.util.Properties
+import java.net.URI
+import java.net.URL
+import java.net.HttpURLConnection
+import java.net.URLConnection
+import java.util.zip.ZipFile
 import com.google.protobuf.gradle.proto
 
 plugins {
@@ -279,3 +284,101 @@ tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach 
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
     }
 }
+
+val xrayVersion = versionProps.getProperty("XRAY_CORE_VERSION")?.trim() ?: "v26.9.30"
+val targetJniFile = layout.projectDirectory.file("src/main/jniLibs/arm64-v8a/libxray.so")
+val cachedLibXray = layout.buildDirectory.file("xray-core-cache/$xrayVersion/libxray.so")
+
+abstract class EnsureXrayTask : DefaultTask() {
+    @get:Input
+    abstract val version: Property<String>
+
+    @get:OutputFile
+    abstract val cachedFile: RegularFileProperty
+
+    @get:OutputFile
+    abstract val targetFile: RegularFileProperty
+
+    @TaskAction
+    fun run() {
+        val ver = version.get()
+        val target = targetFile.get().asFile
+        val cache = cachedFile.get().asFile
+
+        if (cache.exists()) {
+            if (!target.exists() || target.length() != cache.length()) {
+                target.parentFile?.mkdirs()
+                cache.copyTo(target, overwrite = true)
+                target.setExecutable(true)
+            }
+            return
+        }
+
+        println("Downloading Xray-core $ver for arm64-v8a...")
+        val downloadUrl = "https://github.com/XTLS/Xray-core/releases/download/$ver/Xray-android-arm64-v8a.zip"
+        val zipFile = File(cache.parentFile, "xray-$ver.zip")
+        cache.parentFile?.mkdirs()
+
+        try {
+            val connection = URI(downloadUrl).toURL().openConnection() as HttpURLConnection
+            connection.instanceFollowRedirects = true
+            connection.connectTimeout = 15000
+            connection.readTimeout = 60000
+
+            var currentConn: URLConnection = connection
+            var redirects = 0
+            while (redirects < 5) {
+                if (currentConn is HttpURLConnection) {
+                    val code = currentConn.responseCode
+                    if (code in 301..308) {
+                        val location = currentConn.getHeaderField("Location") ?: break
+                        val nextUrl = URI(location).toURL()
+                        currentConn.disconnect()
+                        currentConn = nextUrl.openConnection()
+                        redirects++
+                        continue
+                    }
+                }
+                break
+            }
+
+            currentConn.getInputStream().use { input ->
+                zipFile.outputStream().use { output ->
+                    input.copyTo(output)
+                }
+            }
+
+            ZipFile(zipFile).use { zip ->
+                val entry = zip.getEntry("xray") ?: error("Entry 'xray' not found in downloaded archive")
+                zip.getInputStream(entry).use { entryIn ->
+                    cache.outputStream().use { fileOut ->
+                        entryIn.copyTo(fileOut)
+                    }
+                }
+            }
+            zipFile.delete()
+            cache.setExecutable(true)
+
+            target.parentFile?.mkdirs()
+            cache.copyTo(target, overwrite = true)
+            target.setExecutable(true)
+            println("Successfully cached and installed libxray.so ($ver)")
+        } catch (e: Exception) {
+            zipFile.delete()
+            cache.delete()
+            throw org.gradle.api.GradleException("Failed to download or extract Xray-core $ver: ${e.message}", e)
+        }
+    }
+}
+
+val ensureXrayCore = tasks.register<EnsureXrayTask>("ensureXrayCore") {
+    description = "Ensures libxray.so matches XRAY_CORE_VERSION in version.properties without redundant downloads"
+    version.set(xrayVersion)
+    cachedFile.set(cachedLibXray)
+    targetFile.set(targetJniFile)
+}
+
+tasks.named("preBuild").configure {
+    dependsOn(ensureXrayCore)
+}
+

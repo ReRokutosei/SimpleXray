@@ -289,8 +289,8 @@ If forking this repository and using GitHub Actions CI for automated builds and 
    * `KEY_ALIAS`: Key alias.
    * `KEY_PASSWORD`: Private key password.
 3. **Automated Kernel Upgrades**:
-   * The repository features a fully automated source-build pipeline. To upgrade to a newer upstream Xray-core release, you do not need to manually compile or fetch Go binaries: edit `XRAY_CORE_VERSION` in the root [`version.properties`](../version.properties) and set `XRAY_CORE_COMMIT` in [`release-pins.properties`](../release-pins.properties) to the commit SHA that the release tag resolves to.
-   * The `meta-rules-dat` project publishes rolling `latest` assets. When `geoip.dat` / `geosite.dat` change, update `GEOIP_SHA256` / `GEOSITE_SHA256` in `release-pins.properties`; the release workflow verifies both hashes and the Xray commit before building.
+   * The repository features a fully automated source-build pipeline. To upgrade to a newer upstream Xray-core release, you do not need to manually compile or fetch Go binaries: edit `XRAY_CORE_VERSION` in the root [`version.properties`](../version.properties) and set `XRAY_CORE_COMMIT` to the commit SHA that the release tag resolves to.
+   * The `meta-rules-dat` project publishes rolling `latest` assets. When `geoip.dat` / `geosite.dat` change, update `GEOIP_SHA256` / `GEOSITE_SHA256` in [`version.properties`](../version.properties); the release workflow verifies both hashes and the Xray commit before building.
    * Commit the changes and push a valid semver tag ( `X.Y.Z` ). GitHub Actions will automatically check out the pinned Xray-core commit, cross-compile the binary, sign the release APK, and publish the GitHub Release.
 
 ---
