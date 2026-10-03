@@ -64,10 +64,14 @@ TARGET_ORDER = ['direct_none', 'hev', 'sing', 'xray', 'simpletun']
 
 # Font Discovery
 FONT_DIRS = [
-    "/home/example/.local/share/fonts/JetBrains",
+    os.environ.get("JETBRAINS_MONO_FONT_DIR", "").strip(),
     os.path.expanduser("~/.local/share/fonts/JetBrains"),
+    os.path.expanduser("~/.local/share/fonts"),
     os.path.expanduser("~/.fonts"),
+    "/usr/share/fonts/truetype/jetbrains-mono",
+    "/usr/share/fonts",
 ]
+FONT_DIRS = [d for d in FONT_DIRS if d]
 
 
 _PROP_REGULAR: Optional[fm.FontProperties] = None
