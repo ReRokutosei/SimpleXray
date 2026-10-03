@@ -11,8 +11,8 @@ NDK_ROOT="${ANDROID_NDK_HOME:-${NDK_HOME:-}}"
 if [[ -z "${NDK_ROOT}" ]]; then
     if [[ -n "${ANDROID_HOME:-}" && -d "${ANDROID_HOME}/ndk" ]]; then
         NDK_ROOT="$(find "${ANDROID_HOME}/ndk" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
-    elif [[ -d "/home/example/Android/Sdk/ndk" ]]; then
-        NDK_ROOT="$(find "/home/example/Android/Sdk/ndk" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+    elif [[ -d "${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}/ndk" ]]; then
+        NDK_ROOT="$(find "${ANDROID_SDK_ROOT:-$HOME/Android/Sdk}/ndk" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
     fi
 fi
 
