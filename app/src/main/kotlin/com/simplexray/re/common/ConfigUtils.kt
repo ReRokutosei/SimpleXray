@@ -36,6 +36,16 @@ object ConfigUtils {
     // UDP-only protocols that cannot be latency-tested via TCP connect.
     private val UDP_ONLY_OUTBOUND_PROTOCOLS = setOf("wireguard", "hysteria", "hysteria2")
 
+    // Protocols that accept streamSettings.sockopt for their TCP-based transports.
+    private val STREAM_TCP_OUTBOUND_PROTOCOLS = setOf(
+        "vless", "vmess", "trojan", "shadowsocks", "socks", "http"
+    )
+
+    private const val OUTBOUND_TCP_KEEPALIVE_IDLE_SECONDS = 15
+    private const val OUTBOUND_TCP_KEEPALIVE_INTERVAL_SECONDS = 3
+    private const val OUTBOUND_TCP_USER_TIMEOUT_MS = 15000
+    private const val OUTBOUND_TCP_KEEPALIVE_COUNT = 3
+
     data class OutboundInfo(val tag: String, val protocol: String)
 
     data class OutboundEndpoint(val tag: String, val protocol: String, val host: String, val port: Int)
@@ -412,7 +422,10 @@ object ConfigUtils {
             }
         }
 
-        // 5. Observatory probeTimeout safety injection
+        // 5. Keep outbound transports responsive after Android network switches.
+        injectOutboundSocketTimeouts(rootJson)
+
+        // 6. Observatory probeTimeout safety injection
         val observatory = rootJson.optJSONObject("observatory")
         if (observatory != null) {
             if (!observatory.has("probeTimeout")) {
@@ -422,6 +435,59 @@ object ConfigUtils {
         }
 
         return rootJson.toString(2)
+    }
+
+    private fun injectOutboundSocketTimeouts(rootJson: JSONObject) {
+        val outbounds = rootJson.optJSONArray("outbounds") ?: return
+        for (i in 0 until outbounds.length()) {
+            val outbound = outbounds.optJSONObject(i) ?: continue
+            val protocol = outbound.optString("protocol").lowercase()
+            if (protocol !in STREAM_TCP_OUTBOUND_PROTOCOLS) continue
+
+            val streamSettings = outbound.optJSONObject("streamSettings")
+                ?: JSONObject().also { outbound.put("streamSettings", it) }
+            val sockopt = streamSettings.optJSONObject("sockopt")
+                ?: JSONObject().also { streamSettings.put("sockopt", it) }
+
+            if (!sockopt.has("tcpKeepAliveIdle")) {
+                sockopt.put("tcpKeepAliveIdle", OUTBOUND_TCP_KEEPALIVE_IDLE_SECONDS)
+            }
+            if (!sockopt.has("tcpKeepAliveInterval")) {
+                sockopt.put("tcpKeepAliveInterval", OUTBOUND_TCP_KEEPALIVE_INTERVAL_SECONDS)
+            }
+            if (!sockopt.has("tcpUserTimeout")) {
+                sockopt.put("tcpUserTimeout", OUTBOUND_TCP_USER_TIMEOUT_MS)
+            }
+            ensureTcpKeepAliveCount(sockopt)
+            Log.d(TAG, "Injected outbound transport timeouts for protocol '$protocol'.")
+        }
+    }
+
+    /**
+     * Caps the keepalive probe count so a blackholed outbound transport is
+     * closed within ~(idle + count * interval) seconds instead of waiting for
+     * the Linux default of 9 probes.
+     */
+    private fun ensureTcpKeepAliveCount(sockopt: JSONObject) {
+        val customSockopt = sockopt.optJSONArray("customSockopt")
+        if (customSockopt != null) {
+            for (i in 0 until customSockopt.length()) {
+                val entry = customSockopt.optJSONObject(i) ?: continue
+                val level = entry.optString("level", "6").ifBlank { "6" }
+                if (entry.optString("opt") == "6" && level == "6") {
+                    Log.d(TAG, "User-supplied TCP_KEEPCNT found; keeping it.")
+                    return
+                }
+            }
+        }
+        val array = customSockopt ?: JSONArray().also { sockopt.put("customSockopt", it) }
+        array.put(JSONObject().apply {
+            put("type", "int")
+            put("network", "tcp")
+            put("level", "6")
+            put("opt", "6")
+            put("value", OUTBOUND_TCP_KEEPALIVE_COUNT.toString())
+        })
     }
 
     private fun parseToJsonObject(content: String): JSONObject? {

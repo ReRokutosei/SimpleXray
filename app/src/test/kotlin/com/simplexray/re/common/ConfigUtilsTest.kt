@@ -376,4 +376,81 @@ class ConfigUtilsTest {
         assertEquals(1, endpoints.size)
         assertEquals("vless-node", endpoints[0].tag)
     }
+
+    @Test
+    fun testOutboundSocketTimeoutsInjectedWithRespectForUserValues() {
+        val rawConfig = """
+        {
+          "outbounds": [
+            {
+              "tag": "vless-node",
+              "protocol": "vless",
+              "streamSettings": {
+                "network": "tcp",
+                "sockopt": {
+                  "tcpKeepAliveIdle": 30
+                }
+              }
+            },
+            {
+              "tag": "trojan-node",
+              "protocol": "trojan"
+            },
+            {
+              "tag": "direct",
+              "protocol": "freedom"
+            },
+            {
+              "tag": "wg-node",
+              "protocol": "wireguard"
+            }
+          ]
+        }
+        """.trimIndent()
+
+        val json = JSONObject(ConfigUtils.sanitizeConfig(rawConfig))
+        val outbounds = json.getJSONArray("outbounds")
+
+        val vlessSockopt = outbounds.getJSONObject(0)
+            .getJSONObject("streamSettings").getJSONObject("sockopt")
+        assertEquals(30, vlessSockopt.getInt("tcpKeepAliveIdle"))
+        assertEquals(3, vlessSockopt.getInt("tcpKeepAliveInterval"))
+        assertEquals(15000, vlessSockopt.getInt("tcpUserTimeout"))
+        assertEquals("3", vlessSockopt.getJSONArray("customSockopt").getJSONObject(0).getString("value"))
+
+        val trojanSockopt = outbounds.getJSONObject(1)
+            .getJSONObject("streamSettings").getJSONObject("sockopt")
+        assertEquals(15, trojanSockopt.getInt("tcpKeepAliveIdle"))
+
+        assertFalse(outbounds.getJSONObject(2).has("streamSettings"))
+        assertFalse(outbounds.getJSONObject(3).has("streamSettings"))
+    }
+
+    @Test
+    fun testOutboundSocketTimeoutsRespectExistingKeepAliveCount() {
+        val rawConfig = """
+        {
+          "outbounds": [
+            {
+              "tag": "vless-node",
+              "protocol": "vless",
+              "streamSettings": {
+                "sockopt": {
+                  "customSockopt": [
+                    { "type": "int", "level": "6", "opt": "6", "value": "7" }
+                  ]
+                }
+              }
+            }
+          ]
+        }
+        """.trimIndent()
+
+        val json = JSONObject(ConfigUtils.sanitizeConfig(rawConfig))
+        val custom = json.getJSONArray("outbounds").getJSONObject(0)
+            .getJSONObject("streamSettings").getJSONObject("sockopt")
+            .getJSONArray("customSockopt")
+        assertEquals(1, custom.length())
+        assertEquals("7", custom.getJSONObject(0).getString("value"))
+    }
 }
