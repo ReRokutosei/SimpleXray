@@ -320,8 +320,9 @@ app/build/outputs/apk/release/simplexray-arm64-v8a.apk
    * `KEY_ALIAS`：密钥别名。
    * `KEY_PASSWORD`：私钥密码。
 3. **自动化跟随 Xray-core 内核更新**：
-   * 仓库已有全自动构建流。若需升级内核，无需手动下载或编译 Go 二进制，只需在根目录的 [`version.properties`](../version.properties) 中修改 `XRAY_CORE_VERSION`；
-   * 提交修改并推送符合规范的版本 Tag（ `X.Y.Z` ），GitHub Actions 将全自动拉取对应版本的 Xray-core 源码、交叉编译并签名打包发布 Release。
+   * 仓库已有全自动构建流。若需升级内核，无需手动下载或编译 Go 二进制：修改根目录 [`version.properties`](../version.properties) 中的 `XRAY_CORE_VERSION`，并在 [`release-pins.properties`](../release-pins.properties) 中把 `XRAY_CORE_COMMIT` 更新为该 Tag 对应的 commit SHA；
+   * `meta-rules-dat` 使用滚动的 `latest` Release。若 `geoip.dat` / `geosite.dat` 发生变化，需同步更新 `release-pins.properties` 中的 `GEOIP_SHA256` / `GEOSITE_SHA256`；发布流程会在构建前校验 Xray commit 和两个哈希，不匹配会直接失败；
+   * 提交修改并推送符合规范的版本 Tag（ `X.Y.Z` ），GitHub Actions 将全自动拉取固定 commit 的 Xray-core 源码、交叉编译并签名打包发布 Release。
 
 ---
 
