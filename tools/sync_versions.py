@@ -75,6 +75,7 @@ def sync_versions(check_only: bool = False) -> bool:
     expected = {
         "XRAY_CORE_VERSION": current.get("XRAY_CORE_VERSION", "v26.9.30"),
         "XRAY_CORE_COMMIT": current.get("XRAY_CORE_COMMIT", ""),
+        "XRAY_CORE_ZIP_SHA256": current.get("XRAY_CORE_ZIP_SHA256", ""),
         "GEOIP_SHA256": current.get("GEOIP_SHA256", ""),
         "GEOSITE_SHA256": current.get("GEOSITE_SHA256", ""),
         "HEV_TUN_VERSION": get_hev_version(),
