@@ -86,13 +86,13 @@ def format_markdown_table(results: List[Dict[str, Any]], title: str = "Benchmark
     return "\n".join(lines) + "\n"
 
 
-def auto_detect_usb_ip() -> str:
+def auto_detect_usb_ip() -> Optional[str]:
     rc, out, _ = run_cmd(["ip", "-brief", "address"])
     for line in out.splitlines():
         parts = line.split()
         if len(parts) >= 3 and any(parts[0].startswith(prefix) for prefix in ["enx", "rndis", "usb"]):
             return parts[2].split("/")[0]
-    return "192.168.232.59"
+    return None
 
 
 def main():
@@ -110,10 +110,10 @@ def main():
                         help="TUN backends to benchmark (comma-separated: hev,sing,xray,simpletun, or 'all')")
     parser.add_argument("--skip-baseline", action="store_true", default=None,
                         help="Skip running physical baseline (No VPN) tests")
-    parser.add_argument("--wifi-server-ip", default="192.168.31.236",
-                        help="Host PC IP in Wi-Fi subnet (default: 192.168.31.236)")
+    parser.add_argument("--wifi-server-ip", required=True,
+                        help="Host PC IP in the Wi-Fi subnet (required; no built-in default)")
     parser.add_argument("--usb-server-ip", default="auto",
-                        help="Host PC IP in USB tethering subnet (default: auto)")
+                        help="Host PC IP in USB tethering subnet; 'auto' probes for an enx/rndis/usb interface")
     parser.add_argument("--duration", type=int, default=None,
                         help="Duration in seconds per throughput test direction (default: 10)")
     parser.add_argument("--device", default=None,
@@ -236,10 +236,12 @@ def main():
     log_info(f"Active Suites: {sorted(modes)}")
     log_info(f"Backends: {backends} | Skip Baseline: {skip_baseline} | Networks: {networks} | Rounds: {rounds}")
 
-    # Auto-detect USB host IP if needed
-    usb_server_ip = args.usb_server_ip
+    # Auto-detect the USB host IP only when the full preset needs it.
+    usb_server_ip: Optional[str] = args.usb_server_ip
     if usb_server_ip == "auto":
         usb_server_ip = auto_detect_usb_ip()
+    if preset and preset.name == "full" and not usb_server_ip:
+        parser.error("Could not auto-detect a USB host IP; pass --usb-server-ip explicitly")
 
     # Initialize ADB
     try:

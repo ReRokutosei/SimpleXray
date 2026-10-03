@@ -42,6 +42,9 @@ This directory contains automated testing scripts and profiling tools for benchm
 
 ## Usage
 
+
+`--wifi-server-ip` is required and has no built-in host default. With `--preset full`, `--usb-server-ip auto` probes for an `enx`/`rndis`/`usb` interface and aborts if none is found.
+
 ### 1. Preset-Driven Benchmark (Recommended)
 
 #### Light Preset (Hev, SingTUN, and SimpleTUN on Wi-Fi MTU 1500, no baseline)
