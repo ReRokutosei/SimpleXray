@@ -277,7 +277,7 @@ pub const Engine = struct {
                             flow.tun_blocked = false;
                             self.armTunEvents();
                         }
-                        flow.reset();
+                        self.table.resetFlow(flow);
                     }
                 },
                 .upstream_connect, .socks5_auth_wait, .socks5_connect_wait => {
@@ -748,12 +748,12 @@ pub const Engine = struct {
 
         if (f.state == .tombstone) {
             if ((flags & protocol.TcpHeader.FLAG_SYN) != 0 and (flags & protocol.TcpHeader.FLAG_ACK) == 0) {
-                f.reset();
+                self.table.resetFlow(f);
                 self.handleNewSyn(src_ip, dst_ip, src_port, dst_port, seq);
                 return;
             }
             if ((flags & protocol.TcpHeader.FLAG_RST) != 0) {
-                f.reset();
+                self.table.resetFlow(f);
                 return;
             }
             // Trailing ACK for late data/FIN retransmissions.

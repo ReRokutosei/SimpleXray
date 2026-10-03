@@ -68,12 +68,19 @@ pub const Flow = struct {
 
 pub const FlowTable = struct {
     pub const CAPACITY: usize = 1024;
+    pub const HASH_CAPACITY: usize = 2 * CAPACITY;
+    const HASH_EMPTY: u16 = 0;
+    const HASH_DELETED: u16 = std.math.maxInt(u16);
 
     flows: [CAPACITY]Flow,
+    hash_slots: [HASH_CAPACITY]u16,
 
     pub fn initInto(self: *FlowTable) void {
         for (&self.flows) |*flow| {
             flow.reset();
+        }
+        for (&self.hash_slots) |*slot| {
+            slot.* = HASH_EMPTY;
         }
     }
 
@@ -89,11 +96,87 @@ pub const FlowTable = struct {
         return (ptr - base) / @sizeOf(Flow);
     }
 
-    pub fn findFlow(self: *FlowTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) ?*Flow {
-        for (&self.flows) |*flow| {
-            if (flow.state != .free and flow.matches(src_ip, dst_ip, src_port, dst_port)) {
-                return flow;
+    fn tupleHash(src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) usize {
+        const Key = extern struct {
+            src_ip: u32,
+            dst_ip: u32,
+            src_port: u16,
+            dst_port: u16,
+        };
+        const key = Key{
+            .src_ip = src_ip,
+            .dst_ip = dst_ip,
+            .src_port = src_port,
+            .dst_port = dst_port,
+        };
+        const h = std.hash.Wyhash.hash(0x9e37_79b9_7f4a_7c15, std.mem.asBytes(&key));
+        return @intCast(h & (HASH_CAPACITY - 1));
+    }
+
+    fn removeHash(self: *FlowTable, flow: *const Flow) void {
+        const target: u16 = @intCast(self.indexOf(flow) + 1);
+        var slot = tupleHash(flow.src_ip, flow.dst_ip, flow.src_port, flow.dst_port);
+        var probes: usize = 0;
+        while (probes < HASH_CAPACITY) : (probes += 1) {
+            const entry = self.hash_slots[slot];
+            if (entry == HASH_EMPTY) return;
+            if (entry == target) {
+                self.hash_slots[slot] = HASH_DELETED;
+                return;
             }
+            slot = (slot + 1) & (HASH_CAPACITY - 1);
+        }
+    }
+
+    fn insertHash(self: *FlowTable, flow: *Flow) void {
+        const target: u16 = @intCast(self.indexOf(flow) + 1);
+        var slot = tupleHash(flow.src_ip, flow.dst_ip, flow.src_port, flow.dst_port);
+        var first_available: ?usize = null;
+        var probes: usize = 0;
+        while (probes < HASH_CAPACITY) : (probes += 1) {
+            const entry = self.hash_slots[slot];
+            if (entry == HASH_EMPTY) {
+                self.hash_slots[first_available orelse slot] = target;
+                return;
+            }
+            if (entry == HASH_DELETED) {
+                if (first_available == null) first_available = slot;
+            } else if (entry != target) {
+                const entry_idx = @as(usize, entry) - 1;
+                if (entry_idx < CAPACITY and self.flows[entry_idx].state == .free) {
+                    if (first_available == null) first_available = slot;
+                }
+            } else {
+                return;
+            }
+            slot = (slot + 1) & (HASH_CAPACITY - 1);
+        }
+        if (first_available) |available| {
+            self.hash_slots[available] = target;
+        }
+    }
+
+    pub fn resetFlow(self: *FlowTable, flow: *Flow) void {
+        self.removeHash(flow);
+        flow.reset();
+    }
+
+    pub fn findFlow(self: *FlowTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) ?*Flow {
+        var slot = tupleHash(src_ip, dst_ip, src_port, dst_port);
+        var probes: usize = 0;
+        while (probes < HASH_CAPACITY) : (probes += 1) {
+            const entry = self.hash_slots[slot];
+            if (entry == HASH_EMPTY) return null;
+            if (entry != HASH_DELETED) {
+                const flow_idx = @as(usize, entry) - 1;
+                if (flow_idx < CAPACITY) {
+                    const flow = &self.flows[flow_idx];
+                    if (flow.state != .free and flow.matches(src_ip, dst_ip, src_port, dst_port)) {
+                        return flow;
+                    }
+                }
+            }
+            slot = (slot + 1) & (HASH_CAPACITY - 1);
         }
         return null;
     }
@@ -106,17 +189,23 @@ pub const FlowTable = struct {
         return count;
     }
 
+    fn activate(self: *FlowTable, flow: *Flow, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) *Flow {
+        flow.src_ip = src_ip;
+        flow.dst_ip = dst_ip;
+        flow.src_port = src_port;
+        flow.dst_port = dst_port;
+        flow.state = .upstream_connect;
+        self.insertHash(flow);
+        return flow;
+    }
+
     pub fn allocate(self: *FlowTable, src_ip: u32, dst_ip: u32, src_port: u16, dst_port: u16) ?*Flow {
         // First pass: try to find a completely free slot
         for (&self.flows) |*flow| {
             if (flow.state == .free) {
+                self.removeHash(flow);
                 flow.reset();
-                flow.src_ip = src_ip;
-                flow.dst_ip = dst_ip;
-                flow.src_port = src_port;
-                flow.dst_port = dst_port;
-                flow.state = .upstream_connect;
-                return flow;
+                return self.activate(flow, src_ip, dst_ip, src_port, dst_port);
             }
         }
 
@@ -136,13 +225,8 @@ pub const FlowTable = struct {
         for (&self.flows) |*flow| {
             if (flow.state == .tombstone) {
                 if (now + tombstone_slack >= flow.deadline_ms) {
-                    flow.reset();
-                    flow.src_ip = src_ip;
-                    flow.dst_ip = dst_ip;
-                    flow.src_port = src_port;
-                    flow.dst_port = dst_port;
-                    flow.state = .upstream_connect;
-                    return flow;
+                    self.resetFlow(flow);
+                    return self.activate(flow, src_ip, dst_ip, src_port, dst_port);
                 }
                 if (flow.deadline_ms < oldest_tombstone_time) {
                     oldest_tombstone_time = flow.deadline_ms;
@@ -153,13 +237,8 @@ pub const FlowTable = struct {
 
         // Third pass: under high CPS pressure, forcibly evict the oldest tombstone
         if (oldest_tombstone) |flow| {
-            flow.reset();
-            flow.src_ip = src_ip;
-            flow.dst_ip = dst_ip;
-            flow.src_port = src_port;
-            flow.dst_port = dst_port;
-            flow.state = .upstream_connect;
-            return flow;
+            self.resetFlow(flow);
+            return self.activate(flow, src_ip, dst_ip, src_port, dst_port);
         }
 
         // Fourth pass: table completely saturated with active flows; forcibly recycle oldest flow.
@@ -176,14 +255,9 @@ pub const FlowTable = struct {
         }
         if (oldest_flow) |flow| {
             const old_fd = flow.socks_fd;
-            flow.reset();
+            self.resetFlow(flow);
             flow.socks_fd = old_fd; // Preserved for Engine to epoll_ctl(DEL) and sys.close()
-            flow.src_ip = src_ip;
-            flow.dst_ip = dst_ip;
-            flow.src_port = src_port;
-            flow.dst_port = dst_port;
-            flow.state = .upstream_connect;
-            return flow;
+            return self.activate(flow, src_ip, dst_ip, src_port, dst_port);
         }
 
         return null;
@@ -412,4 +486,57 @@ test "FlowTable adaptive high watermark tombstone eviction" {
     // Because active >= 820, tombstone_slack is 2500ms, so 2000ms deadline is adaptively treated as expired!
     const new_flow = table.allocate(0x0a000001, 0x0a000002, 9999, 80);
     try std.testing.expect(new_flow != null);
+}
+
+test "FlowTable hash index invalidates reset flows" {
+    var table: FlowTable = undefined;
+    table.initInto();
+
+    const flow1 = table.allocate(0x0a000001, 0x08080808, 40000, 443);
+    const flow2 = table.allocate(0x0a000001, 0x08080808, 40001, 443);
+    try std.testing.expect(flow1 != null);
+    try std.testing.expect(flow2 != null);
+    try std.testing.expectEqual(flow1, table.findFlow(0x0a000001, 0x08080808, 40000, 443));
+    try std.testing.expectEqual(flow2, table.findFlow(0x0a000001, 0x08080808, 40001, 443));
+
+    table.resetFlow(flow1.?);
+    try std.testing.expect(table.findFlow(0x0a000001, 0x08080808, 40000, 443) == null);
+    try std.testing.expectEqual(flow2, table.findFlow(0x0a000001, 0x08080808, 40001, 443));
+
+    const flow3 = table.allocate(0x0a000001, 0x08080808, 40000, 443);
+    try std.testing.expect(flow3 != null);
+    try std.testing.expectEqual(flow3, table.findFlow(0x0a000001, 0x08080808, 40000, 443));
+}
+
+test "FlowTable hash index covers full slab capacity" {
+    var table: FlowTable = undefined;
+    table.initInto();
+
+    var i: u32 = 0;
+    while (i < FlowTable.CAPACITY) : (i += 1) {
+        const flow = table.allocate(0x0a000000 +% i, 0x0b000000, @intCast(10000 + i), 443);
+        try std.testing.expect(flow != null);
+        flow.?.state = .established;
+    }
+    try std.testing.expectEqual(@as(usize, FlowTable.CAPACITY), table.activeCount());
+
+    i = 0;
+    while (i < FlowTable.CAPACITY) : (i += 1) {
+        const flow = table.findFlow(0x0a000000 +% i, 0x0b000000, @intCast(10000 + i), 443);
+        try std.testing.expect(flow != null);
+        try std.testing.expectEqual(State.established, flow.?.state);
+    }
+}
+
+test "FlowTable hash index keeps tombstones discoverable until reset" {
+    var table: FlowTable = undefined;
+    table.initInto();
+
+    const flow = table.allocate(0x0a000001, 0x08080808, 40000, 443);
+    try std.testing.expect(flow != null);
+    table.markTombstone(flow.?, 30_000);
+    try std.testing.expectEqual(flow, table.findFlow(0x0a000001, 0x08080808, 40000, 443));
+
+    table.resetFlow(flow.?);
+    try std.testing.expect(table.findFlow(0x0a000001, 0x08080808, 40000, 443) == null);
 }
