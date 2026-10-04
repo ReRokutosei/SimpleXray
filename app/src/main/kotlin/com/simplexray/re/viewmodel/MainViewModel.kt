@@ -2,7 +2,6 @@ package com.simplexray.re.viewmodel
 
 import android.app.Application
 import android.content.Intent
-import android.content.ComponentName
 import android.content.pm.PackageManager
 import androidx.core.net.toUri
 import android.net.Uri
@@ -49,28 +48,14 @@ import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
-import java.io.InputStreamReader
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.net.URL
-import java.util.regex.Pattern
 import kotlin.coroutines.cancellation.CancellationException
 
 private const val TAG = "MainViewModel"
-
-private const val APP_ICON_DEFAULT = "lineal"
-private val APP_ICON_OPTIONS = listOf("flat", "lineal", "lineal_color")
-// Full component class names: manifest relative names (".MainActivityFlat") are
-// resolved against the namespace (com.simplexray.re), NOT the applicationId —
-// the debug build has applicationIdSuffix ".debug" and must keep working.
-private val APP_ICON_ALIASES = listOf(
-    "flat" to "com.simplexray.re.MainActivityFlat",
-    "lineal" to "com.simplexray.re.MainActivityLineal",
-    "lineal_color" to "com.simplexray.re.MainActivityLinealColor"
-)
 
 sealed class MainViewUiEvent {
     data class ShowSnackbar(val message: String) : MainViewUiEvent()
@@ -101,51 +86,28 @@ class MainViewModel(application: Application) :
         )
     }
 
+    private val settingsController by lazy {
+        SettingsController(
+            application,
+            prefs,
+            fileManager,
+            { _isServiceEnabled.value },
+            { showSnackbar(application.getString(R.string.tunnel_mode_restart_notice)) },
+        )
+    }
+
+    private val appIconController by lazy {
+        AppIconController(application, prefs)
+    }
+
     var editingFilePath: String?
         get() = configFileController.editingFilePath
         set(value) {
             configFileController.editingFilePath = value
         }
 
-    private val _settingsState = MutableStateFlow(
-        SettingsState(
-            socksAddress = InputFieldState(prefs.socksAddress),
-            socksPort = InputFieldState(prefs.socksPort.toString()),
-            socksUser = InputFieldState(prefs.socksUsername),
-            socksPass = InputFieldState(prefs.socksPassword),
-            dnsIpv4 = InputFieldState(prefs.dnsIpv4),
-            dnsIpv6 = InputFieldState(prefs.dnsIpv6),
-            switches = SwitchStates(
-                ipv6Enabled = prefs.ipv6,
-                hideFromRecents = prefs.hideFromRecents,
-                keepAwake = prefs.keepAwake,
-                httpProxyEnabled = prefs.httpProxyEnabled,
-                bypassLanEnabled = prefs.bypassLan,
-                disableVpn = prefs.disableVpn,
-                tunnelMode = prefs.tunnelMode,
-                themeMode = prefs.theme,
-                logLevel = prefs.logLevel,
-                accessLog = prefs.accessLog,
-                dnsLog = prefs.dnsLog
-            ),
-            info = InfoStates(
-                appVersion = BuildConfig.VERSION_NAME,
-                kernelVersion = "N/A",
-                geoipSummary = "",
-                geositeSummary = "",
-                geoipUrl = prefs.geoipUrl,
-                geositeUrl = prefs.geositeUrl
-            ),
-            files = FileStates(
-                isGeoipCustom = prefs.customGeoipImported,
-                isGeositeCustom = prefs.customGeositeImported
-            ),
-            geoUpdateIntervalHours = InputFieldState(prefs.geoUpdateIntervalHours.toString()),
-            lastGeoUpdateTime = prefs.lastGeoUpdateTime,
-            tunnelMtu = InputFieldState(prefs.tunnelMtu.toString())
-        )
-    )
-    val settingsState: StateFlow<SettingsState> = _settingsState.asStateFlow()
+    val settingsState: StateFlow<SettingsState>
+        get() = settingsController.settingsState
 
     private val _coreStatsState = MutableStateFlow(CoreStatsState())
     val coreStatsState: StateFlow<CoreStatsState> = _coreStatsState.asStateFlow()
@@ -162,8 +124,8 @@ class MainViewModel(application: Application) :
     private val _isServiceEnabled = MutableStateFlow(false)
     val isServiceEnabled: StateFlow<Boolean> = _isServiceEnabled.asStateFlow()
 
-    private val _appIcon = MutableStateFlow(prefs.appIcon ?: APP_ICON_DEFAULT)
-    val appIcon: StateFlow<String> = _appIcon.asStateFlow()
+    val appIcon: StateFlow<String>
+        get() = appIconController.appIcon
 
     private val _uiEvent = Channel<MainViewUiEvent>(Channel.BUFFERED)
     val uiEvent = _uiEvent.receiveAsFlow()
@@ -267,65 +229,9 @@ class MainViewModel(application: Application) :
         }
     }
 
-    fun updateSettingsState() {
-        _settingsState.value = _settingsState.value.copy(
-            socksAddress = InputFieldState(prefs.socksAddress),
-            socksPort = InputFieldState(prefs.socksPort.toString()),
-            socksUser = InputFieldState(prefs.socksUsername),
-            socksPass = InputFieldState(prefs.socksPassword),
-            dnsIpv4 = InputFieldState(prefs.dnsIpv4),
-            dnsIpv6 = InputFieldState(prefs.dnsIpv6),
-            switches = SwitchStates(
-                ipv6Enabled = prefs.ipv6,
-                hideFromRecents = prefs.hideFromRecents,
-                keepAwake = prefs.keepAwake,
-                httpProxyEnabled = prefs.httpProxyEnabled,
-                bypassLanEnabled = prefs.bypassLan,
-                disableVpn = prefs.disableVpn,
-                tunnelMode = prefs.tunnelMode,
-                themeMode = prefs.theme,
-                logLevel = prefs.logLevel,
-                accessLog = prefs.accessLog,
-                dnsLog = prefs.dnsLog
-            ),
-            info = _settingsState.value.info.copy(
-                appVersion = BuildConfig.VERSION_NAME,
-                geoipSummary = fileManager.getRuleFileSummary("geoip.dat"),
-                geositeSummary = fileManager.getRuleFileSummary("geosite.dat"),
-                geoipUrl = prefs.geoipUrl,
-                geositeUrl = prefs.geositeUrl
-            ),
-            files = FileStates(
-                isGeoipCustom = prefs.customGeoipImported,
-                isGeositeCustom = prefs.customGeositeImported
-            ),
-            geoUpdateIntervalHours = InputFieldState(prefs.geoUpdateIntervalHours.toString()),
-            lastGeoUpdateTime = prefs.lastGeoUpdateTime
-        )
-    }
+    fun updateSettingsState() = settingsController.updateSettingsState()
 
-    private fun loadKernelVersion() {
-        val libraryDir = TProxyService.getNativeLibraryDir(application)
-        val xrayPath = "$libraryDir/libxray.so"
-        try {
-            val process = Runtime.getRuntime().exec("$xrayPath -version")
-            val reader = BufferedReader(InputStreamReader(process.inputStream))
-            val firstLine = reader.readLine()
-            process.destroy()
-            _settingsState.value = _settingsState.value.copy(
-                info = _settingsState.value.info.copy(
-                    kernelVersion = firstLine ?: "N/A"
-                )
-            )
-        } catch (e: IOException) {
-            Log.e(TAG, "Failed to get xray version", e)
-            _settingsState.value = _settingsState.value.copy(
-                info = _settingsState.value.info.copy(
-                    kernelVersion = "N/A"
-                )
-            )
-        }
-    }
+    private fun loadKernelVersion() = settingsController.loadKernelVersion()
 
     fun setControlMenuClickable(isClickable: Boolean) {
         _controlMenuClickable.value = isClickable
@@ -344,44 +250,11 @@ class MainViewModel(application: Application) :
      * task (feels like a crash + auto-restart). The choice is only applied when
      * the user manually switches via [setAppIcon].
      */
-    fun ensureAppIconSelected() {
-        val current = prefs.appIcon
-        if (current == null) {
-            prefs.appIcon = APP_ICON_DEFAULT
-            _appIcon.value = APP_ICON_DEFAULT
-            Log.d(TAG, "App icon defaulted to: $APP_ICON_DEFAULT")
-        } else {
-            _appIcon.value = current
-        }
-    }
+    fun ensureAppIconSelected() = appIconController.ensureAppIconSelected()
 
-    fun setAppIcon(key: String) {
-        if (key !in APP_ICON_OPTIONS) return
-        if (key == _appIcon.value) return
-        applyAppIcon(key)
-        prefs.appIcon = key
-        _appIcon.value = key
-        Log.d(TAG, "App icon switched to: $key")
-    }
+    fun setAppIcon(key: String) = appIconController.setAppIcon(key)
 
-    private fun applyAppIcon(key: String) {
-        val pm = application.packageManager
-        APP_ICON_ALIASES.forEach { (option, className) ->
-            // packageName here is the applicationId (may carry the ".debug"
-            // suffix); className is the full component name (namespace-based),
-            // which is what the merged manifest actually declares.
-            val component = ComponentName(application.packageName, className)
-            val targetState = if (option == key) PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-            else PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-            if (pm.getComponentEnabledSetting(component) != targetState) {
-                pm.setComponentEnabledSetting(
-                    component,
-                    targetState,
-                    PackageManager.DONT_KILL_APP
-                )
-            }
-        }
-    }
+
 
 
 
@@ -489,328 +362,49 @@ class MainViewModel(application: Application) :
         fileManager.extractAssetsIfNeeded()
     }
 
-    fun updateSocksAddress(addressString: String): Boolean {
-        val matcherIpv4 = IPV4_PATTERN.matcher(addressString)
-        val matcherIpv6 = IPV6_PATTERN.matcher(addressString)
-        return if (matcherIpv4.matches()) {
-            prefs.socksAddress = addressString
-            _settingsState.value = _settingsState.value.copy(
-                socksAddress = InputFieldState(addressString)
-            )
-            true
-        } else if (matcherIpv6.matches()) {
-            prefs.socksAddress = addressString
-            _settingsState.value = _settingsState.value.copy(
-                socksAddress = InputFieldState(addressString)
-            )
-            true
-        } else {
-            _settingsState.value = _settingsState.value.copy(
-                socksAddress = InputFieldState(
-                    value = addressString,
-                    error = application.getString(R.string.invalid_ipv4_or_ipv6),
-                    isValid = false
-                )
-            )
-            false
-        }
-    }
+    fun updateSocksAddress(addressString: String): Boolean = settingsController.updateSocksAddress(addressString)
 
-    fun updateSocksPort(portString: String): Boolean {
-        return try {
-            val port = portString.toInt()
-            if (port in 1025..65535) {
-                prefs.socksPort = port
-                _settingsState.value = _settingsState.value.copy(
-                    socksPort = InputFieldState(portString)
-                )
-                true
-            } else {
-                _settingsState.value = _settingsState.value.copy(
-                    socksPort = InputFieldState(
-                        value = portString,
-                        error = application.getString(R.string.invalid_port_range),
-                        isValid = false
-                    )
-                )
-                false
-            }
-        } catch (e: NumberFormatException) {
-            _settingsState.value = _settingsState.value.copy(
-                socksPort = InputFieldState(
-                    value = portString,
-                    error = application.getString(R.string.invalid_port),
-                    isValid = false
-                )
-            )
-            false
-        }
-    }
+    fun updateSocksPort(portString: String): Boolean = settingsController.updateSocksPort(portString)
 
-    fun updateSocksUser(userString: String): Boolean {
-        val byteCount = userString.toByteArray(Charsets.UTF_8).size
-        return if (byteCount <= 255) {
-            prefs.socksUsername = userString
-            _settingsState.value = _settingsState.value.copy(
-                socksUser = InputFieldState(userString)
-            )
-            true
-        } else {
-            _settingsState.value = _settingsState.value.copy(
-                socksUser = InputFieldState(
-                    value = userString,
-                    error = "Username length must not exceed 255 bytes",
-                    isValid = false
-                )
-            )
-            false
-        }
-    }
+    fun updateSocksUser(userString: String): Boolean = settingsController.updateSocksUser(userString)
 
-    fun updateSocksPass(passString: String): Boolean {
-        val byteCount = passString.toByteArray(Charsets.UTF_8).size
-        return if (byteCount <= 255) {
-            prefs.socksPassword = passString
-            _settingsState.value = _settingsState.value.copy(
-                socksPass = InputFieldState(passString)
-            )
-            true
-        } else {
-            _settingsState.value = _settingsState.value.copy(
-                socksPass = InputFieldState(
-                    value = passString,
-                    error = "Password length must not exceed 255 bytes",
-                    isValid = false
-                )
-            )
-            false
-        }
-    }
+    fun updateSocksPass(passString: String): Boolean = settingsController.updateSocksPass(passString)
 
-    fun updateDnsIpv4(ipv4Addr: String): Boolean {
-        val matcher = IPV4_PATTERN.matcher(ipv4Addr)
-        return if (matcher.matches()) {
-            prefs.dnsIpv4 = ipv4Addr
-            _settingsState.value = _settingsState.value.copy(
-                dnsIpv4 = InputFieldState(ipv4Addr)
-            )
-            true
-        } else {
-            _settingsState.value = _settingsState.value.copy(
-                dnsIpv4 = InputFieldState(
-                    value = ipv4Addr,
-                    error = application.getString(R.string.invalid_ipv4),
-                    isValid = false
-                )
-            )
-            false
-        }
-    }
+    fun updateDnsIpv4(ipv4Addr: String): Boolean = settingsController.updateDnsIpv4(ipv4Addr)
 
-    fun updateDnsIpv6(ipv6Addr: String): Boolean {
-        val matcher = IPV6_PATTERN.matcher(ipv6Addr)
-        return if (matcher.matches()) {
-            prefs.dnsIpv6 = ipv6Addr
-            _settingsState.value = _settingsState.value.copy(
-                dnsIpv6 = InputFieldState(ipv6Addr)
-            )
-            true
-        } else {
-            _settingsState.value = _settingsState.value.copy(
-                dnsIpv6 = InputFieldState(
-                    value = ipv6Addr,
-                    error = application.getString(R.string.invalid_ipv6),
-                    isValid = false
-                )
-            )
-            false
-        }
-    }
+    fun updateDnsIpv6(ipv6Addr: String): Boolean = settingsController.updateDnsIpv6(ipv6Addr)
 
-    fun setIpv6Enabled(enabled: Boolean) {
-        prefs.ipv6 = enabled
-        _settingsState.value = _settingsState.value.copy(
-            switches = _settingsState.value.switches.copy(ipv6Enabled = enabled)
-        )
-    }
+    fun setIpv6Enabled(enabled: Boolean) = settingsController.setIpv6Enabled(enabled)
 
-    fun setHideFromRecentsEnabled(enabled: Boolean) {
-        prefs.hideFromRecents = enabled
-        _settingsState.value = _settingsState.value.copy(
-            switches = _settingsState.value.switches.copy(hideFromRecents = enabled)
-        )
-    }
+    fun setHideFromRecentsEnabled(enabled: Boolean) = settingsController.setHideFromRecentsEnabled(enabled)
 
-    fun updateGeoUpdateInterval(hoursString: String): Boolean {
-        val hours = hoursString.toIntOrNull()
-        return when {
-            hoursString.isBlank() || hours == null -> {
-                _settingsState.value = _settingsState.value.copy(
-                    geoUpdateIntervalHours = InputFieldState(
-                        value = hoursString,
-                        error = application.getString(R.string.invalid_geo_update_interval),
-                        isValid = false
-                    )
-                )
-                false
-            }
-            hours == 0 -> {
-                prefs.geoUpdateIntervalHours = 0
-                com.simplexray.re.service.GeoUpdateWorker.cancel(application)
-                _settingsState.value = _settingsState.value.copy(
-                    geoUpdateIntervalHours = InputFieldState("0")
-                )
-                true
-            }
-            hours in 1..168 -> {
-                prefs.geoUpdateIntervalHours = hours
-                com.simplexray.re.service.GeoUpdateWorker.schedule(application, hours, forceUpdate = true)
-                _settingsState.value = _settingsState.value.copy(
-                    geoUpdateIntervalHours = InputFieldState(hours.toString())
-                )
-                true
-            }
-            else -> {
-                _settingsState.value = _settingsState.value.copy(
-                    geoUpdateIntervalHours = InputFieldState(
-                        value = hoursString,
-                        error = application.getString(R.string.invalid_geo_update_interval),
-                        isValid = false
-                    )
-                )
-                false
-            }
-        }
-    }
+    fun updateGeoUpdateInterval(hoursString: String): Boolean = settingsController.updateGeoUpdateInterval(hoursString)
 
-    fun updateTunnelMtu(mtuString: String): Boolean {
-        val mtu = mtuString.toIntOrNull()
-        return when {
-            mtu == null -> {
-                _settingsState.value = _settingsState.value.copy(
-                    tunnelMtu = InputFieldState(
-                        value = mtuString,
-                        error = application.getString(R.string.invalid_mtu),
-                        isValid = false
-                    )
-                )
-                false
-            }
-            mtu in 1280..9000 -> {
-                prefs.tunnelMtu = mtu
-                _settingsState.value = _settingsState.value.copy(
-                    tunnelMtu = InputFieldState(mtu.toString())
-                )
-                true
-            }
-            else -> {
-                _settingsState.value = _settingsState.value.copy(
-                    tunnelMtu = InputFieldState(
-                        value = mtuString,
-                        error = application.getString(R.string.invalid_mtu),
-                        isValid = false
-                    )
-                )
-                false
-            }
-        }
-    }
+    fun updateTunnelMtu(mtuString: String): Boolean = settingsController.updateTunnelMtu(mtuString)
 
-    fun setHttpProxyEnabled(enabled: Boolean) {
-        prefs.httpProxyEnabled = enabled
-        _settingsState.value = _settingsState.value.copy(
-            switches = _settingsState.value.switches.copy(httpProxyEnabled = enabled)
-        )
-    }
+    fun setHttpProxyEnabled(enabled: Boolean) = settingsController.setHttpProxyEnabled(enabled)
 
-    fun setBypassLanEnabled(enabled: Boolean) {
-        prefs.bypassLan = enabled
-        _settingsState.value = _settingsState.value.copy(
-            switches = _settingsState.value.switches.copy(bypassLanEnabled = enabled)
-        )
-    }
+    fun setBypassLanEnabled(enabled: Boolean) = settingsController.setBypassLanEnabled(enabled)
 
-    fun setKeepAwakeEnabled(enabled: Boolean) {
-        prefs.keepAwake = enabled
-        _settingsState.value = _settingsState.value.copy(
-            switches = _settingsState.value.switches.copy(keepAwake = enabled)
-        )
-    }
+    fun setKeepAwakeEnabled(enabled: Boolean) = settingsController.setKeepAwakeEnabled(enabled)
 
-    fun setLogLevel(logLevel: LogLevel) {
-        prefs.logLevel = logLevel
-        _settingsState.value = _settingsState.value.copy(
-            switches = _settingsState.value.switches.copy(logLevel = logLevel)
-        )
-    }
+    fun setLogLevel(logLevel: LogLevel) = settingsController.setLogLevel(logLevel)
 
-    fun setAccessLog(enabled: Boolean) {
-        prefs.accessLog = enabled
-        _settingsState.value = _settingsState.value.copy(
-            switches = _settingsState.value.switches.copy(accessLog = enabled)
-        )
-    }
+    fun setAccessLog(enabled: Boolean) = settingsController.setAccessLog(enabled)
 
-    fun setDnsLog(enabled: Boolean) {
-        prefs.dnsLog = enabled
-        _settingsState.value = _settingsState.value.copy(
-            switches = _settingsState.value.switches.copy(dnsLog = enabled)
-        )
-    }
+    fun setDnsLog(enabled: Boolean) = settingsController.setDnsLog(enabled)
 
-    fun setDisableVpnEnabled(enabled: Boolean) {
-        prefs.disableVpn = enabled
-        _settingsState.value = _settingsState.value.copy(
-            switches = _settingsState.value.switches.copy(disableVpn = enabled)
-        )
-    }
+    fun setDisableVpnEnabled(enabled: Boolean) = settingsController.setDisableVpnEnabled(enabled)
 
-    fun setTunnelMode(mode: com.simplexray.re.prefs.TunnelMode) {
-        if (prefs.tunnelMode != mode) {
-            prefs.tunnelMode = mode
-            _settingsState.value = _settingsState.value.copy(
-                switches = _settingsState.value.switches.copy(tunnelMode = mode)
-            )
-            if (_isServiceEnabled.value) {
-                showSnackbar(application.getString(R.string.tunnel_mode_restart_notice))
-            }
-        }
-    }
+    fun setTunnelMode(mode: com.simplexray.re.prefs.TunnelMode) = settingsController.setTunnelMode(mode)
 
-    fun setTheme(mode: ThemeMode) {
-        prefs.theme = mode
-        _settingsState.value = _settingsState.value.copy(
-            switches = _settingsState.value.switches.copy(themeMode = mode)
-        )
-    }
+    fun setTheme(mode: ThemeMode) = settingsController.setTheme(mode)
 
     fun importRuleFile(uri: Uri, fileName: String) {
         viewModelScope.launch(Dispatchers.IO) {
             val success = fileManager.importRuleFile(uri, fileName)
             if (success) {
-                when (fileName) {
-                    "geoip.dat" -> {
-                        _settingsState.value = _settingsState.value.copy(
-                            files = _settingsState.value.files.copy(
-                                isGeoipCustom = prefs.customGeoipImported
-                            ),
-                            info = _settingsState.value.info.copy(
-                                geoipSummary = fileManager.getRuleFileSummary("geoip.dat")
-                            )
-                        )
-                    }
-
-                    "geosite.dat" -> {
-                        _settingsState.value = _settingsState.value.copy(
-                            files = _settingsState.value.files.copy(
-                                isGeositeCustom = prefs.customGeositeImported
-                            ),
-                            info = _settingsState.value.info.copy(
-                                geositeSummary = fileManager.getRuleFileSummary("geosite.dat")
-                            )
-                        )
-                    }
-                }
+                settingsController.refreshRuleFileState(fileName)
                 _uiEvent.trySend(
                     MainViewUiEvent.ShowSnackbar(
                         "$fileName ${application.getString(R.string.import_success)}"
@@ -891,14 +485,7 @@ class MainViewModel(application: Application) :
     fun restoreDefaultGeoip(callback: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             fileManager.restoreDefaultGeoip()
-            _settingsState.value = _settingsState.value.copy(
-                files = _settingsState.value.files.copy(
-                    isGeoipCustom = prefs.customGeoipImported
-                ),
-                info = _settingsState.value.info.copy(
-                    geoipSummary = fileManager.getRuleFileSummary("geoip.dat")
-                )
-            )
+            settingsController.refreshRuleFileState("geoip.dat")
             _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_restore_geoip_success)))
             withContext(Dispatchers.Main) {
                 Log.d(TAG, "Restored default geoip.dat.")
@@ -910,14 +497,7 @@ class MainViewModel(application: Application) :
     fun restoreDefaultGeosite(callback: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             fileManager.restoreDefaultGeosite()
-            _settingsState.value = _settingsState.value.copy(
-                files = _settingsState.value.files.copy(
-                    isGeositeCustom = prefs.customGeositeImported
-                ),
-                info = _settingsState.value.info.copy(
-                    geositeSummary = fileManager.getRuleFileSummary("geosite.dat")
-                )
-            )
+            settingsController.refreshRuleFileState("geosite.dat")
             _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_restore_geosite_success)))
             withContext(Dispatchers.Main) {
                 Log.d(TAG, "Restored default geosite.dat.")
@@ -1040,29 +620,7 @@ class MainViewModel(application: Application) :
                     }
                     if (success) {
                         if (isStandard) {
-                            when (targetName) {
-                                "geoip.dat" -> {
-                                    _settingsState.value = _settingsState.value.copy(
-                                        files = _settingsState.value.files.copy(
-                                            isGeoipCustom = prefs.customGeoipImported
-                                        ),
-                                        info = _settingsState.value.info.copy(
-                                            geoipSummary = fileManager.getRuleFileSummary("geoip.dat")
-                                        )
-                                    )
-                                }
-
-                                "geosite.dat" -> {
-                                    _settingsState.value = _settingsState.value.copy(
-                                        files = _settingsState.value.files.copy(
-                                            isGeositeCustom = prefs.customGeositeImported
-                                        ),
-                                        info = _settingsState.value.info.copy(
-                                            geositeSummary = fileManager.getRuleFileSummary("geosite.dat")
-                                        )
-                                    )
-                                }
-                            }
+                            settingsController.refreshRuleFileState(targetName)
                         }
                         updateSettingsState()
                         refreshCustomDatFiles()
@@ -1289,14 +847,6 @@ class MainViewModel(application: Application) :
         super.onCleared()
     }
 
-    companion object {
-        private const val IPV4_REGEX =
-            "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
-        private val IPV4_PATTERN: Pattern = Pattern.compile(IPV4_REGEX)
-        private const val IPV6_REGEX =
-            "^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,7}:|([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2}|([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3}|([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4}|([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})|:((:[0-9a-fA-F]{1,4}){1,7}|:)|fe80::(fe80(:[0-9a-fA-F]{0,4})?){0,4}%[0-9a-zA-Z]+|::(ffff(:0{1,4})?:)?((25[0-5]|(2[0-4]|1?\\d)?\\d)\\.){3}(25[0-5]|(2[0-4]|1?\\d)?\\d)|([0-9a-fA-F]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1?\\d)?\\d)\\.){3}(25[0-5]|(2[0-4]|1?\\d)?\\d))$"
-        private val IPV6_PATTERN: Pattern = Pattern.compile(IPV6_REGEX)
 
-    }
 }
 
