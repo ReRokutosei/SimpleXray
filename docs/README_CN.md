@@ -1,4 +1,5 @@
 # SimpleXray 个人分支
+
 <div align="center">
 <img src="images/lineal.svg" alt="SimpleXray 图标" width="150">
 
@@ -6,30 +7,31 @@
 
 <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FReRokutosei%2FSimpleXray.svg?type=shield" alt="FOSSA Status" width="150">
 
+<sub>Android 14+ (API 34) | arm64-v8a | MPL-2.0</sub>
 </div>
 
-SimpleXray 是一款面向 Android 的代理客户端。项目使用 [Xray-core](https://github.com/XTLS/Xray-core) 作为代理内核，并结合 Android `VpnService`、`sing-tun` 和 `hev-socks5-tunnel` 处理网络流量。
+SimpleXray 是 Xray-core 的 Android 前端与启动器。它接受完整的 JSON/YAML 配置，在 Android 环境中完成必要适配后，通过 `VpnService` 启动内核；不解析分享链接与订阅。
 
-应用层与代理内核彼此独立。SimpleXray 将打包的 Xray-core 可执行文件 `libxray.so` 作为独立子进程启动，并通过标准输入传递配置。Hev 与 SingTUN 模式下，Xray 使用 `ProcessBuilder` 启动；Xray 原生 TUN 模式则使用 JNI 启动器将 VPN 文件描述符传递给子进程。
-
-## 项目定位
-
-SimpleXray 主要负责在 Android 上运行和管理 Xray-core。应用接受完整的 Xray-core 配置文件，并在 Android 环境中完成必要的适配后启动代理内核。
-
-使用本项目需要具备基本的 Xray-core 配置知识，目前支持 JSON 和 YAML 两种配置格式。应用不会解析或生成 `vless://`、`vmess://`、`trojan://` 等分享链接，也不会根据单个节点信息自动生成完整配置，并且不负责处理订阅链接。
-
-导入的配置在启动前会经过适配处理。部分仅适用于桌面系统或 Root 环境的配置会被删除或调整。
-
-本仓库是基于上游 [SimpleXray](https://github.com/lhear/SimpleXray) 开发的个人分支。
+本仓库基于上游 [SimpleXray](https://github.com/lhear/SimpleXray)。除保留其完整配置模式外，本分支主要增加可选 TUN 数据面、重写的配置处理流程、规则文件管理、Miuix 界面与基准测试工具。
 
 > [!NOTE]
-> 本项目仅供个人自用。
-> 仓库不接受公共 Issue 与 PR，也不提供外部支持与功能维护。
-> 如需使用或跟进内核更新，欢迎自由 Fork 本项目并通过 CI 自动发版。
+> 本分支为个人使用与实验项目。不接受 Issue 与 PR，也不提供支持。如需长期维护的客户端，请使用上游，或 Fork 后通过 CI 自行构建。
+
+## 本分支的主要差异
+
+- **四种 TUN 后端**：Hev（C/lwIP，默认）、SingTUN（Go）、SimpleTUN（源码内 Zig）和原生 Xray TUN。
+- **完整配置处理流程**：JSON/YAML 导入、内置编辑器、单向 Android 适配、日志级别控制，以及运行时统计注入。
+- **规则文件管理**：内置 `geoip.dat`/`geosite.dat`，支持任意自定义 `.dat`、`ext:` 引用、独立更新 URL 与后台更新。
+- **Miuix 界面**：Xiaomi HyperOS/MIUI 风格的 Compose 界面，支持手机/平板自适应布局、NavigationRail、浅色/深色/跟随系统主题与 Android 12+ 动态取色。
+- **Android 集成**：按应用代理、本地直连 SOCKS5、网络切换处理与 16 KB 内存页对齐。
+- **基准测试工具**：headless 基准测试运行器、报告与图表生成，以及设备测试数据集。
+- **平台范围**：仅支持 Android 14+、仅提供`arm64-v8a`。
+
+完整对照见 [与上游的差异](./upstream-differences_CN.md)。
 
 ## 界面预览
 
-### 手机端
+### 手机
 
 <div align="center">
   <img src="./images/mobile_01.webp" alt="手机端界面 1" width="48%">
@@ -39,7 +41,7 @@ SimpleXray 主要负责在 Android 上运行和管理 Xray-core。应用接受�
   <img src="./images/mobile_04.webp" alt="手机端界面 4" width="48%">
 </div>
 
-### 平板端
+### 平板
 
 <div align="center">
   <img src="./images/table_01.webp" alt="平板端界面 1" width="48%">
@@ -49,404 +51,95 @@ SimpleXray 主要负责在 Android 上运行和管理 Xray-core。应用接受�
   <img src="./images/table_04.webp" alt="平板端界面 4" width="48%">
 </div>
 
----
+## 功能
 
-<details>
-<summary><b>点击展开 / 折叠：与上游版本的主要区别</b></summary>
+### Xray-core
 
-| 项目 | 上游版本（4c78901） | 本仓库 |
-|-|-|-|
-| **进程与配置传递**  | 使用独立子进程运行 Xray，并通过标准输入传递配置 | Android 应用层（UI 与 VpnService）采用单进程架构，通过标准输入向独立子进程传递配置。Xray 原生 TUN 模式通过 JNI 启动器启动子进程，Hev 与 SingTUN 模式使用 `ProcessBuilder`。APK 仅打包 `arm64-v8a` |
-| **流量与进程间通信** | 由 `hev-socks5-tunnel` 读取 Android VPN 文件描述符，并通过本地 SOCKS5 入站将流量转发至 Xray。状态统计使用动态分配的本机回环 TCP gRPC 端口 | 数据面由设置页选择的 TUN 后端决定。Xray 原生 TUN 模式通过 JNI 启动器接收 VPN 文件描述符，Hev 与 SingTUN 模式通过本地 SOCKS5 入站转发流量。内核状态和流量统计使用动态分配的 `127.0.0.1` TCP gRPC 端口 |
-| **配置导入**     | 支持 JSON 配置、`vless://` 链接和 `simplexray://config/` 链接 | 仅支持通过 Android Storage Access Framework 或剪贴板导入完整 JSON、YAML 配置，不支持节点分享链接 |
-| **规则文件**     | 内置 `geoip.dat` 和 `geosite.dat`，并支持本地替换及这两个文件的 URL 更新 | 保留标准规则文件管理，并增加任意自定义 `.dat` 文件、`ext:` 文件引用、独立更新地址、文件校验和后台更新 |
-| **配置处理**     | 对 JSON 进行格式化，并删除 `log.access` 和 `log.error` | 使用 SnakeYAML 解析配置，并通过单向 Android 兼容处理流程调整入站、路由规则、DNS 引导主机、日志及部分出站配置 |
-| **构建系统**     | 使用 `ndkBuild` 和 `Android.mk`，配合标准 Gradle 配置 | 使用 CMake 和 `CMakeLists.txt`；原生隧道目标包含 Android 16 KB 内存页对齐链接选项，并使用 Gradle Wrapper `9.8.0`、Android Gradle Plugin `9.4.1`、Version Catalog 和 Plugins DSL |
-| **界面与布局**    | 使用标准 Material 3 界面                                   | 使用 `compose-miuix-ui` 实现 Xiaomi HyperOS / MIUI 风格的界面，并针对手机和平板提供自适应布局                                                           |
-| **数据存储与通信架构** | 使用 ContentProvider 封装的 `SharedPreferences` 和 `Gson` | 直接使用轻量级原生 `SharedPreferences` 与 `kotlinx.serialization`；UI 与后台服务通过内存级 `StateFlow` / `SharedFlow` 实现零拷贝响应式通信 |
-| **核心组件**     | Xray-core `v26.3.27` 和 `hev-socks5-tunnel` `v2.14.3` | Xray-core `v26.9.30`、`sing-tun`（Go 栈）、`hev-socks5-tunnel` `v2.18.0` 以及源码内的 SimpleTUN Zig 引擎，包含更新的 `hev-socks5-core`、`hev-task-system` 及 `lwip` 组件 |
-| **ABI 打包**     | 提供 `arm64-v8a` 和 `x86_64` 分包 APK，以及通用 APK | 仅提供 `arm64-v8a` APK |
-| **TUN 后端设置** | 不提供 Xray TUN 后端设置 | 可选 `Xray TUN`、`SingTUN`、`SimpleTUN` 和 `Hev Socks5 Tunnel`，默认值为 `Hev Socks5 Tunnel` |
+- Xray-core 作为独立子进程运行，通过标准输入接收配置，不产生中间配置文件。
+- 原生 Xray TUN 模式由 JNI 启动器 `xray_exec.c` 将 Android VPN 文件描述符传入子进程。
+- 仪表盘在打开或手动刷新时探测受支持出站端点的 TCP 握手延迟。仅 UDP 协议、QUIC 传输以及私网、环回、链路本地 IP 不参与探测。
+- Hev、SingTUN、SimpleTUN 模式下，Xray 使用 `ProcessBuilder` 启动；所选 TUN 后端将流量转发至其本地 SOCKS5 入站。
+- 内核状态与流量统计通过动态分配的 `127.0.0.1` 明文 gRPC 端口查询。标准输出与标准错误以内存流推送至界面，并支持导出。
 
-</details>
+### 配置
 
-## 功能与修改
+- 通过 SAF 或剪贴板导入完整 JSON/YAML 配置（`.json`、`.yaml`、`.yml`）。
+- 单向 sanitizer 会移除面向桌面/Root 的字段，并适配 inbounds、路由规则、DNS 引导 hosts、日志与部分出站传输参数。详见 [配置覆写与删除](./configuration_CN.md)。
+- 错误日志、访问日志与 DNS 日志分别控制；未显式设置级别时，`Auto` 映射为 `warning`。
+- 内置编辑器支持文本编辑、搜索与括号匹配。
 
-### 1. 界面与自适应布局
+### TUN 后端
 
-项目重新设计了应用界面，并使用 `compose-miuix-ui` 实现具有 Xiaomi HyperOS / MIUI 风格的界面。
+- **Hev**：默认后端，基于 C/lwIP。
+- **SingTUN**：基于源码内 `sing-tun` 集成的 Go 用户态协议栈。
+- **SimpleTUN**：源码内 Zig 引擎。仅支持 IPv4 与无认证 SOCKS5，MTU 固定为 1500，不配置 IPv6 路由或地址。详见 [架构说明](./simpletun_spec.md)。
+- **Xray TUN**：由 JNI 启动器传入 VPN 文件描述符，使用 Xray 原生 TUN inbound。
 
-主要修改包括以下内容。
+### 规则文件
 
-* 使用 Miuix 提供的 `TopAppBar`、`Card`、`InputField`、`Checkbox`、`OverlayIconDropdownMenu`、`OverlayDialog` 和 `OverlayBottomSheet` 等组件。
-* 支持浅色、深色和跟随系统三种主题模式。
-* 支持 Android 12 及以上版本的 Monet 动态取色，并将动态颜色应用于 Miuix 配色方案。
-* 当屏幕宽度达到 `600dp` 时，将主要导航切换为垂直方向的 Miuix `NavigationRail`。
-* 当屏幕宽度达到 `840dp` 且处于横屏状态时，`ConfigScreen` 使用双栏布局，同时显示配置列表和配置编辑区域。
-* 在较大屏幕上将仪表盘、设置页和基于应用的代理页面的主要内容区域限制为最大 `840dp`。
-* 使用悬浮式导航栏，并允许页面内容在半透明导航区域下方继续滚动。
-* 在基于应用的代理页面中增加应用筛选功能，可以选择是否显示未声明 `android.permission.INTERNET` 权限的应用。
-* 提供日志搜索、日志导出、日志清除和仪表盘延迟刷新等直接操作。
-* 配置编辑器支持全屏编辑模式。
+- 导入并替换标准 `geoip.dat` 与 `geosite.dat`。
+- 导入任意自定义 `.dat` 文件，并通过 `ext:<file>:<tag>` 引用条目。
+- 每个自定义规则文件可单独设置更新 URL；后台下载完成校验后才会安装。
 
-### 2. Xray-core 配置导入
+### Android 集成
 
-SimpleXray 接受完整的 Xray-core 配置文件，不负责将单个代理节点或分享链接转换为配置。
+- Android 应用层（UI + `TProxyService`）运行于同一进程。服务状态与日志流通过内存 `StateFlow` / `SharedFlow` 传递。
+- 支持分应用代理、`127.0.0.1:<socksPort>` 本机 SOCKS5 直连、网络切换回调，以及手机与平板自适应布局。
 
-支持以下配置来源。
+### 基准测试与工具
 
-* JSON 配置文件。
-* YAML 配置文件。
-* 通过 Android Storage Access Framework 导入的 `.json`、`.yaml` 和 `.yml` 文件。
-* 从剪贴板粘贴的配置文本。
-
-以下内容不受支持。
-
-* `vless://` 等节点分享链接。
-* `vmess://` 等节点分享链接。
-* `trojan://` 等节点分享链接。
-* 订阅链接。
-
-YAML 配置会先被解析为结构化数据。应用随后对配置进行平台适配处理，完成处理后重新序列化，再将配置传递给 Xray-core。
-
-应用同时提供内置配置编辑器，支持文本编辑、搜索。
-
-### 3. 规则文件管理
-
-SimpleXray 保留内置的 `geoip.dat` 和 `geosite.dat` 规则文件，并增加本地导入和在线更新功能。
-
-* 可以从设备存储导入新的 `geoip.dat` 和 `geosite.dat` 文件，并替换内置文件。
-* 可以导入和管理其他自定义 `.dat` 规则文件。
-* 支持使用自定义规则标签，例如 `ext:custom.dat:subcategory`。
-* 可以为不同的自定义 `.dat` 文件设置独立的在线更新地址。
-* 配置了更新地址的规则文件可以在后台下载更新。
-
-### 4. 进程管理与进程间通信
-
-SimpleXray 根据配置传递、VPN 流量、内核日志和状态统计查询的不同用途，分别采用相应的通信通道。
-
-* **单进程应用架构**：Android 应用层（UI 与后台 `TProxyService`）运行于同一进程内，消除了多进程间的 IPC 开销；服务生命周期状态与日志流直接通过内存级 `StateFlow` / `SharedFlow` 响应式传递，配置读写回归轻量级 `SharedPreferences`。
-* **内核子进程管理**：Xray-core 可执行文件作为独立的系统子进程运行，便于解耦与后续独立升级内核；通过标准输入直接写入生成的 JSON 配置，无需落盘生成中间配置文件。
-* **原生 TUN 模式**：JNI 启动器将 Android `VpnService` 提供的文件描述符传递给 Xray 子进程，再接入 Xray 的 TUN 入站。
-* **内核日志**：通过管道读取 Xray 的标准输出和标准错误，经内存流实时广播至 UI 并按需记录。
-* **状态统计**：通过动态分配的 `127.0.0.1` TCP 瞬态端口提供明文 gRPC，用于查询内核状态和流量统计。
-* **SingTUN 模式**：基于 `sing-tun` 自研轻量级 Go 协议栈（Slab 内存池零 GC、分层时间轮与用户态零拷贝转发），读取 Android VPN 文件描述符中的流量，并通过本地 SOCKS5 入站流式泵入 Xray。
-* **Hev 模式**：选中该模式时，由 `hev-socks5-tunnel` 读取 Android VPN 文件描述符中的流量，再通过本地 SOCKS5 入站转发给 Xray。
-
-> 实测数据请参阅 [Android TUN 性能基准测试报告](./benchmark/android-tun-benchmark.md)。
-
-
-### 5. 路由与内核配置优化
-
-项目对部分 Xray-core 配置进行了调整。
-
-* 将 `domainMatcher` 从 `mph` 调整为 `hybrid`，以改善内存占用和域名匹配性能之间的平衡。
-* 为匹配的 AliDNS DoH 主机名增加静态主机映射，以避免这些端点依赖本地 DNS 引导。
-* 在 Android 环境需要时，将 `::` 和 `0.0.0.0` 等通配监听地址调整为 `127.0.0.1`。
-* **仪表盘延迟展示**：仪表盘显示设备到各出站服务器端点的 TCP 握手耗时。端点解析规则为：vless 和 vmess 使用 `settings.vnext[0]`，trojan、shadowsocks、HTTP 和 SOCKS 使用 `settings.servers[0]`。进入仪表盘时自动探测一次，也可以手动刷新。WireGuard、Hysteria2 等仅支持 UDP 的协议、QUIC 传输，以及私网、环回和链路本地 IP 字面量不参与探测。该数值反映设备到节点的网络路径，不代表 Xray 内核的处理耗时。无法连接的节点显示为失败。
-
-### 6. Android 平台配置适配
-
-SimpleXray 可以直接导入完整的 Xray-core 配置文件。配置启动前会经过针对 Android 环境设计的适配流程，因此不要求用户手动删除所有桌面系统相关配置。
-
-目前主要处理以下内容。
-
-* **Windows 进程规则**
-
-  删除 `routing.rules` 中的 Windows 可执行文件路径，例如 `chrome.exe`。如果相关规则因此失去有效条件，也会一并删除。
-
-* **TUN 入站**
-
-  启用 VPN 和 Xray 原生 TUN 模式时，保留 `protocol: tun` 入站，补充 Android 所需的名称并删除桌面自动路由字段。使用 Hev 模式或关闭 VPN 时，删除 `protocol: tun` 入站。
-
-* **文件日志**
-
-  根据 Android 文件系统权限限制，删除 `access` 和 `error` 中不适用的文件写入路径，避免 Xray-core 因无法访问指定路径而启动失败。
-
-* **监听地址**
-
-  在 Android 环境需要时，将 `::` 和 `0.0.0.0` 等监听地址调整为 `127.0.0.1`。
-
-* **流量嗅探**
-
-  在配置适配过程中保留受支持的流量嗅探配置，包括 `destOverride`。
-
-配置适配采用单向处理流程。原始配置经过处理后生成适用于 Android 环境的新配置，并将处理结果交给 Xray-core 执行。
-
-### 7. 日志级别设置
-
-应用提供日志级别设置，可以选择以下级别。
-
-* `Auto`
-* `Debug`
-* `Info`
-* `Warning`
-* `Error`
-* `None`
-
-用户选择的日志级别会在配置处理过程中写入 Xray-core 配置。
-
-如果配置中包含不适用于 Android 环境的 `access` 或 `error` 文件日志路径，应用会在处理过程中将其删除。
-
-### 8. 构建系统与依赖更新
-
-项目将原有的 Android NDK 构建方式迁移至 CMake。
-
-* 使用 `CMakeLists.txt` 替代 `Android.mk` 和 `ndkBuild`。
-* 原生构建配置支持 Android 16 KB 内存页。
-* Gradle Wrapper 更新至 `v9.8.0`。
-* Android Gradle Plugin 使用 `v9.4.1`。
-* 使用 Gradle Version Catalog 管理项目依赖。
-* 使用 Gradle Plugins DSL 管理 Gradle 插件。
-* 使用 `kotlinx.serialization` 替代 `Gson`，负责类型安全的序列化和反序列化。
-
----
-
+- `tools/benchmark.py` 通过 headless `BenchmarkService` 调度吞吐、空闲内存、bufferbloat、稳定性、弱网、CPS 与 QUIC 测试。
+- 包含图表与报告生成。结果见 [Snapdragon 8 Elite Gen 5](./benchmark/8-elite-gen-5/report/benchmark_report.md) 与 [Snapdragon 778G](./benchmark/778g/report/benchmark_report.md)。
 
 ## 已知问题
 
-### Telegram 客户端可能在网络切换后滞留于失效的本地 SOCKS5 连接
+### Telegram 可能复用失效的本地 SOCKS5 连接
 
-当 Android 切换默认网络（例如在蜂窝数据已连接时关闭 Wi-Fi），客户端到 `127.0.0.1:<socksPort>` 的既有 TCP 连接可能仍然保持打开，而其对应的 Xray 上游连接已经失效。观察到的 Telegram 官方客户端会继续复用这条本地连接而不主动重连，因此会一直卡住，直到重启 Xray 内核或重新连接网络接口。
+Android 切换默认网络后，客户端到 `127.0.0.1:<socksPort>` 的既有 TCP 连接可能仍然存在，而对应的 Xray 上游传输已经失效。已观察到 Telegram 官方客户端会持续复用该回环连接；通过 TUN 转发的应用以及具备自身探活机制的客户端通常能自行恢复。
 
-具备自行心跳检测或重连能力的客户端以及通过 TUN 转发的应用可以自行恢复。这是客户端侧对失效连接的复用行为，不属于 SimpleXray 监听器或 Xray 内核的缺陷；SimpleXray 不会强制关闭仍然健康的本地回环 TCP 会话。
+处理方式：
 
-临时处理方式：
+- 关闭再开启 VPN 或 Xray 内核。
+- 重新连接当前网络接口。
+- 改用会在网络切换后重建 SOCKS5 连接的客户端。
 
-* 关闭再开启 VPN / Xray 内核；
-* 重新连接当前网络接口；
-* 改用会在网络切换后重建 SOCKS5 连接的客户端。
+这属于客户端侧对失效连接的复用，不是监听器或 Xray 内核缺陷。SimpleXray 会注入更短的 outbound keepalive 与 TCP user-timeout，以更快识别被黑洞化的上游传输；不会强制关闭仍然健康的本地回环会话。
 
-SimpleXray 会注入更短的 outbound keepalive 和 TCP user-timeout，以便更快发现已被黑洞化的上游传输，但无法强制客户端放弃仍然打开的本地连接。
+## 快速开始
 
----
-
-## 配置覆写与删除
-
-启动时，SimpleXray 会先对配置执行 sanitizer，再交给 Xray。通过应用导入或保存 JSON 配置时，也会应用同一套处理并重写存储的 JSON。YAML 配置会在运行时解析并转换为 JSON。如需完整保留原始字段，请自行保留外部备份。
-
-### 顶层字段
-
-| 字段 | 处理 |
-| --- | --- |
-| `geodata` | 整块删除；Geo 数据更新由应用管理。 |
-| `log` | 缺失时创建。 |
-| `api` | 运行时替换为本地 `StatsService` API 对象。 |
-| `stats` | 运行时替换为空对象。 |
-| `policy` | 运行时替换为启用出站上/下行统计的策略。 |
-| `inbounds` | 缺失时创建；具体规则见下文。 |
-
-### 日志块
-
-| 字段 | 处理 |
-| --- | --- |
-| `log.error` | 删除。 |
-| `log.access` | 应用关闭访问日志时改为 `"none"`；开启时删除该字段。 |
-| `log.dnsLog` | 覆盖为应用中的 DNS 日志偏好。 |
-| `log.loglevel` | 覆盖为应用日志级别；当选择 `Auto` 且缺失/为空时写为 `"warning"`。 |
-
-### Inbounds
-
-| 字段 | 处理 |
-| --- | --- |
-| 非 Xray 原生 TUN 模式下的 `tun` inbound | 删除。 |
-| Xray 原生 TUN 模式下的 `tun` inbound | 保留；`settings.name` 缺失时写为 `tun-inbound`；删除 `settings.autoSystemRoutingTable` 和 `settings.autoOutboundsInterface`；创建/更新 `sniffing`，并向 `destOverride` 追加 `fakedns`。 |
-| 主 SOCKS inbound（tag 为 `socks-in`，否则第一个 SOCKS inbound） | `port` 覆盖为应用 SOCKS 端口；`listen` 覆盖为应用 SOCKS 地址；配置了应用 SOCKS 用户名/密码时，替换 `settings.auth` 和 `settings.accounts`。 |
-| 其他 `listen` 为 `::` 或 `0.0.0.0` 的 inbound | `listen` 改为 `127.0.0.1`。 |
-| 缺少 SOCKS inbound | 注入默认 `socks-in`，使用应用 SOCKS 地址/端口并开启 UDP。 |
-| Xray 原生 TUN 模式缺少 `tun` inbound | 注入默认 `tun-inbound`，网络为 `tcp,udp`，并使用默认 sniffing。 |
-
-### 路由规则
-
-| 字段 | 处理 |
-| --- | --- |
-| `routing.domainMatcher` | `mph` 改为 `hybrid`。 |
-| 规则 `geosite` | 条目迁移到 `domain` 并加 `geosite:` 前缀；原 `geosite` 键删除。 |
-| 规则 `geoip` | 条目迁移到 `ip` 并加 `geoip:` 前缀；原 `geoip` 键删除。 |
-| 规则 `process` | 删除以 `.exe` 结尾的条目；若全部删除则移除 `process`。 |
-| 空/无效规则 | 不含有效匹配字段的规则会被删除。 |
-| 开启 LAN 绕过时的 `geoip:private` | 若不存在，则注入最高优先级的 `geoip:private` -> `direct` 规则。 |
-| 关闭 LAN 绕过时的 `geoip:private` | 从直连规则中删除 `geoip:private` 条目；`ip` 数组为空时移除该字段。 |
-
-### DNS 与 Outbounds
-
-| 字段 | 处理 |
-| --- | --- |
-| `dns.hosts` | 缺失时创建。 |
-| `https://...alidns.com` DoH 服务器 | 缺失时注入静态 hosts：`223.5.5.5`、`223.6.6.6`。 |
-| 以 `http://` 或 `https://` 开头的 outbound `tlsSettings.echConfigList` | 删除。 |
-| TCP 流式代理 outbound（`vless`、`vmess`、`trojan`、`shadowsocks`、`socks`、`http`） | 缺失时注入：`tcpKeepAliveIdle=15`、`tcpKeepAliveInterval=3`、`tcpUserTimeout=15000`，以及 `customSockopt` 的 `TCP_KEEPCNT=3`（已有用户值时不覆盖）。 |
-| `observatory.probeTimeout` | 缺失时写为 `"2s"`。 |
-
-### 运行时统计注入
-
-| 字段 | 处理 |
-| --- | --- |
-| `api` | 替换为 `tag=api`、应用 API 监听地址和 `services=["StatsService"]`。 |
-| `stats` | 替换为空对象。 |
-| `policy` | 替换为启用 `system.statsOutboundUplink` 与 `system.statsOutboundDownlink` 的策略。 |
-| HTTP inbound | 开启应用 HTTP 代理且不存在 HTTP inbound 时，在 `127.0.0.1:<httpPort>` 注入 `http-inbound`。 |
-
-未列出的字段保持不变。
-
-## 构建要求
-
-构建本项目需要以下环境。
-
-* Android 14 或更高版本，对应 API Level 34。
-* Android SDK，包括项目所需的 Build Tools 和 Android Platform SDK。
-* Target SDK 36。
-* Android NDK（推荐版本请参考 `version.properties` 中的 `NDK_VERSION`）。
-* Zig `0.16.0`（构建 SimpleTUN Android 原生库所需）。
-* CMake 3.22.1 或更高版本。
-* JDK 25（作为 Gradle Java toolchain；source/target 兼容级别仍为 Java 21）。
-* Go（用于构建 in-tree `sing-tun` 桥接层，推荐版本请参考 `version.properties` 中的 `GO_VERSION`）。
-* 支持子模块操作的 Git。
-
-项目使用 Gradle Wrapper，因此构建时会根据仓库中的 Wrapper 配置使用指定的 Gradle 版本。
-
----
-
-## 从源码构建
-
-### 1. 准备源码与子模块
-
-首先克隆仓库及其子模块。
+构建环境见 [从源码构建](./building_CN.md)。首次构建需要网络：Gradle 会下载 `version.properties` 中固定的 Xray-core 预编译产物并校验其哈希。
 
 ```bash
 git clone --recursive https://github.com/ReRokutosei/SimpleXray.git
 cd SimpleXray
+
+mkdir -p app/src/main/assets
+wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat -O app/src/main/assets/geoip.dat
+wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O app/src/main/assets/geosite.dat
+
+(cd third_party/simpletun && zig build android)
+ANDROID_NDK_HOME=/path/to/ndk bash third_party/sing-tun/build.sh
+
+./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
 
-如果仓库在克隆时没有初始化子模块，可以执行以下命令。
+Debug APK 位于 `app/build/outputs/apk/debug/simplexray-arm64-v8a.apk`。发布签名、No-GEO 构建与 CI 说明见 [从源码构建](./building_CN.md)。
 
-```bash
-git submodule update --init --recursive
-```
+## 文档
 
-### 2. 准备依赖资源文件
+- [从源码构建](./building_CN.md)
+- [配置覆写与删除](./configuration_CN.md)
+- [与上游的差异](./upstream-differences_CN.md)
+- [SimpleTUN 架构说明](./simpletun_spec.md)
+- [基准测试报告](./benchmark/8-elite-gen-5/report/benchmark_report.md)
+- [更新日志](../CHANGELOG.md)
 
-为避免 Git 仓库臃肿，二进制规则文件及 Xray 核心动态库未纳入版本控制，本地编译前需手动准备。
+## 上游与第三方
 
-#### 获取 Geo 规则文件
+项目基于 [Xray-core](https://github.com/XTLS/Xray-core)、[hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel)、[sing-tun](https://github.com/SagerNet/sing-tun) 与 [compose-miuix-ui](https://github.com/compose-miuix-ui/miuix) 构建，并沿用上游 [SimpleXray](https://github.com/lhear/SimpleXray) 项目。应用图标使用 [Magnific](https://www.magnific.com) 提供的免费 Cookie Icons。
 
-将最新的 `geoip.dat` 与 `geosite.dat` 放置于 `app/src/main/assets/` 目录：
+## 隐私与许可
 
-```bash
-mkdir -p ./app/src/main/assets/
-wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat -O ./app/src/main/assets/geoip.dat
-wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O ./app/src/main/assets/geosite.dat
-```
+隐私政策与免责声明见[《隐私政策》](./PrivacyPolicy_CN.md)和[《免责声明》](./Disclaimer_CN.md)。
 
-#### 交叉编译 Xray-core 内核
-
-使用 Go 配合 Android NDK 编译目标架构（`arm64-v8a`）的内核可执行文件，并作为动态库放置于 JNI 目录（内核版本请参考 `version.properties` 中的 `XRAY_CORE_VERSION`）：
-
-```bash
-git clone --depth=1 --branch v26.9.30 https://github.com/XTLS/Xray-core.git
-cd Xray-core
-COMMID=$(git rev-parse HEAD | cut -c 1-7)
-
-export GOOS=android
-export CGO_ENABLED=1
-export GOARCH=arm64
-export CC=$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
-
-go build -o xray -trimpath -buildvcs=false -ldflags="-X github.com/xtls/xray-core/core.build=${COMMID} -s -w -buildid= -checklinkname=0" -v ./main
-mkdir -p ../app/src/main/jniLibs/arm64-v8a
-mv xray ../app/src/main/jniLibs/arm64-v8a/libxray.so
-```
-
-### 3. 本地构建与签名配置
-
-#### Debug 构建
-
-直接执行 Gradle 任务生成调试包：
-
-```bash
-./gradlew assembleDebug
-```
-
-构建完成后，APK 位于以下路径：
-```text
-app/build/outputs/apk/debug/simplexray-arm64-v8a.apk
-```
-
-#### Release 构建与密钥准备
-
-Release 变体默认启用了资源混淆与压缩，并要求完整的 V3/V4 签名。需在项目根目录下创建 `store.properties` 文件（或通过设置环境变量 `KEYSTORE_PATH`、`KEYSTORE_PASSWORD`、`KEY_ALIAS`、`KEY_PASSWORD` 传递密钥信息）：
-
-```properties
-storeFile=/path/to/your/release.jks
-storePassword=your_keystore_password
-keyAlias=your_key_alias
-keyPassword=your_key_password
-```
-
-配置完成后执行：
-
-```bash
-./gradlew assembleRelease
-```
-
-构建完成后，APK 位于以下路径：
-```text
-app/build/outputs/apk/release/simplexray-arm64-v8a.apk
-```
-
----
-
-### 4. GitHub Actions CI 构建注意事项
-
-若 Fork 本仓库后使用 GitHub Actions CI 构建与自动发版，需注意以下配置约束：
-
-1. **Tag 命名要求**：CI 发布工作流（`.github/workflows/release.yml`）仅在推送符合语义化版本规范的 Tag（匹配 `v*`，如 `v1.5.2`）时触发；直接推送分支或 Tag 命名不符合 `^v[0-9]+\.[0-9]+\.[0-9]+` 将导致工作流无法触发或在版本校验步骤报错中断。
-2. **Repository Secrets 密钥配置**：CI 构建必须在仓库的 **Settings -> Secrets and variables -> Actions** 中配置以下 Secrets，否则 Release 签名步骤将直接报错退出：
-   * `SIGNING_KEY`：JKS 密钥库文件的 Base64 编码字符串（可通过 `base64 -w 0 release.jks` 生成）。
-   * `KEY_STORE_PASSWORD`：密钥库密码。
-   * `KEY_ALIAS`：密钥别名。
-   * `KEY_PASSWORD`：私钥密码。
-3. **自动化跟随 Xray-core 内核更新**：
-   * 发布流程使用官方预编译的 `Xray-android-arm64-v8a.zip`，无需本地编译 Xray。升级时同步修改根目录 [`version.properties`](../version.properties) 中的 `XRAY_CORE_VERSION`、`XRAY_CORE_COMMIT` 和 `XRAY_CORE_ZIP_SHA256`；工作流会先校验 Tag 对应的 commit，再校验 zip 的 SHA-256，全部通过后才构建；
-   * `meta-rules-dat` 使用滚动的 `latest` Release。若 `geoip.dat` / `geosite.dat` 发生变化，需同步更新 [`version.properties`](../version.properties) 中的 `GEOIP_SHA256` / `GEOSITE_SHA256`；发布流程会在构建前校验两个哈希，不匹配会直接失败；
-   * 提交修改并推送符合规范的版本 Tag（ `X.Y.Z` ），GitHub Actions 将校验固定的 Xray 产物、签名打包并发布 Release。
-
----
-
-## 上游项目与依赖
-
-SimpleXray 使用或基于以下开源项目开发：
-
-* [**`compose-miuix-ui`**](https://github.com/compose-miuix-ui/miuix) — 面向 Kotlin Multiplatform 的 Jetpack Compose UI 组件库，界面设计参考 Xiaomi HyperOS / MIUI
-* [**`Xray-core`**](https://github.com/XTLS/Xray-core) — SimpleXray 使用的代理网络核心
-* [**`SimpleXray`**](https://github.com/lhear/SimpleXray) — 本项目所基于的上游 Android 客户端
-* [**`hev-socks5-tunnel`**](https://github.com/heiher/hev-socks5-tunnel) — 用于 Android 网络流量处理的 SOCKS5 VPN 隧道实现
-* [**`sing-tun`**](https://github.com/SagerNet/sing-tun) — 用于 sing-box 的高性能轻量级自研用户态网络栈与 TUN 驱动实现
-
-### 致谢
-
-本项目的应用图标使用了来自 Magnific 平台的免费资源，在此感谢原作者的创作：
-
-* 由 [Magnific](https://www.magnific.com) 设计的 [Cookie 图标（包含 Special Lineal, Flat, Lineal Color 三种风格）](https://www.magnific.com/icon/cookie_1047813)
-
----
-
-## 隐私政策与免责声明
-
-隐私政策请参阅[《隐私政策》](./PrivacyPolicy_CN.md)，免责声明请参阅[《免责声明》](./Disclaimer_CN.md)。
-
-使用本应用即表示您已阅读并同意隐私政策与免责声明。如您不同意其中任何内容，请卸载本应用并停止使用。
-
----
-
-## 许可证
-
-除另有说明外，本项目按照上游项目的许可条款使用 Mozilla Public License 2.0（也称 MPL-2.0）
-
-完整许可证文本请参阅 [`LICENSE`](../LICENSE) 文件。
-
-<div align="center">
-
-<img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FReRokutosei%2FSimpleXray.svg?type=large" alt="FOSSA Status"  width="300">
-
-</div>
+除另有说明外，本项目以 Mozilla Public License 2.0（MPL-2.0）分发。完整条款见 [`LICENSE`](../LICENSE)。

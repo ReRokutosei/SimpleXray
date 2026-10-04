@@ -24,8 +24,9 @@ This directory contains automated testing scripts and profiling tools for benchm
   - `weaknet.py`: Bidirectional TCP throughput under host netem delay and packet loss.
   - `cps.py`: Short-lived TCP connection-per-second handshake stress suite.
   - `quic.py`: Optional HTTP/3 smoke suite through the active TUN backend.
-- `update_benchmark_doc.py`: Non-destructive, in-place synchronizer for Section 3.1 tables in `android-tun-benchmark.md`.
+- `update_benchmark_doc.py`: Legacy non-destructive synchronizer targeting the older Chinese-format Section 3.1 report layout; current English per-device benchmark reports are maintained manually.
 - `sync_versions.py`: Automated submodule and dependency commit hash synchronizer for `version.properties`.
+- `tests/`: Python `unittest` coverage for benchmark preset parsing and `version.properties` validation.
 - `idle_bench/`: High-performance, zero-external-dependency Go probe (cross-compiled for Linux `amd64` and Android `arm64`).
 - `microbench/`: Standalone Linux user-namespace microbenchmark harness (Scheme 2).
 - `quic/`: Small Go HTTP/3 server/client helper used by `suites/quic.py`.
@@ -37,7 +38,7 @@ This directory contains automated testing scripts and profiling tools for benchm
 3. **Python 3**: Python 3.8+ with `matplotlib` and `numpy` (for chart generation).
 4. **iPerf3**: Installed on both host and Android device (`/data/local/tmp/iperf3`).
 5. **iproute2**: Required for `weaknet` mode host-side `tc netem`.
-6. **Go**: Go 1.25+ (for building `idle_bench`, `microbench/socks5_sink`, and the QUIC smoke helper).
+6. **Go**: Go 1.25+ for the small tooling helpers. CI uses the pinned `GO_VERSION` from [`version.properties`](../version.properties) (currently `1.27.1`).
 7. **Host Xray binary** (for `microbench` `xray` case): set `XRAY_BIN`, add `xray` to `PATH`, or place it at `tools/bin/xray` (gitignored).
 
 ## Usage
@@ -107,4 +108,10 @@ python3 tools/benchmark.py \
 ```bash
 # Generate all standardized 16:9 WebP charts directly into docs/benchmark/<profile>/charts/
 python3 tools/generate_charts.py --device-profile 778g --preset light
+```
+
+### 4. Tooling Unit Tests
+
+```bash
+python3 -m unittest discover -s tools/tests -v
 ```

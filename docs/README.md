@@ -1,6 +1,5 @@
 # SimpleXray (Personal Fork)
 
-
 <div align="center">
 <img src="images/lineal.svg" alt="SimpleXray icon" width="150">
 
@@ -8,27 +7,31 @@
 
 <img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FReRokutosei%2FSimpleXray.svg?type=shield" alt="FOSSA Status" width="150">
 
+<sub>Android 14+ (API 34) | arm64-v8a | MPL-2.0</sub>
 </div>
 
+SimpleXray is an Android launcher and frontend for Xray-core. It accepts complete JSON or YAML configurations, applies Android-specific normalization, and executes the result under `VpnService`. It does not parse share links or subscriptions.
 
-## Scope
-
-SimpleXray is primarily an Android frontend and launcher for Xray-core. It accepts complete Xray-core configuration files in JSON or YAML format and executes the resulting configuration on Android.
-
-The application does not parse or generate configurations from share links or subscription URIs such as `vless://`, `vmess://`, or `trojan://`. Users are expected to have a basic understanding of Xray-core configuration files.
-
-Imported configurations may be processed before execution to accommodate Android-specific requirements. This includes removing or modifying configuration elements that are specific to desktop or root environments.
-
-This repository is a personal fork based on the upstream [SimpleXray](https://github.com/lhear/SimpleXray) project.
+This repository is a personal fork of [SimpleXray](https://github.com/lhear/SimpleXray). It keeps the upstream full-configuration model and adds a selectable TUN data plane, a reworked configuration pipeline, rule-file management, a Miuix-based interface, and benchmark tooling.
 
 > [!NOTE]
-> This repository is a personal fork maintained strictly for personal use and experimentation.
-> Public Issues and Pull Requests are not accepted, and no support or maintenance is provided.
-> If you wish to use the app or track newer kernel updates, feel free to fork this project and build it via CI.
+> This fork is maintained for personal use and experimentation. Issues and pull requests are not accepted, and no support is provided. If you need a maintained client, use upstream or fork this repository and build it through CI.
+
+## Why This Fork
+
+- **Four TUN backends** — Hev (C/lwIP, default), SingTUN (Go), SimpleTUN (in-tree Zig), and native Xray TUN.
+- **Complete configuration workflow** — JSON/YAML import, in-app editor, one-way Android sanitization, log controls, and runtime statistics injection.
+- **Rule-file management** — built-in `geoip.dat`/`geosite.dat`, arbitrary custom `.dat` files, `ext:` references, per-file update URLs, and background updates.
+- **Miuix interface** — Xiaomi HyperOS/MIUI-inspired Compose UI with adaptive phone and tablet layouts, NavigationRail, Light/Dark/System themes, and Android 12+ dynamic colors.
+- **Android integration** — per-app proxy controls, direct local SOCKS5 inbound, network handover handling, and 16 KB page-alignment support.
+- **Benchmark tooling** — headless benchmark runner, publication dashboards, and device benchmark datasets.
+- **Platform baseline** — Android 14+ and `arm64-v8a` only.
+
+The full structural comparison is in [Differences from Upstream](./upstream-differences.md).
 
 ## UI Preview
 
-### Mobile
+### Phone
 
 <div align="center">
   <img src="./images/mobile_01.webp" alt="Mobile UI 1" width="48%">
@@ -48,374 +51,97 @@ This repository is a personal fork based on the upstream [SimpleXray](https://gi
   <img src="./images/table_04.webp" alt="Tablet UI 4" width="48%">
 </div>
 
----
+## Features
 
-<details>
-<summary><b>Click to expand / collapse: Differences from Upstream</b></summary>
+### Xray-core
 
-| Area | Upstream (4c78901) | Personal Fork |
-|-|-|-|
-| **Configuration Import**        | JSON configurations, `vless://` links, and `simplexray://config/` links | Full JSON and YAML configurations imported through the Storage Access Framework (SAF) or clipboard; share links are not supported |
-| **Rule Files**                  | Embedded `geoip.dat` and `geosite.dat` files, with local replacement and URL updates for these two files | Retains the standard rule-file management and adds arbitrary custom `.dat` files, `ext:` file references, per-file update URLs, validation, and background updates |
-| **Configuration Sanitization**  | JSON formatting with removal of `log.access` and `log.error` | SnakeYAML-based parsing with a one-way Android compatibility pipeline that modifies inbounds, routing rules, DNS bootstrap hosts, logging, and selected outbound settings |
-| **Build System**                | Legacy `ndkBuild` (`Android.mk`) and standard Gradle configuration                | CMake (`CMakeLists.txt`); the native tunnel target includes Android 16 KB page-alignment linker options. Gradle Wrapper `9.8.0`, Android Gradle Plugin `9.4.1`, Version Catalogs, and Plugins DSL |
-| **UI & Layout**                 | Standard Material 3 UI                                                            | Xiaomi HyperOS / MIUI-inspired UI implemented with `compose-miuix-ui`, with adaptive layouts for phones and large screens, NavigationRail support, and Android 12+ dynamic colors |
-| **Persistence & Communication** | ContentProvider-backed `SharedPreferences` and `Gson`                             | Direct lightweight `SharedPreferences` with `kotlinx.serialization`; UI and background service communicate reactively via in-memory `StateFlow` and `SharedFlow` |
-| **Core Components**             | Xray-core `v26.3.27` and `hev-socks5-tunnel` `v2.14.3`                            | Xray-core `v26.9.30`, `sing-tun` (Go stack), `hev-socks5-tunnel` `v2.18.0`, and the in-tree SimpleTUN Zig engine, including updated `hev-socks5-core`, `hev-task-system`, and `lwip` components |
-| **ABI Packaging**               | `arm64-v8a` and `x86_64` split APKs, plus a universal APK                                | `arm64-v8a` APK only                                                                                                                                                |
-| **TUN Backend Setting**         | No Xray TUN backend setting                                      | `Xray TUN`, `SingTUN`, `SimpleTUN`, and `Hev Socks5 Tunnel` selector, defaulting to `Hev Socks5 Tunnel` |
+- Xray-core runs as an independent child process and receives its configuration through stdin. No intermediate configuration file is written to disk.
+- Native Xray TUN mode uses the JNI launcher (`xray_exec.c`) to pass the Android VPN file descriptor to the child process.
+- The dashboard probes TCP handshake latency to supported outbound endpoints when it is shown or manually refreshed. UDP-only protocols, QUIC transports, and private, loopback, or link-local IP literals are skipped.
+- In Hev, SingTUN, and SimpleTUN modes, Xray is started with `ProcessBuilder`; the selected backend forwards TUN traffic to Xray's local SOCKS5 inbound.
+- Core status and traffic statistics are queried over plaintext gRPC on a dynamically allocated `127.0.0.1` port. Standard output and error are streamed to the UI and may be exported.
 
-</details>
+### Configuration
 
-## Features and Modifications
+- Complete JSON and YAML configurations, imported through SAF or the clipboard (`.json`, `.yaml`, `.yml`).
+- A one-way sanitizer removes desktop/root-oriented fields and adapts inbounds, routing rules, DNS bootstrap hosts, logging, and outbound transport settings for Android. See [Configuration Overrides and Removals](./configuration.md).
+- Error, access, and DNS logs are controlled separately. The `Auto` log level maps to `warning` when no explicit level is configured.
+- The built-in editor supports text editing, search, and bracket matching.
 
-### 1. UI and Adaptive Layout
+### TUN Backends
 
-The user interface has been refactored around `compose-miuix-ui`, using a design language inspired by Xiaomi HyperOS / MIUI.
+- **Hev** — C/lwIP implementation. Default backend.
+- **SingTUN** — Go user-space stack based on the in-tree `sing-tun` integration.
+- **SimpleTUN** — in-tree Zig engine. IPv4 only, SOCKS5 no-auth, MTU fixed at 1500, no IPv6 route or address. See the [architecture specification](./simpletun_spec.md).
+- **Xray TUN** — native Xray TUN inbound with the VPN file descriptor delivered by the JNI launcher.
 
-* **Miuix components**: Uses Miuix components and shapes, including `TopAppBar`, `Card`, `InputField`, `Checkbox`, `OverlayIconDropdownMenu`, `OverlayDialog`, and `OverlayBottomSheet`.
-* **Theme support**: Provides Light, Dark, and Automatic theme modes, together with Android 12+ Monet dynamic colors integrated with the Miuix color scheme.
-* **Adaptive navigation**: Uses a vertical Miuix `NavigationRail` on wide screens when `screenWidthDp >= 600dp`.
-* **Master-detail layout**: Uses a dual-pane layout for `ConfigScreen` on larger landscape displays when `screenWidthDp >= 840dp`, allowing profile selection and configuration editing to be displayed side by side.
-* **Editor layout**: Provides a fullscreen editor mode. Dashboard, Settings, and App-Based Proxy content use a maximum width of `840dp` on wide screens.
-* **Edge-to-edge navigation**: Uses a floating navigation bar that allows page content to scroll beneath the translucent navigation surface.
-* **Per-app proxy filtering**: Adds an option in the App-Based Proxy screen to show or hide applications that do not declare `android.permission.INTERNET`.
-* **Direct controls**: Provides direct controls for log search, log export, log clearing, and dashboard latency refresh. Configuration import remains available from the configuration screen.
+### Rule Files
 
-### 2. Xray-core Configuration Import
+- Import and replace the standard `geoip.dat` and `geosite.dat` files.
+- Import arbitrary custom `.dat` files and reference entries with `ext:<file>:<tag>`.
+- Configure independent update URLs per custom rule file. Downloads run in the background and are validated before installation.
 
-SimpleXray accepts complete Xray-core configuration files rather than individual proxy nodes or share links.
+### Android Integration
 
-Supported input formats include:
+- The Android app layer (UI + `TProxyService`) runs in a single process. Service state and log streams are delivered through in-memory `StateFlow` / `SharedFlow`.
+- Per-app proxy filtering, direct SOCKS5 access at `127.0.0.1:<socksPort>`, network handover callbacks, and adaptive layout for phones and tablets.
 
-* JSON configuration files;
-* YAML configuration files;
-* `.json`, `.yaml`, and `.yml` files imported through the Android Storage Access Framework (SAF);
-* Configuration text pasted from the clipboard.
+### Benchmark and Tooling
 
-Share links and subscription URIs, such as `vless://`, `vmess://`, and `trojan://`, are not supported.
-
-YAML configurations are parsed into structured data, processed by the configuration sanitization pipeline, and serialized before being passed to Xray-core.
-
-The application also provides an in-app configuration editor with text editing, search, and bracket matching.
-
-### 3. Rule File Management
-
-SimpleXray retains the embedded `geoip.dat` and `geosite.dat` rule files and provides additional local and remote management capabilities.
-
-* **Local replacement**: Import local `geoip.dat` and `geosite.dat` files from device storage.
-* **Custom rule files**: Import and manage arbitrary non-standard `.dat` files.
-* **Custom tags**: Support custom rule references such as `ext:custom.dat:subcategory`.
-* **Per-file update URLs**: Configure individual update URLs for non-standard `.dat` files.
-* **Background updates**: Download configured custom rule files in the background.
-
-### 4. Process Management and IPC
-
-SimpleXray uses separate channels for configuration, VPN traffic, process logs, and statistics queries.
-
-* **Single-Process Application Architecture**: The Android app layer (UI and background `TProxyService`) runs in a unified process, eliminating multi-process IPC overhead. Service state and log streams are delivered via in-memory `StateFlow` / `SharedFlow`, with lightweight direct `SharedPreferences` persistence.
-* **Core Sub-Process Execution**: Xray-core runs as an independent OS-level child process, enabling decoupled management and drop-in kernel upgrades. Generated JSON is written directly to Xray-core through stdin without intermediate config files on disk.
-* **Native TUN mode**: The JNI launcher passes the Android `VpnService` file descriptor to the Xray child process, which attaches it to the TUN inbound.
-* **Process logs**: Xray stdout and stderr are collected through pipes and broadcast directly to the UI via memory flows.
-* **Statistics**: Core status and traffic statistics are queried through plaintext gRPC on a dynamically allocated `127.0.0.1` ephemeral TCP port.
-* **SingTUN mode**: Powered by `sing-tun`'s new self-developed pure Go user-space network stack (Zero-Alloc slab pools, hierarchical timing wheel, and userspace zero-copy pipelines), reads the Android VPN file descriptor and streams traffic to Xray's local SOCKS5 inbound.
-* **Hev tunnel mode**: When selected, `hev-socks5-tunnel` reads the Android VPN file descriptor and forwards traffic to Xray through its local SOCKS5 inbound.
-* **Benchmark & Profiling**: For detailed throughput benchmarks and resource profiling results on Android devices, see [Android TUN Benchmark Report](./benchmark/android-tun-benchmark.md).
-
-### 5. Routing and Core Configuration
-
-The fork includes several configuration-level optimizations and Android-specific adjustments.
-
-* **Hybrid domain matcher**: Changes `domainMatcher` from `mph` to `hybrid` to balance memory usage and domain lookup performance.
-* **DoH bootstrap configuration**: Adds static host mappings for matching AliDNS DoH hostnames to avoid DNS bootstrap dependencies for those endpoints.
-* **Listen address normalization**: Converts wildcard listen addresses such as `::` and `0.0.0.0` to `127.0.0.1` where required by the Android execution environment.
-* **Dashboard latency display**: The dashboard shows the TCP handshake time to each outbound's server endpoint. Endpoints are parsed from the configuration: vless and vmess use `settings.vnext[0]`, while trojan, shadowsocks, HTTP, and SOCKS use `settings.servers[0]`. Probes run once when the dashboard is shown and can also be started manually. UDP-only protocols such as WireGuard and Hysteria2, QUIC transports, and private, loopback, or link-local IP literals are skipped. The result measures the network path from the device to the node and does not measure Xray processing time. Unreachable nodes are marked as failed.
-
-### 6. Platform-Specific Configuration Sanitization
-
-Complete Xray-core configuration files can be imported without requiring users to manually remove every desktop-specific setting. Before execution, the imported configuration passes through an Android-specific sanitization pipeline.
-
-The pipeline currently handles the following cases:
-
-* **Windows process rules**: Removes Windows-specific executable paths such as `chrome.exe` from `routing.rules` and removes rules that become invalid as a result.
-* **TUN inbounds**: When VPN and Xray TUN mode are enabled, keeps a `protocol: tun` inbound, supplies an Android-compatible name, and removes desktop automatic-routing fields. In Hev mode, or when VPN is disabled, removes `protocol: tun` inbounds.
-* **File-based logging**: Removes filesystem paths configured through the `access` and `error` logging fields where required to avoid Android filesystem permission errors.
-* **Listen addresses**: Normalizes `::` and `0.0.0.0` to `127.0.0.1` where required by the Android execution environment.
-* **Sniffing configuration**: Preserves supported sniffing-related settings, including `destOverride`, when sanitizing the configuration.
-
-The sanitization pipeline is intentionally one-way: imported configuration data is transformed into an Android-compatible configuration before being passed to the core.
-
-### 7. Log Level Configuration
-
-SimpleXray provides a LogLevel preference with the following options:
-
-* `Auto`
-* `Debug`
-* `Info`
-* `Warning`
-* `Error`
-* `None`
-
-The selected log level is applied to the imported configuration during the sanitization process. File-based `access` and `error` logging paths are removed where necessary to avoid filesystem permission issues on Android.
-
-### 8. Build System and Dependencies
-
-The native build system has been migrated from the legacy Android NDK build system to CMake.
-
-* **CMake**: Uses `CMakeLists.txt` instead of `Android.mk` / `ndkBuild`.
-* **Android 16 KB page alignment**: The native build configuration includes support for Android devices using 16 KB memory page sizes.
-* **Gradle Wrapper**: Updated to `v9.8.0`.
-* **Android Gradle Plugin**: Uses `v9.4.1`.
-* **Version Catalogs**: Project dependencies are managed through Gradle Version Catalogs.
-* **Plugins DSL**: Gradle plugins are configured through the Plugins DSL.
-* **Serialization**: `Gson` has been replaced with `kotlinx.serialization` for type-safe serialization and deserialization.
-
----
-
+- `tools/benchmark.py` drives throughput, idle-memory, bufferbloat, stability, weak-network, CPS, and QUIC suites through a headless `BenchmarkService`.
+- Chart and report generation are included. Results: [Snapdragon 8 Elite Gen 5](./benchmark/8-elite-gen-5/report/benchmark_report.md) and [Snapdragon 778G](./benchmark/778g/report/benchmark_report.md).
 
 ## Known Issues
 
-### Official Telegram clients may remain stuck on a stale local SOCKS5 connection
+### Telegram may retain a stale local SOCKS5 connection
 
-When Android changes its default network (for example, Wi-Fi is turned off while cellular is active), an existing TCP connection from a client to `127.0.0.1:<socksPort>` may remain open while the corresponding Xray upstream transport has already become stale. The official Telegram client has been observed to keep reusing that local connection without reconnecting, so it remains stuck until the Xray core is restarted or the network interface is reconnected.
-
-Clients that perform their own liveness detection or reconnect, and apps routed through the TUN interface recover normally. This is client-side stale connection reuse; it is not a SimpleXray listener or Xray-core defect. SimpleXray does not forcibly close otherwise healthy loopback TCP sessions.
+When Android changes its default network, an existing TCP connection from a client to `127.0.0.1:<socksPort>` can remain open while its Xray upstream transport has already become stale. The official Telegram client has been observed to reuse that loopback connection indefinitely. Routing through the TUN interface and clients with their own liveness detection recover normally.
 
 Workarounds:
 
-* Toggle the VPN/Xray core off and on.
-* Reconnect the network interface.
-* Use a client that recreates its SOCKS5 connection after network changes.
+- Toggle the VPN or Xray core off and on.
+- Reconnect the network interface.
+- Use a client that recreates its SOCKS5 connection after network changes.
 
-SimpleXray injects shorter outbound keepalive and TCP user-timeout values to detect blackholed upstream transports faster, but it cannot force a client to abandon an open loopback socket.
+This is client-side stale-connection reuse, not a listener or Xray-core defect. SimpleXray injects shorter outbound keepalive and TCP user-timeout values to detect blackholed upstream transports faster, but it does not forcibly close otherwise healthy loopback sessions.
 
----
+## Quick Start
 
-## Configuration Overrides and Removals
-
-At launch, SimpleXray applies a sanitizer to the configuration before passing it to Xray. When a JSON configuration is imported or saved through the app, the same sanitizer is applied and the stored JSON is rewritten. YAML input is parsed and converted to JSON for the runtime configuration. Keep an external backup if every original field/value must be preserved.
-
-### Top-Level Fields
-
-| Field | Action |
-| --- | --- |
-| `geodata` | Removed entirely; Geo data updates are managed by the app. |
-| `log` | Created if missing. |
-| `api` | Replaced at runtime with the local `StatsService` API object. |
-| `stats` | Replaced at runtime with an empty object. |
-| `policy` | Replaced at runtime with a policy enabling outbound up/down statistics. |
-| `inbounds` | Created if missing; see inbound rules below. |
-
-### Log Block
-
-| Field | Action |
-| --- | --- |
-| `log.error` | Removed. |
-| `log.access` | Set to `"none"` when the app access log is disabled; removed when it is enabled. |
-| `log.dnsLog` | Overwritten with the app DNS log preference. |
-| `log.loglevel` | Overwritten with the app log level; when set to `Auto` and missing/empty, set to `"warning"`. |
-
-### Inbounds
-
-| Field | Action |
-| --- | --- |
-| `tun` inbound when native Xray TUN is not active | Removed. |
-| `tun` inbound when native Xray TUN is active | Kept; `settings.name` defaults to `tun-inbound`; `settings.autoSystemRoutingTable` and `settings.autoOutboundsInterface` are removed; `sniffing` is created/updated and `fakedns` is added to `destOverride`. |
-| Primary SOCKS inbound (tag `socks-in`, or first SOCKS inbound) | `port` is replaced with the app SOCKS port; `listen` with the app SOCKS address; `settings.auth` and `settings.accounts` are replaced when app SOCKS credentials are configured. |
-| Other inbounds with `listen` set to `::` or `0.0.0.0` | `listen` is replaced with `127.0.0.1`. |
-| Missing SOCKS inbound | A default `socks-in` inbound is injected using the app SOCKS address/port and UDP enabled. |
-| Missing `tun` inbound when native Xray TUN is active | A default `tun-inbound` is injected with `tcp,udp` and default sniffing. |
-
-### Routing Rules
-
-| Field | Action |
-| --- | --- |
-| `routing.domainMatcher` | `mph` is changed to `hybrid`. |
-| Rule `geosite` | Entries are moved into `domain` as `geosite:<entry>`; the original `geosite` key is removed. |
-| Rule `geoip` | Entries are moved into `ip` as `geoip:<entry>`; the original `geoip` key is removed. |
-| Rule `process` | Entries ending in `.exe` are removed; if nothing remains, `process` is removed. |
-| Empty/invalid rules | Rules without any effective matching field are removed. |
-| `geoip:private` with LAN bypass enabled | A top-priority `geoip:private` -> `direct` rule is injected if absent. |
-| `geoip:private` with LAN bypass disabled | `geoip:private` entries are removed from direct rules; an empty `ip` array is removed. |
-
-### DNS and Outbounds
-
-| Field | Action |
-| --- | --- |
-| `dns.hosts` | Created if missing. |
-| `https://...alidns.com` DoH servers | Static hosts `223.5.5.5` and `223.6.6.6` are injected if absent. |
-| Outbound `tlsSettings.echConfigList` starting with `http://` or `https://` | Removed. |
-| TCP-based proxy outbounds (`vless`, `vmess`, `trojan`, `shadowsocks`, `socks`, `http`) | Missing `streamSettings.sockopt` values are injected: `tcpKeepAliveIdle=15`, `tcpKeepAliveInterval=3`, `tcpUserTimeout=15000`, plus `customSockopt` `TCP_KEEPCNT=3` unless already present. Existing user values are not overwritten. |
-| `observatory.probeTimeout` | Set to `"2s"` if missing. |
-
-### Runtime Statistics Injection
-
-| Field | Action |
-| --- | --- |
-| `api` | Replaced with `tag=api`, the app API listen address, and `services=["StatsService"]`. |
-| `stats` | Replaced with an empty object. |
-| `policy` | Replaced with a policy whose `system` enables `statsOutboundUplink` and `statsOutboundDownlink`. |
-| HTTP inbound | When the app HTTP proxy is enabled and no HTTP inbound exists, `http-inbound` is injected on `127.0.0.1:<httpPort>`. |
-
-Fields not listed above are left unchanged.
-
-## Requirements
-
-The following environment is required to build the project:
-
-* Android 14 (API level 34) or later.
-* Android SDK with Build Tools and Platform SDK for the configured target SDK (`36`).
-* Android NDK (see `version.properties` for the recommended `NDK_VERSION`).
-* Zig `0.16.0` (required to build the SimpleTUN Android native library).
-* CMake 3.22.1 or higher.
-* JDK 25 (used as the Gradle Java toolchain; source/target compatibility remains Java 21).
-* Go (for building the in-tree `sing-tun` bridge, see `version.properties` for the recommended `GO_VERSION`).
-* Git with submodule support.
-
-The project uses Gradle Wrapper, so the required Gradle version is obtained automatically from the repository's Gradle Wrapper configuration.
-
----
-
-## Building from Source
-
-### 1. Clone Repository and Submodules
-
-Clone the repository and its submodules:
+Prerequisites are summarized in the [building guide](./building.md). First build requires network access because Gradle downloads and verifies the pinned Xray-core prebuilt.
 
 ```bash
 git clone --recursive https://github.com/ReRokutosei/SimpleXray.git
 cd SimpleXray
+
+mkdir -p app/src/main/assets
+wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat -O app/src/main/assets/geoip.dat
+wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O app/src/main/assets/geosite.dat
+
+(cd third_party/simpletun && zig build android)
+ANDROID_NDK_HOME=/path/to/ndk bash third_party/sing-tun/build.sh
+
+./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
 
-If the repository has already been cloned without its submodules, initialize them with:
+Debug APK: `app/build/outputs/apk/debug/simplexray-arm64-v8a.apk`. Release signing, no-GEO builds, and CI details are documented in [Building from Source](./building.md).
 
-```bash
-git submodule update --init --recursive
-```
+## Documentation
 
-### 2. Prepare Required Resource Files
+- [Building from Source](./building.md)
+- [Configuration Overrides and Removals](./configuration.md)
+- [Differences from Upstream](./upstream-differences.md)
+- [SimpleTUN Architecture Specification](./simpletun_spec.md)
+- [Benchmark Reports](./benchmark/8-elite-gen-5/report/benchmark_report.md)
+- [Changelog](../CHANGELOG.md)
 
-To keep the repository lightweight, binary rule files and the Xray-core dynamic library are not tracked by Git and must be prepared before local compilation.
+## Upstream and Third-Party
 
-#### Obtain Geo Rule Files
+Built on [Xray-core](https://github.com/XTLS/Xray-core), [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel), [sing-tun](https://github.com/SagerNet/sing-tun), and [compose-miuix-ui](https://github.com/compose-miuix-ui/miuix), and derived from the upstream [SimpleXray](https://github.com/lhear/SimpleXray) project.
 
-Place the latest `geoip.dat` and `geosite.dat` into the `app/src/main/assets/` directory:
+Application icon assets use free Cookie Icons provided by [Magnific](https://www.magnific.com).
 
-```bash
-mkdir -p ./app/src/main/assets/
-wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat -O ./app/src/main/assets/geoip.dat
-wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O ./app/src/main/assets/geosite.dat
-```
+## Privacy and License
 
-#### Cross-Compile Xray-core
+See the [Privacy Policy](./PrivacyPolicy_EN.md) and [Disclaimer](./Disclaimer_EN.md).
 
-Use Go and the Android NDK to compile the `arm64-v8a` core executable, placing it into the JNI libraries directory (ensure the tag matches `XRAY_CORE_VERSION` in `version.properties`):
-
-```bash
-git clone --depth=1 --branch v26.9.30 https://github.com/XTLS/Xray-core.git
-cd Xray-core
-COMMID=$(git rev-parse HEAD | cut -c 1-7)
-
-export GOOS=android
-export CGO_ENABLED=1
-export GOARCH=arm64
-export CC=$NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android24-clang
-
-go build -o xray -trimpath -buildvcs=false -ldflags="-X github.com/xtls/xray-core/core.build=${COMMID} -s -w -buildid= -checklinkname=0" -v ./main
-mkdir -p ../app/src/main/jniLibs/arm64-v8a
-mv xray ../app/src/main/jniLibs/arm64-v8a/libxray.so
-```
-
-### 3. Local Build and Signing Configuration
-
-#### Debug Build
-
-Run the Gradle task directly to produce a debug APK:
-
-```bash
-./gradlew assembleDebug
-```
-
-The output APK is located at:
-```text
-app/build/outputs/apk/debug/simplexray-arm64-v8a.apk
-```
-
-#### Release Build and Keystore Setup
-
-The release variant enables resource shrinking and minification, requiring valid V3/V4 APK signing. Create a `store.properties` file in the project root directory (Alternatively, set the environment variables `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, and `KEY_PASSWORD`):
-
-```properties
-storeFile=/path/to/your/release.jks
-storePassword=your_keystore_password
-keyAlias=your_key_alias
-keyPassword=your_key_password
-```
-
-Then build the release APK:
-
-```bash
-./gradlew assembleRelease
-```
-
-The generated APK is located at:
-```text
-app/build/outputs/apk/release/simplexray-arm64-v8a.apk
-```
-
----
-
-### 4. GitHub Actions CI Considerations
-
-If forking this repository and using GitHub Actions CI for automated builds and releases, note the following requirements:
-
-1. **Tag Naming Convention**: The release workflow (`.github/workflows/release.yml`) only triggers on pushing semver tags matching `v*` (e.g. `v1.5.2`). Pushing branches or tags not matching `^v[0-9]+\.[0-9]+\.[0-9]+` will either not trigger the workflow or fail during tag validation.
-2. **Repository Secrets Configuration**: You must configure the following Repository Secrets (**Settings -> Secrets and variables -> Actions**); missing signing credentials will cause the release build step to fail:
-   * `SIGNING_KEY`: Base64-encoded string of the JKS keystore file (generate via `base64 -w 0 release.jks`).
-   * `KEY_STORE_PASSWORD`: Keystore password.
-   * `KEY_ALIAS`: Key alias.
-   * `KEY_PASSWORD`: Private key password.
-3. **Automated Kernel Upgrades**:
-   * Release builds use the official prebuilt `Xray-android-arm64-v8a.zip`; no local Xray compilation is required. To upgrade, update `XRAY_CORE_VERSION`, `XRAY_CORE_COMMIT`, and `XRAY_CORE_ZIP_SHA256` in the root [`version.properties`](../version.properties). The workflow verifies that the release tag resolves to the pinned commit and then verifies the archive SHA-256 before building.
-   * The `meta-rules-dat` project publishes rolling `latest` assets. When `geoip.dat` / `geosite.dat` change, update `GEOIP_SHA256` / `GEOSITE_SHA256` in [`version.properties`](../version.properties); the release workflow verifies both hashes before building.
-   * Commit the changes and push a valid semver tag ( `X.Y.Z` ). GitHub Actions will verify the pinned Xray archive, sign the release APK, and publish the GitHub Release.
-
----
-
-## Upstream Projects and Dependencies
-
-SimpleXray incorporates or builds upon the following open-source projects:
-
-* [**`compose-miuix-ui`**](https://github.com/compose-miuix-ui/miuix) — A Jetpack Compose UI component library for Kotlin Multiplatform, inspired by Xiaomi HyperOS / MIUI.
-* [**`Xray-core`**](https://github.com/XTLS/Xray-core) — The proxy and network core used by SimpleXray.
-* [**`SimpleXray`**](https://github.com/lhear/SimpleXray) — The upstream Android client on which this fork is based.
-* [**`hev-socks5-tunnel`**](https://github.com/heiher/hev-socks5-tunnel) — A SOCKS5 VPN tunnel implementation used for handling Android network traffic.
-* [**`sing-tun`**](https://github.com/SagerNet/sing-tun) — High-performance lightweight user-space network stack and TUN driver implementation for sing-box.
-
-### Acknowledgements
-
-This project uses free icons provided by Magnific. We would like to express our gratitude for the original creator's work:
-
-* [Cookie Icons (Special Lineal, Flat, Lineal Color)](https://www.magnific.com/icon/cookie_1047813) — Designed by [Magnific](https://www.magnific.com)
-
----
-
-## Privacy Policy and Disclaimer
-
-For details, please refer to the [Privacy Policy](./PrivacyPolicy_EN.md) and [Disclaimer](./Disclaimer_EN.md).
-
-By using this application, you acknowledge that you have read and agree to the Privacy Policy and Disclaimer. If you do not agree with either document, please uninstall the application and discontinue its use.
-
----
-
-## License
-
-Unless otherwise stated, this project is distributed under the Mozilla Public License 2.0 (MPL-2.0), in accordance with the licensing terms of the upstream project.
-
-See [`LICENSE`](../LICENSE) for the complete license text.
-
-<div align="center">
-
-<img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2FReRokutosei%2FSimpleXray.svg?type=large" alt="FOSSA Status"  width="300">
-
-</div>
+Unless otherwise stated, this project is distributed under the Mozilla Public License 2.0 (MPL-2.0). See [`LICENSE`](../LICENSE) for the full text.
