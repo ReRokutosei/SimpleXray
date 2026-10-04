@@ -35,7 +35,7 @@ internal class TunnelBackendController(
     private var goTunConnection: ServiceConnection? = null
     private var goTunGeneration = 0
 
-    fun startHev(tproxyConfigPath: String, fd: Int): Boolean {
+    fun startHevBackend(tproxyConfigPath: String, fd: Int): Boolean {
         synchronized(lifecycleLock) {
             val started = runCatching {
                 startHev(tproxyConfigPath, fd)

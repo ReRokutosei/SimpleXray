@@ -386,7 +386,7 @@ class TProxyService : VpnService() {
             }
 
             val started = tunFd?.fd?.let { fd ->
-                tunnelBackendController.startHev(tproxyFile.absolutePath, fd)
+                tunnelBackendController.startHevBackend(tproxyFile.absolutePath, fd)
             } ?: run {
                 Log.e(TAG, "tunFd is null after establish()")
                 false
