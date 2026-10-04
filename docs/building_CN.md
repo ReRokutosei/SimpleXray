@@ -42,7 +42,7 @@ wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.
 wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O app/src/main/assets/geosite.dat
 ```
 
-发布构建会校验 `version.properties` 中的 `GEOIP_SHA256` 与 `GEOSITE_SHA256`。使用 `-PnoGeo=true` 时改为打包 `app/src/main/assets-no-geo/`。
+发布构建会在构建时下载上游 `latest` 的当前文件。使用 `-PnoGeo=true` 时改为打包 `app/src/main/assets-no-geo/`。
 
 ## 4. 构建原生依赖
 
@@ -124,14 +124,14 @@ python3 tools/sync_versions.py --check
 
 `verify.yml` 在 `main`/`dev` 分支推送和 pull request 时执行 version pin 检查、Go 格式检查、SimpleTUN 构建与测试，以及 `testDebugUnitTest assembleDebug`。
 
-`release.yml` 仅在匹配 `v*` 的语义化版本 tag 上触发。该流程会校验 tag、Xray release commit 与压缩包哈希、Geo 资源哈希，构建 SingTUN 与 SimpleTUN，运行单元测试，签名普通版和 No-GEO 版 APK，并创建 GitHub Draft Release。使用前需配置以下 Repository Secrets：
+`release.yml` 仅在匹配 `v*` 的语义化版本 tag 上触发。该流程会校验 tag、Xray release commit 与压缩包哈希，下载滚动 Geo 资源，构建 SingTUN 与 SimpleTUN，运行单元测试，签名普通版和 No-GEO 版 APK，并创建 GitHub Draft Release。使用前需配置以下 Repository Secrets：
 
 - `SIGNING_KEY`：JKS keystore 的 Base64 编码。
 - `KEY_STORE_PASSWORD`
 - `KEY_ALIAS`
 - `KEY_PASSWORD`
 
-内核与规则文件的升级由 `version.properties` 控制：修改 `XRAY_CORE_VERSION`、`XRAY_CORE_COMMIT`、`XRAY_CORE_ZIP_SHA256` 及 Geo 哈希，然后执行 `python3 tools/sync_versions.py --check`。
+内核升级由 `version.properties` 控制：修改 `XRAY_CORE_VERSION`、`XRAY_CORE_COMMIT`、`XRAY_CORE_ZIP_SHA256`，然后执行 `python3 tools/sync_versions.py --check`。Geo 规则文件在构建时从上游 `latest` 下载，不做版本固定。
 
 ---
 

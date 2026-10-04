@@ -42,7 +42,7 @@ wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.
 wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O app/src/main/assets/geosite.dat
 ```
 
-Release builds verify the hashes recorded as `GEOIP_SHA256` and `GEOSITE_SHA256` in `version.properties`. Use `-PnoGeo=true` to build from `app/src/main/assets-no-geo/` instead.
+Release builds download the current files from the upstream `latest` release at build time. Use `-PnoGeo=true` to build from `app/src/main/assets-no-geo/` instead.
 
 ## 4. Build Native Dependencies
 
@@ -124,14 +124,14 @@ python3 tools/sync_versions.py --check
 
 The `verify.yml` workflow runs version-pin checks, Go formatting checks, SimpleTUN build/tests, and `testDebugUnitTest assembleDebug` on pushes to `main`/`dev` and on pull requests.
 
-The `release.yml` workflow triggers only on semver-like tags matching `v*`. It validates the tag, verifies the pinned Xray release commit and archive hash, verifies the Geo asset hashes, builds SingTUN and SimpleTUN, runs unit tests, signs both the normal and no-GEO APKs, and creates a draft GitHub release. Configure these repository secrets before using it:
+The `release.yml` workflow triggers only on semver-like tags matching `v*`. It validates the tag, verifies the pinned Xray release commit and archive hash, downloads the rolling Geo assets, builds SingTUN and SimpleTUN, runs unit tests, signs both the normal and no-GEO APKs, and creates a draft GitHub release. Configure these repository secrets before using it:
 
 - `SIGNING_KEY`: Base64-encoded JKS keystore.
 - `KEY_STORE_PASSWORD`
 - `KEY_ALIAS`
 - `KEY_PASSWORD`
 
-Kernel and rule-file upgrades are controlled by `version.properties`: update `XRAY_CORE_VERSION`, `XRAY_CORE_COMMIT`, `XRAY_CORE_ZIP_SHA256`, and the Geo hashes as needed, then run `python3 tools/sync_versions.py --check`.
+Kernel upgrades are controlled by `version.properties`: update `XRAY_CORE_VERSION`, `XRAY_CORE_COMMIT`, and `XRAY_CORE_ZIP_SHA256`, then run `python3 tools/sync_versions.py --check`. Geo rule assets are downloaded from the upstream `latest` release at build time and are not version-pinned.
 
 ---
 

@@ -31,6 +31,15 @@ class SyncVersionsValidationTest(unittest.TestCase):
         self.assertTrue(any("NDK_VERSION" in error for error in errors))
         self.assertTrue(any("EXTRA" in error for error in errors))
 
+    def test_geo_assets_are_not_hash_pinned(self):
+        properties = sync_versions.read_current_properties()
+        for key in ("GEOIP_SHA256", "GEOSITE_SHA256"):
+            self.assertNotIn(key, properties)
+
+        properties["GEOIP_SHA256"] = "a" * 64
+        errors = sync_versions.validate_properties(properties)
+        self.assertTrue(any("GEOIP_SHA256" in error for error in errors))
+
     def test_go_pin_must_cover_go_mod_directives(self):
         errors = sync_versions.validate_go_minimum({"GO_VERSION": "1.25.0"})
         self.assertTrue(any("GO_VERSION" in error for error in errors))

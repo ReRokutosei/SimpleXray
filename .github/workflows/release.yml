@@ -59,20 +59,6 @@ jobs:
           fi
           echo "XRAY_CORE_ZIP_SHA256=$XRAY_CORE_ZIP_SHA256" >> "$GITHUB_ENV"
 
-          GEOIP_SHA256="$(grep '^GEOIP_SHA256=' version.properties | cut -d '=' -f 2 | tr -d '\r ')"
-          if [[ ! "$GEOIP_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
-            echo "Invalid GEOIP_SHA256: $GEOIP_SHA256" >&2
-            exit 1
-          fi
-          echo "GEOIP_SHA256=$GEOIP_SHA256" >> "$GITHUB_ENV"
-
-          GEOSITE_SHA256="$(grep '^GEOSITE_SHA256=' version.properties | cut -d '=' -f 2 | tr -d '\r ')"
-          if [[ ! "$GEOSITE_SHA256" =~ ^[0-9a-f]{64}$ ]]; then
-            echo "Invalid GEOSITE_SHA256: $GEOSITE_SHA256" >&2
-            exit 1
-          fi
-          echo "GEOSITE_SHA256=$GEOSITE_SHA256" >> "$GITHUB_ENV"
-
           RELEASE_VERSION="${GITHUB_REF#refs/tags/}"
           # Validate the tag as a semver-like release tag before it is used in
           # shell commands below (guards against tag-name command injection).
@@ -116,9 +102,7 @@ jobs:
         run: |
           mkdir -p ./app/src/main/assets/
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat -O ./app/src/main/assets/geoip.dat
-          echo "$GEOIP_SHA256  ./app/src/main/assets/geoip.dat" | sha256sum -c -
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O ./app/src/main/assets/geosite.dat
-          echo "$GEOSITE_SHA256  ./app/src/main/assets/geosite.dat" | sha256sum -c -
 
       - name: Set up Android NDK
         run: |
