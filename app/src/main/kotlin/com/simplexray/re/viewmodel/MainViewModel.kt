@@ -3,7 +3,6 @@ package com.simplexray.re.viewmodel
 import android.app.Application
 import android.content.Intent
 import android.content.pm.PackageManager
-import androidx.core.net.toUri
 import android.net.Uri
 import android.net.VpnService
 import android.util.Log
@@ -11,11 +10,9 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
-import com.simplexray.re.BuildConfig
 import com.simplexray.re.R
 import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.CoreStatsClient
-import com.simplexray.re.common.ReleaseVersion
 import com.simplexray.re.common.SocksAuthenticatorInstaller
 import com.simplexray.re.common.ROUTE_APP_LIST
 import com.simplexray.re.common.TcpPing
@@ -40,11 +37,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import java.io.File
-import java.net.InetSocketAddress
-import java.net.Proxy
 import kotlin.coroutines.cancellation.CancellationException
 
 private const val TAG = "MainViewModel"
@@ -105,6 +98,16 @@ class MainViewModel(application: Application) :
         )
     }
 
+    private val updateController by lazy {
+        UpdateController(
+            application,
+            prefs,
+            viewModelScope,
+            { _isServiceEnabled.value },
+            { _uiEvent.trySend(it) },
+        )
+    }
+
     var editingFilePath: String?
         get() = configFileController.editingFilePath
         set(value) {
@@ -157,11 +160,11 @@ class MainViewModel(application: Application) :
     val customDatVersion: StateFlow<Long>
         get() = ruleFileController.customDatVersion
 
-    private val _isCheckingForUpdates = MutableStateFlow(false)
-    val isCheckingForUpdates: StateFlow<Boolean> = _isCheckingForUpdates.asStateFlow()
+    val isCheckingForUpdates: StateFlow<Boolean>
+        get() = updateController.isCheckingForUpdates
 
-    private val _newVersionAvailable = MutableStateFlow<String?>(null)
-    val newVersionAvailable: StateFlow<String?> = _newVersionAvailable.asStateFlow()
+    val newVersionAvailable: StateFlow<String?>
+        get() = updateController.newVersionAvailable
 
     init {
         Log.d(TAG, "MainViewModel initialized.")
@@ -492,74 +495,11 @@ class MainViewModel(application: Application) :
 
     fun updateCustomDatUrl(fileName: String, url: String) = ruleFileController.updateCustomDatUrl(fileName, url)
 
-    fun checkForUpdates() {
-        viewModelScope.launch(Dispatchers.IO) {
-            _isCheckingForUpdates.value = true
-            val client = OkHttpClient.Builder().apply {
-                if (_isServiceEnabled.value) {
-                    proxy(Proxy(Proxy.Type.SOCKS, InetSocketAddress("127.0.0.1", prefs.socksPort)))
-                }
-            }.build()
+    fun checkForUpdates() = updateController.checkForUpdates()
 
-            val apiUrl = application.getString(R.string.source_url)
-                .replace("github.com", "api.github.com/repos") + "/releases?per_page=20"
-            val request = Request.Builder()
-                .url(apiUrl)
-                .header("Accept", "application/vnd.github+json")
-                .get()
-                .build()
+    fun downloadNewVersion(versionTag: String) = updateController.downloadNewVersion(versionTag)
 
-            try {
-                val response = client.newCall(request).await()
-                val responseBody = response.body.string()
-                val releases = org.json.JSONArray(responseBody)
-                var latestTag = ""
-                for (i in 0 until releases.length()) {
-                    val release = releases.optJSONObject(i) ?: continue
-                    if (release.optBoolean("draft", false)) continue
-                    val candidate = release.optString("tag_name", "").removePrefix("v")
-                    if (candidate.isNotEmpty() &&
-                        (latestTag.isEmpty() || ReleaseVersion.compare(candidate, latestTag) > 0)
-                    ) {
-                        latestTag = candidate
-                    }
-                }
-                Log.d(TAG, "Latest version tag: $latestTag")
-                val updateAvailable =
-                    latestTag.isNotEmpty() && ReleaseVersion.compare(latestTag, BuildConfig.VERSION_NAME) > 0
-                if (updateAvailable) {
-                    _newVersionAvailable.value = latestTag
-                } else {
-                    _uiEvent.trySend(
-                        MainViewUiEvent.ShowSnackbar(
-                            application.getString(R.string.no_new_version_available)
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to check for updates", e)
-                _uiEvent.trySend(
-                    MainViewUiEvent.ShowSnackbar(
-                        application.getString(R.string.failed_to_check_for_updates) + ": " + e.message
-                    )
-                )
-            } finally {
-                _isCheckingForUpdates.value = false
-            }
-        }
-    }
-
-    fun downloadNewVersion(versionTag: String) {
-        val url = application.getString(R.string.source_url) + "/releases/tag/v$versionTag"
-        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
-        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        application.startActivity(intent)
-        _newVersionAvailable.value = null
-    }
-
-    fun clearNewVersionAvailable() {
-        _newVersionAvailable.value = null
-    }
+    fun clearNewVersionAvailable() = updateController.clearNewVersionAvailable()
 
 
     override fun onCleared() {
