@@ -1,8 +1,5 @@
 package com.simplexray.re.service
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.ComponentName
@@ -18,9 +15,7 @@ import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
 import android.util.Log
-import androidx.core.app.NotificationCompat
 import com.simplexray.re.R
-import com.simplexray.re.activity.MainActivity
 import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.ConfigUtils.extractPortsFromJson
 import com.simplexray.re.common.CoreStatsClient
@@ -58,6 +53,9 @@ class TProxyService : VpnService() {
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val nativeLifecycleLock = Any()
+    private val notificationHelper by lazy { VpnNotificationHelper(this) }
+    private val vpnWakeLock by lazy { VpnWakeLock(this) }
+    private val geoUpdateScheduler by lazy { GeoUpdateScheduler(applicationContext) }
 
     private fun findAvailablePort(excludedPorts: Set<Int>): Int? {
         repeat(5) {
@@ -96,7 +94,6 @@ class TProxyService : VpnService() {
     private var goTunBinder: IGoTunBackend? = null
     private var goTunConnection: ServiceConnection? = null
     private var goTunGeneration = 0
-    private var wakeLock: android.os.PowerManager.WakeLock? = null
 
     @Volatile
     private var reloadingRequested = false
@@ -106,7 +103,6 @@ class TProxyService : VpnService() {
         xrayJob = serviceScope.launch { runXrayProcess() }
     }
 
-    private var periodicGeoUpdateJob: Job? = null
     private var socksHealthJob: Job? = null
 
     @Volatile
@@ -114,17 +110,6 @@ class TProxyService : VpnService() {
 
     @Volatile
     private var lastSocksRecoveryMs = 0L
-
-    private fun startPeriodicGeoUpdateCheck() {
-        periodicGeoUpdateJob?.cancel()
-        periodicGeoUpdateJob = serviceScope.launch {
-            while (isActive) {
-                GeoUpdateWorker.checkAndTriggerCatchUp(applicationContext)
-                // Check periodically every hour while VPN is running
-                delay(1 * 60 * 60 * 1000L)
-            }
-        }
-    }
 
     /**
      * Detects the case where Xray's SOCKS inbound disappears while the
@@ -252,8 +237,7 @@ class TProxyService : VpnService() {
                     launchXrayProcess()
 
                     @Suppress("SameParameterValue") val channelName = "nosocks"
-                    initNotificationChannel(channelName)
-                    createNotification(channelName)
+                    showForegroundNotification(channelName)
 
                 } else {
                     startXray()
@@ -276,8 +260,7 @@ class TProxyService : VpnService() {
         super.onDestroy()
         isStartingLock.set(false)
         networkMonitor.stop()
-        periodicGeoUpdateJob?.cancel()
-        periodicGeoUpdateJob = null
+        geoUpdateScheduler.stop()
         stopSocksHealthCheck()
         serviceScope.cancel()
         killXrayProcess()
@@ -287,13 +270,7 @@ class TProxyService : VpnService() {
             stopActiveBackend()
             pfd?.let { runCatching { it.close() } }
         }
-        wakeLock?.let {
-            if (it.isHeld) {
-                it.release()
-                Log.d(TAG, "Partial wake lock released in onDestroy.")
-            }
-            wakeLock = null
-        }
+        vpnWakeLock.release()
         stopForeground(Service.STOP_FOREGROUND_REMOVE)
         if (!startupFailed) {
             VpnStateHub.updateState(VpnRunningState.Disconnected)
@@ -309,21 +286,9 @@ class TProxyService : VpnService() {
     private fun startXray() {
         if (!acquireStart("startXray")) return
         @Suppress("SameParameterValue") val channelName = "socks5"
-        initNotificationChannel(channelName)
-        createNotification(channelName)
+        showForegroundNotification(channelName)
         VpnStateHub.updateState(VpnRunningState.Connecting)
-        val prefs = Preferences(this)
-        if (prefs.keepAwake && wakeLock == null) {
-            val powerManager = getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager
-            wakeLock = powerManager?.newWakeLock(
-                android.os.PowerManager.PARTIAL_WAKE_LOCK,
-                "SimpleXray:WakeLock"
-            )?.apply {
-                setReferenceCounted(false)
-                acquire(10 * 60 * 60 * 1000L) // 10 hours safety timeout
-            }
-            Log.d(TAG, "Partial wake lock acquired.")
-        }
+        vpnWakeLock.acquireIfEnabled()
         logFileManager.clearLogs()
         if (!startService()) {
             failStart("VPN service establishment failed")
@@ -480,7 +445,7 @@ class TProxyService : VpnService() {
                             xrayStartAttempt = 0
                             Log.d(TAG, "Xray core ready (gRPC API reachable), updating VpnStateHub.")
                             VpnStateHub.updateState(VpnRunningState.Connected)
-                            startPeriodicGeoUpdateCheck()
+                            geoUpdateScheduler.start(serviceScope)
                             startSocksHealthCheck()
                             break
                         }
@@ -606,8 +571,7 @@ class TProxyService : VpnService() {
     private fun stopXray() {
         isStopping = true
         Log.d(TAG, "stopXray called with keepExecutorAlive=" + false)
-        periodicGeoUpdateJob?.cancel()
-        periodicGeoUpdateJob = null
+        geoUpdateScheduler.stop()
         xrayJob?.cancel()
         xrayJob = null
         Log.d(TAG, "xrayJob cancelled.")
@@ -729,7 +693,7 @@ class TProxyService : VpnService() {
             try {
                 tproxyFile.createNewFile()
                 FileOutputStream(tproxyFile, false).use { fos ->
-                    val tproxyConf = getTproxyConf(prefs)
+                    val tproxyConf = TproxyConfigBuilder.build(prefs)
                     fos.write(tproxyConf.toByteArray())
                 }
             } catch (e: IOException) {
@@ -759,8 +723,7 @@ class TProxyService : VpnService() {
         }
 
         @Suppress("SameParameterValue") val channelName = "socks5"
-        initNotificationChannel(channelName)
-        createNotification(channelName)
+        showForegroundNotification(channelName)
         return true
     }
 
@@ -842,13 +805,7 @@ class TProxyService : VpnService() {
         stopActiveBackend()
         pfd?.let { runCatching { it.close() } }
         stopSelf()
-        wakeLock?.let {
-            if (it.isHeld) {
-                it.release()
-                Log.d(TAG, "Partial wake lock released.")
-            }
-            wakeLock = null
-        }
+        vpnWakeLock.release()
         exit(finalState)
     }
 
@@ -881,29 +838,19 @@ class TProxyService : VpnService() {
     }
 
     @Suppress("SameParameterValue")
-    private fun createNotification(channelName: String) {
-        val i = Intent(this, MainActivity::class.java)
-        val pi = PendingIntent.getActivity(
-            this, 0, i, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+    private fun showForegroundNotification(channelName: String) {
+        notificationHelper.ensureChannel(channelName)
+        startForeground(
+            1,
+            notificationHelper.buildForegroundNotification(channelName),
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
         )
-        val notification = NotificationCompat.Builder(this, channelName)
-        val notify = notification.setContentTitle(getString(R.string.app_name))
-            .setSmallIcon(R.drawable.ic_stat_lineal).setContentIntent(pi).build()
-        startForeground(1, notify, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
     }
 
     private fun exit(finalState: VpnRunningState = VpnRunningState.Disconnected) {
         isStartingLock.set(false)
         VpnStateHub.updateState(finalState)
         stopSelf()
-    }
-
-    @Suppress("SameParameterValue")
-    private fun initNotificationChannel(channelName: String) {
-        val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        val name: CharSequence = getString(R.string.app_name)
-        val channel = NotificationChannel(channelName, name, NotificationManager.IMPORTANCE_DEFAULT)
-        notificationManager.createNotificationChannel(channel)
     }
 
     private external fun TProxyStartService(configPath: String, fd: Int): Boolean
@@ -965,28 +912,6 @@ class TProxyService : VpnService() {
                 Log.e(TAG, "Error getting native library dir", e)
                 return null
             }
-        }
-
-        private fun getTproxyConf(prefs: Preferences): String {
-            var tproxyConf = """misc:
-  task-stack-size: ${prefs.taskStackSize}
-  connect-timeout: ${prefs.tcpConnectTimeout}
-  tcp-read-write-timeout: ${prefs.tcpReadWriteTimeout}
-  udp-read-write-timeout: ${prefs.udpReadWriteTimeout}
-  udp-recv-buffer-size: ${prefs.udpRecvBufferSize}
-tunnel:
-  mtu: ${prefs.tunnelMtu}
-"""
-            tproxyConf += """socks5:
-  port: ${prefs.socksPort}
-  address: '${prefs.socksAddress}'
-  udp: '${if (prefs.udpInTcp) "tcp" else "udp"}'
-"""
-            if (prefs.socksUsername.isNotEmpty() && prefs.socksPassword.isNotEmpty()) {
-                tproxyConf += "  username: '" + prefs.socksUsername + "'\n"
-                tproxyConf += "  password: '" + prefs.socksPassword + "'\n"
-            }
-            return tproxyConf
         }
     }
 }
