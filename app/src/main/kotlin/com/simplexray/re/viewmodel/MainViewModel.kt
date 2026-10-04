@@ -4,8 +4,8 @@ import android.app.Application
 import android.content.Intent
 import android.content.ComponentName
 import android.content.pm.PackageManager
-import android.net.Uri
 import androidx.core.net.toUri
+import android.net.Uri
 import android.net.VpnService
 import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
@@ -19,9 +19,7 @@ import com.simplexray.re.common.CoreStatsClient
 import com.simplexray.re.common.ReleaseVersion
 import com.simplexray.re.common.SocksAuthenticatorInstaller
 import com.simplexray.re.common.ROUTE_APP_LIST
-import com.simplexray.re.common.ROUTE_CONFIG_EDIT
 import com.simplexray.re.common.TcpPing
-import com.simplexray.re.common.isConfigFile
 import com.simplexray.re.common.ThemeMode
 import com.simplexray.re.data.source.FileManager
 import com.simplexray.re.prefs.LogLevel
@@ -92,7 +90,22 @@ class MainViewModel(application: Application) :
 
     private val fileManager: FileManager = FileManager(application, prefs)
 
-    var editingFilePath: String? = null
+    private val configFileController by lazy {
+        ConfigFileController(
+            application,
+            prefs,
+            fileManager,
+            viewModelScope,
+            { _isServiceEnabled.value },
+            { _uiEvent.trySend(it) },
+        )
+    }
+
+    var editingFilePath: String?
+        get() = configFileController.editingFilePath
+        set(value) {
+            configFileController.editingFilePath = value
+        }
 
     private val _settingsState = MutableStateFlow(
         SettingsState(
@@ -159,11 +172,11 @@ class MainViewModel(application: Application) :
         _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(message))
     }
 
-    private val _configFiles = MutableStateFlow<List<File>>(emptyList())
-    val configFiles: StateFlow<List<File>> = _configFiles.asStateFlow()
+    val configFiles: StateFlow<List<File>>
+        get() = configFileController.configFiles
 
-    private val _selectedConfigFile = MutableStateFlow<File?>(null)
-    val selectedConfigFile: StateFlow<File?> = _selectedConfigFile.asStateFlow()
+    val selectedConfigFile: StateFlow<File?>
+        get() = configFileController.selectedConfigFile
 
     private val _geoipDownloadProgress = MutableStateFlow<String?>(null)
     val geoipDownloadProgress: StateFlow<String?> = _geoipDownloadProgress.asStateFlow()
@@ -372,15 +385,7 @@ class MainViewModel(application: Application) :
 
 
 
-    suspend fun createConfigFile(): String? {
-        val filePath = fileManager.createConfigFile(application.assets)
-        if (filePath == null) {
-            _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.create_config_failed)))
-        } else {
-            refreshConfigFileList()
-        }
-        return filePath
-    }
+    suspend fun createConfigFile(): String? = configFileController.createConfigFile()
 
     suspend fun updateCoreStats() = withContext(Dispatchers.IO) {
         if (!_isServiceEnabled.value) return@withContext
@@ -422,7 +427,7 @@ class MainViewModel(application: Application) :
      * Works whether or not the service is running.
      */
     suspend fun refreshOutboundNodes() {
-        val file = _selectedConfigFile.value ?: return
+        val file = configFileController.selectedConfigFile.value ?: return
         val content = withContext(Dispatchers.IO) {
             runCatching { file.readText() }.getOrNull()
         } ?: return
@@ -438,7 +443,7 @@ class MainViewModel(application: Application) :
      * transports are skipped and keep showing no data.
      */
     suspend fun testOutboundLatency() {
-        val file = _selectedConfigFile.value ?: return
+        val file = configFileController.selectedConfigFile.value ?: return
         val content = withContext(Dispatchers.IO) {
             runCatching { file.readText() }.getOrNull()
         } ?: return
@@ -476,37 +481,9 @@ class MainViewModel(application: Application) :
         latencyTestJob = viewModelScope.launch { testOutboundLatency() }
     }
 
-    suspend fun importConfigFromClipboard(): String? {
-        val filePath = fileManager.importConfigFromClipboard()
-        if (filePath == null) {
-            _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.import_failed)))
-        } else {
-            refreshConfigFileList()
-        }
-        return filePath
-    }
+    suspend fun importConfigFromClipboard(): String? = configFileController.importConfigFromClipboard()
 
-    suspend fun deleteConfigFile(file: File, callback: () -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            if (_isServiceEnabled.value && _selectedConfigFile.value != null &&
-                _selectedConfigFile.value == file
-            ) {
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.config_in_use)))
-                Log.w(TAG, "Attempted to delete selected config file: ${file.name}")
-                return@launch
-            }
-
-            val success = fileManager.deleteConfigFile(file)
-            if (success) {
-                withContext(Dispatchers.Main) {
-                    refreshConfigFileList()
-                }
-            } else {
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.delete_fail)))
-            }
-            callback()
-        }
-    }
+    suspend fun deleteConfigFile(file: File, callback: () -> Unit) = configFileController.deleteConfigFile(file, callback)
 
     fun extractAssetsIfNeeded() {
         fileManager.extractAssetsIfNeeded()
@@ -851,7 +828,7 @@ class MainViewModel(application: Application) :
 
     fun startTProxyService(action: String) {
         viewModelScope.launch {
-            if (_selectedConfigFile.value == null) {
+            if (configFileController.selectedConfigFile.value == null) {
                 _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.not_select_config)))
                 Log.w(TAG, "Cannot start service: no config file selected.")
                 setControlMenuClickable(true)
@@ -862,28 +839,9 @@ class MainViewModel(application: Application) :
         }
     }
 
-    fun editConfig(filePath: String) {
-        viewModelScope.launch {
-            editingFilePath = filePath
-            _uiEvent.trySend(MainViewUiEvent.Navigate(ROUTE_CONFIG_EDIT))
-        }
-    }
+    fun editConfig(filePath: String) = configFileController.editConfig(filePath)
 
-    fun shareIntent(chooserIntent: Intent, packageManager: PackageManager) {
-        viewModelScope.launch {
-            if (chooserIntent.resolveActivity(packageManager) != null) {
-                _uiEvent.trySend(MainViewUiEvent.ShareLauncher(chooserIntent))
-                Log.d(TAG, "Export intent resolved and started.")
-            } else {
-                Log.w(TAG, "No activity found to handle export intent.")
-                _uiEvent.trySend(
-                    MainViewUiEvent.ShowSnackbar(
-                        application.getString(R.string.no_app_for_export)
-                    )
-                )
-            }
-        }
-    }
+    fun shareIntent(chooserIntent: Intent, packageManager: PackageManager) = configFileController.shareIntent(chooserIntent, packageManager)
 
     fun stopTProxyService() {
         viewModelScope.launch {
@@ -897,7 +855,7 @@ class MainViewModel(application: Application) :
 
     fun prepareAndStartVpn(vpnPrepareLauncher: ActivityResultLauncher<Intent>) {
         viewModelScope.launch {
-            if (_selectedConfigFile.value == null) {
+            if (configFileController.selectedConfigFile.value == null) {
                 _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.not_select_config)))
                 Log.w(TAG, "Cannot prepare VPN: no config file selected.")
                 setControlMenuClickable(true)
@@ -918,93 +876,17 @@ class MainViewModel(application: Application) :
         }
     }
 
-    fun moveConfigFile(fromIndex: Int, toIndex: Int) {
-        val currentList = _configFiles.value.toMutableList()
-        val movedItem = currentList.removeAt(fromIndex)
-        currentList.add(toIndex, movedItem)
-        _configFiles.value = currentList
-    }
+    fun moveConfigFile(fromIndex: Int, toIndex: Int) = configFileController.moveConfigFile(fromIndex, toIndex)
 
-    fun persistConfigFilesOrder() {
-        prefs.configFilesOrder = _configFiles.value.map { it.name }
-    }
+    fun persistConfigFilesOrder() = configFileController.persistConfigFilesOrder()
 
 
 
-    fun importConfigFromFile(uri: android.net.Uri) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val path = fileManager.importConfigFileFromUri(application, uri)
-            if (path != null) {
-                refreshConfigFileList()
-                if (_isServiceEnabled.value) {
-                    // Keep the running core untouched: do not switch the selected
-                    // config while the service is active. The user can still pick
-                    // the imported file manually (which reloads the core).
-                    _uiEvent.trySend(
-                        MainViewUiEvent.ShowSnackbar(
-                            application.getString(R.string.config_import_service_running)
-                        )
-                    )
-                } else {
-                    updateSelectedConfigFile(File(path))
-                }
-            } else {
-                _uiEvent.trySend(
-                    MainViewUiEvent.ShowSnackbar(
-                        application.getString(R.string.unsupported_config_format)
-                    )
-                )
-            }
-        }
-    }
+    fun importConfigFromFile(uri: android.net.Uri) = configFileController.importConfigFromFile(uri)
 
-    fun refreshConfigFileList() {
-        viewModelScope.launch(Dispatchers.IO) {
-            val filesDir = application.filesDir
-            val actualFiles =
-                filesDir.listFiles { file -> file.isFile && file.isConfigFile() && file.name != "extra_api.json" }?.toList()
-                    ?: emptyList()
-            val actualFilesByName = actualFiles.associateBy { it.name }
-            val savedOrder = prefs.configFilesOrder
+    fun refreshConfigFileList() = configFileController.refreshConfigFileList()
 
-            val newOrder = mutableListOf<File>()
-            val remainingActualFileNames = actualFilesByName.toMutableMap()
-
-            savedOrder.forEach { filename ->
-                actualFilesByName[filename]?.let { file ->
-                    newOrder.add(file)
-                    remainingActualFileNames.remove(filename)
-                }
-            }
-
-            newOrder.addAll(remainingActualFileNames.values.filter { it !in newOrder })
-
-            _configFiles.value = newOrder
-            prefs.configFilesOrder = newOrder.map { it.name }
-
-            val currentSelectedPath = prefs.selectedConfigPath
-            var fileToSelect: File? = null
-
-            if (currentSelectedPath != null) {
-                val foundSelected = newOrder.find { it.absolutePath == currentSelectedPath }
-                if (foundSelected != null) {
-                    fileToSelect = foundSelected
-                }
-            }
-
-            if (fileToSelect == null) {
-                fileToSelect = newOrder.firstOrNull()
-            }
-
-            _selectedConfigFile.value = fileToSelect
-            prefs.selectedConfigPath = fileToSelect?.absolutePath
-        }
-    }
-
-    fun updateSelectedConfigFile(file: File?) {
-        _selectedConfigFile.value = file
-        prefs.selectedConfigPath = file?.absolutePath
-    }
+    fun updateSelectedConfigFile(file: File?) = configFileController.updateSelectedConfigFile(file)
 
     fun restoreDefaultGeoip(callback: () -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
