@@ -19,7 +19,6 @@ import com.simplexray.re.prefs.LogLevel
 import com.simplexray.re.prefs.Preferences
 import com.simplexray.re.service.VpnRunningState
 import com.simplexray.re.service.VpnStateHub
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -48,8 +47,6 @@ sealed class MainViewUiEvent {
 class MainViewModel(application: Application) :
     AndroidViewModel(application) {
     val prefs: Preferences = Preferences(application)
-    private val activityScope: CoroutineScope = viewModelScope
-
     private val fileManager: FileManager = FileManager(application, prefs)
 
     private val configFileController by lazy {

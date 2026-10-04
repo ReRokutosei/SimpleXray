@@ -108,9 +108,6 @@ class TProxyService : VpnService() {
 
     private var tunFd: ParcelFileDescriptor? = null
 
-    @Volatile
-    private var reloadingRequested = false
-
 
 
     private val networkMonitor by lazy {
@@ -138,7 +135,6 @@ class TProxyService : VpnService() {
                 val prefs = Preferences(this)
                 if (prefs.disableVpn) {
                     Log.d(TAG, "Received RELOAD_CONFIG action (core-only mode)")
-                    reloadingRequested = true
                     xrayProcessRunner.restart(serviceScope)
                     return START_NOT_STICKY
                 }
@@ -147,7 +143,6 @@ class TProxyService : VpnService() {
                     return START_NOT_STICKY
                 }
                 Log.d(TAG, "Received RELOAD_CONFIG action.")
-                reloadingRequested = true
                 xrayProcessRunner.restart(serviceScope)
                 return START_NOT_STICKY
             }
