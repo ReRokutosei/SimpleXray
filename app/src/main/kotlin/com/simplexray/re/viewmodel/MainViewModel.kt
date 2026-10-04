@@ -55,9 +55,6 @@ class MainViewModel(application: Application) :
     val prefs: Preferences = Preferences(application)
     private val activityScope: CoroutineScope = viewModelScope
 
-    private var coreStatsClient: CoreStatsClient? = null
-    private var latencyTestJob: Job? = null
-
     private val fileManager: FileManager = FileManager(application, prefs)
 
     private val configFileController by lazy {
@@ -108,6 +105,15 @@ class MainViewModel(application: Application) :
         )
     }
 
+    private val dashboardController by lazy {
+        DashboardController(
+            prefs,
+            viewModelScope,
+            configFileController.selectedConfigFile,
+            { _isServiceEnabled.value },
+        )
+    }
+
     var editingFilePath: String?
         get() = configFileController.editingFilePath
         set(value) {
@@ -117,14 +123,14 @@ class MainViewModel(application: Application) :
     val settingsState: StateFlow<SettingsState>
         get() = settingsController.settingsState
 
-    private val _coreStatsState = MutableStateFlow(CoreStatsState())
-    val coreStatsState: StateFlow<CoreStatsState> = _coreStatsState.asStateFlow()
+    val coreStatsState: StateFlow<CoreStatsState>
+        get() = dashboardController.coreStatsState
 
-    private val _outboundNodes = MutableStateFlow<List<ConfigUtils.OutboundInfo>>(emptyList())
-    val outboundNodes: StateFlow<List<ConfigUtils.OutboundInfo>> = _outboundNodes.asStateFlow()
+    val outboundNodes: StateFlow<List<ConfigUtils.OutboundInfo>>
+        get() = dashboardController.outboundNodes
 
-    private val _outboundLatency = MutableStateFlow<Map<String, OutboundLatency>>(emptyMap())
-    val outboundLatency: StateFlow<Map<String, OutboundLatency>> = _outboundLatency.asStateFlow()
+    val outboundLatency: StateFlow<Map<String, OutboundLatency>>
+        get() = dashboardController.outboundLatency
 
     private val _controlMenuClickable = MutableStateFlow(true)
     val controlMenuClickable: StateFlow<Boolean> = _controlMenuClickable.asStateFlow()
@@ -187,17 +193,13 @@ class MainViewModel(application: Application) :
                         Log.d(TAG, "VPN state: Disconnected")
                         setServiceEnabled(false)
                         setControlMenuClickable(true)
-                        _coreStatsState.value = CoreStatsState()
-                        coreStatsClient?.close()
-                        coreStatsClient = null
+                        dashboardController.reset()
                     }
                     is VpnRunningState.Failed -> {
                         Log.d(TAG, "VPN state: Failed (${state.message})")
                         setServiceEnabled(false)
                         setControlMenuClickable(true)
-                        _coreStatsState.value = CoreStatsState()
-                        coreStatsClient?.close()
-                        coreStatsClient = null
+                        dashboardController.reset()
                         val msg = state.message ?: application.getString(R.string.core_start_failed)
                         _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(msg))
                     }
@@ -261,54 +263,13 @@ class MainViewModel(application: Application) :
 
     suspend fun createConfigFile(): String? = configFileController.createConfigFile()
 
-    suspend fun updateCoreStats() = withContext(Dispatchers.IO) {
-        if (!_isServiceEnabled.value) return@withContext
-        if (coreStatsClient == null) {
-            Log.d(TAG, "=== [DEBUG gRPC] Connecting CoreStatsClient to ${prefs.apiAddress}:${prefs.apiPort} ===")
-            coreStatsClient = CoreStatsClient.create(prefs.apiAddress, prefs.apiPort)
-        }
-
-        val stats = coreStatsClient?.getSystemStats()
-        val traffic = coreStatsClient?.getTraffic()
-        Log.d(TAG, "=== [DEBUG gRPC RESULT] uplink=${traffic?.uplink}, downlink=${traffic?.downlink}, sys=${stats?.sys} ===")
-
-        if (stats == null && traffic == null) {
-            Log.w(TAG, "=== [DEBUG gRPC FAILED] Both stats & traffic returned null, resetting client ===")
-            coreStatsClient?.close()
-            coreStatsClient = null
-            return@withContext
-        }
-
-        _coreStatsState.value = CoreStatsState(
-            uplink = traffic?.uplink ?: 0,
-            downlink = traffic?.downlink ?: 0,
-            numGoroutine = stats?.numGoroutine ?: 0,
-            numGC = stats?.numGC ?: 0,
-            alloc = stats?.alloc ?: 0,
-            totalAlloc = stats?.totalAlloc ?: 0,
-            sys = stats?.sys ?: 0,
-            mallocs = stats?.mallocs ?: 0,
-            frees = stats?.frees ?: 0,
-            liveObjects = stats?.liveObjects ?: 0,
-            pauseTotalNs = stats?.pauseTotalNs ?: 0,
-            uptime = stats?.uptime ?: 0
-        )
-        Log.d(TAG, "Core stats updated")
-    }
+    suspend fun updateCoreStats() = dashboardController.updateCoreStats()
 
     /**
      * Refreshes the outbound node list from the currently selected config file.
      * Works whether or not the service is running.
      */
-    suspend fun refreshOutboundNodes() {
-        val file = configFileController.selectedConfigFile.value ?: return
-        val content = withContext(Dispatchers.IO) {
-            runCatching { file.readText() }.getOrNull()
-        } ?: return
-        val nodes = ConfigUtils.extractOutbounds(content)
-        _outboundNodes.value = nodes
-        Log.d(TAG, "Refreshed ${nodes.size} outbound nodes from ${file.name}")
-    }
+    suspend fun refreshOutboundNodes() = dashboardController.refreshOutboundNodes()
 
     /**
      * Latency-tests every TCP-capable outbound endpoint (1-RTT TCP connect,
@@ -316,44 +277,10 @@ class MainViewModel(application: Application) :
      * manual refresh. UDP-only protocols (wireguard/hysteria2) and QUIC
      * transports are skipped and keep showing no data.
      */
-    suspend fun testOutboundLatency() {
-        val file = configFileController.selectedConfigFile.value ?: return
-        val content = withContext(Dispatchers.IO) {
-            runCatching { file.readText() }.getOrNull()
-        } ?: return
-        val endpoints = ConfigUtils.extractOutboundEndpoints(content)
-        if (endpoints.isEmpty()) {
-            _outboundLatency.value = emptyMap()
-            return
-        }
-        val now = System.currentTimeMillis() / 1000
-        val io = Dispatchers.IO.limitedParallelism(8)
-        val results = coroutineScope {
-            endpoints.map { ep ->
-                async(io) {
-                    val delay = withTimeoutOrNull(4000L) {
-                        TcpPing.pingBlocking(ep.host, ep.port)
-                    } ?: -1L
-                    ep.tag to delay
-                }
-            }.awaitAll()
-        }
-        _outboundLatency.value = results.associate { (tag, delay) ->
-            Log.d(TAG, "[tcping] tag=$tag delay=${if (delay >= 0) "${delay}ms" else "failed"}")
-            tag to OutboundLatency(
-                alive = delay >= 0,
-                delayMs = delay.coerceAtLeast(0),
-                lastTryTime = now
-            )
-        }
-        Log.d(TAG, "Outbound latency (TCPing) updated: ${results.size} entries")
-    }
+    suspend fun testOutboundLatency() = dashboardController.testOutboundLatency()
 
     /** Non-suspend wrapper for UI callbacks (e.g. the dashboard refresh button). */
-    fun refreshLatency() {
-        if (latencyTestJob?.isActive == true) return
-        latencyTestJob = viewModelScope.launch { testOutboundLatency() }
-    }
+    fun refreshLatency() = dashboardController.refreshLatency()
 
     suspend fun importConfigFromClipboard(): String? = configFileController.importConfigFromClipboard()
 
@@ -503,8 +430,7 @@ class MainViewModel(application: Application) :
 
 
     override fun onCleared() {
-        coreStatsClient?.close()
-        coreStatsClient = null
+        dashboardController.close()
         super.onCleared()
     }
 
