@@ -2,13 +2,10 @@ package com.simplexray.re.service
 
 import android.app.Service
 import android.content.Context
-import android.content.ComponentName
 import android.content.Intent
-import android.content.ServiceConnection
 import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.IBinder
-import android.os.Handler
 import android.os.ParcelFileDescriptor
 import android.os.SystemClock
 import android.util.Log
@@ -28,15 +25,9 @@ import java.io.IOException
 import kotlin.concurrent.Volatile
 
 class TProxyService : VpnService() {
-    private enum class NativeBackend {
-        NONE,
-        HEV,
-        SING,
-        SIMPLETUN
-    }
+
 
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private val nativeLifecycleLock = Any()
     private val notificationHelper by lazy { VpnNotificationHelper(this) }
     private val vpnWakeLock by lazy { VpnWakeLock(this) }
     private val geoUpdateScheduler by lazy { GeoUpdateScheduler(applicationContext) }
@@ -99,17 +90,23 @@ class TProxyService : VpnService() {
         )
     }
 
+    private val tunnelBackendController: TunnelBackendController by lazy {
+        TunnelBackendController(
+            applicationContext,
+            startHev = { path, fd -> TProxyStartService(path, fd) },
+            stopHev = { TProxyStopService() },
+            vpnFd = { tunFd },
+            onBackendFailure = { stopXray() },
+            tag = TAG,
+        )
+    }
+
     private var isStopping = false
 
     @Volatile
     private var startupFailed = false
 
     private var tunFd: ParcelFileDescriptor? = null
-    @Volatile
-    private var activeBackend = NativeBackend.NONE
-    private var goTunBinder: IGoTunBackend? = null
-    private var goTunConnection: ServiceConnection? = null
-    private var goTunGeneration = 0
 
     @Volatile
     private var reloadingRequested = false
@@ -196,7 +193,7 @@ class TProxyService : VpnService() {
         val pfd = tunFd
         tunFd = null
         kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
-            stopActiveBackend()
+            tunnelBackendController.stop()
             pfd?.let { runCatching { it.close() } }
         }
         vpnWakeLock.release()
@@ -331,20 +328,14 @@ class TProxyService : VpnService() {
             }
             Log.d(TAG, "Starting SingTUN backend on fd=$fd")
             val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
-            val ok = synchronized(nativeLifecycleLock) {
-                val started = startGoTunService(
-                    serviceClass = SingTunService::class.java,
-                    socksHost = host,
-                    socksPort = prefs.socksPort,
-                    mtu = tunMtu,
-                    username = prefs.socksUsername,
-                    password = prefs.socksPassword
-                )
-                if (started) {
-                    activeBackend = NativeBackend.SING
-                }
-                started
-            }
+            val ok = tunnelBackendController.startSing(
+                serviceClass = SingTunService::class.java,
+                socksHost = host,
+                socksPort = prefs.socksPort,
+                mtu = tunMtu,
+                username = prefs.socksUsername,
+                password = prefs.socksPassword
+            )
             if (!ok) {
                 Log.e(TAG, "SingTunStartService failed")
                 stopXray()
@@ -374,17 +365,7 @@ class TProxyService : VpnService() {
                 stopXray()
                 return false
             }
-            val result = synchronized(nativeLifecycleLock) {
-                val res = runCatching {
-                    SimpleTunNative.nativeStart(fd, host, prefs.socksPort)
-                }.onFailure {
-                    Log.e(TAG, "Failed to start SimpleTUN backend", it)
-                }.getOrDefault(-1)
-                if (res == 0) {
-                    activeBackend = NativeBackend.SIMPLETUN
-                }
-                res
-            }
+            val result = tunnelBackendController.startSimpleTun(fd, host, prefs.socksPort)
             if (result != 0) {
                 Log.e(TAG, "SimpleTUN nativeStart failed: $result")
                 stopXray()
@@ -405,15 +386,7 @@ class TProxyService : VpnService() {
             }
 
             val started = tunFd?.fd?.let { fd ->
-                synchronized(nativeLifecycleLock) {
-                    if (TProxyStartService(tproxyFile.absolutePath, fd)) {
-                        activeBackend = NativeBackend.HEV
-                        true
-                    } else {
-                        Log.e(TAG, "TProxyStartService failed")
-                        false
-                    }
-                }
+                tunnelBackendController.startHev(tproxyFile.absolutePath, fd)
             } ?: run {
                 Log.e(TAG, "tunFd is null after establish()")
                 false
@@ -429,73 +402,7 @@ class TProxyService : VpnService() {
         return true
     }
 
-    private fun startGoTunService(
-        serviceClass: Class<out GoTunService>,
-        socksHost: String,
-        socksPort: Int,
-        mtu: Int,
-        username: String,
-        password: String
-    ): Boolean {
-        val generation = ++goTunGeneration
-        val connection = object : ServiceConnection {
-            override fun onServiceConnected(name: ComponentName, service: IBinder) {
-                if (generation != goTunGeneration) {
-                    Log.w(TAG, "Ignoring stale ${serviceClass.simpleName} connection")
-                    runCatching { unbindService(this) }
-                    return
-                }
-                val binder = IGoTunBackend.Stub.asInterface(service)
-                goTunBinder = binder
-                val fd = tunFd?.fileDescriptor
-                if (fd == null) {
-                    Log.e(TAG, "tunFd is null for ${serviceClass.simpleName}")
-                    Handler(mainLooper).post {
-                        if (generation == goTunGeneration) stopXray()
-                    }
-                    return
-                }
-                val pfd = runCatching {
-                    ParcelFileDescriptor.dup(fd)
-                }.getOrElse {
-                    Log.e(TAG, "Failed to duplicate VPN fd for ${serviceClass.simpleName}", it)
-                    Handler(mainLooper).post {
-                        if (generation == goTunGeneration) stopXray()
-                    }
-                    return
-                }
-                val ok = runCatching {
-                    binder.start(pfd, socksHost, socksPort, mtu, username, password)
-                }.onFailure {
-                    Log.e(TAG, "Failed to start ${serviceClass.simpleName} backend", it)
-                }.getOrDefault(false)
-                runCatching { pfd.close() }
-                if (!ok) {
-                    Log.e(TAG, "${serviceClass.simpleName} backend rejected start")
-                    Handler(mainLooper).post {
-                        if (generation == goTunGeneration) stopXray()
-                    }
-                }
-            }
 
-            override fun onServiceDisconnected(name: ComponentName) {
-                if (generation != goTunGeneration) return
-                goTunBinder = null
-                Log.w(TAG, "${serviceClass.simpleName} process disconnected")
-                Handler(mainLooper).post {
-                    if (generation == goTunGeneration && tunFd != null) stopXray()
-                }
-            }
-        }
-        goTunConnection?.let { runCatching { unbindService(it) } }
-        goTunConnection = connection
-        return runCatching {
-            bindService(Intent(this, serviceClass), connection, Context.BIND_AUTO_CREATE)
-        }.onFailure {
-            if (goTunConnection === connection) goTunConnection = null
-            Log.e(TAG, "Failed to bind ${serviceClass.simpleName}", it)
-        }.getOrDefault(false)
-    }
 
     private fun stopService(finalState: VpnRunningState = VpnRunningState.Disconnected) {
         socksHealthMonitor.stop()
@@ -504,7 +411,7 @@ class TProxyService : VpnService() {
         stopForeground(Service.STOP_FOREGROUND_REMOVE)
         val pfd = tunFd
         tunFd = null
-        stopActiveBackend()
+        tunnelBackendController.stop()
         pfd?.let { runCatching { it.close() } }
         stopSelf()
         vpnWakeLock.release()
@@ -514,30 +421,7 @@ class TProxyService : VpnService() {
     /**
      * Stops exactly the backend that owns the current tun fd.
      */
-    private fun stopActiveBackend() {
-        synchronized(nativeLifecycleLock) {
-            val backend = activeBackend
-            activeBackend = NativeBackend.NONE
-            val result = when (backend) {
-                NativeBackend.HEV -> runCatching { TProxyStopService() }
-                NativeBackend.SING -> runCatching {
-                    goTunBinder?.stop() ?: true
-                }
-                NativeBackend.SIMPLETUN -> runCatching { SimpleTunNative.nativeStop() }
-                NativeBackend.NONE -> return
-            }
-            goTunBinder = null
-            goTunConnection?.let { connection ->
-                runCatching { unbindService(connection) }
-                goTunConnection = null
-            }
-            result.onSuccess {
-                Log.d(TAG, "Stopped native backend $backend: ok=$it")
-            }.onFailure {
-                Log.w(TAG, "Failed to stop native backend $backend", it)
-            }
-        }
-    }
+
 
     @Suppress("SameParameterValue")
     private fun showForegroundNotification(channelName: String) {
