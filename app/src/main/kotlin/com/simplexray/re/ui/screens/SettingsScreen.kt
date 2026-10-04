@@ -77,8 +77,6 @@ fun SettingsScreen(
     scrollState: androidx.compose.foundation.ScrollState,
     paddingValues: PaddingValues = PaddingValues()
 ) {
-    val context = LocalContext.current
-    val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
     val geoipProgress by mainViewModel.geoipDownloadProgress.collectAsStateWithLifecycle()
     val geositeProgress by mainViewModel.geositeDownloadProgress.collectAsStateWithLifecycle()
     val customDatProgress by mainViewModel.customDatDownloadProgress.collectAsStateWithLifecycle()
@@ -91,12 +89,8 @@ fun SettingsScreen(
         onDispose { }
     }
 
-    val vpnDisabled = settingsState.switches.disableVpn
-
     var showGeoipDeleteDialog by remember { mutableStateOf(false) }
     var showGeositeDeleteDialog by remember { mutableStateOf(false) }
-
-    val scope = rememberCoroutineScope()
 
     var editingRuleFile by remember { mutableStateOf<String?>(null) }
     var ruleFileUrl by remember { mutableStateOf("") }
@@ -104,60 +98,8 @@ fun SettingsScreen(
     var showDatUrlImportSheet by remember { mutableStateOf(false) }
     var datImportUrl by remember { mutableStateOf("") }
 
-    val themeOptions = listOf(
-        stringResource(R.string.theme_light),
-        stringResource(R.string.theme_dark),
-        stringResource(R.string.auto)
-    )
-    val themeModes = listOf(ThemeMode.Light, ThemeMode.Dark, ThemeMode.Auto)
-    val currentThemeIndex = themeModes.indexOf(settingsState.switches.themeMode).coerceAtLeast(0)
-
-    val iconOptions = listOf(
-        stringResource(R.string.icon_flat),
-        stringResource(R.string.icon_lineal),
-        stringResource(R.string.icon_lineal_color)
-    )
-    val iconKeys = listOf("flat", "lineal", "lineal_color")
-
     val geoipUrlDefault = stringResource(R.string.geoip_url)
     val geositeUrlDefault = stringResource(R.string.geosite_url)
-    val sourceUrl = stringResource(R.string.source_url)
-    val privacyDisclaimerUrl = stringResource(R.string.privacy_disclaimer_url)
-
-    val logLevelOptions = com.simplexray.re.prefs.LogLevel.entries
-    val logLevelNames = logLevelOptions.map { it.name }
-    val currentLogLevelIndex = logLevelOptions.indexOf(settingsState.switches.logLevel).coerceAtLeast(0)
-
-    val tunnelModeEntries = listOf(
-        DropdownEntry(
-            items = listOf(
-                DropdownItem(
-                    text = stringResource(R.string.tunnel_mode_xray_tun),
-                    summary = stringResource(R.string.tunnel_mode_xray_tun_summary),
-                    selected = settingsState.switches.tunnelMode == TunnelMode.XrayTun,
-                    onClick = { mainViewModel.setTunnelMode(TunnelMode.XrayTun) }
-                ),
-                DropdownItem(
-                    text = stringResource(R.string.tunnel_mode_hev_socks5),
-                    summary = stringResource(R.string.tunnel_mode_hev_socks5_summary),
-                    selected = settingsState.switches.tunnelMode == TunnelMode.HevSocks5Tunnel,
-                    onClick = { mainViewModel.setTunnelMode(TunnelMode.HevSocks5Tunnel) }
-                ),
-                DropdownItem(
-                    text = stringResource(R.string.tunnel_mode_sing_tun),
-                    summary = stringResource(R.string.tunnel_mode_sing_tun_summary),
-                    selected = settingsState.switches.tunnelMode == TunnelMode.SingTun,
-                    onClick = { mainViewModel.setTunnelMode(TunnelMode.SingTun) }
-                ),
-                DropdownItem(
-                    text = stringResource(R.string.tunnel_mode_simpletun),
-                    summary = stringResource(R.string.tunnel_mode_simpletun_summary),
-                    selected = settingsState.switches.tunnelMode == TunnelMode.SimpleTun,
-                    onClick = { mainViewModel.setTunnelMode(TunnelMode.SimpleTun) }
-                )
-            )
-        )
-    )
 
     if (editingRuleFile != null) {
         OverlayBottomSheet(
@@ -321,591 +263,60 @@ fun SettingsScreen(
                 ),
             contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = bottomPadding)
         ) {
-            item {
-            SmallTitle(text = stringResource(R.string.general))
-            Card(modifier = Modifier.fillMaxWidth()) {
-                OverlayDropdownPreference(
-                    title = stringResource(R.string.theme_title),
-                    items = themeOptions,
-                    selectedIndex = currentThemeIndex,
-                    onSelectedIndexChange = { index ->
-                        mainViewModel.setTheme(themeModes[index])
-                    }
-                )
-
-                val currentIcon by mainViewModel.appIcon.collectAsStateWithLifecycle()
-                val currentIconIndex = iconKeys.indexOf(currentIcon).coerceAtLeast(0)
-                OverlayDropdownPreference(
-                    title = stringResource(R.string.app_icon),
-                    items = iconOptions,
-                    selectedIndex = currentIconIndex,
-                    onSelectedIndexChange = { index ->
-                        mainViewModel.setAppIcon(iconKeys[index])
-                    }
-                )
-
-                SwitchPreference(
-                    title = stringResource(R.string.hide_from_recents_title),
-                    checked = settingsState.switches.hideFromRecents,
-                    onCheckedChange = { mainViewModel.setHideFromRecentsEnabled(it) }
-                )
-
-                val keepAwakeTitle = stringResource(R.string.keep_awake_title)
-                val keepAwakeSummary = stringResource(R.string.keep_awake_summary)
-                SwitchPreference(
-                    title = "",
-                    startAction = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = keepAwakeTitle,
-                                fontSize = MiuixTheme.textStyles.headline1.fontSize,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
-                                color = MiuixTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            IconButton(
-                                onClick = { activeHelpDialog = keepAwakeTitle to keepAwakeSummary },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Help,
-                                    contentDescription = keepAwakeTitle,
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    },
-                    checked = settingsState.switches.keepAwake,
-                    onCheckedChange = { mainViewModel.setKeepAwakeEnabled(it) }
-                )
-            }
+        item {
+            SettingsGeneralSection(
+                mainViewModel = mainViewModel,
+                onShowHelp = { title, summary -> activeHelpDialog = title to summary },
+            )
         }
 
         item {
-            SmallTitle(text = stringResource(R.string.vpn_interface))
-            Card(modifier = Modifier.fillMaxWidth()) {
-                ArrowPreference(
-                    title = stringResource(R.string.apps_title),
-                    onClick = { mainViewModel.navigateToAppList() }
-                )
-
-                SwitchPreference(
-                    title = stringResource(R.string.disable_vpn_title),
-                    summary = stringResource(R.string.disable_vpn_summary),
-                    checked = settingsState.switches.disableVpn,
-                    onCheckedChange = { mainViewModel.setDisableVpnEnabled(it) }
-                )
-
-                OverlayDropdownPreference(
-                    title = stringResource(R.string.tunnel_mode_title),
-                    entries = tunnelModeEntries,
-                    enabled = !vpnDisabled
-                )
-
-                val isSimpleTun = settingsState.switches.tunnelMode == TunnelMode.SimpleTun
-
-                EditableListItemWithMiuixBottomSheet(
-                    headline = stringResource(R.string.tunnel_mtu_title),
-                    currentValue = if (isSimpleTun) "1500" else settingsState.tunnelMtu.value,
-                    onValueConfirmed = { newValue -> mainViewModel.updateTunnelMtu(newValue) },
-                    label = stringResource(R.string.tunnel_mtu_title),
-                    supportingText = stringResource(R.string.tunnel_mtu_summary),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    enabled = !vpnDisabled && !isSimpleTun
-                )
-
-                SwitchPreference(
-                    title = stringResource(R.string.ipv6),
-                    summary = stringResource(R.string.ipv6_summary),
-                    checked = settingsState.switches.ipv6Enabled,
-                    onCheckedChange = { mainViewModel.setIpv6Enabled(it) },
-                    enabled = !vpnDisabled && !isSimpleTun
-                )
-
-                EditableListItemWithMiuixBottomSheet(
-                    headline = stringResource(R.string.dns_ipv4),
-                    currentValue = settingsState.dnsIpv4.value,
-                    onValueConfirmed = { newValue -> mainViewModel.updateDnsIpv4(newValue) },
-                    label = stringResource(R.string.dns_ipv4),
-                    supportingText = stringResource(R.string.dns_ipv4_summary),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    enabled = !vpnDisabled
-                )
-
-                EditableListItemWithMiuixBottomSheet(
-                    headline = stringResource(R.string.dns_ipv6),
-                    currentValue = settingsState.dnsIpv6.value,
-                    onValueConfirmed = { newValue -> mainViewModel.updateDnsIpv6(newValue) },
-                    label = stringResource(R.string.dns_ipv6),
-                    supportingText = stringResource(R.string.dns_ipv6_summary),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    enabled = settingsState.switches.ipv6Enabled && !vpnDisabled
-                )
-            }
+            SettingsTunnelSection(mainViewModel = mainViewModel)
         }
 
         item {
-            SmallTitle(text = stringResource(R.string.inbound_settings))
-            Card(modifier = Modifier.fillMaxWidth()) {
-                EditableListItemWithMiuixBottomSheet(
-                    headline = stringResource(R.string.socks_address),
-                    currentValue = settingsState.socksAddress.value,
-                    onValueConfirmed = { newValue -> mainViewModel.updateSocksAddress(newValue) },
-                    label = stringResource(R.string.socks_address),
-                    supportingText = stringResource(
-                        if (settingsState.switches.tunnelMode != TunnelMode.XrayTun) {
-                            R.string.socks_address_summary_socks_tunnel
-                        } else {
-                            R.string.socks_address_summary
-                        }
-                    ),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    enabled = !vpnDisabled
-                )
-
-                EditableListItemWithMiuixBottomSheet(
-                    headline = stringResource(R.string.socks_port),
-                    currentValue = settingsState.socksPort.value,
-                    onValueConfirmed = { newValue -> mainViewModel.updateSocksPort(newValue) },
-                    label = stringResource(R.string.socks_port),
-                    supportingText = stringResource(
-                        if (settingsState.switches.tunnelMode != TunnelMode.XrayTun) {
-                            R.string.socks_port_summary_socks_tunnel
-                        } else {
-                            R.string.socks_port_summary
-                        }
-                    ),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    enabled = !vpnDisabled
-                )
-
-                EditableListItemWithMiuixBottomSheet(
-                    headline = stringResource(R.string.socks_user),
-                    currentValue = settingsState.socksUser.value,
-                    onValueConfirmed = { newValue -> mainViewModel.updateSocksUser(newValue) },
-                    label = stringResource(R.string.socks_user),
-                    supportingText = stringResource(R.string.socks_user_summary),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                    enabled = !vpnDisabled
-                )
-
-                EditableListItemWithMiuixBottomSheet(
-                    headline = stringResource(R.string.socks_pass),
-                    currentValue = settingsState.socksPass.value,
-                    onValueConfirmed = { newValue -> mainViewModel.updateSocksPass(newValue) },
-                    label = stringResource(R.string.socks_pass),
-                    supportingText = stringResource(R.string.socks_pass_summary),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    enabled = !vpnDisabled
-                )
-
-                val httpProxyTitle = stringResource(R.string.http_proxy_title)
-                val httpProxySummary = stringResource(R.string.http_proxy_summary)
-                SwitchPreference(
-                    title = "",
-                    startAction = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = httpProxyTitle,
-                                fontSize = MiuixTheme.textStyles.headline1.fontSize,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
-                                color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            IconButton(
-                                onClick = { activeHelpDialog = httpProxyTitle to httpProxySummary },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Help,
-                                    contentDescription = httpProxyTitle,
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    },
-                    checked = settingsState.switches.httpProxyEnabled,
-                    onCheckedChange = { mainViewModel.setHttpProxyEnabled(it) },
-                    enabled = !vpnDisabled
-                )
-            }
+            SettingsInboundSection(
+                mainViewModel = mainViewModel,
+                onShowHelp = { title, summary -> activeHelpDialog = title to summary },
+            )
         }
 
         item {
-            SmallTitle(text = stringResource(R.string.rule_files_category_title))
-            Card(modifier = Modifier.fillMaxWidth()) {
-                BasicComponent(
-                    title = "geoip.dat",
-                    summary = geoipProgress ?: if (!settingsState.files.isGeoipCustom) stringResource(R.string.rule_file_default) else settingsState.info.geoipSummary,
-                    endActions = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (geoipProgress != null) {
-                                IconButton(onClick = { mainViewModel.cancelDownload("geoip.dat") }) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.cancel),
-                                        contentDescription = stringResource(R.string.cancel)
-                                    )
-                                }
-                            } else {
-                                IconButton(onClick = {
-                                    ruleFileUrl = settingsState.info.geoipUrl
-                                    editingRuleFile = "geoip.dat"
-                                }) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.cloud_download),
-                                        contentDescription = stringResource(R.string.rule_file_update_url)
-                                    )
-                                }
-                                if (!settingsState.files.isGeoipCustom) {
-                                    IconButton(onClick = { geoipFilePickerLauncher.launch(arrayOf("*/*")) }) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.place_item),
-                                            contentDescription = stringResource(R.string.import_file)
-                                        )
-                                    }
-                                } else {
-                                    IconButton(onClick = { showGeoipDeleteDialog = true }) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.delete),
-                                            contentDescription = stringResource(R.string.reset_file)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                )
-
-                BasicComponent(
-                    title = "geosite.dat",
-                    summary = geositeProgress ?: if (!settingsState.files.isGeositeCustom) stringResource(R.string.rule_file_default) else settingsState.info.geositeSummary,
-                    endActions = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            if (geositeProgress != null) {
-                                IconButton(onClick = { mainViewModel.cancelDownload("geosite.dat") }) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.cancel),
-                                        contentDescription = stringResource(R.string.cancel)
-                                    )
-                                }
-                            } else {
-                                IconButton(onClick = {
-                                    ruleFileUrl = settingsState.info.geositeUrl
-                                    editingRuleFile = "geosite.dat"
-                                }) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.cloud_download),
-                                        contentDescription = stringResource(R.string.rule_file_update_url)
-                                    )
-                                }
-                                if (!settingsState.files.isGeositeCustom) {
-                                    IconButton(onClick = { geositeFilePickerLauncher.launch(arrayOf("*/*")) }) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.place_item),
-                                            contentDescription = stringResource(R.string.import_file)
-                                        )
-                                    }
-                                } else {
-                                    IconButton(onClick = { showGeositeDeleteDialog = true }) {
-                                        Icon(
-                                            painter = painterResource(id = R.drawable.delete),
-                                            contentDescription = stringResource(R.string.reset_file)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                )
-
-                val prefs = remember { com.simplexray.re.prefs.Preferences(context) }
-                val customDatPickerLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
-                    contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
-                ) { uri ->
-                    if (uri != null) {
-                        mainViewModel.importCustomDatFile(uri)
-                    }
-                }
-
-                // The third-party dat list lives in its own composable: its size
-                // changes while downloads are in progress, and keeping it in a
-                // separate composition context prevents those changes from shifting
-                // the Compose slots of the ArrowPreference rows below (previously
-                // caused "Boolean cannot be cast to ComposableLambdaImpl").
-                CustomDatFilesSection(
-                    mainViewModel = mainViewModel,
-                    prefs = prefs,
-                    customDatProgress = customDatProgress,
-                    customDatPickerLauncher = customDatPickerLauncher,
-                    onEditUrl = { datName, url ->
-                        ruleFileUrl = url
-                        editingRuleFile = datName
-                    }
-                )
-
-                // Wrap each ArrowPreference in its own keyed group: they are
-                // @NonRestartableComposable and call the same BasicComponent
-                // overload, so two adjacent rows would otherwise collide on the
-                // same composable-lambda slot key during recomposition ("Boolean
-                // cannot be cast to ComposableLambdaImpl").
-                key("import-from-file") {
-                    ArrowPreference(
-                        title = "+ " + stringResource(R.string.import_from_file) + " (.dat)",
-                        onClick = { customDatPickerLauncher.launch(arrayOf("*/*")) }
-                    )
-                }
-
-                key("import-from-url") {
-                    ArrowPreference(
-                        title = "+ " + stringResource(R.string.download_from_url_import) + " (.dat)",
-                        onClick = { showDatUrlImportSheet = true }
-                    )
-                }
-
-                val geoIntervalHours = settingsState.geoUpdateIntervalHours.value.toIntOrNull() ?: 0
-                val geoSummaryText = if (geoIntervalHours <= 0) {
-                    stringResource(R.string.geo_update_disabled)
-                } else {
-                    val lastUpdateTime = settingsState.lastGeoUpdateTime
-                    val timeStr = if (lastUpdateTime > 0L) {
-                        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
-                        sdf.format(java.util.Date(lastUpdateTime))
-                    } else {
-                        stringResource(R.string.geo_never_updated)
-                    }
-                    stringResource(R.string.geo_last_update_format, geoIntervalHours, timeStr)
-                }
-
-                EditableListItemWithMiuixBottomSheet(
-                    headline = stringResource(R.string.geo_update_interval_title),
-                    currentValue = settingsState.geoUpdateIntervalHours.value,
-                    onValueConfirmed = { newValue -> mainViewModel.updateGeoUpdateInterval(newValue) },
-                    label = stringResource(R.string.geo_update_interval_title),
-                    supportingText = stringResource(R.string.geo_update_dialog_supporting_text),
-                    customSummary = geoSummaryText,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-                )
-            }
+            SettingsRuleFilesSection(
+                mainViewModel = mainViewModel,
+                geoipProgress = geoipProgress,
+                geositeProgress = geositeProgress,
+                customDatProgress = customDatProgress,
+                geoipFilePickerLauncher = geoipFilePickerLauncher,
+                geositeFilePickerLauncher = geositeFilePickerLauncher,
+                onEditRuleFile = { fileName, url ->
+                    ruleFileUrl = url
+                    editingRuleFile = fileName
+                },
+                onDeleteGeoip = { showGeoipDeleteDialog = true },
+                onDeleteGeosite = { showGeositeDeleteDialog = true },
+                onShowDatUrlImport = { showDatUrlImportSheet = true },
+            )
         }
 
         item {
-            SmallTitle(text = stringResource(R.string.network_settings))
-            Card(modifier = Modifier.fillMaxWidth()) {
-                SwitchPreference(
-                    title = stringResource(R.string.bypass_lan_title),
-                    summary = stringResource(R.string.bypass_lan_summary),
-                    checked = settingsState.switches.bypassLanEnabled,
-                    onCheckedChange = { mainViewModel.setBypassLanEnabled(it) },
-                    enabled = !vpnDisabled
-                )
-
-                val errorLogTitle = stringResource(R.string.error_log_title)
-                val loglevelSummary = stringResource(R.string.loglevel_summary)
-                var isLogLevelDropdownExpanded by remember { mutableStateOf(false) }
-                val currentLogLevelName = logLevelNames.getOrNull(currentLogLevelIndex) ?: ""
-                BasicComponent(
-                    title = "",
-                    startAction = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = errorLogTitle,
-                                fontSize = MiuixTheme.textStyles.headline1.fontSize,
-                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
-                                color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            IconButton(
-                                onClick = { activeHelpDialog = errorLogTitle to loglevelSummary },
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Icon(
-                                    imageVector = MiuixIcons.Help,
-                                    contentDescription = errorLogTitle,
-                                    tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                            }
-                        }
-                    },
-                    endActions = {
-                        Text(
-                            text = currentLogLevelName,
-                            fontSize = MiuixTheme.textStyles.body2.fontSize,
-                            color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurfaceVariantActions else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
-                            modifier = Modifier.align(Alignment.CenterVertically)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        DropdownArrowEndAction(
-                            actionColor = if (!vpnDisabled) MiuixTheme.colorScheme.onSurfaceVariantActions else MiuixTheme.colorScheme.disabledOnSecondaryVariant
-                        )
-                        if (!vpnDisabled) {
-                            val logLevelDropdownEntry = remember(logLevelNames, currentLogLevelIndex) {
-                                DropdownEntry(
-                                    logLevelNames.mapIndexed { index, name ->
-                                        DropdownItem(
-                                            text = name,
-                                            selected = index == currentLogLevelIndex,
-                                            onClick = { mainViewModel.setLogLevel(logLevelOptions[index]) }
-                                        )
-                                    }
-                                )
-                            }
-                            OverlayDropdownPopup(
-                                entry = logLevelDropdownEntry,
-                                show = isLogLevelDropdownExpanded,
-                                onDismiss = { isLogLevelDropdownExpanded = false },
-                                onDismissFinished = {},
-                                maxHeight = null,
-                                dropdownColors = DropdownDefaults.dropdownColors(),
-                                renderInRootScaffold = true,
-                                collapseOnSelection = true
-                            )
-                        }
-                    },
-                    onClick = {
-                        if (!vpnDisabled) {
-                            isLogLevelDropdownExpanded = !isLogLevelDropdownExpanded
-                        }
-                    },
-                    enabled = !vpnDisabled
-                )
-
-                SwitchPreference(
-                    title = stringResource(R.string.access_log_title),
-                    checked = settingsState.switches.accessLog,
-                    onCheckedChange = { mainViewModel.setAccessLog(it) },
-                    enabled = !vpnDisabled
-                )
-
-                SwitchPreference(
-                    title = stringResource(R.string.dns_log_title),
-                    checked = settingsState.switches.dnsLog,
-                    onCheckedChange = { mainViewModel.setDnsLog(it) },
-                    enabled = !vpnDisabled
-                )
-            }
+            SettingsNetworkSection(
+                mainViewModel = mainViewModel,
+                onShowHelp = { title, summary -> activeHelpDialog = title to summary },
+            )
         }
 
         item {
-            SmallTitle(text = stringResource(R.string.about))
-            Card(modifier = Modifier.fillMaxWidth()) {
-                BasicComponent(
-                    title = settingsState.info.appVersion,
-                    summary = stringResource(R.string.version),
-                    endActions = {
-                        TextButton(
-                            text = if (isCheckingForUpdates) stringResource(R.string.checking_for_updates) else stringResource(R.string.check_for_updates),
-                            onClick = { mainViewModel.checkForUpdates() },
-                            enabled = !isCheckingForUpdates
-                        )
-                    }
-                )
-
-                BasicComponent(
-                    title = settingsState.info.kernelVersion,
-                    summary = stringResource(R.string.kernel)
-                )
-
-                ArrowPreference(
-                    title = stringResource(R.string.source),
-                    onClick = {
-                        val browserIntent = Intent(Intent.ACTION_VIEW, sourceUrl.toUri())
-                        context.startActivity(browserIntent)
-                    }
-                )
-
-                ArrowPreference(
-                    title = stringResource(R.string.privacy_disclaimer_title),
-                    onClick = {
-                        val browserIntent = Intent(Intent.ACTION_VIEW, privacyDisclaimerUrl.toUri())
-                        context.startActivity(browserIntent)
-                    }
-                )
-            }
+            SettingsAboutSection(
+                mainViewModel = mainViewModel,
+                isCheckingForUpdates = isCheckingForUpdates,
+            )
         }
     }
 }
 }
 
-@Composable
-fun EditableListItemWithMiuixBottomSheet(
-    headline: String,
-    currentValue: String,
-    onValueConfirmed: (String) -> Unit,
-    label: String,
-    supportingText: String? = null,
-    customSummary: String? = null,
-    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
-    enabled: Boolean = true
-) {
-    var showSheet by remember { mutableStateOf(false) }
-    var tempValue by remember { mutableStateOf(currentValue) }
 
-    if (showSheet) {
-        OverlayBottomSheet(
-            title = headline,
-            show = true,
-            onDismissRequest = { showSheet = false },
-            startAction = {
-                IconButton(onClick = { showSheet = false }) {
-                    Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.cancel))
-                }
-            },
-            endAction = {
-                IconButton(onClick = {
-                    onValueConfirmed(tempValue)
-                    showSheet = false
-                }) {
-                    Icon(imageVector = MiuixIcons.Ok, contentDescription = stringResource(R.string.confirm))
-                }
-            }
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            ) {
-                TextField(
-                    value = tempValue,
-                    onValueChange = { tempValue = it },
-                    label = label,
-                    keyboardOptions = keyboardOptions,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                if (!supportingText.isNullOrEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = supportingText,
-                        fontSize = MiuixTheme.textStyles.body2.fontSize,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                    )
-                }
-            }
-        }
-    }
-
-    ArrowPreference(
-        title = headline,
-        summary = customSummary,
-        endActions = {
-            if (customSummary == null) {
-                Text(
-                    text = currentValue,
-                    color = if (enabled) MiuixTheme.colorScheme.onSurfaceVariantSummary else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
-                    style = MiuixTheme.textStyles.body2,
-                )
-            }
-        },
-        onClick = {
-            tempValue = currentValue
-            showSheet = true
-        },
-        enabled = enabled
-    )
-}
 
 /**
  * Renders the third-party dat file rows. Kept as a separate composable so that
