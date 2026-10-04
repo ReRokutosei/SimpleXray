@@ -63,7 +63,7 @@ class MainViewModel(application: Application) :
             prefs,
             fileManager,
             viewModelScope,
-            { _isServiceEnabled.value },
+            { isVpnEnabled() },
             { _uiEvent.trySend(it) },
         )
     }
@@ -73,7 +73,7 @@ class MainViewModel(application: Application) :
             application,
             prefs,
             fileManager,
-            { _isServiceEnabled.value },
+            { isVpnEnabled() },
             { showSnackbar(application.getString(R.string.tunnel_mode_restart_notice)) },
         )
     }
@@ -88,7 +88,7 @@ class MainViewModel(application: Application) :
             prefs,
             fileManager,
             viewModelScope,
-            { _isServiceEnabled.value },
+            { isVpnEnabled() },
             { settingsController.refreshRuleFileState(it) },
             { settingsController.updateSettingsState() },
             { _uiEvent.trySend(it) },
@@ -100,7 +100,7 @@ class MainViewModel(application: Application) :
             application,
             prefs,
             viewModelScope,
-            { _isServiceEnabled.value },
+            { isVpnEnabled() },
             { _uiEvent.trySend(it) },
         )
     }
@@ -110,9 +110,21 @@ class MainViewModel(application: Application) :
             prefs,
             viewModelScope,
             configFileController.selectedConfigFile,
-            { _isServiceEnabled.value },
+            { isVpnEnabled() },
         )
     }
+
+    private val vpnServiceController by lazy {
+        VpnServiceController(
+            application,
+            prefs,
+            viewModelScope,
+            configFileController.selectedConfigFile,
+            { _uiEvent.trySend(it) },
+        )
+    }
+
+    private fun isVpnEnabled(): Boolean = vpnServiceController.isServiceEnabled.value
 
     var editingFilePath: String?
         get() = configFileController.editingFilePath
@@ -132,11 +144,11 @@ class MainViewModel(application: Application) :
     val outboundLatency: StateFlow<Map<String, OutboundLatency>>
         get() = dashboardController.outboundLatency
 
-    private val _controlMenuClickable = MutableStateFlow(true)
-    val controlMenuClickable: StateFlow<Boolean> = _controlMenuClickable.asStateFlow()
+    val controlMenuClickable: StateFlow<Boolean>
+        get() = vpnServiceController.controlMenuClickable
 
-    private val _isServiceEnabled = MutableStateFlow(false)
-    val isServiceEnabled: StateFlow<Boolean> = _isServiceEnabled.asStateFlow()
+    val isServiceEnabled: StateFlow<Boolean>
+        get() = vpnServiceController.isServiceEnabled
 
     val appIcon: StateFlow<String>
         get() = appIconController.appIcon
@@ -215,7 +227,7 @@ class MainViewModel(application: Application) :
             // drop fields); the rest are independent.
             coroutineScope {
                 launch {
-                    _isServiceEnabled.value = VpnStateHub.state.value is VpnRunningState.Connected
+                    vpnServiceController.setServiceEnabled(VpnStateHub.state.value is VpnRunningState.Connected)
                 }
                 launch { ensureAppIconSelected() }
                 launch {
@@ -236,14 +248,9 @@ class MainViewModel(application: Application) :
 
     private fun loadKernelVersion() = settingsController.loadKernelVersion()
 
-    fun setControlMenuClickable(isClickable: Boolean) {
-        _controlMenuClickable.value = isClickable
-    }
+    fun setControlMenuClickable(isClickable: Boolean) = vpnServiceController.setControlMenuClickable(isClickable)
 
-    fun setServiceEnabled(enabled: Boolean) {
-        _isServiceEnabled.value = enabled
-        prefs.enable = enabled
-    }
+    fun setServiceEnabled(enabled: Boolean) = vpnServiceController.setServiceEnabled(enabled)
 
     /**
      * Initializes the app icon preference on first launch: defaults to the
@@ -332,49 +339,15 @@ class MainViewModel(application: Application) :
         _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.export_failed)))
     }
 
-    fun startTProxyService(action: String) {
-        viewModelScope.launch {
-            if (configFileController.selectedConfigFile.value == null) {
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.not_select_config)))
-                Log.w(TAG, "Cannot start service: no config file selected.")
-                setControlMenuClickable(true)
-                return@launch
-            }
-            val intent = Intent(application, TProxyService::class.java).setAction(action)
-            _uiEvent.trySend(MainViewUiEvent.StartService(intent))
-        }
-    }
+    fun startTProxyService(action: String) = vpnServiceController.startTProxyService(action)
 
     fun editConfig(filePath: String) = configFileController.editConfig(filePath)
 
     fun shareIntent(chooserIntent: Intent, packageManager: PackageManager) = configFileController.shareIntent(chooserIntent, packageManager)
 
-    fun stopTProxyService() {
-        viewModelScope.launch {
-            val intent = Intent(
-                application,
-                TProxyService::class.java
-            ).setAction(TProxyService.ACTION_DISCONNECT)
-            _uiEvent.trySend(MainViewUiEvent.StartService(intent))
-        }
-    }
+    fun stopTProxyService() = vpnServiceController.stopTProxyService()
 
-    fun prepareAndStartVpn(vpnPrepareLauncher: ActivityResultLauncher<Intent>) {
-        viewModelScope.launch {
-            if (configFileController.selectedConfigFile.value == null) {
-                _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(application.getString(R.string.not_select_config)))
-                Log.w(TAG, "Cannot prepare VPN: no config file selected.")
-                setControlMenuClickable(true)
-                return@launch
-            }
-            val vpnIntent = VpnService.prepare(application)
-            if (vpnIntent != null) {
-                vpnPrepareLauncher.launch(vpnIntent)
-            } else {
-                startTProxyService(TProxyService.ACTION_CONNECT)
-            }
-        }
-    }
+    fun prepareAndStartVpn(vpnPrepareLauncher: ActivityResultLauncher<Intent>) = vpnServiceController.prepareAndStartVpn(vpnPrepareLauncher)
 
     fun navigateToAppList() {
         viewModelScope.launch {
