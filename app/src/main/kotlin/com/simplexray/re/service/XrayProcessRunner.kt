@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.File
 import java.io.InputStreamReader
+import java.io.InterruptedIOException
 import java.net.ServerSocket
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -235,6 +236,13 @@ internal class XrayProcessRunner(
             if (currentProcess != null) {
                 onXrayExited(currentProcess, -1)
             } else {
+                onXrayExited(null, currentPid)
+            }
+        } catch (e: InterruptedIOException) {
+            Log.d(tag, "Xray log stream interrupted during shutdown.")
+            if (currentProcess != null) {
+                onXrayExited(currentProcess, -1)
+            } else if (currentPid > 0) {
                 onXrayExited(null, currentPid)
             }
         } catch (e: Exception) {
