@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0-alpha.7](https://github.com/ReRokutosei/SimpleXray/compare/9047d73d49e490e8c64e3578c1e36b19fa5ae64d...v2.3.0-alpha.7) (2026-10-04)
+
+
+### Bug Fixes
+
+* **build:** make prerelease version codes monotonic ([20eb216](https://github.com/ReRokutosei/SimpleXray/commit/20eb2168ec9ed2f188e50c745be3fb57bbd03222))
+* **config:** shorten outbound transport timeouts ([c223eee](https://github.com/ReRokutosei/SimpleXray/commit/c223eee83873ee62d64ecc4e8806d36deaece96b))
+* **native:** keep xray spawn async-signal-safe ([515011c](https://github.com/ReRokutosei/SimpleXray/commit/515011cb9772c120b486ca751ade43a211011e70))
+* **provider:** narrow exported file provider path ([c5c7efc](https://github.com/ReRokutosei/SimpleXray/commit/c5c7efcc467fe265b4ebc9a127198a715888b710))
+* **security:** disable Android auto backup ([84bb6a9](https://github.com/ReRokutosei/SimpleXray/commit/84bb6a967766fc6b9a611e97e8e9e3ed2f6e1b14))
+* **service:** avoid recursive hev backend start ([3b0dd6f](https://github.com/ReRokutosei/SimpleXray/commit/3b0dd6f627fe2823ab64bd5bc9c82c6262167074))
+* **service:** finalize failed startup state ([e49fb1c](https://github.com/ReRokutosei/SimpleXray/commit/e49fb1cb10a7b44ace12fb4e9c0b35e28d4d8e05))
+* **service:** harden network and backend transitions ([1012166](https://github.com/ReRokutosei/SimpleXray/commit/10121664ef0e05aad97a6f86db197e8320fbd117))
+* **service:** quiet expected xray log interruption ([d0f23f4](https://github.com/ReRokutosei/SimpleXray/commit/d0f23f4d979528bc8b74685188ce161a1f6ba10b))
+* **service:** recover lost Xray SOCKS listener ([10fd293](https://github.com/ReRokutosei/SimpleXray/commit/10fd293e632daa9793637df407291e893190e930))
+* **service:** stop VPN when task removed ([139afb1](https://github.com/ReRokutosei/SimpleXray/commit/139afb183b6308ed166bcb93bfaaf07cd75d61a6))
+* **simpletun:** consume payload before upstream FIN ([26688f7](https://github.com/ReRokutosei/SimpleXray/commit/26688f750276b7b58ab9dfc06f3203e0bf4a0695))
+* **simpletun:** handle TUN and UDP send failures ([9875a1c](https://github.com/ReRokutosei/SimpleXray/commit/9875a1c274c4a9b46bb7273f318da1921d0db279))
+* **simpletun:** map UDP replies to originating client ([b29b588](https://github.com/ReRokutosei/SimpleXray/commit/b29b5888ec92ddb8f233e4fdc36ad7a41521e144))
+* **simpletun:** reset evicted active TCP flows ([ed1596b](https://github.com/ReRokutosei/SimpleXray/commit/ed1596b475c244507c6cb6df4f197bb09b583033))
+* **ui:** theme latency status colors ([8d04957](https://github.com/ReRokutosei/SimpleXray/commit/8d04957d7dc0fe8146e21ff1f837347aa5b56c7e))
+* **update:** detect newer stable and prerelease versions ([4c498a0](https://github.com/ReRokutosei/SimpleXray/commit/4c498a06a223ec792f09eaa1348750686e078a68))
+* **viewmodel:** close stats client when cleared ([e601ba6](https://github.com/ReRokutosei/SimpleXray/commit/e601ba654c1b986e2c449565adc84b47684731b6))
+
 ## [2.3.0-alpha.5](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0-alpha.4...v2.3.0-alpha.5) (2026-10-01)
 
 
