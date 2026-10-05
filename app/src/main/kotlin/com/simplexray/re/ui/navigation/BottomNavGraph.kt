@@ -102,7 +102,7 @@ fun BottomNavHost(
     navController: NavHostController,
     paddingValues: PaddingValues,
     mainViewModel: MainViewModel,
-    onDeleteConfigClick: (File, () -> Unit) -> Unit,
+    onDeleteConfigClick: (File) -> Unit,
     onCreateNewConfigFileAndEdit: () -> Unit = {},
     onImportConfigFromClipboard: () -> Unit = {},
     logViewModel: LogViewModel,

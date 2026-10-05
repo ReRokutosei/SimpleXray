@@ -39,7 +39,7 @@ internal class ConfigFileController(
         if (filePath == null) {
             sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.create_config_failed)))
         } else {
-            refreshConfigFileList()
+            rebuildConfigFileList()
         }
         return filePath
     }
@@ -49,12 +49,12 @@ internal class ConfigFileController(
         if (filePath == null) {
             sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.import_failed)))
         } else {
-            refreshConfigFileList()
+            rebuildConfigFileList()
         }
         return filePath
     }
 
-    suspend fun deleteConfigFile(file: File, callback: () -> Unit) {
+    fun deleteConfigFile(file: File) {
         scope.launch(Dispatchers.IO) {
             if (isVpnEnabled() && _selectedConfigFile.value != null &&
                 _selectedConfigFile.value == file
@@ -66,13 +66,13 @@ internal class ConfigFileController(
 
             val success = fileManager.deleteConfigFile(file)
             if (success) {
-                withContext(Dispatchers.Main) {
-                    refreshConfigFileList()
-                }
+                // Rebuild (and reselect) before surfacing completion. The old
+                // callback chain cleared the selected file and then raced the
+                // async refresh, which could wipe the active selection.
+                rebuildConfigFileList()
             } else {
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.delete_fail)))
             }
-            callback()
         }
     }
 
@@ -114,7 +114,9 @@ internal class ConfigFileController(
         scope.launch(Dispatchers.IO) {
             val path = fileManager.importConfigFileFromUri(application, uri)
             if (path != null) {
-                refreshConfigFileList()
+                // Await the rebuild so the subsequent selection update cannot be
+                // overwritten by a late fire-and-forget refresh coroutine.
+                rebuildConfigFileList()
                 if (isVpnEnabled()) {
                     // Keep the running core untouched: do not switch the selected
                     // config while the service is active. The user can still pick
@@ -139,45 +141,49 @@ internal class ConfigFileController(
 
     fun refreshConfigFileList() {
         scope.launch(Dispatchers.IO) {
-            val filesDir = application.filesDir
-            val actualFiles =
-                filesDir.listFiles { file -> file.isFile && file.isConfigFile() && file.name != "extra_api.json" }?.toList()
-                    ?: emptyList()
-            val actualFilesByName = actualFiles.associateBy { it.name }
-            val savedOrder = prefs.configFilesOrder
-
-            val newOrder = mutableListOf<File>()
-            val remainingActualFileNames = actualFilesByName.toMutableMap()
-
-            savedOrder.forEach { filename ->
-                actualFilesByName[filename]?.let { file ->
-                    newOrder.add(file)
-                    remainingActualFileNames.remove(filename)
-                }
-            }
-
-            newOrder.addAll(remainingActualFileNames.values.filter { it !in newOrder })
-
-            _configFiles.value = newOrder
-            prefs.configFilesOrder = newOrder.map { it.name }
-
-            val currentSelectedPath = prefs.selectedConfigPath
-            var fileToSelect: File? = null
-
-            if (currentSelectedPath != null) {
-                val foundSelected = newOrder.find { it.absolutePath == currentSelectedPath }
-                if (foundSelected != null) {
-                    fileToSelect = foundSelected
-                }
-            }
-
-            if (fileToSelect == null) {
-                fileToSelect = newOrder.firstOrNull()
-            }
-
-            _selectedConfigFile.value = fileToSelect
-            prefs.selectedConfigPath = fileToSelect?.absolutePath
+            rebuildConfigFileList()
         }
+    }
+
+    private suspend fun rebuildConfigFileList() {
+        val filesDir = application.filesDir
+        val actualFiles =
+            filesDir.listFiles { file -> file.isFile && file.isConfigFile() && file.name != "extra_api.json" }?.toList()
+                ?: emptyList()
+        val actualFilesByName = actualFiles.associateBy { it.name }
+        val savedOrder = prefs.configFilesOrder
+
+        val newOrder = mutableListOf<File>()
+        val remainingActualFileNames = actualFilesByName.toMutableMap()
+
+        savedOrder.forEach { filename ->
+            actualFilesByName[filename]?.let { file ->
+                newOrder.add(file)
+                remainingActualFileNames.remove(filename)
+            }
+        }
+
+        newOrder.addAll(remainingActualFileNames.values.filter { it !in newOrder })
+
+        _configFiles.value = newOrder
+        prefs.configFilesOrder = newOrder.map { it.name }
+
+        val currentSelectedPath = prefs.selectedConfigPath
+        var fileToSelect: File? = null
+
+        if (currentSelectedPath != null) {
+            val foundSelected = newOrder.find { it.absolutePath == currentSelectedPath }
+            if (foundSelected != null) {
+                fileToSelect = foundSelected
+            }
+        }
+
+        if (fileToSelect == null) {
+            fileToSelect = newOrder.firstOrNull()
+        }
+
+        _selectedConfigFile.value = fileToSelect
+        prefs.selectedConfigPath = fileToSelect?.absolutePath
     }
 
     fun updateSelectedConfigFile(file: File?) {

@@ -274,7 +274,7 @@ class MainViewModel(application: Application) :
 
     suspend fun importConfigFromClipboard(): String? = configFileController.importConfigFromClipboard()
 
-    suspend fun deleteConfigFile(file: File, callback: () -> Unit) = configFileController.deleteConfigFile(file, callback)
+    fun deleteConfigFile(file: File) = configFileController.deleteConfigFile(file)
 
     fun extractAssetsIfNeeded() = ruleFileController.extractAssetsIfNeeded()
 

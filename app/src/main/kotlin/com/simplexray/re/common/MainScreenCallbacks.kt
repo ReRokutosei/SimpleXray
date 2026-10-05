@@ -17,7 +17,7 @@ data class MainScreenCallbacks(
     val onCreateNewConfigFileAndEdit: () -> Unit,
     val onImportConfigFromClipboard: () -> Unit,
     val onPerformExport: () -> Unit,
-    val onDeleteConfigClick: (File, () -> Unit) -> Unit,
+    val onDeleteConfigClick: (File) -> Unit,
     val onSwitchVpnService: () -> Unit
 )
 
@@ -83,10 +83,8 @@ fun rememberMainScreenCallbacks(
         }
     }
 
-    val onDeleteConfigClick: (File, () -> Unit) -> Unit = { file, callback ->
-        scope.launch {
-            mainViewModel.deleteConfigFile(file, callback)
-        }
+    val onDeleteConfigClick: (File) -> Unit = { file ->
+        mainViewModel.deleteConfigFile(file)
     }
 
     val onSwitchVpnService: () -> Unit = onSwitchVpnService@{

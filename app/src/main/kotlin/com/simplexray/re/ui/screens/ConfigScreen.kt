@@ -86,7 +86,7 @@ private const val TAG = "ConfigScreen"
 fun ConfigScreen(
     onReloadConfig: () -> Unit,
     onEditConfigClick: (File) -> Unit,
-    onDeleteConfigClick: (File, () -> Unit) -> Unit,
+    onDeleteConfigClick: (File) -> Unit,
     onCreateNewConfigFileAndEdit: () -> Unit = {},
     onImportConfigFromClipboard: () -> Unit = {},
     mainViewModel: MainViewModel,
@@ -280,7 +280,7 @@ private fun ConfigListPane(
     onOpenFullscreenEditor: (File) -> Unit,
     onReloadConfig: () -> Unit,
     onEditConfigClick: (File) -> Unit,
-    onDeleteConfigClick: (File, () -> Unit) -> Unit,
+    onDeleteConfigClick: (File) -> Unit,
     onCreateNewConfigFileAndEdit: () -> Unit,
     onImportConfigFromClipboard: () -> Unit,
     mainViewModel: MainViewModel,
@@ -521,10 +521,7 @@ private fun ConfigListPane(
             cancelText = stringResource(R.string.cancel),
             onConfirm = {
                 showDeleteDialog.value = null
-                onDeleteConfigClick(fileToDelete) {
-                    mainViewModel.refreshConfigFileList()
-                    mainViewModel.updateSelectedConfigFile(null)
-                }
+                onDeleteConfigClick(fileToDelete)
             },
             onDismiss = { showDeleteDialog.value = null }
         )
