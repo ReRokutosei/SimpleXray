@@ -13,11 +13,13 @@ import com.simplexray.re.data.source.LogFileManager
 import com.simplexray.re.prefs.Preferences
 import com.simplexray.re.prefs.TunnelMode
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.BufferedReader
 import java.io.File
+import java.io.IOException
 import java.io.InputStreamReader
 import java.io.InterruptedIOException
 import java.net.ServerSocket
@@ -101,6 +103,7 @@ internal class XrayProcessRunner(
         var stdoutPfd: ParcelFileDescriptor? = null
         var currentProcess: Process? = null
         var currentPid = -1
+        var reader: BufferedReader? = null
 
         try {
             val prefs = Preferences(application)
@@ -145,7 +148,6 @@ internal class XrayProcessRunner(
             Log.d(tag, "Injected final config (${finalConfigContent.length} chars) ready for stdin ($format)")
 
             val useXrayTun = prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn
-            val reader: BufferedReader
 
             if (useXrayTun) {
                 val vpnFd = callbacks.vpnFd() ?: run {
@@ -163,10 +165,19 @@ internal class XrayProcessRunner(
                 pid = currentPid
                 Log.d(tag, "Xray TUN process started: pid=$currentPid")
 
-                ParcelFileDescriptor.adoptFd(stdinWriteFd).use { pfd ->
-                    ParcelFileDescriptor.AutoCloseOutputStream(pfd).use { out ->
-                        out.write(finalConfigContent.toByteArray(Charsets.UTF_8))
-                        out.flush()
+                // Write the config on a separate IO job so the parent starts
+                // draining stdout immediately. A synchronous write can deadlock
+                // when both pipe buffers fill up (large config + early logs).
+                scope.launch(Dispatchers.IO) {
+                    runCatching {
+                        ParcelFileDescriptor.adoptFd(stdinWriteFd).use { pfd ->
+                            ParcelFileDescriptor.AutoCloseOutputStream(pfd).use { out ->
+                                out.write(finalConfigContent.toByteArray(Charsets.UTF_8))
+                                out.flush()
+                            }
+                        }
+                    }.onFailure {
+                        Log.e(tag, "Failed to write configuration to Xray stdin", it)
                     }
                 }
                 stdoutPfd = ParcelFileDescriptor.adoptFd(stdoutReadFd)
@@ -175,15 +186,22 @@ internal class XrayProcessRunner(
                 )
             } else {
                 val processBuilder = getProcessBuilder(xrayPath)
-                currentProcess = processBuilder.start()
-                process = currentProcess
+                val processRef = processBuilder.start()
+                currentProcess = processRef
+                process = processRef
                 Log.d(tag, "Xray child process started successfully via ProcessBuilder.")
 
-                currentProcess.outputStream.use { os ->
-                    os.write(finalConfigContent.toByteArray(Charsets.UTF_8))
-                    os.flush()
+                scope.launch(Dispatchers.IO) {
+                    runCatching {
+                        processRef.outputStream.use { os ->
+                            os.write(finalConfigContent.toByteArray(Charsets.UTF_8))
+                            os.flush()
+                        }
+                    }.onFailure {
+                        Log.e(tag, "Failed to write configuration to Xray stdin", it)
+                    }
                 }
-                reader = BufferedReader(InputStreamReader(currentProcess.inputStream))
+                reader = BufferedReader(InputStreamReader(processRef.inputStream))
             }
 
             scope.launch {
@@ -229,7 +247,11 @@ internal class XrayProcessRunner(
             }
 
             Log.d(tag, "Reading native Xray process log stream.")
-            var line = reader.readLine()
+            val activeReader = reader ?: run {
+                callbacks.onStartFailure("Failed to open Xray stdout stream")
+                return
+            }
+            var line = activeReader.readLine()
             while (line != null) {
                 val batch = mutableListOf<String>()
                 val stampedLine = stampLogLine(line)
@@ -237,8 +259,8 @@ internal class XrayProcessRunner(
                 batch.add(stampedLine)
                 callbacks.emitLog(stampedLine)
 
-                while (reader.ready() && batch.size < 50) {
-                    val nextLine = reader.readLine() ?: break
+                while (activeReader.ready() && batch.size < 50) {
+                    val nextLine = activeReader.readLine() ?: break
                     val stampedNext = stampLogLine(nextLine)
                     Log.d(tag, "XrayLog: $stampedNext")
                     batch.add(stampedNext)
@@ -246,7 +268,7 @@ internal class XrayProcessRunner(
                 }
 
                 logFileManager.appendLogs(batch)
-                line = reader.readLine()
+                line = activeReader.readLine()
             }
             Log.d(tag, "Native Xray process log stream finished.")
             if (currentProcess != null) {
@@ -271,7 +293,8 @@ internal class XrayProcessRunner(
                 callbacks.onStartFailure("Error executing native Xray: ${e.message}")
             }
         } finally {
-            stdoutPfd?.close()
+            runCatching { reader?.close() }
+            runCatching { stdoutPfd?.close() }
             Log.d(tag, "Native Xray process task finished.")
             if (currentProcess != null && process === currentProcess) {
                 process = null
