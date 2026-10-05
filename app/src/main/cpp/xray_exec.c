@@ -105,7 +105,14 @@ Java_com_simplexray_re_service_TProxyService_nativeSpawnXray(
     new_env[ni++] = tun_fd_env;
     new_env[ni]   = NULL;
 
-    char *argv[] = { (char *)xray_path, NULL };
+    /*
+     * Force the configuration source to stdin.  Without an explicit -config,
+     * Xray's default discovery searches the current working directory for
+     * config.json/config.yaml/... before falling back to stdin, which would let
+     * a same-named file shadow the app-sanitized configuration.  The Java side
+     * always feeds the final config through the stdin pipe.
+     */
+    char *argv[] = { (char *)xray_path, (char *)"-config", (char *)"stdin:", NULL };
 
     pid_t pid = fork();
     if (pid < 0) {

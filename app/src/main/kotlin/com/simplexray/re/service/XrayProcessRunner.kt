@@ -21,8 +21,8 @@ import java.io.File
 import java.io.InputStreamReader
 import java.io.InterruptedIOException
 import java.net.ServerSocket
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.concurrent.Volatile
 
@@ -128,7 +128,7 @@ internal class XrayProcessRunner(
             val rawConfigContent = runCatching { configFile.readText() }.getOrDefault("")
             Log.d(tag, "Loaded raw user config: ${configFile.name}, ${rawConfigContent.length} chars")
 
-            val sanitizedConfigContent = ConfigUtils.sanitizeConfig(rawConfigContent)
+            val sanitizedConfigContent = ConfigUtils.sanitizeConfig(rawConfigContent, prefs)
 
             val isYaml = configFile.extension.lowercase() in listOf("yaml", "yml")
             val format = if (isYaml) "yaml" else "json"
@@ -141,7 +141,7 @@ internal class XrayProcessRunner(
             prefs.apiPort = apiPort
             prefs.apiAddress = "127.0.0.1"
 
-            val finalConfigContent = ConfigUtils.injectStatsService(prefs, sanitizedConfigContent)
+            val finalConfigContent = ConfigUtils.injectStatsServiceIntoSanitized(prefs, sanitizedConfigContent)
             Log.d(tag, "Injected final config (${finalConfigContent.length} chars) ready for stdin ($format)")
 
             val useXrayTun = prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn
@@ -206,6 +206,22 @@ internal class XrayProcessRunner(
                             break
                         }
                         delay(STARTUP_PROBE_INTERVAL_MS)
+                    }
+
+                    // The probe deadline expiring while the child process is still
+                    // alive used to leave the service stuck in Connecting forever.
+                    // Treat it as a normal startup failure so the retry/failure
+                    // pipeline runs and the lock is released.
+                    if (!isStarted &&
+                        !callbacks.hasStartupFailed() &&
+                        !callbacks.isStopping() &&
+                        (probeProcess?.isAlive == true || currentPid > 0) &&
+                        System.currentTimeMillis() >= deadline
+                    ) {
+                        Log.e(tag, "Xray startup probe timed out after ${STARTUP_PROBE_TIMEOUT_MS}ms.")
+                        callbacks.onStartFailure(
+                            "Xray core did not become ready within ${STARTUP_PROBE_TIMEOUT_MS / 1000}s"
+                        )
                     }
                 } finally {
                     client.close()
@@ -297,7 +313,7 @@ internal class XrayProcessRunner(
 
     private fun getProcessBuilder(xrayPath: String): ProcessBuilder {
         val filesDir = application.filesDir
-        val command = mutableListOf(xrayPath)
+        val command = mutableListOf(xrayPath, "-config", "stdin:")
         val processBuilder = ProcessBuilder(command)
         val environment = processBuilder.environment()
         environment["XRAY_LOCATION_ASSET"] = filesDir.path
@@ -325,7 +341,7 @@ internal class XrayProcessRunner(
 
     private fun stampLogLine(line: String): String {
         val message = GO_LOG_TIMESTAMP_PREFIX.replaceFirst(line, "")
-        return if (message === line) line else "${logTimestampFormat.format(Date())} $message"
+        return if (message === line) line else "${LocalDateTime.now().format(logTimestampFormat)} $message"
     }
 
     companion object {
@@ -333,6 +349,6 @@ internal class XrayProcessRunner(
         private const val STARTUP_PROBE_TIMEOUT_MS: Long = 15000
         private const val STARTUP_PROBE_INTERVAL_MS: Long = 500
         private val GO_LOG_TIMESTAMP_PREFIX = Regex("""^\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}(\.\d+)? """)
-        private val logTimestampFormat = SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS", Locale.US)
+        private val logTimestampFormat = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss.SSS", Locale.US)
     }
 }
