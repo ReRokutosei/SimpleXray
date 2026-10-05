@@ -52,8 +52,6 @@ internal class RuleFileStore(
         dir.mkdirs()
         for (file in files) {
             val targetFile = File(dir, file)
-            var needsExtraction = false
-
             val isCustomImported =
                 if (file == "geoip.dat") prefs.customGeoipImported else prefs.customGeositeImported
 
@@ -62,6 +60,16 @@ internal class RuleFileStore(
                 continue
             }
 
+            if (!hasBundledAsset(file)) {
+                // NoGEO builds intentionally ship without geo assets. Missing
+                // GEO data is only an error when the selected config references
+                // it; the app itself must stay alive and let the GUI surface the
+                // missing rule-file state for import/download.
+                Log.i(TAG, "Bundled asset $file is not packaged; skipping extraction.")
+                continue
+            }
+
+            var needsExtraction = false
             if (targetFile.exists()) {
                 try {
                     val existingFileHash =
@@ -80,27 +88,51 @@ internal class RuleFileStore(
             } else {
                 needsExtraction = true
             }
+
             if (needsExtraction) {
-                try {
-                    application.assets.open(file).use { `in` ->
-                        FileOutputStream(targetFile).use { out ->
-                            val buffer = ByteArray(1024)
-                            var read: Int
-                            while ((`in`.read(buffer).also { read = it }) != -1) {
-                                out.write(buffer, 0, read)
-                            }
-                            Log.d(
-                                TAG,
-                                "Extracted asset: " + file + " to " + targetFile.absolutePath
-                            )
-                        }
-                    }
-                } catch (e: IOException) {
-                    throw RuntimeException("Failed to extract asset: $file", e)
+                if (copyAssetToFile(file, targetFile)) {
+                    Log.d(TAG, "Extracted asset $file to ${targetFile.absolutePath}")
+                } else {
+                    Log.e(TAG, "Failed to extract asset: $file")
                 }
             } else {
                 Log.d(TAG, "Asset $file already exists and matches hash, skipping extraction.")
             }
+        }
+    }
+
+    private fun hasBundledAsset(name: String): Boolean {
+        return runCatching { application.assets.open(name).use { } }.isSuccess
+    }
+
+    /**
+     * Copies a bundled asset to [targetFile] through a temporary file so an
+     * interrupted extraction can never leave a truncated .dat in place.
+     */
+    private fun copyAssetToFile(assetName: String, targetFile: File): Boolean {
+        val tempFile = File(targetFile.parentFile, "${targetFile.name}.tmp")
+        return try {
+            application.assets.open(assetName).use { input ->
+                FileOutputStream(tempFile).use { output ->
+                    val buffer = ByteArray(64 * 1024)
+                    while (true) {
+                        val read = input.read(buffer)
+                        if (read == -1) break
+                        output.write(buffer, 0, read)
+                    }
+                }
+            }
+            if (tempFile.renameTo(targetFile)) {
+                true
+            } else {
+                tempFile.delete()
+                Log.e(TAG, "Failed to rename ${tempFile.name} to ${targetFile.name}")
+                false
+            }
+        } catch (e: IOException) {
+            tempFile.delete()
+            Log.e(TAG, "Failed to copy bundled asset $assetName", e)
+            false
         }
     }
 
@@ -219,10 +251,11 @@ internal class RuleFileStore(
         val file = File(application.filesDir, filename)
         val isCustomImported =
             if (filename == "geoip.dat") prefs.customGeoipImported else prefs.customGeositeImported
-        return if (file.exists() && isCustomImported) {
-            formatRuleFileSummary(file) ?: application.getString(R.string.rule_file_default)
-        } else {
-            application.getString(R.string.rule_file_default)
+        return when {
+            !file.exists() -> application.getString(R.string.rule_file_missing)
+            isCustomImported ->
+                formatRuleFileSummary(file) ?: application.getString(R.string.rule_file_default)
+            else -> application.getString(R.string.rule_file_default)
         }
     }
 
@@ -257,35 +290,27 @@ internal class RuleFileStore(
 
     suspend fun restoreDefaultGeoip(): Boolean {
         return withContext(Dispatchers.IO) {
-            prefs.customGeoipImported = false
             val file = File(application.filesDir, "geoip.dat")
-            application.assets.open("geoip.dat").use { input ->
-                FileOutputStream(file).use { output ->
-                    val buffer = ByteArray(1024)
-                    var read: Int
-                    while (input.read(buffer).also { read = it } != -1) {
-                        output.write(buffer, 0, read)
-                    }
-                }
+            if (!copyAssetToFile("geoip.dat", file)) {
+                Log.w(TAG, "No bundled geoip.dat available to restore.")
+                false
+            } else {
+                prefs.customGeoipImported = false
+                true
             }
-            true
         }
     }
 
     suspend fun restoreDefaultGeosite(): Boolean {
         return withContext(Dispatchers.IO) {
-            prefs.customGeositeImported = false
             val file = File(application.filesDir, "geosite.dat")
-            application.assets.open("geosite.dat").use { input ->
-                FileOutputStream(file).use { output ->
-                    val buffer = ByteArray(1024)
-                    var read: Int
-                    while (input.read(buffer).also { read = it } != -1) {
-                        output.write(buffer, 0, read)
-                    }
-                }
+            if (!copyAssetToFile("geosite.dat", file)) {
+                Log.w(TAG, "No bundled geosite.dat available to restore.")
+                false
+            } else {
+                prefs.customGeositeImported = false
+                true
             }
-            true
         }
     }
 

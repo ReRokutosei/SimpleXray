@@ -79,11 +79,19 @@ internal class RuleFileController(
 
     fun restoreDefaultGeoip(callback: () -> Unit) {
         scope.launch(Dispatchers.IO) {
-            fileManager.restoreDefaultGeoip()
+            val restored = fileManager.restoreDefaultGeoip()
             onRuleFileStateChanged("geoip.dat")
-            sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_restore_geoip_success)))
+            if (restored) {
+                sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_restore_geoip_success)))
+            } else {
+                // NoGEO build / missing bundled asset: degrade to a download from
+                // the configured default URL instead of failing the action.
+                Log.i(TAG, "Bundled geoip.dat unavailable; falling back to download.")
+                sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_restore_download_fallback)))
+                downloadRuleFile(prefs.geoipUrl, "geoip.dat")
+            }
             withContext(Dispatchers.Main) {
-                Log.d(TAG, "Restored default geoip.dat.")
+                Log.d(TAG, "Restore default geoip.dat finished (restored=$restored).")
                 callback()
             }
         }
@@ -91,11 +99,17 @@ internal class RuleFileController(
 
     fun restoreDefaultGeosite(callback: () -> Unit) {
         scope.launch(Dispatchers.IO) {
-            fileManager.restoreDefaultGeosite()
+            val restored = fileManager.restoreDefaultGeosite()
             onRuleFileStateChanged("geosite.dat")
-            sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_restore_geosite_success)))
+            if (restored) {
+                sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_restore_geosite_success)))
+            } else {
+                Log.i(TAG, "Bundled geosite.dat unavailable; falling back to download.")
+                sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_restore_download_fallback)))
+                downloadRuleFile(prefs.geositeUrl, "geosite.dat")
+            }
             withContext(Dispatchers.Main) {
-                Log.d(TAG, "Restored default geosite.dat.")
+                Log.d(TAG, "Restore default geosite.dat finished (restored=$restored).")
                 callback()
             }
         }

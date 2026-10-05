@@ -88,6 +88,7 @@
     <!-- 规则文件管理 -->
     <string name="rule_files_category_title">规则文件</string>
     <string name="rule_file_default">默认规则文件</string>
+    <string name="rule_file_missing">规则文件缺失（未内置，请导入或下载）</string>
     <string name="rule_file_update_url">从 URL 更新</string>
     <string name="reset_file">重置</string>
     <string name="delete_rule_file_title">删除规则文件</string>
@@ -97,6 +98,7 @@
     <string name="standard_geo_file_rejected">该文件属于标准 GEO 资源，请前往上方专门区域进行替换或更新</string>
     <string name="invalid_dat_url">无法从该链接解析出文件名</string>
     <string name="rule_file_restore_geoip_success">geoip.dat 已恢复为默认</string>
+    <string name="rule_file_restore_download_fallback">未内置该文件，正在从配置的默认地址下载</string>
     <string name="rule_file_restore_geosite_success">geosite.dat 已恢复为默认</string>
 
     <string name="icon_flat">Flat</string>

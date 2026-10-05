@@ -93,6 +93,7 @@
     <!-- Rule Files Management -->
     <string name="rule_files_category_title">Rule Files</string>
     <string name="rule_file_default">Default rule file</string>
+    <string name="rule_file_missing">Rule file missing (not bundled; import or download)</string>
     <string name="rule_file_update_url">Update from URL</string>
     <string name="reset_file">Reset</string>
     <string name="delete_rule_file_title">Delete rule file</string>
@@ -102,6 +103,7 @@
     <string name="standard_geo_file_rejected">This file is a standard GEO resource. Please use the dedicated area above to replace or update it.</string>
     <string name="invalid_dat_url">Unable to determine the file name from this URL</string>
     <string name="rule_file_restore_geoip_success">geoip.dat restored to default</string>
+    <string name="rule_file_restore_download_fallback">File is not bundled; downloading from the configured default URL</string>
     <string name="rule_file_restore_geosite_success">geosite.dat restored to default</string>
 
     <string name="icon_flat">Flat</string>
