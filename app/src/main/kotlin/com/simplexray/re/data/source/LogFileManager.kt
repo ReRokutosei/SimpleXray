@@ -144,19 +144,16 @@ class LogFileManager(context: Context) {
                             )
                         }
                     }
-                    if (logFile.delete()) {
-                        if (tempLogFile.renameTo(logFile)) {
-                            Log.d(
-                                TAG,
-                                "Log file truncated successfully. New size: " + logFile.length() + " bytes."
-                            )
-                        } else {
-                            Log.e(TAG, "Failed to rename temp log file to original file.")
-                            tempLogFile.delete()
-                        }
+                    // POSIX rename(2) atomically replaces the existing file; the
+                    // old delete-then-rename order destroyed the log whenever the
+                    // rename failed. Keep the temp file on failure instead.
+                    if (tempLogFile.renameTo(logFile)) {
+                        Log.d(
+                            TAG,
+                            "Log file truncated successfully. New size: " + logFile.length() + " bytes."
+                        )
                     } else {
-                        Log.e(TAG, "Failed to delete original log file during truncation.")
-                        tempLogFile.delete()
+                        Log.e(TAG, "Failed to rename temp log file over original file; kept temp file.")
                     }
                 }
             }
