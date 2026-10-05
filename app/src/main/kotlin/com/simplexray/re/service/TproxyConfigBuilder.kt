@@ -15,13 +15,20 @@ tunnel:
 """
         tproxyConf += """socks5:
   port: ${prefs.socksPort}
-  address: '${prefs.socksAddress}'
+  address: '${escapeSingleQuoted(prefs.socksAddress)}'
   udp: '${if (prefs.udpInTcp) "tcp" else "udp"}'
 """
         if (prefs.socksUsername.isNotEmpty() && prefs.socksPassword.isNotEmpty()) {
-            tproxyConf += "  username: '" + prefs.socksUsername + "'\n"
-            tproxyConf += "  password: '" + prefs.socksPassword + "'\n"
+            tproxyConf += "  username: '" + escapeSingleQuoted(prefs.socksUsername) + "'\n"
+            tproxyConf += "  password: '" + escapeSingleQuoted(prefs.socksPassword) + "'\n"
         }
         return tproxyConf
     }
+
+    /**
+     * Escapes a value for a YAML single-quoted scalar. An embedded single quote
+     * is represented by doubling it (YAML 1.2, section 7.3.1); without this a
+     * password like "pa'ss" produces an unparsable tproxy.conf.
+     */
+    private fun escapeSingleQuoted(value: String): String = value.replace("'", "''")
 }
