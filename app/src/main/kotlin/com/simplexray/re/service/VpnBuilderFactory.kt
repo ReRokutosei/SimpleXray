@@ -66,11 +66,21 @@ internal object VpnBuilderFactory {
             }
 
             val rawApps = prefs.apps
+            val validApps = mutableSetOf<String>()
             if (!rawApps.isNullOrEmpty()) {
-                val validApps = mutableSetOf<String>()
                 var hadInvalid = false
                 for (appName in rawApps) {
-                    if (appName.isNullOrBlank()) continue
+                    if (appName.isNullOrBlank()) {
+                        hadInvalid = true
+                        continue
+                    }
+                    if (appName == BuildConfig.APPLICATION_ID) {
+                        // Never add our own package to the allow-list: the app's
+                        // upstream proxy traffic would re-enter the TUN and spin.
+                        hadInvalid = true
+                        Log.d(TAG, "Pruning own package from VPN app routing: $appName")
+                        continue
+                    }
                     try {
                         service.packageManager.getPackageInfo(appName, 0)
                         validApps.add(appName)
@@ -88,7 +98,9 @@ internal object VpnBuilderFactory {
                     prefs.apps = validApps
                 }
             }
-            if (prefs.bypassSelectedApps || prefs.apps.isNullOrEmpty()) {
+            // In allow-list mode a non-empty allowed set already excludes us;
+            // when the list is empty (or deny-list mode) exclude explicitly.
+            if (prefs.bypassSelectedApps || validApps.isEmpty()) {
                 addDisallowedApplication(BuildConfig.APPLICATION_ID)
             }
         }

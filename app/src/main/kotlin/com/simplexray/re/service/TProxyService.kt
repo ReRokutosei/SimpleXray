@@ -7,7 +7,6 @@ import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
-import android.os.SystemClock
 import android.util.Log
 import com.simplexray.re.R
 import com.simplexray.re.common.ConfigUtils
@@ -19,7 +18,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -107,6 +110,9 @@ class TProxyService : VpnService() {
     @Volatile
     private var startupFailed = false
 
+    @Volatile
+    private var stopRequestedByUser = false
+
     private var tunFd: ParcelFileDescriptor? = null
 
 
@@ -127,6 +133,7 @@ class TProxyService : VpnService() {
         val action = intent.action
         when (action) {
             ACTION_DISCONNECT -> {
+                stopRequestedByUser = true
                 VpnStateHub.updateState(VpnRunningState.Disconnected)
                 stopXray()
                 return START_NOT_STICKY
@@ -145,27 +152,6 @@ class TProxyService : VpnService() {
                 }
                 Log.d(TAG, "Received RELOAD_CONFIG action.")
                 xrayProcessRunner.restart(serviceScope)
-                return START_NOT_STICKY
-            }
-
-            ACTION_START -> {
-                val prefs = Preferences(this)
-                if (prefs.disableVpn) {
-                    if (!acquireStart("ACTION_START")) {
-                        return START_NOT_STICKY
-                    }
-                    @Suppress("SameParameterValue") val channelName = "nosocks"
-                    showForegroundNotification(channelName)
-                    validateStartPreferences(prefs)?.let { reason ->
-                        failStart(reason)
-                        return START_NOT_STICKY
-                    }
-                    VpnStateHub.updateState(VpnRunningState.Connecting)
-                    logFileManager.clearLogs()
-                    xrayProcessRunner.launch(serviceScope)
-                } else {
-                    startXray()
-                }
                 return START_NOT_STICKY
             }
 
@@ -190,9 +176,14 @@ class TProxyService : VpnService() {
         xrayProcessRunner.kill()
         val pfd = tunFd
         tunFd = null
-        kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
-            tunnelBackendController.stop()
-            pfd?.let { runCatching { it.close() } }
+        // Block briefly so native backends and the VPN fd are released before
+        // the process can be torn down; the old fire-and-forget scope could be
+        // killed before teardown ran.
+        runBlocking {
+            withTimeoutOrNull(TEARDOWN_TIMEOUT_MS) {
+                tunnelBackendController.stop()
+                pfd?.let { runCatching { it.close() } }
+            }
         }
         vpnWakeLock.release()
         stopForeground(Service.STOP_FOREGROUND_REMOVE)
@@ -203,26 +194,45 @@ class TProxyService : VpnService() {
     }
 
     override fun onRevoke() {
+        stopRequestedByUser = true
         stopXray()
         super.onRevoke()
     }
 
     private fun startXray() {
         if (!acquireStart("startXray")) return
-        @Suppress("SameParameterValue") val channelName = "socks5"
+        val prefs = Preferences(this)
+        val coreOnly = prefs.disableVpn
+        @Suppress("SameParameterValue") val channelName = if (coreOnly) "nosocks" else "socks5"
         showForegroundNotification(channelName)
-        validateStartPreferences(Preferences(this))?.let { reason ->
+        validateStartPreferences(prefs)?.let { reason ->
             failStart(reason)
             return
         }
         VpnStateHub.updateState(VpnRunningState.Connecting)
         vpnWakeLock.acquireIfEnabled()
         logFileManager.clearLogs()
-        if (!startService()) {
-            failStart("VPN service establishment failed")
+
+        if (coreOnly) {
+            xrayProcessRunner.launch(serviceScope)
             return
         }
-        xrayProcessRunner.launch(serviceScope)
+
+        serviceScope.launch {
+            val established = startService()
+            if (stopRequestedByUser) {
+                Log.d(TAG, "Startup aborted by an explicit user stop request.")
+                return@launch
+            }
+            if (!established) {
+                withContext(Dispatchers.Main) {
+                    failStart("VPN service establishment failed")
+                }
+                return@launch
+            }
+            if (startupFailed || isStopping) return@launch
+            xrayProcessRunner.launch(serviceScope)
+        }
     }
 
     /**
@@ -261,6 +271,7 @@ class TProxyService : VpnService() {
         }
         isStopping = false
         startupFailed = false
+        stopRequestedByUser = false
         xrayProcessRunner.resetAttempt()
         return true
     }
@@ -309,8 +320,9 @@ class TProxyService : VpnService() {
         stopService()
     }
 
-    private fun startService(): Boolean {
+    private suspend fun startService(): Boolean {
         if (tunFd != null) return true
+        if (stopRequestedByUser) return false
         val prefs = Preferences(this)
 
         val selectedConfigPath = prefs.selectedConfigPath
@@ -348,17 +360,23 @@ class TProxyService : VpnService() {
 
         val builder = VpnBuilderFactory.create(this, prefs, tunMtu, httpProxyEndpoint)
         var establishAttempts = 0
-        while (tunFd == null && establishAttempts < 3) {
+        while (tunFd == null && establishAttempts < 3 && !stopRequestedByUser) {
             tunFd = builder.establish()
             if (tunFd == null) {
                 establishAttempts++
                 Log.w(TAG, "builder.establish() returned null, retrying ($establishAttempts/3)...")
-                SystemClock.sleep(300)
+                delay(300)
             }
         }
         if (tunFd == null) {
             Log.e(TAG, "builder.establish() returned null after 3 attempts, stopping.")
             stopXray()
+            return false
+        }
+        if (stopRequestedByUser) {
+            val establishedFd = tunFd
+            tunFd = null
+            establishedFd?.let { runCatching { it.close() } }
             return false
         }
         networkMonitor.start()
@@ -496,6 +514,7 @@ class TProxyService : VpnService() {
         const val ACTION_START: String = "com.simplexray.re.START"
         const val ACTION_RELOAD_CONFIG: String = "com.simplexray.re.RELOAD_CONFIG"
         private const val TAG = "TProxyService"
+        private const val TEARDOWN_TIMEOUT_MS: Long = 3_000L
 
         init {
             try {

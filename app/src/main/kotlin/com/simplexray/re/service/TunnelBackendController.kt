@@ -37,6 +37,9 @@ internal class TunnelBackendController(
 
     fun startHevBackend(tproxyConfigPath: String, fd: Int): Boolean {
         synchronized(lifecycleLock) {
+            // Invalidate any pending SingTUN ServiceConnection callback: a delayed
+            // onServiceConnected must not start a second engine on this fd.
+            goTunGeneration++
             val started = runCatching {
                 startHev(tproxyConfigPath, fd)
             }.onFailure {
@@ -53,6 +56,7 @@ internal class TunnelBackendController(
 
     fun startSimpleTun(fd: Int, host: String, port: Int): Int {
         synchronized(lifecycleLock) {
+            goTunGeneration++
             val result = runCatching {
                 SimpleTunNative.nativeStart(fd, host, port)
             }.onFailure {
@@ -77,7 +81,7 @@ internal class TunnelBackendController(
             val generation = ++goTunGeneration
             val connection = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName, service: IBinder) {
-                    if (generation != goTunGeneration) {
+                    if (generation != goTunGeneration || activeBackend != NativeBackend.SING) {
                         Log.w(tag, "Ignoring stale ${serviceClass.simpleName} connection")
                         runCatching { context.unbindService(this) }
                         return
@@ -120,7 +124,7 @@ internal class TunnelBackendController(
                 }
 
                 override fun onServiceDisconnected(name: ComponentName) {
-                    if (generation != goTunGeneration) return
+                    if (generation != goTunGeneration || activeBackend != NativeBackend.SING) return
                     goTunBinder = null
                     Log.w(tag, "${serviceClass.simpleName} process disconnected")
                     mainHandler.post {
@@ -146,24 +150,28 @@ internal class TunnelBackendController(
 
     fun stop() {
         synchronized(lifecycleLock) {
+            // Bump before unbinding: unbindService is asynchronous and a queued
+            // onServiceConnected callback would otherwise still pass the
+            // generation check and run a backend after the service stopped.
+            goTunGeneration++
             val backend = activeBackend
             activeBackend = NativeBackend.NONE
-            val result = when (backend) {
+            val result: Result<Boolean>? = when (backend) {
                 NativeBackend.HEV -> runCatching { stopHev() }
                 NativeBackend.SING -> runCatching {
                     goTunBinder?.stop() ?: true
                 }
-                NativeBackend.SIMPLETUN -> runCatching { SimpleTunNative.nativeStop() }
-                NativeBackend.NONE -> return
+                NativeBackend.SIMPLETUN -> runCatching { SimpleTunNative.nativeStop() == 0 }
+                NativeBackend.NONE -> null
             }
             goTunBinder = null
             goTunConnection?.let { connection ->
                 runCatching { context.unbindService(connection) }
                 goTunConnection = null
             }
-            result.onSuccess {
+            result?.onSuccess {
                 Log.d(tag, "Stopped native backend $backend: ok=$it")
-            }.onFailure {
+            }?.onFailure {
                 Log.w(tag, "Failed to stop native backend $backend", it)
             }
         }
