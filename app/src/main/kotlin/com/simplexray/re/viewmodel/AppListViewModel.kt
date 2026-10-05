@@ -195,14 +195,15 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
             val importString = clipData.getItemAt(0).text?.toString()
             if (!importString.isNullOrBlank()) {
                 val lines = importString.split("\n")
-                lines.indexOf(BuildConfig.APPLICATION_ID).let {
-                    if (it > -1) lines.drop(it)
-                }
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
                 if (lines.isNotEmpty()) {
                     val newBypassMode = lines[0].toBooleanStrictOrNull()
                     if (newBypassMode != null) {
                         onBypassSelectedAppsChange(newBypassMode)
-                        val importedPackageNames = lines.drop(1).toSet()
+                        val importedPackageNames = lines.drop(1)
+                            .filter { it != BuildConfig.APPLICATION_ID }
+                            .toSet()
                         val updatedPackageList = _packageList.value.map { pkg ->
                             pkg.copy(selected = importedPackageNames.contains(pkg.packageName))
                         }
