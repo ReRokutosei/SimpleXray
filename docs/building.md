@@ -110,6 +110,7 @@ A no-GEO release builds from `app/src/main/assets-no-geo/`:
 ```bash
 ./gradlew clean assembleRelease -x lint -PnoGeo=true -PappVerName=vX.Y.Z
 ```
+In no-GEO builds the app remains usable without bundled assets: missing `geoip.dat`/`geosite.dat` are reported as missing in Settings, can be imported or downloaded, and the restore action falls back to downloading from the configured URL. Xray still fails normally when the selected configuration references GEO data that has not been supplied.
 
 ## 6. Verification
 

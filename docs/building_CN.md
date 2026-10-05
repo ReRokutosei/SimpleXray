@@ -110,6 +110,7 @@ No-GEO 版本改为打包 `app/src/main/assets-no-geo/`：
 ```bash
 ./gradlew clean assembleRelease -x lint -PnoGeo=true -PappVerName=vX.Y.Z
 ```
+No-GEO 版本在缺少内置资源时仍可正常使用：Settings 会将缺失的 `geoip.dat`/`geosite.dat` 显示为缺失状态，可导入或下载，恢复操作会退化为从配置的 URL 下载。若所选配置引用了未提供的 GEO 数据，Xray 仍会按其正常流程启动失败。
 
 ## 6. 验证命令
 
