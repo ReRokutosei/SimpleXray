@@ -94,6 +94,9 @@ fun AppNavHost(
                 ConfigEditScreen(
                     onBackClick = {
                         mainViewModel.editingFilePath = null
+                        // Renaming in the editor updates prefs.selectedConfigPath
+                        // on disk; refresh so ConfigScreen shows the new name.
+                        mainViewModel.refreshConfigFileList()
                         navController.popBackStack()
                     },
                     snackbarHostState = remember { SnackbarHostState() },
