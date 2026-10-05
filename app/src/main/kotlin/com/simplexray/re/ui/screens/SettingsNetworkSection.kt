@@ -102,7 +102,7 @@ internal fun SettingsNetworkSection(
                             text = errorLogTitle,
                             fontSize = MiuixTheme.textStyles.headline1.fontSize,
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
-                            color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant
+                            color = MiuixTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         IconButton(
@@ -122,57 +122,50 @@ internal fun SettingsNetworkSection(
                     Text(
                         text = currentLogLevelName,
                         fontSize = MiuixTheme.textStyles.body2.fontSize,
-                        color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurfaceVariantActions else MiuixTheme.colorScheme.disabledOnSecondaryVariant,
+                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
                         modifier = Modifier.align(Alignment.CenterVertically)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     DropdownArrowEndAction(
-                        actionColor = if (!vpnDisabled) MiuixTheme.colorScheme.onSurfaceVariantActions else MiuixTheme.colorScheme.disabledOnSecondaryVariant
+                        actionColor = MiuixTheme.colorScheme.onSurfaceVariantActions
                     )
-                    if (!vpnDisabled) {
-                        val logLevelDropdownEntry = remember(logLevelNames, currentLogLevelIndex) {
-                            DropdownEntry(
-                                logLevelNames.mapIndexed { index, name ->
-                                    DropdownItem(
-                                        text = name,
-                                        selected = index == currentLogLevelIndex,
-                                        onClick = { mainViewModel.setLogLevel(logLevelOptions[index]) }
-                                    )
-                                }
-                            )
-                        }
-                        OverlayDropdownPopup(
-                            entry = logLevelDropdownEntry,
-                            show = isLogLevelDropdownExpanded,
-                            onDismiss = { isLogLevelDropdownExpanded = false },
-                            onDismissFinished = {},
-                            maxHeight = null,
-                            dropdownColors = DropdownDefaults.dropdownColors(),
-                            renderInRootScaffold = true,
-                            collapseOnSelection = true
+                    val logLevelDropdownEntry = remember(logLevelNames, currentLogLevelIndex) {
+                        DropdownEntry(
+                            logLevelNames.mapIndexed { index, name ->
+                                DropdownItem(
+                                    text = name,
+                                    selected = index == currentLogLevelIndex,
+                                    onClick = { mainViewModel.setLogLevel(logLevelOptions[index]) }
+                                )
+                            }
                         )
                     }
+                    OverlayDropdownPopup(
+                        entry = logLevelDropdownEntry,
+                        show = isLogLevelDropdownExpanded,
+                        onDismiss = { isLogLevelDropdownExpanded = false },
+                        onDismissFinished = {},
+                        maxHeight = null,
+                        dropdownColors = DropdownDefaults.dropdownColors(),
+                        renderInRootScaffold = true,
+                        collapseOnSelection = true
+                    )
                 },
                 onClick = {
-                    if (!vpnDisabled) {
-                        isLogLevelDropdownExpanded = !isLogLevelDropdownExpanded
-                    }
-                },
-                enabled = !vpnDisabled
+                    isLogLevelDropdownExpanded = !isLogLevelDropdownExpanded
+                }
             )
 
             SwitchPreference(
                 title = stringResource(R.string.access_log_title),
                 checked = settingsState.switches.accessLog,
-                onCheckedChange = { mainViewModel.setAccessLog(it) },
-                enabled = !vpnDisabled
+                onCheckedChange = { mainViewModel.setAccessLog(it) }
             )
 
             SwitchPreference(
                 title = stringResource(R.string.dns_log_title),
                 checked = settingsState.switches.dnsLog,
-                onCheckedChange = { mainViewModel.setDnsLog(it) },
-                enabled = !vpnDisabled
+                onCheckedChange = { mainViewModel.setDnsLog(it) }
             )
         }
     

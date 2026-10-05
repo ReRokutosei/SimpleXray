@@ -75,7 +75,6 @@ internal fun SettingsInboundSection(
     onShowHelp: (String, String) -> Unit,
 ) {
     val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
-    val vpnDisabled = settingsState.switches.disableVpn
 
         SmallTitle(text = stringResource(R.string.inbound_settings))
         Card(modifier = Modifier.fillMaxWidth()) {
@@ -92,7 +91,6 @@ internal fun SettingsInboundSection(
                     }
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                enabled = !vpnDisabled
             )
 
             EditableListItemWithMiuixBottomSheet(
@@ -108,7 +106,6 @@ internal fun SettingsInboundSection(
                     }
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                enabled = !vpnDisabled
             )
 
             EditableListItemWithMiuixBottomSheet(
@@ -118,7 +115,6 @@ internal fun SettingsInboundSection(
                 label = stringResource(R.string.socks_user),
                 supportingText = stringResource(R.string.socks_user_summary),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                enabled = !vpnDisabled
             )
 
             EditableListItemWithMiuixBottomSheet(
@@ -128,7 +124,6 @@ internal fun SettingsInboundSection(
                 label = stringResource(R.string.socks_pass),
                 supportingText = stringResource(R.string.socks_pass_summary),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                enabled = !vpnDisabled
             )
 
             val httpProxyTitle = stringResource(R.string.http_proxy_title)
@@ -141,7 +136,7 @@ internal fun SettingsInboundSection(
                             text = httpProxyTitle,
                             fontSize = MiuixTheme.textStyles.headline1.fontSize,
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
-                            color = if (!vpnDisabled) MiuixTheme.colorScheme.onSurface else MiuixTheme.colorScheme.disabledOnSecondaryVariant
+                            color = MiuixTheme.colorScheme.onSurface
                         )
                         Spacer(modifier = Modifier.width(4.dp))
                         IconButton(
@@ -159,7 +154,6 @@ internal fun SettingsInboundSection(
                 },
                 checked = settingsState.switches.httpProxyEnabled,
                 onCheckedChange = { mainViewModel.setHttpProxyEnabled(it) },
-                enabled = !vpnDisabled
             )
         }
     
