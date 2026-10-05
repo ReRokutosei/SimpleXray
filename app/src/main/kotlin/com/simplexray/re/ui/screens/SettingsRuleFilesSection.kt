@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -42,7 +43,9 @@ import com.simplexray.re.common.ThemeMode
 import com.simplexray.re.prefs.TunnelMode
 import com.simplexray.re.viewmodel.MainViewModel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.BasicComponent
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.DropdownEntry
@@ -243,18 +246,22 @@ private fun CustomDatFilesSection(
 ) {
     val context = LocalContext.current
     val customDatVersion by mainViewModel.customDatVersion.collectAsStateWithLifecycle()
-    val customDatFiles = remember(customDatVersion, customDatProgress) {
-        val names = LinkedHashSet<String>()
-        context.filesDir.listFiles { file ->
-            file.isFile &&
-                file.name.lowercase().endsWith(".dat") &&
-                !file.name.equals("geoip.dat", ignoreCase = true) &&
-                !file.name.equals("geosite.dat", ignoreCase = true) &&
-                !file.name.lowercase().startsWith("profileinstaller_")
-        }?.forEach { names.add(it.name) }
+    var customDatFiles by remember { mutableStateOf<List<String>>(emptyList()) }
+    LaunchedEffect(customDatVersion, customDatProgress) {
+        val names = withContext(Dispatchers.IO) {
+            val result = LinkedHashSet<String>()
+            context.filesDir.listFiles { file ->
+                file.isFile &&
+                    file.name.lowercase().endsWith(".dat") &&
+                    !file.name.equals("geoip.dat", ignoreCase = true) &&
+                    !file.name.equals("geosite.dat", ignoreCase = true) &&
+                    !file.name.lowercase().startsWith("profileinstaller_")
+            }?.forEach { result.add(it.name) }
+            result
+        }
         // Include files that are still downloading (may not exist on disk yet).
         names.addAll(customDatProgress.keys)
-        names.toList()
+        customDatFiles = names.toList()
     }
 
     customDatFiles.forEach { datName ->

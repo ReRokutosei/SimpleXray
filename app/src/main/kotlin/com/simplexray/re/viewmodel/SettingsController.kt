@@ -103,8 +103,6 @@ internal class SettingsController(
             ),
             info = _settingsState.value.info.copy(
                 appVersion = BuildConfig.VERSION_NAME,
-                geoipSummary = fileManager.getRuleFileSummary("geoip.dat"),
-                geositeSummary = fileManager.getRuleFileSummary("geosite.dat"),
                 geoipUrl = prefs.geoipUrl,
                 geositeUrl = prefs.geositeUrl
             ),
@@ -115,6 +113,26 @@ internal class SettingsController(
             geoUpdateIntervalHours = InputFieldState(prefs.geoUpdateIntervalHours.toString()),
             lastGeoUpdateTime = prefs.lastGeoUpdateTime
         )
+        refreshRuleFileSummaries()
+    }
+
+    /**
+     * Reads rule-file metadata off the main thread; the summaries are rendered
+     * by SettingsScreen and only need to be refreshed, not awaited.
+     */
+    private fun refreshRuleFileSummaries() {
+        scope.launch(Dispatchers.IO) {
+            val geoipSummary = fileManager.getRuleFileSummary("geoip.dat")
+            val geositeSummary = fileManager.getRuleFileSummary("geosite.dat")
+            withContext(Dispatchers.Main) {
+                _settingsState.value = _settingsState.value.copy(
+                    info = _settingsState.value.info.copy(
+                        geoipSummary = geoipSummary,
+                        geositeSummary = geositeSummary
+                    )
+                )
+            }
+        }
     }
 
     fun loadKernelVersion() {
@@ -141,27 +159,32 @@ internal class SettingsController(
     }
 
     fun refreshRuleFileState(fileName: String) {
-        when (fileName) {
-            "geoip.dat" -> {
-                _settingsState.value = _settingsState.value.copy(
-                    files = _settingsState.value.files.copy(
-                        isGeoipCustom = prefs.customGeoipImported
-                    ),
-                    info = _settingsState.value.info.copy(
-                        geoipSummary = fileManager.getRuleFileSummary("geoip.dat")
-                    )
-                )
-            }
+        scope.launch(Dispatchers.IO) {
+            val summary = fileManager.getRuleFileSummary(fileName)
+            withContext(Dispatchers.Main) {
+                when (fileName) {
+                    "geoip.dat" -> {
+                        _settingsState.value = _settingsState.value.copy(
+                            files = _settingsState.value.files.copy(
+                                isGeoipCustom = prefs.customGeoipImported
+                            ),
+                            info = _settingsState.value.info.copy(
+                                geoipSummary = summary
+                            )
+                        )
+                    }
 
-            "geosite.dat" -> {
-                _settingsState.value = _settingsState.value.copy(
-                    files = _settingsState.value.files.copy(
-                        isGeositeCustom = prefs.customGeositeImported
-                    ),
-                    info = _settingsState.value.info.copy(
-                        geositeSummary = fileManager.getRuleFileSummary("geosite.dat")
-                    )
-                )
+                    "geosite.dat" -> {
+                        _settingsState.value = _settingsState.value.copy(
+                            files = _settingsState.value.files.copy(
+                                isGeositeCustom = prefs.customGeositeImported
+                            ),
+                            info = _settingsState.value.info.copy(
+                                geositeSummary = summary
+                            )
+                        )
+                    }
+                }
             }
         }
     }

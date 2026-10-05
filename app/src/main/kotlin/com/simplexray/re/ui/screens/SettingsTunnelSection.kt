@@ -75,36 +75,59 @@ internal fun SettingsTunnelSection(
 ) {
     val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
     val vpnDisabled = settingsState.switches.disableVpn
-    val tunnelModeEntries = listOf(
-        DropdownEntry(
-            items = listOf(
-                DropdownItem(
-                    text = stringResource(R.string.tunnel_mode_xray_tun),
-                    summary = stringResource(R.string.tunnel_mode_xray_tun_summary),
-                    selected = settingsState.switches.tunnelMode == TunnelMode.XrayTun,
-                    onClick = { mainViewModel.setTunnelMode(TunnelMode.XrayTun) }
-                ),
-                DropdownItem(
-                    text = stringResource(R.string.tunnel_mode_hev_socks5),
-                    summary = stringResource(R.string.tunnel_mode_hev_socks5_summary),
-                    selected = settingsState.switches.tunnelMode == TunnelMode.HevSocks5Tunnel,
-                    onClick = { mainViewModel.setTunnelMode(TunnelMode.HevSocks5Tunnel) }
-                ),
-                DropdownItem(
-                    text = stringResource(R.string.tunnel_mode_sing_tun),
-                    summary = stringResource(R.string.tunnel_mode_sing_tun_summary),
-                    selected = settingsState.switches.tunnelMode == TunnelMode.SingTun,
-                    onClick = { mainViewModel.setTunnelMode(TunnelMode.SingTun) }
-                ),
-                DropdownItem(
-                    text = stringResource(R.string.tunnel_mode_simpletun),
-                    summary = stringResource(R.string.tunnel_mode_simpletun_summary),
-                    selected = settingsState.switches.tunnelMode == TunnelMode.SimpleTun,
-                    onClick = { mainViewModel.setTunnelMode(TunnelMode.SimpleTun) }
+
+    val xrayTunTitle = stringResource(R.string.tunnel_mode_xray_tun)
+    val xrayTunSummary = stringResource(R.string.tunnel_mode_xray_tun_summary)
+    val hevTitle = stringResource(R.string.tunnel_mode_hev_socks5)
+    val hevSummary = stringResource(R.string.tunnel_mode_hev_socks5_summary)
+    val singTunTitle = stringResource(R.string.tunnel_mode_sing_tun)
+    val singTunSummary = stringResource(R.string.tunnel_mode_sing_tun_summary)
+    val simpleTunTitle = stringResource(R.string.tunnel_mode_simpletun)
+    val simpleTunSummary = stringResource(R.string.tunnel_mode_simpletun_summary)
+
+    val tunnelModeEntries = remember(
+        mainViewModel,
+        settingsState.switches.tunnelMode,
+        xrayTunTitle,
+        xrayTunSummary,
+        hevTitle,
+        hevSummary,
+        singTunTitle,
+        singTunSummary,
+        simpleTunTitle,
+        simpleTunSummary
+    ) {
+        listOf(
+            DropdownEntry(
+                items = listOf(
+                    DropdownItem(
+                        text = xrayTunTitle,
+                        summary = xrayTunSummary,
+                        selected = settingsState.switches.tunnelMode == TunnelMode.XrayTun,
+                        onClick = { mainViewModel.setTunnelMode(TunnelMode.XrayTun) }
+                    ),
+                    DropdownItem(
+                        text = hevTitle,
+                        summary = hevSummary,
+                        selected = settingsState.switches.tunnelMode == TunnelMode.HevSocks5Tunnel,
+                        onClick = { mainViewModel.setTunnelMode(TunnelMode.HevSocks5Tunnel) }
+                    ),
+                    DropdownItem(
+                        text = singTunTitle,
+                        summary = singTunSummary,
+                        selected = settingsState.switches.tunnelMode == TunnelMode.SingTun,
+                        onClick = { mainViewModel.setTunnelMode(TunnelMode.SingTun) }
+                    ),
+                    DropdownItem(
+                        text = simpleTunTitle,
+                        summary = simpleTunSummary,
+                        selected = settingsState.switches.tunnelMode == TunnelMode.SimpleTun,
+                        onClick = { mainViewModel.setTunnelMode(TunnelMode.SimpleTun) }
+                    )
                 )
             )
         )
-    )
+    }
 
         SmallTitle(text = stringResource(R.string.vpn_interface))
         Card(modifier = Modifier.fillMaxWidth()) {

@@ -16,9 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -74,7 +75,7 @@ fun SettingsScreen(
     mainViewModel: MainViewModel,
     geoipFilePickerLauncher: ActivityResultLauncher<Array<String>>,
     geositeFilePickerLauncher: ActivityResultLauncher<Array<String>>,
-    scrollState: androidx.compose.foundation.ScrollState,
+    scrollState: LazyListState,
     paddingValues: PaddingValues = PaddingValues()
 ) {
     val geoipProgress by mainViewModel.geoipDownloadProgress.collectAsStateWithLifecycle()
@@ -83,10 +84,9 @@ fun SettingsScreen(
     val isCheckingForUpdates by mainViewModel.isCheckingForUpdates.collectAsStateWithLifecycle()
     val newVersionTag by mainViewModel.newVersionAvailable.collectAsStateWithLifecycle()
 
-    DisposableEffect(Unit) {
+    LaunchedEffect(Unit) {
         mainViewModel.updateSettingsState()
         mainViewModel.refreshCustomDatFiles()
-        onDispose { }
     }
 
     var showGeoipDeleteDialog by remember { mutableStateOf(false) }
@@ -256,6 +256,7 @@ fun SettingsScreen(
         contentAlignment = Alignment.TopCenter
     ) {
         LazyColumn(
+            state = scrollState,
             modifier = Modifier
                 .fillMaxSize()
                 .then(

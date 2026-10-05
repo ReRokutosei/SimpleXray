@@ -9,13 +9,13 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavBackStackEntry
@@ -110,9 +110,12 @@ fun BottomNavHost(
     geositeFilePickerLauncher: ActivityResultLauncher<Array<String>>,
     logListState: LazyListState,
     configListState: LazyListState,
-    settingsScrollState: ScrollState,
+    settingsScrollState: LazyListState,
     onSwitchVpnService: () -> Unit = {}
 ) {
+    val onReloadConfig = remember(mainViewModel) { createReloadConfigCallback(mainViewModel) }
+    val onEditConfigClick = remember(mainViewModel) { createEditConfigCallback(mainViewModel) }
+
     NavHost(
         navController = navController,
         startDestination = ROUTE_STATS,
@@ -142,8 +145,8 @@ fun BottomNavHost(
             popExitTransition = { popExitTransition() }
         ) {
             ConfigScreen(
-                onReloadConfig = createReloadConfigCallback(mainViewModel),
-                onEditConfigClick = createEditConfigCallback(mainViewModel),
+                onReloadConfig = onReloadConfig,
+                onEditConfigClick = onEditConfigClick,
                 onDeleteConfigClick = onDeleteConfigClick,
                 onCreateNewConfigFileAndEdit = onCreateNewConfigFileAndEdit,
                 onImportConfigFromClipboard = onImportConfigFromClipboard,

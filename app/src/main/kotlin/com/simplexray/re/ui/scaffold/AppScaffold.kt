@@ -84,7 +84,7 @@ fun AppScaffold(
     onSwitchVpnService: () -> Unit,
     logListState: LazyListState,
     configListState: LazyListState,
-    settingsScrollState: androidx.compose.foundation.ScrollState,
+    settingsScrollState: LazyListState,
     content: @Composable (paddingValues: androidx.compose.foundation.layout.PaddingValues) -> Unit
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -176,7 +176,7 @@ fun AppTopAppBar(
     logViewModel: LogViewModel,
     logListState: LazyListState,
     configListState: LazyListState,
-    settingsScrollState: androidx.compose.foundation.ScrollState,
+    settingsScrollState: LazyListState,
     isLogSearching: Boolean = false,
     onLogSearchingChange: (Boolean) -> Unit = {},
     logSearchQuery: String = "",
