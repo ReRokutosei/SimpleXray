@@ -27,7 +27,9 @@ internal class DashboardController(
     private val selectedConfig: StateFlow<File?>,
     private val isVpnEnabled: () -> Boolean,
 ) {
+    @Volatile
     private var coreStatsClient: CoreStatsClient? = null
+    private val statsClientLock = Any()
     private var latencyTestJob: Job? = null
 
     private val _coreStatsState = MutableStateFlow(CoreStatsState())
@@ -41,30 +43,40 @@ internal class DashboardController(
 
     fun reset() {
         _coreStatsState.value = CoreStatsState()
-        coreStatsClient?.close()
-        coreStatsClient = null
+        close()
     }
 
     fun close() {
-        coreStatsClient?.close()
-        coreStatsClient = null
+        synchronized(statsClientLock) {
+            coreStatsClient?.close()
+            coreStatsClient = null
+        }
     }
 
     suspend fun updateCoreStats() = withContext(Dispatchers.IO) {
         if (!isVpnEnabled()) return@withContext
-        if (coreStatsClient == null) {
-            Log.d(TAG, "=== [DEBUG gRPC] Connecting CoreStatsClient to ${prefs.apiAddress}:${prefs.apiPort} ===")
-            coreStatsClient = CoreStatsClient.create(prefs.apiAddress, prefs.apiPort)
+
+        val client = synchronized(statsClientLock) {
+            coreStatsClient ?: CoreStatsClient.create(prefs.apiAddress, prefs.apiPort).also {
+                Log.d(TAG, "=== [DEBUG gRPC] Connecting CoreStatsClient to ${prefs.apiAddress}:${prefs.apiPort} ===")
+                coreStatsClient = it
+            }
         }
 
-        val stats = coreStatsClient?.getSystemStats()
-        val traffic = coreStatsClient?.getTraffic()
+        // reset()/close() may close the client concurrently; tolerate the
+        // resulting errors instead of crashing or leaking the channel.
+        val stats = runCatching { client.getSystemStats() }.getOrNull()
+        val traffic = runCatching { client.getTraffic() }.getOrNull()
         Log.d(TAG, "=== [DEBUG gRPC RESULT] uplink=${traffic?.uplink}, downlink=${traffic?.downlink}, sys=${stats?.sys} ===")
 
         if (stats == null && traffic == null) {
             Log.w(TAG, "=== [DEBUG gRPC FAILED] Both stats & traffic returned null, resetting client ===")
-            coreStatsClient?.close()
-            coreStatsClient = null
+            synchronized(statsClientLock) {
+                if (coreStatsClient === client) {
+                    runCatching { client.close() }
+                    coreStatsClient = null
+                }
+            }
             return@withContext
         }
 
