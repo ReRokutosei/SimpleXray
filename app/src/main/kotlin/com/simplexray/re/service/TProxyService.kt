@@ -283,19 +283,38 @@ class TProxyService : VpnService() {
 
         val selectedConfigPath = prefs.selectedConfigPath
         var tunMtu = prefs.tunnelMtu
-        if (prefs.tunnelMode == TunnelMode.SimpleTun) {
-            tunMtu = 1500
-        } else if (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn && selectedConfigPath != null) {
+
+        // Read the selected config once when the VPN setup needs raw values from
+        // it: the XrayTun MTU and/or an existing HTTP inbound port. The full
+        // runtime sanitization happens later in XrayProcessRunner.
+        val needsRawConfig = prefs.httpProxyEnabled ||
+            (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn)
+        val rawConfigContent = if (needsRawConfig && selectedConfigPath != null) {
             val configFile = File(selectedConfigPath)
             if (configFile.exists()) {
-                val configContent = runCatching { configFile.readText() }.getOrDefault("")
-                val extractedMtu = ConfigUtils.extractTunMtu(configContent)
-                if (extractedMtu != null) {
-                    tunMtu = extractedMtu
-                }
+                runCatching { configFile.readText() }.getOrDefault("")
+            } else {
+                null
+            }
+        } else {
+            null
+        }
+
+        if (prefs.tunnelMode == TunnelMode.SimpleTun) {
+            tunMtu = 1500
+        } else if (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn) {
+            rawConfigContent?.let { content ->
+                ConfigUtils.extractTunMtu(content)?.let { tunMtu = it }
             }
         }
-        val builder = VpnBuilderFactory.create(this, prefs, tunMtu)
+
+        val httpProxyEndpoint = if (prefs.httpProxyEnabled) {
+            rawConfigContent?.let { ConfigUtils.extractHttpProxyEndpoint(it) }
+        } else {
+            null
+        }
+
+        val builder = VpnBuilderFactory.create(this, prefs, tunMtu, httpProxyEndpoint)
         var establishAttempts = 0
         while (tunFd == null && establishAttempts < 3) {
             tunFd = builder.establish()

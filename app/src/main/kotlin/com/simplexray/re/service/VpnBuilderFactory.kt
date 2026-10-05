@@ -19,7 +19,18 @@ import java.net.InetAddress
 internal object VpnBuilderFactory {
     private const val TAG = "VpnBuilderFactory"
 
-    fun create(service: VpnService, prefs: Preferences, tunMtu: Int): VpnService.Builder =
+    /**
+     * @param httpProxyEndpoint effective local endpoint of the HTTP inbound when
+     *   the system HTTP proxy is enabled; [Pair.second] is the actual port from
+     *   the selected config, falling back to prefs.httpPort when no HTTP inbound
+     *   was declared.
+     */
+    fun create(
+        service: VpnService,
+        prefs: Preferences,
+        tunMtu: Int,
+        httpProxyEndpoint: Pair<String, Int>? = null,
+    ): VpnService.Builder =
         service.Builder().apply {
             setBlocking(false)
             setMtu(tunMtu)
@@ -39,7 +50,9 @@ internal object VpnBuilderFactory {
                 }.onFailure { Log.w(TAG, "Failed to exclude LAN routes", it) }
             }
             if (prefs.httpProxyEnabled) {
-                setHttpProxy(ProxyInfo.buildDirectProxy("127.0.0.1", prefs.httpPort))
+                val proxyHost = httpProxyEndpoint?.first ?: "127.0.0.1"
+                val proxyPort = httpProxyEndpoint?.second ?: prefs.httpPort
+                setHttpProxy(ProxyInfo.buildDirectProxy(proxyHost, proxyPort))
             }
             if (prefs.ipv4) {
                 addAddress(prefs.tunnelIpv4Address, prefs.tunnelIpv4Prefix)
