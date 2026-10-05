@@ -103,6 +103,37 @@ internal object ConfigInjector {
         return firstHttp?.let { endpointOf(it) }
     }
 
+    /**
+     * Extracts the first account of the primary SOCKS inbound (tag "socks-in",
+     * otherwise the first SOCKS inbound) when the config requires password auth.
+     * The GUI adopts these values so the tunnel backend can authenticate to the
+     * local SOCKS listener without requiring the user to retype the credentials.
+     */
+    fun extractPrimarySocksCredentials(configContent: String): Pair<String, String>? {
+        val root = ConfigCodec.parse(configContent) ?: return null
+        val inbounds = root.optJSONArray("inbounds") ?: return null
+        var primary: JSONObject? = null
+        for (i in 0 until inbounds.length()) {
+            val inbound = inbounds.optJSONObject(i) ?: continue
+            if (!inbound.optString("protocol").equals("socks", ignoreCase = true)) continue
+            if (inbound.optString("tag") == "socks-in") {
+                primary = inbound
+                break
+            }
+            if (primary == null) primary = inbound
+        }
+        val settings = primary?.optJSONObject("settings") ?: return null
+        if (!settings.optString("auth").equals("password", ignoreCase = true)) return null
+        val accounts = settings.optJSONArray("accounts") ?: return null
+        for (i in 0 until accounts.length()) {
+            val account = accounts.optJSONObject(i) ?: continue
+            val user = account.optString("user")
+            val pass = account.optString("pass")
+            if (user.isNotEmpty() && pass.isNotEmpty()) return user to pass
+        }
+        return null
+    }
+
     private fun endpointOf(inbound: JSONObject): Pair<String, Int>? {
         val port = inbound.optInt("port", -1)
         if (port !in 1..65535) return null

@@ -25,6 +25,7 @@ internal class ConfigFileController(
     private val scope: CoroutineScope,
     private val isVpnEnabled: () -> Boolean,
     private val sendEvent: (MainViewUiEvent) -> Unit,
+    private val onConfigSelected: (File?) -> Unit,
 ) {
     private val _configFiles = MutableStateFlow<List<File>>(emptyList())
     val configFiles: StateFlow<List<File>> = _configFiles.asStateFlow()
@@ -182,13 +183,18 @@ internal class ConfigFileController(
             fileToSelect = newOrder.firstOrNull()
         }
 
-        _selectedConfigFile.value = fileToSelect
-        prefs.selectedConfigPath = fileToSelect?.absolutePath
+        setSelectedConfig(fileToSelect)
     }
 
     fun updateSelectedConfigFile(file: File?) {
+        setSelectedConfig(file)
+    }
+
+    private fun setSelectedConfig(file: File?) {
+        val changed = _selectedConfigFile.value?.absolutePath != file?.absolutePath
         _selectedConfigFile.value = file
         prefs.selectedConfigPath = file?.absolutePath
+        if (changed) onConfigSelected(file)
     }
 
     companion object {

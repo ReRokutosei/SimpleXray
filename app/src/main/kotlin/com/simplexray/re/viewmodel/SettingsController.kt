@@ -7,12 +7,19 @@ import com.simplexray.re.R
 import com.simplexray.re.data.source.FileManager
 import com.simplexray.re.prefs.LogLevel
 import com.simplexray.re.prefs.Preferences
+import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.ThemeMode
+import com.simplexray.re.common.isLoopbackAddress
 import com.simplexray.re.service.TProxyService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.BufferedReader
+import java.io.File
 import java.io.IOException
 import java.io.InputStreamReader
 import java.util.regex.Pattern
@@ -29,8 +36,9 @@ internal class SettingsController(
     private val application: Application,
     private val prefs: Preferences,
     private val fileManager: FileManager,
+    private val scope: CoroutineScope,
     private val isVpnEnabled: () -> Boolean,
-    private val onTunnelModeRestartNotice: () -> Unit,
+    private val showSnackbar: (String) -> Unit,
 ) {
     private val _settingsState = MutableStateFlow(
         SettingsState(
@@ -161,98 +169,128 @@ internal class SettingsController(
     fun updateSocksAddress(addressString: String): Boolean {
         val matcherIpv4 = IPV4_PATTERN.matcher(addressString)
         val matcherIpv6 = IPV6_PATTERN.matcher(addressString)
-        return if (matcherIpv4.matches()) {
-            prefs.socksAddress = addressString
-            _settingsState.value = _settingsState.value.copy(
-                socksAddress = InputFieldState(addressString)
-            )
-            true
-        } else if (matcherIpv6.matches()) {
-            prefs.socksAddress = addressString
-            _settingsState.value = _settingsState.value.copy(
-                socksAddress = InputFieldState(addressString)
-            )
-            true
-        } else {
-            _settingsState.value = _settingsState.value.copy(
-                socksAddress = InputFieldState(
-                    value = addressString,
-                    error = application.getString(R.string.invalid_ipv4_or_ipv6),
-                    isValid = false
-                )
-            )
-            false
+        if (!matcherIpv4.matches() && !matcherIpv6.matches()) {
+            showSnackbar(application.getString(R.string.invalid_ipv4_or_ipv6))
+            return false
         }
+        if (!isLoopbackAddress(addressString)) {
+            // Internal health probes and rule/update downloads connect through
+            // 127.0.0.1, so a non-loopback SOCKS bind would be unreachable and
+            // trigger a restart loop.
+            showSnackbar(application.getString(R.string.socks_address_loopback_only))
+            return false
+        }
+
+        val changed = prefs.socksAddress != addressString
+        prefs.socksAddress = addressString
+        _settingsState.value = _settingsState.value.copy(
+            socksAddress = InputFieldState(addressString)
+        )
+        if (changed) notifySocksSettingsChangedWhileRunning()
+        return true
     }
 
     fun updateSocksPort(portString: String): Boolean {
         return try {
             val port = portString.toInt()
             if (port in 1025..65535) {
+                val changed = prefs.socksPort != port
                 prefs.socksPort = port
                 _settingsState.value = _settingsState.value.copy(
                     socksPort = InputFieldState(portString)
                 )
+                if (changed) notifySocksSettingsChangedWhileRunning()
                 true
             } else {
-                _settingsState.value = _settingsState.value.copy(
-                    socksPort = InputFieldState(
-                        value = portString,
-                        error = application.getString(R.string.invalid_port_range),
-                        isValid = false
-                    )
-                )
+                showSnackbar(application.getString(R.string.invalid_port_range))
                 false
             }
         } catch (e: NumberFormatException) {
-            _settingsState.value = _settingsState.value.copy(
-                socksPort = InputFieldState(
-                    value = portString,
-                    error = application.getString(R.string.invalid_port),
-                    isValid = false
-                )
-            )
+            showSnackbar(application.getString(R.string.invalid_port))
             false
         }
     }
 
     fun updateSocksUser(userString: String): Boolean {
-        val byteCount = userString.toByteArray(Charsets.UTF_8).size
-        return if (byteCount <= 255) {
-            prefs.socksUsername = userString
-            _settingsState.value = _settingsState.value.copy(
-                socksUser = InputFieldState(userString)
-            )
-            true
-        } else {
-            _settingsState.value = _settingsState.value.copy(
-                socksUser = InputFieldState(
-                    value = userString,
-                    error = "Username length must not exceed 255 bytes",
-                    isValid = false
-                )
-            )
-            false
+        if (userString.contains('\n') || userString.contains('\r')) {
+            showSnackbar(application.getString(R.string.socks_credentials_no_line_breaks))
+            return false
         }
+        val byteCount = userString.toByteArray(Charsets.UTF_8).size
+        if (byteCount > 255) {
+            showSnackbar(application.getString(R.string.socks_username_too_long))
+            return false
+        }
+
+        val changed = prefs.socksUsername != userString
+        prefs.socksUsername = userString
+        val paired = userString.isNotEmpty() == prefs.socksPassword.isNotEmpty()
+        val error = if (paired) null else application.getString(R.string.socks_credentials_pair_required)
+        _settingsState.value = _settingsState.value.copy(
+            socksUser = InputFieldState(userString, error = error, isValid = paired),
+            socksPass = _settingsState.value.socksPass.copy(error = error, isValid = paired)
+        )
+        if (changed) notifySocksSettingsChangedWhileRunning()
+        if (!paired) showSnackbar(error ?: application.getString(R.string.socks_credentials_pair_required))
+        return paired
     }
 
     fun updateSocksPass(passString: String): Boolean {
+        if (passString.contains('\n') || passString.contains('\r')) {
+            showSnackbar(application.getString(R.string.socks_credentials_no_line_breaks))
+            return false
+        }
         val byteCount = passString.toByteArray(Charsets.UTF_8).size
-        return if (byteCount <= 255) {
-            prefs.socksPassword = passString
-            _settingsState.value = _settingsState.value.copy(
-                socksPass = InputFieldState(passString)
-            )
-            true
-        } else {
-            _settingsState.value = _settingsState.value.copy(
-                socksPass = InputFieldState(
-                    value = passString,
-                    error = "Password length must not exceed 255 bytes",
-                    isValid = false
+        if (byteCount > 255) {
+            showSnackbar(application.getString(R.string.socks_password_too_long))
+            return false
+        }
+
+        val changed = prefs.socksPassword != passString
+        prefs.socksPassword = passString
+        val paired = prefs.socksUsername.isNotEmpty() == passString.isNotEmpty()
+        val error = if (paired) null else application.getString(R.string.socks_credentials_pair_required)
+        _settingsState.value = _settingsState.value.copy(
+            socksUser = _settingsState.value.socksUser.copy(error = error, isValid = paired),
+            socksPass = InputFieldState(passString, error = error, isValid = paired)
+        )
+        if (changed) notifySocksSettingsChangedWhileRunning()
+        if (!paired) showSnackbar(error ?: application.getString(R.string.socks_credentials_pair_required))
+        return paired
+    }
+
+    /**
+     * Adopts the primary SOCKS credentials declared by [configPath] once per
+     * selected config, but only while the app-side credentials are still empty.
+     */
+    fun syncSocksCredentialsFromConfig(configPath: String?) {
+        val path = configPath ?: return
+        if (prefs.socksUsername.isNotEmpty() || prefs.socksPassword.isNotEmpty()) return
+        if (prefs.socksAuthSyncedConfigPath == path) return
+
+        scope.launch(Dispatchers.IO) {
+            val file = File(path)
+            if (!file.exists()) return@launch
+            val content = runCatching { file.readText() }.getOrNull() ?: return@launch
+            val credentials = runCatching { ConfigUtils.extractPrimarySocksCredentials(content) }.getOrNull()
+            prefs.socksAuthSyncedConfigPath = path
+            if (credentials == null) return@launch
+
+            prefs.socksUsername = credentials.first
+            prefs.socksPassword = credentials.second
+            withContext(Dispatchers.Main) {
+                _settingsState.value = _settingsState.value.copy(
+                    socksUser = InputFieldState(credentials.first),
+                    socksPass = InputFieldState(credentials.second)
                 )
-            )
-            false
+                showSnackbar(application.getString(R.string.socks_credentials_synced))
+            }
+        }
+    }
+
+    private fun notifySocksSettingsChangedWhileRunning() {
+        if (isVpnEnabled()) {
+            showSnackbar(application.getString(R.string.socks_settings_restart_notice))
         }
     }
 
@@ -441,7 +479,7 @@ internal class SettingsController(
                 switches = _settingsState.value.switches.copy(tunnelMode = mode)
             )
             if (isVpnEnabled()) {
-                onTunnelModeRestartNotice()
+                showSnackbar(application.getString(R.string.tunnel_mode_restart_notice))
             }
         }
     }

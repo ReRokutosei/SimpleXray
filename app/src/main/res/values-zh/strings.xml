@@ -11,6 +11,13 @@
     <string name="socks_user_summary">SOCKS5 代理连接验证所需用户名（可选）</string>
     <string name="socks_pass">SOCKS 认证密码</string>
     <string name="socks_pass_summary">SOCKS5 代理连接验证所需密码（可选）</string>
+    <string name="socks_address_loopback_only">SOCKS 入站地址必须是回环地址（127.0.0.0/8 或 ::1）</string>
+    <string name="socks_settings_restart_notice">SOCKS 设置已修改，请重启服务以生效</string>
+    <string name="socks_credentials_pair_required">用户名和密码必须同时填写或同时留空</string>
+    <string name="socks_credentials_no_line_breaks">凭据不能包含换行符</string>
+    <string name="socks_username_too_long">用户名长度不能超过 255 字节</string>
+    <string name="socks_password_too_long">密码长度不能超过 255 字节</string>
+    <string name="socks_credentials_synced">已从当前配置同步 SOCKS 凭据</string>
 
     <!-- TUN 网络与 DNS 设置 -->
     <string name="dns_ipv4">TUN 接口 IPv4 DNS</string>

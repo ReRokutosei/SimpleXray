@@ -57,6 +57,7 @@ class MainViewModel(application: Application) :
             viewModelScope,
             { isVpnEnabled() },
             { _uiEvent.trySend(it) },
+            { file -> settingsController.syncSocksCredentialsFromConfig(file?.absolutePath) },
         )
     }
 
@@ -65,8 +66,9 @@ class MainViewModel(application: Application) :
             application,
             prefs,
             fileManager,
+            viewModelScope,
             { isVpnEnabled() },
-            { showSnackbar(application.getString(R.string.tunnel_mode_restart_notice)) },
+            { message -> showSnackbar(message) },
         )
     }
 

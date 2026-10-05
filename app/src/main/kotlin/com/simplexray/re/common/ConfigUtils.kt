@@ -48,6 +48,9 @@ object ConfigUtils {
     fun extractHttpProxyEndpoint(configContent: String): Pair<String, Int>? =
         ConfigInjector.extractHttpProxyEndpoint(configContent)
 
+    fun extractPrimarySocksCredentials(configContent: String): Pair<String, String>? =
+        ConfigInjector.extractPrimarySocksCredentials(configContent)
+
     fun extractOutbounds(content: String): List<OutboundInfo> =
         OutboundCatalog.extractOutbounds(content)
 

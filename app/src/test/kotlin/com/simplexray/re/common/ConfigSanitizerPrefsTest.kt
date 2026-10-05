@@ -172,6 +172,35 @@ class ConfigSanitizerPrefsTest {
         assertNull(ConfigUtils.extractHttpProxyEndpoint("""{"inbounds":[{"protocol":"socks","port":1}]}"""))
     }
 
+    @Test
+    fun extractsPrimarySocksCredentialsOnlyForPasswordAuth() {
+        val passwordAuth = """
+        {
+          "inbounds": [
+            {
+              "tag": "socks-in",
+              "protocol": "socks",
+              "port": 1080,
+              "settings": {
+                "auth": "password",
+                "accounts": [ { "user": "alice", "pass": "s3cret" } ]
+              }
+            }
+          ]
+        }
+        """.trimIndent()
+        assertEquals("alice" to "s3cret", ConfigUtils.extractPrimarySocksCredentials(passwordAuth))
+
+        val noAuth = """
+        {
+          "inbounds": [
+            { "tag": "socks-in", "protocol": "socks", "port": 1080, "settings": { "auth": "noauth" } }
+          ]
+        }
+        """.trimIndent()
+        assertNull(ConfigUtils.extractPrimarySocksCredentials(noAuth))
+    }
+
     private fun findInbound(root: JSONObject, protocol: String): JSONObject {
         val inbounds: JSONArray = root.getJSONArray("inbounds")
         for (i in 0 until inbounds.length()) {

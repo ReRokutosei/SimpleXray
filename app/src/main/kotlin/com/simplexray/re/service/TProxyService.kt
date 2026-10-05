@@ -11,6 +11,7 @@ import android.os.SystemClock
 import android.util.Log
 import com.simplexray.re.R
 import com.simplexray.re.common.ConfigUtils
+import com.simplexray.re.common.isLoopbackAddress
 import com.simplexray.re.prefs.TunnelMode
 import com.simplexray.re.data.source.LogFileManager
 import com.simplexray.re.prefs.Preferences
@@ -153,13 +154,15 @@ class TProxyService : VpnService() {
                     if (!acquireStart("ACTION_START")) {
                         return START_NOT_STICKY
                     }
+                    @Suppress("SameParameterValue") val channelName = "nosocks"
+                    showForegroundNotification(channelName)
+                    validateStartPreferences(prefs)?.let { reason ->
+                        failStart(reason)
+                        return START_NOT_STICKY
+                    }
                     VpnStateHub.updateState(VpnRunningState.Connecting)
                     logFileManager.clearLogs()
                     xrayProcessRunner.launch(serviceScope)
-
-                    @Suppress("SameParameterValue") val channelName = "nosocks"
-                    showForegroundNotification(channelName)
-
                 } else {
                     startXray()
                 }
@@ -208,6 +211,10 @@ class TProxyService : VpnService() {
         if (!acquireStart("startXray")) return
         @Suppress("SameParameterValue") val channelName = "socks5"
         showForegroundNotification(channelName)
+        validateStartPreferences(Preferences(this))?.let { reason ->
+            failStart(reason)
+            return
+        }
         VpnStateHub.updateState(VpnRunningState.Connecting)
         vpnWakeLock.acquireIfEnabled()
         logFileManager.clearLogs()
@@ -216,6 +223,31 @@ class TProxyService : VpnService() {
             return
         }
         xrayProcessRunner.launch(serviceScope)
+    }
+
+    /**
+     * Rejects persisted legacy values that cannot work with the local data
+     * plane: non-loopback SOCKS binds (health monitor/downloads assume
+     * 127.0.0.1) and one-sided credentials (all tunnel backends need both or
+     * neither). Returns a user-facing reason, or null when the preferences are
+     * valid.
+     */
+    private fun validateStartPreferences(prefs: Preferences): String? {
+        val address = prefs.socksAddress
+        if (address.isBlank() || !isLoopbackAddress(address)) {
+            return getString(R.string.socks_address_loopback_only)
+        }
+        val hasUser = prefs.socksUsername.isNotEmpty()
+        val hasPass = prefs.socksPassword.isNotEmpty()
+        if (hasUser != hasPass) {
+            return getString(R.string.socks_credentials_pair_required)
+        }
+        if (prefs.socksUsername.contains('\n') || prefs.socksUsername.contains('\r') ||
+            prefs.socksPassword.contains('\n') || prefs.socksPassword.contains('\r')
+        ) {
+            return getString(R.string.socks_credentials_no_line_breaks)
+        }
+        return null
     }
 
     /**

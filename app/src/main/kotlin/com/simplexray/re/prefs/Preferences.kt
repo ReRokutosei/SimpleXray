@@ -122,6 +122,9 @@ class Preferences(context: Context) {
     var socksPort: Int by intPref(SOCKS_PORT, 10808)
     var socksUsername: String by stringPref(SOCKS_USER)
     var socksPassword: String by stringPref(SOCKS_PASS)
+
+    // Last selected config whose SOCKS credentials were auto-adopted.
+    var socksAuthSyncedConfigPath: String by stringPref(SOCKS_AUTH_SYNCED_CONFIG_PATH)
     var dnsIpv4: String by stringPref(DNS_IPV4) { "8.8.8.8" }
     var dnsIpv6: String by stringPref(DNS_IPV6) { "2001:4860:4860::8888" }
 
@@ -256,6 +259,7 @@ class Preferences(context: Context) {
         const val HTTP_PORT: String = "HttpPort"
         const val SOCKS_USER: String = "SocksUser"
         const val SOCKS_PASS: String = "SocksPass"
+        const val SOCKS_AUTH_SYNCED_CONFIG_PATH: String = "SocksAuthSyncedConfigPath"
         const val DNS_IPV4: String = "DnsIpv4"
         const val DNS_IPV6: String = "DnsIpv6"
         const val IPV4: String = "Ipv4"

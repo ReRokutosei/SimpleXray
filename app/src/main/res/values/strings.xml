@@ -17,6 +17,13 @@
     <string name="socks_user_summary">Optional username required for local SOCKS5 authentication</string>
     <string name="socks_pass">SOCKS Password</string>
     <string name="socks_pass_summary">Optional password required for local SOCKS5 authentication</string>
+    <string name="socks_address_loopback_only">SOCKS inbound address must be a loopback address (127.0.0.0/8 or ::1)</string>
+    <string name="socks_settings_restart_notice">SOCKS settings changed. Restart the service to apply.</string>
+    <string name="socks_credentials_pair_required">Username and password must be set together or both left empty</string>
+    <string name="socks_credentials_no_line_breaks">Credentials must not contain line breaks</string>
+    <string name="socks_username_too_long">Username length must not exceed 255 bytes</string>
+    <string name="socks_password_too_long">Password length must not exceed 255 bytes</string>
+    <string name="socks_credentials_synced">Adopted SOCKS credentials from the selected config</string>
 
     <!-- TUN Network & DNS Settings -->
     <string name="dns_ipv4">TUN IPv4 DNS</string>
