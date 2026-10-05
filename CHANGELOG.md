@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0-alpha.8](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0-alpha.7...v2.3.0-alpha.8) (2026-10-05)
+
+
+### Bug Fixes
+
+* **common:** restrict socks authenticator to local listener ([8478a70](https://github.com/ReRokutosei/SimpleXray/commit/8478a70210d2d72c31223daab200616f6a47d69e))
+* **config:** prune empty rules and preserve tun inbound ([08b24cd](https://github.com/ReRokutosei/SimpleXray/commit/08b24cd2cab58e415966395f7356017e28f449ed))
+* **data:** keep log file on failed truncation ([bfc2b02](https://github.com/ReRokutosei/SimpleXray/commit/bfc2b029059a3d680fe87441d3819d2eadd88dc0))
+* **data:** support noGEO builds and atomic rule writes ([06c3fec](https://github.com/ReRokutosei/SimpleXray/commit/06c3fec9505a138ba8c8b73f788f02984838b2e3))
+* **service:** drain stdout while feeding stdin and close reader ([a89bfa2](https://github.com/ReRokutosei/SimpleXray/commit/a89bfa2936036448c902b7b08ea9f5a62208fd0a))
+* **service:** escape socks credentials in hev yaml ([7150946](https://github.com/ReRokutosei/SimpleXray/commit/71509462ce98e6a844c6b7a661de1d2aa7b4a5e4))
+* **service:** follow configured http inbound port ([d656ab9](https://github.com/ReRokutosei/SimpleXray/commit/d656ab9cb26ba02c1f1d10bc9c7de6038683c444))
+* **service:** force stdin and fail stuck startup probe ([bb8f199](https://github.com/ReRokutosei/SimpleXray/commit/bb8f1992970fc98fc51e6e4cd0a9908f34cf1297))
+* **service:** handle simpletun auth and report backend failures ([5b2a4f4](https://github.com/ReRokutosei/SimpleXray/commit/5b2a4f4f10da55eee4277fc882244ba8a8dedcfc))
+* **service:** harden backend lifecycle and start off main ([1c83318](https://github.com/ReRokutosei/SimpleXray/commit/1c83318caef33cfde28c53c7e181e56363daba2e))
+* **settings:** enforce local socks address and credentials ([ad53608](https://github.com/ReRokutosei/SimpleXray/commit/ad53608425e7e1eb466d8f905125d29abb71482b))
+* **simpletun:** filter udp relay peers and preserve fin wait ([0d63e41](https://github.com/ReRokutosei/SimpleXray/commit/0d63e4181f4af7ec8b809534b7682926664d360a))
+* **ui:** expose missing rule-file state ([9b85cfe](https://github.com/ReRokutosei/SimpleXray/commit/9b85cfeab0a911edc018b580d3edf350174c7d98))
+* **ui:** keep inbound and logging settings enabled in core-only mode ([32dbe30](https://github.com/ReRokutosei/SimpleXray/commit/32dbe30f91db73cfaca1f6b9997d8c64518427c7))
+* **ui:** refresh config list after editor rename ([72eb454](https://github.com/ReRokutosei/SimpleXray/commit/72eb454d226068164a65e6280933c2eb4bc5c77c))
+* **viewmodel:** close http responses and sync download maps ([194c0a4](https://github.com/ReRokutosei/SimpleXray/commit/194c0a4fa0df2c968009f0616e791f97dcda11f4))
+* **viewmodel:** guard stats client lifecycle ([6c181e8](https://github.com/ReRokutosei/SimpleXray/commit/6c181e88e46ceac8c0babebd99bcec0c99c34943))
+* **viewmodel:** honor clipboard import filtering ([33a6ad4](https://github.com/ReRokutosei/SimpleXray/commit/33a6ad48d97e03f3c92d11baa7078295b50a66cb))
+* **viewmodel:** prevent selection loss on config delete ([2b428ac](https://github.com/ReRokutosei/SimpleXray/commit/2b428ac9f9f5c2048398a2a258f4503049924df4))
+
 ## [2.3.0-alpha.7](https://github.com/ReRokutosei/SimpleXray/compare/9047d73d49e490e8c64e3578c1e36b19fa5ae64d...v2.3.0-alpha.7) (2026-10-04)
 
 
