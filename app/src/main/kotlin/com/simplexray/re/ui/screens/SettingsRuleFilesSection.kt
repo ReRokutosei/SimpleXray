@@ -89,7 +89,7 @@ internal fun SettingsRuleFilesSection(
         Card(modifier = Modifier.fillMaxWidth()) {
             BasicComponent(
                 title = "geoip.dat",
-                summary = geoipProgress ?: if (!settingsState.files.isGeoipCustom) stringResource(R.string.rule_file_default) else settingsState.info.geoipSummary,
+                summary = geoipProgress ?: settingsState.info.geoipSummary.ifBlank { stringResource(R.string.rule_file_default) },
                 endActions = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (geoipProgress != null) {
@@ -128,7 +128,7 @@ internal fun SettingsRuleFilesSection(
 
             BasicComponent(
                 title = "geosite.dat",
-                summary = geositeProgress ?: if (!settingsState.files.isGeositeCustom) stringResource(R.string.rule_file_default) else settingsState.info.geositeSummary,
+                summary = geositeProgress ?: settingsState.info.geositeSummary.ifBlank { stringResource(R.string.rule_file_default) },
                 endActions = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (geositeProgress != null) {
