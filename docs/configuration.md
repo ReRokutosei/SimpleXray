@@ -2,7 +2,9 @@
 
 **English** | **[中文](./configuration_CN.md)**
 
-SimpleXray accepts complete Xray-core configurations, but it does not execute them unchanged. A one-way sanitizer runs when a JSON configuration is imported or saved, and again immediately before the configuration is passed to Xray. YAML input is parsed, converted to JSON, and then sanitized.
+SimpleXray accepts complete Xray-core configurations, but it does not execute them unchanged. A one-way sanitizer runs when a JSON configuration is imported or saved, and once more immediately before the configuration is passed to Xray. YAML input is parsed, converted to JSON, and then sanitized.
+
+At runtime the final configuration is always fed to Xray through stdin (`-config stdin:`), so a file named `config.json` in the working directory cannot shadow it.
 
 The sanitized result is what the core actually receives. Keep an external copy of the original configuration if every field must be preserved.
 
@@ -31,11 +33,20 @@ The sanitized result is what the core actually receives. Keep an external copy o
 | Field | Action |
 | --- | --- |
 | `tun` inbound when native Xray TUN is not active | Removed. |
-| `tun` inbound when native Xray TUN is active | Kept; `settings.name` defaults to `tun-inbound`; `settings.autoSystemRoutingTable` and `settings.autoOutboundsInterface` are removed; `sniffing` is created/updated and `fakedns` is added to `destOverride`. |
-| Primary SOCKS inbound (tag `socks-in`, or first SOCKS inbound) | `port` is replaced with the app SOCKS port; `listen` with the app SOCKS address; `settings.auth` and `settings.accounts` are replaced when app SOCKS credentials are configured. |
-| Other inbounds with `listen` set to `::` or `0.0.0.0` | `listen` is replaced with `127.0.0.1`. |
-| Missing SOCKS inbound | A default `socks-in` inbound is injected using the app SOCKS address/port and UDP enabled. |
-| Missing `tun` inbound when native Xray TUN is active | A default `tun-inbound` is injected with `tcp,udp` and default sniffing. |
+| `tun` inbound when native Xray TUN is active | Kept; a missing `settings.mtu` is set to the app tunnel MTU; `settings.name` defaults to `tun-inbound`; `settings.autoSystemRoutingTable` and `settings.autoOutboundsInterface` are removed; `sniffing` is created/updated and `fakedns` is added to `destOverride`. |
+| Primary SOCKS inbound (tag `socks-in`, or first SOCKS inbound) | `port` is replaced with the app SOCKS port; `listen` with the app SOCKS address (loopback only); `settings.auth` and `settings.accounts` are replaced when both app SOCKS credentials are configured. In SimpleTUN mode authentication is stripped (the backend supports no-auth SOCKS5 only). |
+| Other inbounds with `listen` missing, empty, `::` or `0.0.0.0` | `listen` is replaced with `127.0.0.1`. |
+| Missing SOCKS inbound | A default `socks-in` inbound is injected using the app SOCKS address/port and UDP enabled; it is always no-auth in SimpleTUN mode even when app credentials are set. |
+| Missing `tun` inbound when native Xray TUN is active | A default `tun-inbound` is injected with `tcp,udp`, the app tunnel MTU and default sniffing. |
+
+## App SOCKS Settings
+
+| Setting | Behavior |
+| --- | --- |
+| SOCKS inbound address | Only loopback literals are accepted (`127.0.0.0/8`, `::1`). The internal health probe and rule/update downloads connect to `127.0.0.1`, and startup fails with a visible error if a non-loopback value is persisted from an older version. |
+| SOCKS username/password | Both must be set together or both left empty. Credentials containing line breaks are rejected. |
+| Credentials imported from a config | When the selected config requires password auth on the primary SOCKS inbound and the app credentials are still empty, the first account is adopted into the app settings once per config. |
+| Editing while the service is running | The value is saved, but the running core/backend keeps the old endpoint until the service is restarted; the UI shows a restart notice. |
 
 ## Routing Rules
 
@@ -47,7 +58,7 @@ The sanitized result is what the core actually receives. Keep an external copy o
 | Rule `process` | Entries ending in `.exe` are removed; if nothing remains, `process` is removed. |
 | Empty/invalid rules | Rules without any effective matching field are removed. |
 | `geoip:private` with LAN bypass enabled | A top-priority `geoip:private` -> `direct` rule is injected if absent. |
-| `geoip:private` with LAN bypass disabled | `geoip:private` entries are removed from direct rules; an empty `ip` array is removed. |
+| `geoip:private` with LAN bypass disabled | `geoip:private` entries are removed from direct rules; an empty `ip` array is removed, and rules that no longer have any effective matching field are removed entirely. |
 
 ## DNS and Outbounds
 
@@ -66,7 +77,7 @@ The sanitized result is what the core actually receives. Keep an external copy o
 | `api` | Replaced with `tag=api`, the app API listen address, and `services=["StatsService"]`. |
 | `stats` | Replaced with an empty object. |
 | `policy` | Replaced with a policy whose `system` enables `statsOutboundUplink` and `statsOutboundDownlink`. |
-| HTTP inbound | When the app HTTP proxy is enabled and no HTTP inbound exists, `http-inbound` is injected on `127.0.0.1:<httpPort>`. |
+| HTTP inbound | When the app HTTP proxy is enabled, an existing HTTP inbound keeps its own endpoint and the system proxy follows its actual address/port; only when no HTTP inbound exists is `http-inbound` injected on `127.0.0.1:<httpPort>`. |
 
 Fields not listed above are left unchanged.
 
