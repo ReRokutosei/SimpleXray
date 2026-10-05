@@ -53,7 +53,11 @@ internal class UpdateController(
 
             try {
                 val response = client.newCall(request).await()
-                val responseBody = response.body.string()
+                val responseBody = try {
+                    response.body.string()
+                } finally {
+                    response.close()
+                }
                 val releases = org.json.JSONArray(responseBody)
                 var latestTag = ""
                 for (i in 0 until releases.length()) {

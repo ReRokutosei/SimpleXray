@@ -13,7 +13,9 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -46,15 +48,26 @@ internal class RuleFileController(
     // Third-party dat files download state, keyed by file name.
     private val _customDatDownloadProgress = MutableStateFlow<Map<String, String?>>(emptyMap())
     val customDatDownloadProgress: StateFlow<Map<String, String?>> = _customDatDownloadProgress.asStateFlow()
-    private val customDatDownloadJobs = mutableMapOf<String, Job>()
+    private val customDatDownloadJobs = ConcurrentHashMap<String, Job>()
+    private val customDatUrlsLock = Any()
 
     private val _customDatVersion = MutableStateFlow(0L)
     val customDatVersion: StateFlow<Long> = _customDatVersion.asStateFlow()
 
     private fun updateCustomDatProgress(fileName: String, progress: String?) {
-        val map = _customDatDownloadProgress.value.toMutableMap()
-        if (progress == null) map.remove(fileName) else map[fileName] = progress
-        _customDatDownloadProgress.value = map
+        // Atomic update: concurrent custom-dat downloads must not overwrite
+        // each other's just-published progress entries.
+        _customDatDownloadProgress.update { current ->
+            if (progress == null) current - fileName else current + (fileName to progress)
+        }
+    }
+
+    private fun mutateCustomDatUrls(block: (MutableMap<String, String>) -> Unit) {
+        synchronized(customDatUrlsLock) {
+            val urls = prefs.customDatUrls.toMutableMap()
+            block(urls)
+            prefs.customDatUrls = urls
+        }
     }
 
     fun importRuleFile(uri: Uri, fileName: String) {
@@ -159,9 +172,7 @@ internal class RuleFileController(
 
                 else -> {
                     // Third-party dat: persist its URL and report progress per file.
-                    val urls = prefs.customDatUrls.toMutableMap()
-                    urls[targetName] = url
-                    prefs.customDatUrls = urls
+                    mutateCustomDatUrls { it[targetName] = url }
                     null
                 }
             }
@@ -197,16 +208,17 @@ internal class RuleFileController(
                 val call = client.newCall(request)
                 val response = call.await()
 
-                if (!response.isSuccessful) {
-                    throw IOException("Failed to download file: ${response.code}")
-                }
+                try {
+                    if (!response.isSuccessful) {
+                        throw IOException("Failed to download file: ${response.code}")
+                    }
 
-                val body = response.body
-                val totalBytes = body.contentLength()
-                var bytesRead = 0L
-                var lastProgress = -1
+                    val body = response.body
+                    val totalBytes = body.contentLength()
+                    var bytesRead = 0L
+                    var lastProgress = -1
 
-                body.byteStream().use { inputStream ->
+                    body.byteStream().use { inputStream ->
                     val success = fileManager.saveRuleFile(inputStream, targetName) { read ->
                         ensureActive()
                         bytesRead += read
@@ -237,6 +249,9 @@ internal class RuleFileController(
                     } else {
                         sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_validation_failed)))
                     }
+                    }
+                } finally {
+                    response.close()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Download failed for $fileName", e)
@@ -262,7 +277,7 @@ internal class RuleFileController(
             } else if (targetName == "geosite.dat") {
                 if (geositeDownloadJob === job) geositeDownloadJob = null
             } else {
-                if (customDatDownloadJobs[targetName] === job) customDatDownloadJobs.remove(targetName)
+                customDatDownloadJobs.remove(targetName, job)
             }
         }
     }
@@ -337,18 +352,14 @@ internal class RuleFileController(
             if (file.exists()) {
                 file.delete()
             }
-            val urls = prefs.customDatUrls.toMutableMap()
-            urls.remove(fileName)
-            prefs.customDatUrls = urls
+            mutateCustomDatUrls { it.remove(fileName) }
             refreshCustomDatFiles()
             sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.file_deleted, fileName)))
         }
     }
 
     fun updateCustomDatUrl(fileName: String, url: String) {
-        val urls = prefs.customDatUrls.toMutableMap()
-        urls[fileName] = url
-        prefs.customDatUrls = urls
+        mutateCustomDatUrls { it[fileName] = url }
         refreshCustomDatFiles()
     }
 }

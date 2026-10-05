@@ -11,6 +11,12 @@ import java.io.IOException
 internal suspend fun Call.await(): Response = suspendCancellableCoroutine { continuation ->
         enqueue(object : Callback {
             override fun onResponse(call: Call, response: Response) {
+                if (continuation.isCancelled) {
+                    // suspendCancellableCoroutine drops the resumed value once
+                    // cancelled, so the response must be closed here.
+                    response.close()
+                    return
+                }
                 continuation.resumeWith(Result.success(response))
             }
 
