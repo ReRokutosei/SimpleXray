@@ -139,6 +139,19 @@ class ConfigSanitizerPrefsTest {
     }
 
     @Test
+    fun simpleTunInjectedDefaultSocksInboundIsNoAuthEvenWithAppCredentials() {
+        prefs.tunnelMode = TunnelMode.SimpleTun
+        prefs.socksUsername = "u"
+        prefs.socksPassword = "p"
+
+        val inbound = JSONObject(ConfigUtils.sanitizeConfig("{}", prefs))
+            .getJSONArray("inbounds")
+            .getJSONObject(0)
+        assertEquals("socks", inbound.getString("protocol"))
+        assertEquals("noauth", inbound.getJSONObject("settings").optString("auth"))
+    }
+
+    @Test
     fun apiListenFormatsIpv6WithBrackets() {
         prefs.apiAddress = "::1"
         prefs.apiPort = 12345

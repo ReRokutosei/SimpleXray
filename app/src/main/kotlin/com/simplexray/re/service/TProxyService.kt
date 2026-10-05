@@ -113,6 +113,9 @@ class TProxyService : VpnService() {
     @Volatile
     private var stopRequestedByUser = false
 
+    @Volatile
+    private var pendingStartFailure: String? = null
+
     private var tunFd: ParcelFileDescriptor? = null
 
 
@@ -225,8 +228,9 @@ class TProxyService : VpnService() {
                 return@launch
             }
             if (!established) {
+                val reason = pendingStartFailure ?: getString(R.string.core_start_failed)
                 withContext(Dispatchers.Main) {
-                    failStart("VPN service establishment failed")
+                    failStart(reason)
                 }
                 return@launch
             }
@@ -272,6 +276,7 @@ class TProxyService : VpnService() {
         isStopping = false
         startupFailed = false
         stopRequestedByUser = false
+        pendingStartFailure = null
         xrayProcessRunner.resetAttempt()
         return true
     }
@@ -370,6 +375,7 @@ class TProxyService : VpnService() {
         }
         if (tunFd == null) {
             Log.e(TAG, "builder.establish() returned null after 3 attempts, stopping.")
+            pendingStartFailure = getString(R.string.vpn_establish_failed)
             stopXray()
             return false
         }
@@ -387,6 +393,7 @@ class TProxyService : VpnService() {
             val fd = tunFd?.fd
             if (fd == null) {
                 Log.e(TAG, "tunFd is null after establish()")
+                pendingStartFailure = getString(R.string.vpn_establish_failed)
                 stopXray()
                 return false
             }
@@ -402,6 +409,7 @@ class TProxyService : VpnService() {
             )
             if (!ok) {
                 Log.e(TAG, "SingTunStartService failed")
+                pendingStartFailure = getString(R.string.backend_start_failed, TunnelMode.SingTun.displayName)
                 stopXray()
                 return false
             }
@@ -409,15 +417,17 @@ class TProxyService : VpnService() {
             val fd = tunFd?.fd
             if (fd == null) {
                 Log.e(TAG, "tunFd is null after establish()")
+                pendingStartFailure = getString(R.string.vpn_establish_failed)
                 stopXray()
                 return false
             }
             Log.d(TAG, "Starting SimpleTUN backend on fd=$fd")
             val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
             if (prefs.socksUsername.isNotEmpty() || prefs.socksPassword.isNotEmpty()) {
-                Log.e(TAG, "SimpleTUN does not support authenticated SOCKS5 inbounds. Please clear credentials.")
-                stopXray()
-                return false
+                // ConfigSanitizer forces the primary SOCKS inbound to no-auth in
+                // SimpleTUN mode; the backend has no auth path, so stored
+                // credentials are simply ignored instead of failing startup.
+                Log.w(TAG, "SimpleTUN ignores configured SOCKS credentials (no-auth mode).")
             }
             val isIpv4 = host.split('.').let { parts ->
                 parts.size == 4 && parts.all { part ->
@@ -426,12 +436,14 @@ class TProxyService : VpnService() {
             }
             if (!isIpv4) {
                 Log.e(TAG, "SimpleTUN currently supports IPv4 dotted-decimal SOCKS5 inbounds only: $host")
+                pendingStartFailure = getString(R.string.backend_start_failed, TunnelMode.SimpleTun.displayName)
                 stopXray()
                 return false
             }
             val result = tunnelBackendController.startSimpleTun(fd, host, prefs.socksPort)
             if (result != 0) {
                 Log.e(TAG, "SimpleTUN nativeStart failed: $result")
+                pendingStartFailure = getString(R.string.backend_start_failed, TunnelMode.SimpleTun.displayName)
                 stopXray()
                 return false
             }
@@ -445,6 +457,7 @@ class TProxyService : VpnService() {
                 }
             } catch (e: IOException) {
                 Log.e(TAG, e.toString())
+                pendingStartFailure = getString(R.string.tproxy_config_failed)
                 stopXray()
                 return false
             }
@@ -456,6 +469,7 @@ class TProxyService : VpnService() {
                 false
             }
             if (!started) {
+                pendingStartFailure = getString(R.string.backend_start_failed, TunnelMode.HevSocks5Tunnel.displayName)
                 stopXray()
                 return false
             }

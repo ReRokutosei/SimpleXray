@@ -194,7 +194,9 @@ internal object ConfigSanitizer {
                 put("tag", "socks-in")
                 put("settings", JSONObject().apply {
                     put("udp", true)
-                    if (prefs.socksUsername.isNotEmpty() && prefs.socksPassword.isNotEmpty()) {
+                    if (prefs.tunnelMode != TunnelMode.SimpleTun &&
+                        prefs.socksUsername.isNotEmpty() && prefs.socksPassword.isNotEmpty()
+                    ) {
                         put("auth", "password")
                         put("accounts", JSONArray().apply {
                             put(JSONObject().apply {

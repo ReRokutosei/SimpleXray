@@ -170,6 +170,9 @@
     <string name="unsupported_config_format">导入失败！仅支持 JSON / YAML</string>
     <string name="unsupported_dat_format">导入失败！仅支持 .dat 规则文件</string>
     <string name="core_start_failed">内核启动失败，请查看日志</string>
+    <string name="vpn_establish_failed">VPN 接口创建失败</string>
+    <string name="backend_start_failed">%1$s 后端启动失败</string>
+    <string name="tproxy_config_failed">隧道配置写入失败</string>
     <string name="import_success">导入成功</string>
     <string name="import_invalid_format">导入格式无效</string>
     <string name="no_log_entries">无日志</string>

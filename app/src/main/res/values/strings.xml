@@ -176,6 +176,9 @@
     <string name="unsupported_config_format">Import failed: only JSON / YAML supported</string>
     <string name="unsupported_dat_format">Import failed: only .dat rule files supported</string>
     <string name="core_start_failed">Core failed to start, please check the logs</string>
+    <string name="vpn_establish_failed">VPN interface could not be established</string>
+    <string name="backend_start_failed">%1$s backend failed to start</string>
+    <string name="tproxy_config_failed">Failed to write the tunnel configuration</string>
     <string name="import_success">Import successful</string>
     <string name="import_invalid_format">Invalid import format</string>
     <string name="no_log_entries">No log entries</string>
