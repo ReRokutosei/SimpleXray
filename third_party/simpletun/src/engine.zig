@@ -302,6 +302,19 @@ pub const Engine = struct {
                     }
                 },
                 .established => {
+                    if (flow.upstream_fin) {
+                        // Half-closed flow: keep the 4-tuple until the finite
+                        // FIN timeout so the client can ACK the upstream FIN.
+                        // The idle_elapsed formula below assumes deadline_ms was
+                        // set to now + IDLE_TIMEOUT_MS and would otherwise treat
+                        // FIN-wait flows as idle for ~29 minutes.
+                        if (now >= flow.deadline_ms) {
+                            self.sendRst(flow);
+                            self.closeFlow(flow, TOMBSTONE_MS);
+                        }
+                        continue;
+                    }
+
                     const idle_limit = if (is_critical)
                         ADAPTIVE_IDLE_CRITICAL_MS
                     else if (is_high)
@@ -591,6 +604,13 @@ pub const Engine = struct {
         session.hs.reset();
         session.relay_fd = relay_fd;
         session.relay_port = relay_port;
+        // Connect the relay socket to the SOCKS server endpoint so the kernel
+        // drops datagrams from any other sender (e.g. a LAN attacker injecting
+        // forged SOCKS5 UDP replies).
+        sys.connect(relay_fd, self.cfg.socks_ip, relay_port) catch {
+            self.failUdpSession(session, now);
+            return;
+        };
         session.state = .established;
         session.deadline_ms = 0;
 
@@ -1651,6 +1671,52 @@ test "adaptive high watermark sweeps long-idle established flows" {
     eng.sweepTimers();
 
     // Flow 0 should have been closed into tombstone because of critical watermark!
+    try std.testing.expectEqual(flow_mod.State.tombstone, eng.table.flows[0].state);
+}
+
+test "FIN-wait flows keep the full FIN timeout under critical watermark" {
+    var tun_pair: [2]i32 = undefined;
+    const rc = linux.socketpair(linux.AF.UNIX, linux.SOCK.STREAM, 0, &tun_pair);
+    try std.testing.expectEqual(@as(usize, 0), rc);
+    defer {
+        _ = linux.close(tun_pair[0]);
+        _ = linux.close(tun_pair[1]);
+    }
+
+    var eng: Engine = undefined;
+    try eng.initInto(.{
+        .tun_fd = tun_pair[0],
+        .socks_ip = 0x7f000001,
+        .socks_port = 10808,
+        .mtu = 1500,
+    });
+    defer eng.deinit();
+
+    // Fill table up to the critical watermark so the adaptive idle limit applies.
+    var i: u16 = 0;
+    while (i < 950) : (i += 1) {
+        const f = eng.table.allocate(0x0a000001, 0x0a000002, 1000 + i, 80);
+        try std.testing.expect(f != null);
+        f.?.state = .established;
+        f.?.deadline_ms = sys.monotonicMs() + IDLE_TIMEOUT_MS;
+    }
+    try std.testing.expect(eng.table.activeCount() >= CRITICAL_WATERMARK);
+
+    const now = sys.monotonicMs();
+    eng.table.flows[0].upstream_fin = true;
+    eng.table.flows[0].deadline_ms = now + FIN_WAIT_TIMEOUT_MS;
+
+    eng.last_sweep_ms = 0; // force a sweep
+    eng.sweepTimers();
+
+    // Still established: the idle watermark heuristic must not recycle a
+    // half-closed flow before its finite FIN timeout.
+    try std.testing.expectEqual(flow_mod.State.established, eng.table.flows[0].state);
+
+    // Once the FIN timeout really expires, the flow is recycled.
+    eng.table.flows[0].deadline_ms = now - 1;
+    eng.last_sweep_ms = 0;
+    eng.sweepTimers();
     try std.testing.expectEqual(flow_mod.State.tombstone, eng.table.flows[0].state);
 }
 
