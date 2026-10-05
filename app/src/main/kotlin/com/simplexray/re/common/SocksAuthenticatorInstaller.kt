@@ -32,12 +32,18 @@ object SocksAuthenticatorInstaller {
             }
 
             val isProxy = requestorType == RequestorType.PROXY
-            val isMatchingHost = requestingHost.isNullOrEmpty() ||
-                requestingHost.equals(prefs.socksAddress, ignoreCase = true) ||
-                requestingHost == "127.0.0.1" || requestingHost == "localhost"
-            val isMatchingPort = requestingPort == -1 || requestingPort == prefs.socksPort
+            val host = requestingHost?.removePrefix("[")?.removeSuffix("]")
+            val isMatchingHost = host != null && (
+                host == "127.0.0.1" ||
+                    host.equals("localhost", ignoreCase = true) ||
+                    host.equals(prefs.socksAddress, ignoreCase = true)
+                )
+            val isMatchingPort = requestingPort == prefs.socksPort
 
-            return if (isProxy || (isMatchingHost && isMatchingPort)) {
+            // Only answer for our own local SOCKS listener. The previous
+            // `isProxy || ...` form leaked the saved credentials to any upstream
+            // proxy that happened to request authentication.
+            return if (isProxy && isMatchingHost && isMatchingPort) {
                 PasswordAuthentication(user, pass.toCharArray())
             } else {
                 null
