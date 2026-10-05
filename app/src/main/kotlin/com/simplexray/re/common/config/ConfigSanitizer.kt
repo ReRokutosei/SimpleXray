@@ -95,6 +95,12 @@ internal object ConfigSanitizer {
                 if (prefs?.tunnelMode == TunnelMode.XrayTun && prefs.disableVpn == false) {
                     hasTunInbound = true
                     val settings = inbound.optJSONObject("settings") ?: JSONObject().also { inbound.put("settings", it) }
+                    if (!settings.has("mtu")) {
+                        // TProxyService uses prefs.tunnelMtu for the VPN interface
+                        // when the raw config declares no TUN MTU; keep Xray's stack
+                        // MTU equal to that interface MTU.
+                        settings.put("mtu", prefs?.tunnelMtu ?: 1500)
+                    }
                     // Android receives an already-established VPN fd. Xray's
                     // config builder otherwise tries to enumerate interfaces
                     // to generate a desktop TUN name, which can be denied by
@@ -129,7 +135,15 @@ internal object ConfigSanitizer {
                 if (inbound === primarySocksInbound) {
                     inbound.put("port", targetPort)
                     inbound.put("listen", targetListen)
-                    if (prefs != null && prefs.socksUsername.isNotEmpty() && prefs.socksPassword.isNotEmpty()) {
+                    if (prefs != null && prefs.tunnelMode == TunnelMode.SimpleTun) {
+                        // SimpleTUN only supports the no-auth SOCKS5 path. Strip any
+                        // imported config-side auth so the backend can interoperate.
+                        val settings = inbound.optJSONObject("settings")
+                            ?: JSONObject().also { inbound.put("settings", it) }
+                        settings.remove("auth")
+                        settings.remove("accounts")
+                        Log.d(TAG, "Removed primary SOCKS authentication for SimpleTUN (no-auth only).")
+                    } else if (prefs != null && prefs.socksUsername.isNotEmpty() && prefs.socksPassword.isNotEmpty()) {
                         val settings = inbound.optJSONObject("settings") ?: JSONObject().also { inbound.put("settings", it) }
                         val accounts = JSONArray().apply {
                             put(JSONObject().apply {
@@ -143,16 +157,16 @@ internal object ConfigSanitizer {
                     Log.d(TAG, "Synchronized primary SOCKS inbound port to $targetPort and listen to $targetListen.")
                 } else {
                     val listen = inbound.optString("listen")
-                    if (listen == "::" || listen == "0.0.0.0") {
+                    if (isWildcardListen(listen)) {
                         inbound.put("listen", "127.0.0.1")
-                        Log.d(TAG, "Converted secondary SOCKS bind address from $listen to 127.0.0.1.")
+                        Log.d(TAG, "Converted secondary SOCKS bind address from ${listen.ifBlank { "<unset>" }} to 127.0.0.1.")
                     }
                 }
             } else {
                 val listen = inbound.optString("listen")
-                if (listen == "::" || listen == "0.0.0.0") {
+                if (isWildcardListen(listen)) {
                     inbound.put("listen", "127.0.0.1")
-                    Log.d(TAG, "Converted bind address from $listen to 127.0.0.1 for inbound at index $i.")
+                    Log.d(TAG, "Converted bind address from ${listen.ifBlank { "<unset>" }} to 127.0.0.1 for inbound at index $i.")
                 }
             }
         }
@@ -164,6 +178,7 @@ internal object ConfigSanitizer {
                 put("settings", JSONObject().apply {
                     put("name", "tun-inbound")
                     put("network", "tcp,udp")
+                    put("mtu", prefs?.tunnelMtu ?: 1500)
                 })
                 put("sniffing", createDefaultSniffingObject())
             }
@@ -256,27 +271,7 @@ internal object ConfigSanitizer {
                     }
 
                     // Check for effective match criteria
-                    var hasEffectiveField = false
-                    val keys = rule.keys()
-                    while (keys.hasNext()) {
-                        val rawKey = keys.next()
-                        val k = rawKey.lowercase()
-                        if (EFFECTIVE_MATCH_KEYS.contains(k)) {
-                            val v = rule.opt(rawKey)
-                            if (v is JSONArray && v.length() > 0) {
-                                hasEffectiveField = true
-                                break
-                            } else if (v is String && v.isNotEmpty()) {
-                                hasEffectiveField = true
-                                break
-                            } else if (v != null && v !is JSONArray && v !is String && v != JSONObject.NULL) {
-                                hasEffectiveField = true
-                                break
-                            }
-                        }
-                    }
-
-                    if (!hasEffectiveField) {
+                    if (!hasEffectiveMatchField(rule)) {
                         rules.remove(i)
                         Log.d(TAG, "Pruned empty/invalid rule block at index $i.")
                     }
@@ -320,6 +315,16 @@ internal object ConfigSanitizer {
                                 } else {
                                     rule.remove("ip")
                                 }
+                            }
+                        }
+                        // Removing geoip:private may leave a rule with only an
+                        // outboundTag. Xray rejects such rules ("no effective fields"),
+                        // so re-run the same pruning pass after the mutation.
+                        for (i in rules.length() - 1 downTo 0) {
+                            val rule = rules.optJSONObject(i) ?: continue
+                            if (!hasEffectiveMatchField(rule)) {
+                                rules.remove(i)
+                                Log.d(TAG, "Pruned rule without match fields after bypassLan=false mutation at index $i.")
                             }
                         }
                         Log.d(TAG, "Removed geoip:private direct routing because bypassLan is disabled.")
@@ -453,5 +458,23 @@ internal object ConfigSanitizer {
         })
         put("metadataOnly", false)
         put("routeOnly", false)
+    }
+
+
+    private fun isWildcardListen(listen: String): Boolean =
+        listen.isBlank() || listen == "::" || listen == "0.0.0.0"
+
+    private fun hasEffectiveMatchField(rule: JSONObject): Boolean {
+        val keys = rule.keys()
+        while (keys.hasNext()) {
+            val rawKey = keys.next()
+            val k = rawKey.lowercase()
+            if (!EFFECTIVE_MATCH_KEYS.contains(k)) continue
+            val v = rule.opt(rawKey)
+            if (v is JSONArray && v.length() > 0) return true
+            if (v is String && v.isNotEmpty()) return true
+            if (v != null && v !is JSONArray && v !is String && v != JSONObject.NULL) return true
+        }
+        return false
     }
 }

@@ -41,6 +41,13 @@ object ConfigUtils {
     fun injectStatsService(prefs: Preferences, configContent: String): String =
         ConfigInjector.injectStatsService(prefs, configContent)
 
+    @Throws(JSONException::class)
+    internal fun injectStatsServiceIntoSanitized(prefs: Preferences, sanitizedConfigContent: String): String =
+        ConfigInjector.injectStatsServiceIntoSanitized(prefs, sanitizedConfigContent)
+
+    fun extractHttpProxyEndpoint(configContent: String): Pair<String, Int>? =
+        ConfigInjector.extractHttpProxyEndpoint(configContent)
+
     fun extractOutbounds(content: String): List<OutboundInfo> =
         OutboundCatalog.extractOutbounds(content)
 

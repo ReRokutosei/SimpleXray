@@ -28,11 +28,22 @@ internal object ConfigInjector {
 
     fun injectStatsService(prefs: Preferences, configContent: String): String {
         val sanitized = ConfigSanitizer.sanitize(configContent, prefs)
-        val jsonObject = JSONObject(sanitized)
+        return injectStatsServiceIntoSanitized(prefs, sanitized)
+    }
+
+    /**
+     * Injects stats/API fields into an already sanitized configuration.
+     *
+     * Runtime startup uses this entry point so the config is sanitized exactly
+     * once with a real [Preferences] instance; sanitizing again here used to
+     * discard an existing TUN inbound before the prefs-aware pass could see it.
+     */
+    fun injectStatsServiceIntoSanitized(prefs: Preferences, sanitizedConfigContent: String): String {
+        val jsonObject = JSONObject(sanitizedConfigContent)
 
         val apiObject = JSONObject()
         apiObject.put("tag", "api")
-        apiObject.put("listen", "${prefs.apiAddress}:${prefs.apiPort}")
+        apiObject.put("listen", formatHostPort(prefs.apiAddress, prefs.apiPort))
         val servicesArray = JSONArray()
         servicesArray.put("StatsService")
         apiObject.put("services", servicesArray)
@@ -69,6 +80,44 @@ internal object ConfigInjector {
         }
 
         return jsonObject.toString(2)
+    }
+
+    /**
+     * Returns the effective HTTP inbound endpoint (tag "http-in" preferred,
+     * otherwise the first HTTP inbound) declared by [configContent].
+     *
+     * The endpoint is what the Android system HTTP proxy must point at: when a
+     * config already ships an HTTP inbound, the proxy must follow its actual
+     * port instead of assuming prefs.httpPort is listening.
+     */
+    fun extractHttpProxyEndpoint(configContent: String): Pair<String, Int>? {
+        val root = ConfigCodec.parse(configContent) ?: return null
+        val inbounds = root.optJSONArray("inbounds") ?: return null
+        var firstHttp: JSONObject? = null
+        for (i in 0 until inbounds.length()) {
+            val inbound = inbounds.optJSONObject(i) ?: continue
+            if (!inbound.optString("protocol").equals("http", ignoreCase = true)) continue
+            if (inbound.optString("tag") == "http-in") return endpointOf(inbound)
+            if (firstHttp == null) firstHttp = inbound
+        }
+        return firstHttp?.let { endpointOf(it) }
+    }
+
+    private fun endpointOf(inbound: JSONObject): Pair<String, Int>? {
+        val port = inbound.optInt("port", -1)
+        if (port !in 1..65535) return null
+        val listen = inbound.optString("listen")
+        val host = if (listen.isBlank() || listen == "0.0.0.0" || listen == "::") {
+            "127.0.0.1"
+        } else {
+            listen
+        }
+        return host to port
+    }
+
+    private fun formatHostPort(address: String, port: Int): String {
+        val host = address.ifBlank { "127.0.0.1" }
+        return if (host.contains(':') && !host.startsWith("[")) "[$host]:$port" else "$host:$port"
     }
 
     fun extractPortsFromJson(jsonContent: String): Set<Int> {
