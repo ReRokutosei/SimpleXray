@@ -104,7 +104,6 @@ fun rememberMainScreenCallbacks(
                 return@onSwitchVpnService
             }
 
-            mainViewModel.setControlMenuClickable(false)
             if (mainViewModel.settingsState.value.switches.disableVpn) {
                 mainViewModel.startTProxyService(TProxyService.ACTION_START)
             } else {

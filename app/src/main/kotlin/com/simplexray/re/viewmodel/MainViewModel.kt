@@ -136,9 +136,6 @@ class MainViewModel(application: Application) :
     val outboundLatency: StateFlow<Map<String, OutboundLatency>>
         get() = dashboardController.outboundLatency
 
-    val controlMenuClickable: StateFlow<Boolean>
-        get() = vpnServiceController.controlMenuClickable
-
     val isServiceEnabled: StateFlow<Boolean>
         get() = vpnServiceController.isServiceEnabled
 
@@ -187,22 +184,18 @@ class MainViewModel(application: Application) :
                     is VpnRunningState.Connected -> {
                         Log.d(TAG, "VPN state: Connected")
                         setServiceEnabled(true)
-                        setControlMenuClickable(true)
                     }
                     is VpnRunningState.Connecting -> {
                         Log.d(TAG, "VPN state: Connecting")
-                        setControlMenuClickable(false)
                     }
                     is VpnRunningState.Disconnected -> {
                         Log.d(TAG, "VPN state: Disconnected")
                         setServiceEnabled(false)
-                        setControlMenuClickable(true)
                         dashboardController.reset()
                     }
                     is VpnRunningState.Failed -> {
                         Log.d(TAG, "VPN state: Failed (${state.message})")
                         setServiceEnabled(false)
-                        setControlMenuClickable(true)
                         dashboardController.reset()
                         val msg = state.message ?: application.getString(R.string.core_start_failed)
                         _uiEvent.trySend(MainViewUiEvent.ShowSnackbar(msg))
@@ -239,8 +232,6 @@ class MainViewModel(application: Application) :
     fun updateSettingsState() = settingsController.updateSettingsState()
 
     private fun loadKernelVersion() = settingsController.loadKernelVersion()
-
-    fun setControlMenuClickable(isClickable: Boolean) = vpnServiceController.setControlMenuClickable(isClickable)
 
     fun setServiceEnabled(enabled: Boolean) = vpnServiceController.setServiceEnabled(enabled)
 

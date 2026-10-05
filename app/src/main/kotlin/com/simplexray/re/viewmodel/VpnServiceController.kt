@@ -24,15 +24,8 @@ internal class VpnServiceController(
     private val selectedConfig: StateFlow<File?>,
     private val sendEvent: (MainViewUiEvent) -> Unit,
 ) {
-    private val _controlMenuClickable = MutableStateFlow(true)
-    val controlMenuClickable: StateFlow<Boolean> = _controlMenuClickable.asStateFlow()
-
     private val _isServiceEnabled = MutableStateFlow(false)
     val isServiceEnabled: StateFlow<Boolean> = _isServiceEnabled.asStateFlow()
-
-    fun setControlMenuClickable(isClickable: Boolean) {
-        _controlMenuClickable.value = isClickable
-    }
 
     fun setServiceEnabled(enabled: Boolean) {
         _isServiceEnabled.value = enabled
@@ -44,7 +37,6 @@ internal class VpnServiceController(
             if (selectedConfig.value == null) {
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.not_select_config)))
                 Log.w(TAG, "Cannot start service: no config file selected.")
-                setControlMenuClickable(true)
                 return@launch
             }
             val intent = Intent(application, TProxyService::class.java).setAction(action)
@@ -67,7 +59,6 @@ internal class VpnServiceController(
             if (selectedConfig.value == null) {
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.not_select_config)))
                 Log.w(TAG, "Cannot prepare VPN: no config file selected.")
-                setControlMenuClickable(true)
                 return@launch
             }
             val vpnIntent = VpnService.prepare(application)

@@ -31,11 +31,8 @@ fun rememberMainScreenLaunchers(
         ActivityResultContracts.StartActivityForResult()
     ) { result: ActivityResult ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
-            mainViewModel.setControlMenuClickable(true)
             mainViewModel.setServiceEnabled(true)
             mainViewModel.startTProxyService(TProxyService.ACTION_CONNECT)
-        } else {
-            mainViewModel.setControlMenuClickable(true)
         }
     }
 
