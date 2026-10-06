@@ -209,7 +209,7 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
-        aidl = true
+        aidl = false
     }
 
     sourceSets {
@@ -217,9 +217,6 @@ android {
             java {
                 directories.add("src/main/java")
                 directories.add("build/generated/source/proto/main/java")
-            }
-            aidl {
-                directories.add("src/main/aidl")
             }
             kotlin {
                 directories.add("src/main/kotlin")
