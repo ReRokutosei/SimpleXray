@@ -2,6 +2,8 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.3.0](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0-alpha.8...v2.3.0) (2026-10-06)
+
 ## [2.3.0-alpha.8](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0-alpha.7...v2.3.0-alpha.8) (2026-10-05)
 
 
