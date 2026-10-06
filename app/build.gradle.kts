@@ -178,6 +178,12 @@ android {
             // local artifact is left in the ignored jniLibs directory.
             excludes += "**/libmipstun.so"
         }
+        resources {
+            excludes += "META-INF/*.txt"
+            excludes += "META-INF/*.version"
+            excludes += "META-INF/**/*.txt"
+            excludes += "**/*.proto"
+        }
     }
 
     dependenciesInfo {
