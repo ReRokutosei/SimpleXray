@@ -247,10 +247,7 @@ internal class XrayProcessRunner(
             }
 
             Log.d(tag, "Reading native Xray process log stream.")
-            val activeReader = reader ?: run {
-                callbacks.onStartFailure("Failed to open Xray stdout stream")
-                return
-            }
+            val activeReader = reader
             var line = activeReader.readLine()
             while (line != null) {
                 val batch = mutableListOf<String>()

@@ -99,7 +99,7 @@ internal object ConfigSanitizer {
                         // TProxyService uses prefs.tunnelMtu for the VPN interface
                         // when the raw config declares no TUN MTU; keep Xray's stack
                         // MTU equal to that interface MTU.
-                        settings.put("mtu", prefs?.tunnelMtu ?: 1500)
+                        settings.put("mtu", prefs.tunnelMtu)
                     }
                     // Android receives an already-established VPN fd. Xray's
                     // config builder otherwise tries to enumerate interfaces
@@ -178,7 +178,7 @@ internal object ConfigSanitizer {
                 put("settings", JSONObject().apply {
                     put("name", "tun-inbound")
                     put("network", "tcp,udp")
-                    put("mtu", prefs?.tunnelMtu ?: 1500)
+                    put("mtu", prefs.tunnelMtu)
                 })
                 put("sniffing", createDefaultSniffingObject())
             }
