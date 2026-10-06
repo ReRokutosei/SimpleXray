@@ -104,14 +104,6 @@ jobs:
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat -O ./app/src/main/assets/geoip.dat
           wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O ./app/src/main/assets/geosite.dat
 
-      - name: Set up Android NDK
-        run: |
-          wget -qO android-ndk.zip https://dl.google.com/android/repository/android-ndk-r28c-linux.zip
-          unzip -q android-ndk.zip
-          rm android-ndk.zip
-          NDK_HOME=$(realpath android-ndk-*)
-          echo "NDK_HOME=$NDK_HOME" >> "$GITHUB_ENV"
-
       - name: Test and Build simpletun
         run: |
           cd third_party/simpletun
@@ -135,6 +127,9 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Verify R8 Keep Rules
+        run: bash ./gradlew testDebugUnitTest --tests "com.simplexray.re.common.R8KeepRulesVerificationTest"
 
       - name: Prepare release files
         run: |
