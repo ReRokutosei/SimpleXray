@@ -32,7 +32,7 @@ from common.theme import (
     save_dashboard,
 )
 
-GO_BACKENDS = {"sing", "xray"}
+GO_BACKENDS = {"xray"}
 
 
 def run_weaknet_case(

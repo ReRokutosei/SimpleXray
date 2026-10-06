@@ -48,10 +48,6 @@
                 android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
                 android:value="VPN service" />
         </service>
-        <service
-            android:name="com.simplexray.re.service.SingTunService"
-            android:exported="false"
-            android:process=":singtun" />
         <activity
             android:name="com.simplexray.re.activity.MainActivity"
             android:configChanges="orientation|screenSize|screenLayout"

@@ -112,12 +112,6 @@ jobs:
           NDK_HOME=$(realpath android-ndk-*)
           echo "NDK_HOME=$NDK_HOME" >> "$GITHUB_ENV"
 
-      - name: Build SingTUN Bridge from Source
-        run: |
-          bash ./third_party/sing-tun/build.sh
-        env:
-          ANDROID_NDK_HOME: ${{ env.NDK_HOME }}
-
       - name: Test and Build simpletun
         run: |
           cd third_party/simpletun

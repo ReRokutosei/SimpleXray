@@ -19,7 +19,7 @@ SimpleXray 是 Xray-core 的 Android 前端与启动器。它接受完整的 JSO
 
 ## 本分支的主要差异
 
-- **四种 TUN 后端**：Hev（C/lwIP，默认）、SingTUN（Go）、SimpleTUN（源码内 Zig）和原生 Xray TUN。
+- **三种 TUN 后端**：Hev（C/lwIP，默认）、SimpleTUN（源码内 Zig）和原生 Xray TUN。
 - **完整配置处理流程**：JSON/YAML 导入、内置编辑器、单向 Android 适配、日志级别控制，以及运行时统计注入。
 - **规则文件管理**：内置 `geoip.dat`/`geosite.dat`，支持任意自定义 `.dat`、`ext:` 引用、独立更新 URL 与后台更新。
 - **Miuix 界面**：Xiaomi HyperOS/MIUI 风格的 Compose 界面，支持手机/平板自适应布局、NavigationRail、浅色/深色/跟随系统主题与 Android 12+ 动态取色。
@@ -58,7 +58,7 @@ SimpleXray 是 Xray-core 的 Android 前端与启动器。它接受完整的 JSO
 - Xray-core 作为独立子进程运行，通过标准输入接收配置，不产生中间配置文件。
 - 原生 Xray TUN 模式由 JNI 启动器 `xray_exec.c` 将 Android VPN 文件描述符传入子进程。
 - 仪表盘在打开或手动刷新时探测受支持出站端点的 TCP 握手延迟。仅 UDP 协议、QUIC 传输以及私网、环回、链路本地 IP 不参与探测。
-- Hev、SingTUN、SimpleTUN 模式下，Xray 使用 `ProcessBuilder` 启动；所选 TUN 后端将流量转发至其本地 SOCKS5 入站。
+- Hev、SimpleTUN 模式下，Xray 使用 `ProcessBuilder` 启动；所选 TUN 后端将流量转发至其本地 SOCKS5 入站。
 - 内核状态与流量统计通过动态分配的 `127.0.0.1` 明文 gRPC 端口查询。标准输出与标准错误以内存流推送至界面，并支持导出。
 
 ### 配置
@@ -71,7 +71,6 @@ SimpleXray 是 Xray-core 的 Android 前端与启动器。它接受完整的 JSO
 ### TUN 后端
 
 - **Hev**：默认后端，基于 C/lwIP。
-- **SingTUN**：基于源码内 `sing-tun` 集成的 Go 用户态协议栈。
 - **SimpleTUN**：源码内 Zig 引擎。仅支持 IPv4 与无认证 SOCKS5，MTU 固定为 1500，不配置 IPv6 路由或地址。详见 [架构说明](./simpletun_spec.md)。
 - **Xray TUN**：由 JNI 启动器传入 VPN 文件描述符，使用 Xray 原生 TUN inbound。
 
@@ -118,7 +117,6 @@ wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.
 wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O app/src/main/assets/geosite.dat
 
 (cd third_party/simpletun && zig build android)
-ANDROID_NDK_HOME=/path/to/ndk bash third_party/sing-tun/build.sh
 
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
@@ -136,7 +134,7 @@ Debug APK 位于 `app/build/outputs/apk/debug/simplexray-arm64-v8a.apk`。发布
 
 ## 上游与第三方
 
-项目基于 [Xray-core](https://github.com/XTLS/Xray-core)、[hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel)、[sing-tun](https://github.com/SagerNet/sing-tun) 与 [compose-miuix-ui](https://github.com/compose-miuix-ui/miuix) 构建，并沿用上游 [SimpleXray](https://github.com/lhear/SimpleXray) 项目。应用图标使用 [Magnific](https://www.magnific.com) 提供的免费 Cookie Icons。
+项目基于 [Xray-core](https://github.com/XTLS/Xray-core)、[hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) 与 [compose-miuix-ui](https://github.com/compose-miuix-ui/miuix) 构建，并沿用上游 [SimpleXray](https://github.com/lhear/SimpleXray) 项目。应用图标使用 [Magnific](https://www.magnific.com) 提供的免费 Cookie Icons。
 
 ## 隐私与许可
 

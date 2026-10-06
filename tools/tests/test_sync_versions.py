@@ -41,7 +41,7 @@ class SyncVersionsValidationTest(unittest.TestCase):
         self.assertTrue(any("GEOIP_SHA256" in error for error in errors))
 
     def test_go_pin_must_cover_go_mod_directives(self):
-        errors = sync_versions.validate_go_minimum({"GO_VERSION": "1.25.0"})
+        errors = sync_versions.validate_go_minimum({"GO_VERSION": "1.24.0"})
         self.assertTrue(any("GO_VERSION" in error for error in errors))
         self.assertEqual([], sync_versions.validate_go_minimum({"GO_VERSION": "1.27.1"}))
 

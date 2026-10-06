@@ -19,7 +19,7 @@ This repository is a personal fork of [SimpleXray](https://github.com/lhear/Simp
 
 ## Why This Fork
 
-- **Four TUN backends** — Hev (C/lwIP, default), SingTUN (Go), SimpleTUN (in-tree Zig), and native Xray TUN.
+- **Three TUN backends** — Hev (C/lwIP, default), SimpleTUN (in-tree Zig), and native Xray TUN.
 - **Complete configuration workflow** — JSON/YAML import, in-app editor, one-way Android sanitization, log controls, and runtime statistics injection.
 - **Rule-file management** — built-in `geoip.dat`/`geosite.dat`, arbitrary custom `.dat` files, `ext:` references, per-file update URLs, and background updates.
 - **Miuix interface** — Xiaomi HyperOS/MIUI-inspired Compose UI with adaptive phone and tablet layouts, NavigationRail, Light/Dark/System themes, and Android 12+ dynamic colors.
@@ -58,7 +58,7 @@ The full structural comparison is in [Differences from Upstream](./upstream-diff
 - Xray-core runs as an independent child process and receives its configuration through stdin. No intermediate configuration file is written to disk.
 - Native Xray TUN mode uses the JNI launcher (`xray_exec.c`) to pass the Android VPN file descriptor to the child process.
 - The dashboard probes TCP handshake latency to supported outbound endpoints when it is shown or manually refreshed. UDP-only protocols, QUIC transports, and private, loopback, or link-local IP literals are skipped.
-- In Hev, SingTUN, and SimpleTUN modes, Xray is started with `ProcessBuilder`; the selected backend forwards TUN traffic to Xray's local SOCKS5 inbound.
+- In Hev and SimpleTUN modes, Xray is started with `ProcessBuilder`; the selected backend forwards TUN traffic to Xray's local SOCKS5 inbound.
 - Core status and traffic statistics are queried over plaintext gRPC on a dynamically allocated `127.0.0.1` port. Standard output and error are streamed to the UI and may be exported.
 
 ### Configuration
@@ -71,7 +71,6 @@ The full structural comparison is in [Differences from Upstream](./upstream-diff
 ### TUN Backends
 
 - **Hev** — C/lwIP implementation. Default backend.
-- **SingTUN** — Go user-space stack based on the in-tree `sing-tun` integration.
 - **SimpleTUN** — in-tree Zig engine. IPv4 only, SOCKS5 no-auth, MTU fixed at 1500, no IPv6 route or address. See the [architecture specification](./simpletun_spec.md).
 - **Xray TUN** — native Xray TUN inbound with the VPN file descriptor delivered by the JNI launcher.
 
@@ -118,7 +117,6 @@ wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.
 wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O app/src/main/assets/geosite.dat
 
 (cd third_party/simpletun && zig build android)
-ANDROID_NDK_HOME=/path/to/ndk bash third_party/sing-tun/build.sh
 
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
@@ -136,7 +134,7 @@ Debug APK: `app/build/outputs/apk/debug/simplexray-arm64-v8a.apk`. Release signi
 
 ## Upstream and Third-Party
 
-Built on [Xray-core](https://github.com/XTLS/Xray-core), [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel), [sing-tun](https://github.com/SagerNet/sing-tun), and [compose-miuix-ui](https://github.com/compose-miuix-ui/miuix), and derived from the upstream [SimpleXray](https://github.com/lhear/SimpleXray) project.
+Built on [Xray-core](https://github.com/XTLS/Xray-core), [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel), and [compose-miuix-ui](https://github.com/compose-miuix-ui/miuix), and derived from the upstream [SimpleXray](https://github.com/lhear/SimpleXray) project.
 
 Application icon assets use free Cookie Icons provided by [Magnific](https://www.magnific.com).
 

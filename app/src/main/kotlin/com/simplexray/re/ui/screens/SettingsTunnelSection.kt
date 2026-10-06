@@ -80,8 +80,6 @@ internal fun SettingsTunnelSection(
     val xrayTunSummary = stringResource(R.string.tunnel_mode_xray_tun_summary)
     val hevTitle = stringResource(R.string.tunnel_mode_hev_socks5)
     val hevSummary = stringResource(R.string.tunnel_mode_hev_socks5_summary)
-    val singTunTitle = stringResource(R.string.tunnel_mode_sing_tun)
-    val singTunSummary = stringResource(R.string.tunnel_mode_sing_tun_summary)
     val simpleTunTitle = stringResource(R.string.tunnel_mode_simpletun)
     val simpleTunSummary = stringResource(R.string.tunnel_mode_simpletun_summary)
 
@@ -92,8 +90,6 @@ internal fun SettingsTunnelSection(
         xrayTunSummary,
         hevTitle,
         hevSummary,
-        singTunTitle,
-        singTunSummary,
         simpleTunTitle,
         simpleTunSummary
     ) {
@@ -111,12 +107,6 @@ internal fun SettingsTunnelSection(
                         summary = hevSummary,
                         selected = settingsState.switches.tunnelMode == TunnelMode.HevSocks5Tunnel,
                         onClick = { mainViewModel.setTunnelMode(TunnelMode.HevSocks5Tunnel) }
-                    ),
-                    DropdownItem(
-                        text = singTunTitle,
-                        summary = singTunSummary,
-                        selected = settingsState.switches.tunnelMode == TunnelMode.SingTun,
-                        onClick = { mainViewModel.setTunnelMode(TunnelMode.SingTun) }
                     ),
                     DropdownItem(
                         text = simpleTunTitle,

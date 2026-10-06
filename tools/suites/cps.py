@@ -29,7 +29,7 @@ HOST_CPS_SERVER = os.path.join(TOOLS_DIR, "idle_bench", "idle_bench_linux_amd64"
 DEVICE_CPS_CLIENT = os.path.join(TOOLS_DIR, "idle_bench", "idle_bench_linux_arm64")
 CPS_PORT = 5302
 
-GO_BACKENDS = {"sing", "xray"}
+GO_BACKENDS = {"xray"}
 
 
 def _push_cps_client(adb) -> None:

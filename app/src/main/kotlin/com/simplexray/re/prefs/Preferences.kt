@@ -29,13 +29,11 @@ enum class LogLevel(val value: String) {
 enum class TunnelMode(val value: String, val displayName: String) {
     XrayTun("xray_tun", "Xray TUN"),
     HevSocks5Tunnel("hev_socks5_tunnel", "Hev"),
-    SingTun("sing_tun", "SingTUN"),
     SimpleTun("simpletun", "SimpleTUN");
 
     companion object {
         fun fromString(value: String): TunnelMode =
-            // Default to HevSocks5Tunnel for optimal throughput and power efficiency;
-            // switch to SingTun once production stability matures.
+            // Default to HevSocks5Tunnel for optimal throughput and power efficiency.
             entries.find { it.value.equals(value, ignoreCase = true) } ?: HevSocks5Tunnel
     }
 }
@@ -159,8 +157,7 @@ class Preferences(context: Context) {
     var enable: Boolean by booleanPref(ENABLE, false)
     var disableVpn: Boolean by booleanPref(DISABLE_VPN, false)
     var tunnelMode: TunnelMode
-        // Default to HevSocks5Tunnel for optimal throughput and power efficiency;
-        // switch to SingTun once production stability matures.
+        // Default to HevSocks5Tunnel for optimal throughput and power efficiency.
         get() = sp.getString(TUNNEL_MODE, null)?.let { TunnelMode.fromString(it) } ?: TunnelMode.HevSocks5Tunnel
         set(value) {
             sp.edit { putString(TUNNEL_MODE, value.value) }

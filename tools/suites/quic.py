@@ -24,7 +24,7 @@ QUIC_SRC_DIR = os.path.join(TOOLS_DIR, "quic")
 DEVICE_BIN = "/data/local/tmp/simplexray_quic"
 DEFAULT_PORT = 4433
 DEFAULT_TIMEOUT_SEC = 30
-GO_BACKENDS = {"sing", "xray"}
+GO_BACKENDS = {"xray"}
 
 _host_bin: Optional[str] = None
 _android_bin: Optional[str] = None

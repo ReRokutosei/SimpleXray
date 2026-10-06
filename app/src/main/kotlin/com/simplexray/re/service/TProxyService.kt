@@ -96,11 +96,8 @@ class TProxyService : VpnService() {
 
     private val tunnelBackendController: TunnelBackendController by lazy {
         TunnelBackendController(
-            applicationContext,
             startHev = { path, fd -> TProxyStartService(path, fd) },
             stopHev = { TProxyStopService() },
-            vpnFd = { tunFd },
-            onBackendFailure = { stopXray() },
             tag = TAG,
         )
     }
@@ -389,30 +386,6 @@ class TProxyService : VpnService() {
 
         if (prefs.tunnelMode == TunnelMode.XrayTun && !prefs.disableVpn) {
             Log.d(TAG, "Using Xray Native TUN mode, skipping external tunnel.")
-        } else if (prefs.tunnelMode == TunnelMode.SingTun && !prefs.disableVpn) {
-            val fd = tunFd?.fd
-            if (fd == null) {
-                Log.e(TAG, "tunFd is null after establish()")
-                pendingStartFailure = getString(R.string.vpn_establish_failed)
-                stopXray()
-                return false
-            }
-            Log.d(TAG, "Starting SingTUN backend on fd=$fd")
-            val host = prefs.socksAddress.ifEmpty { "127.0.0.1" }
-            val ok = tunnelBackendController.startSing(
-                serviceClass = SingTunService::class.java,
-                socksHost = host,
-                socksPort = prefs.socksPort,
-                mtu = tunMtu,
-                username = prefs.socksUsername,
-                password = prefs.socksPassword
-            )
-            if (!ok) {
-                Log.e(TAG, "SingTunStartService failed")
-                pendingStartFailure = getString(R.string.backend_start_failed, TunnelMode.SingTun.displayName)
-                stopXray()
-                return false
-            }
         } else if (prefs.tunnelMode == TunnelMode.SimpleTun && !prefs.disableVpn) {
             val fd = tunFd?.fd
             if (fd == null) {

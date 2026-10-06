@@ -48,7 +48,7 @@ This directory contains automated testing scripts and profiling tools for benchm
 
 ### 1. Preset-Driven Benchmark (Recommended)
 
-#### Light Preset (Hev, SingTUN, and SimpleTUN on Wi-Fi MTU 1500, no baseline)
+#### Light Preset (Hev and SimpleTUN on Wi-Fi MTU 1500, no baseline)
 ```bash
 python3 tools/benchmark.py \
   --preset light \

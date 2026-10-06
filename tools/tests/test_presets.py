@@ -8,7 +8,7 @@ from presets import resolve_backends
 
 
 class ResolveBackendsTest(unittest.TestCase):
-    ALL = ["hev", "sing", "xray", "simpletun"]
+    ALL = ["hev", "xray", "simpletun"]
 
     def test_none_uses_fallback(self):
         self.assertEqual(resolve_backends(None, ["hev"], self.ALL), ["hev"])

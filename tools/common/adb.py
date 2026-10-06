@@ -117,12 +117,9 @@ class AdbRunner:
         log_info("App Activity is in foreground. Ready to receive service intents.")
 
     def force_reset_app(self):
-        """Force-stops the app to reset Go runtime state between different Go-based TUN backends.
+        """Force-stops the app to reset process state between different TUN backends.
 
-        libsingtun.so is compiled as an independent Go c-shared library.
-        Loading both sequentially in the same process causes fatal Go runtime conflicts
-        (fatal error: unknown caller pc via cgocallbackg). Calling this between backends ensures
-        the next backend starts in a fresh process with no Go runtime residue.
+        Calling this between backends ensures the next backend starts in a fresh process.
         """
         log_info(f"Force-stopping {APP_PKG} to isolate Go runtime between backends...")
         self.shell(f"am force-stop {APP_PKG}", timeout=10.0)

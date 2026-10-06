@@ -60,15 +60,6 @@ CMake 配置阶段会导入预编译的 Zig 静态库，缺失时直接报错：
 
 产物：`third_party/simpletun/zig-out/android/prebuilt/arm64-v8a/libsimpletun.a`。
 
-### SingTUN
-
-SingTUN 编译为 Go shared library，并直接写入 JNI 库目录：
-
-```bash
-ANDROID_NDK_HOME="$ANDROID_HOME/ndk/<ndk-version>" bash third_party/sing-tun/build.sh
-```
-
-产物：`app/src/main/jniLibs/arm64-v8a/libsingtun.so`。
 
 ### Xray-core
 
@@ -125,7 +116,7 @@ python3 tools/sync_versions.py --check
 
 `verify.yml` 在 `main`/`dev` 分支推送和 pull request 时执行 version pin 检查、Go 格式检查、SimpleTUN 构建与测试，以及 `testDebugUnitTest assembleDebug`。
 
-`release.yml` 仅在匹配 `v*` 的语义化版本 tag 上触发。该流程会校验 tag、Xray release commit 与压缩包哈希，下载滚动 Geo 资源，构建 SingTUN 与 SimpleTUN，运行单元测试，签名普通版和 No-GEO 版 APK，并创建 GitHub Draft Release。使用前需配置以下 Repository Secrets：
+`release.yml` 仅在匹配 `v*` 的语义化版本 tag 上触发。该流程会校验 tag、Xray release commit 与压缩包哈希，下载滚动 Geo 资源，构建 SimpleTUN，运行单元测试，签名普通版和 No-GEO 版 APK，并创建 GitHub Draft Release。使用前需配置以下 Repository Secrets：
 
 - `SIGNING_KEY`：JKS keystore 的 Base64 编码。
 - `KEY_STORE_PASSWORD`

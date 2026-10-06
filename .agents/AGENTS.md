@@ -4,7 +4,7 @@ description: General instructions and context for developing the SimpleXray proj
 
 # SimpleXray Project Context
 
-This file provides the necessary context and constraints for AI agents interacting with the SimpleXray project. SimpleXray is an Android application acting as a VPN client/proxy tool using Xray-core, hev-socks5-tunnel, sing-tun, and SimpleTUN. The Mihomo mipstack integration is experimental and lives on the separate `feat/mips-tun` branch, not on current `main`.
+This file provides the necessary context and constraints for AI agents interacting with the SimpleXray project. SimpleXray is an Android application acting as a VPN client/proxy tool using Xray-core, hev-socks5-tunnel, and SimpleTUN.
 
 ## Tech Stack
 - **OS Target**: Android (minSdk 34, targetSdk 36, compileSdk 37)
@@ -13,13 +13,13 @@ This file provides the necessary context and constraints for AI agents interacti
 - **Architecture**: MVVM with Android ViewModels.
 - **Data Persistence**: Direct Android `SharedPreferences`.
 - **Communication/RPC**: gRPC with Protocol Buffers (protobuf) to query Xray core status and traffic statistics through a dynamically allocated `127.0.0.1` TCP port. Service status and process logs are communicated reactively via in-memory `VpnStateHub` (`StateFlow` and `SharedFlow`).
-- **Native Components & TUN Backends**: Uses CMake to build `hev-socks5-tunnel` (C/lwIP) and dependencies as native JNI libraries, integrates `sing-tun` (Go stack), and integrates the in-tree `simpletun` Zig engine (custom Zig 0-heap lightweight TUN-to-SOCKS5 protocol shifter, built with `zig build android`). Supports 4 primary TUN backends: Hev (default, C/lwIP for optimal throughput and low power consumption), SingTUN (Go/sing-box), SimpleTUN (custom Zig 0-heap lightweight engine), and native Xray TUN (Go/gVisor). In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. In Hev, SingTUN, and SimpleTUN modes, the tunnel forwards traffic to Xray through its local SOCKS5 inbound.
+- **Native Components & TUN Backends**: Uses CMake to build `hev-socks5-tunnel` (C/lwIP) and dependencies as native JNI libraries, and integrates the in-tree `simpletun` Zig engine (custom Zig 0-heap lightweight TUN-to-SOCKS5 protocol shifter, built with `zig build android`). Supports 3 primary TUN backends: Hev (default, C/lwIP for optimal throughput and low power consumption), SimpleTUN (custom Zig 0-heap lightweight engine), and native Xray TUN (Go/gVisor). In native Xray TUN mode, a JNI launcher passes the Android VPN file descriptor to the Xray child process. In Hev and SimpleTUN modes, the tunnel forwards traffic to Xray through its local SOCKS5 inbound.
 
 ## Project Structure
 - `app/src/main/kotlin/com/simplexray/re/`:
   - `ui/`: Jetpack Compose screens, navigation, scaffolds, theme, and components. `ui/screens/SettingsScreen.kt` is the settings shell (global dialogs, overlay sheets, `LazyColumn`); its content lives in `SettingsGeneralSection.kt`, `SettingsTunnelSection.kt`, `SettingsInboundSection.kt`, `SettingsRuleFilesSection.kt`, `SettingsNetworkSection.kt`, and `SettingsAboutSection.kt`, with shared helpers in `SettingsComponents.kt`. Each section collects `settingsState` independently.
   - `viewmodel/`: MVVM state and use cases. `MainViewModel.kt` is the UI-facing facade/initializer; feature logic lives in `ConfigFileController`, `SettingsController`, `AppIconController`, `RuleFileController`, `UpdateController`, `DashboardController`, and `VpnServiceController`, with shared OkHttp helpers in `OkHttpExt.kt`.
-  - `service/`: Android services and VPN data plane. `TProxyService` owns the `VpnService`, TUN fd, JNI declarations, and start/stop orchestration; `XrayProcessRunner` owns the Xray child process, stdin/stdout, startup probe, and retry/exit; `TunnelBackendController` owns Hev/SingTUN/SimpleTUN backend lifecycle; `SocksHealthMonitor`, `GeoUpdateScheduler`, `VpnNotificationHelper`, `VpnWakeLock`, and `TproxyConfigBuilder` cover their named concerns.
+  - `service/`: Android services and VPN data plane. `TProxyService` owns the `VpnService`, TUN fd, JNI declarations, and start/stop orchestration; `XrayProcessRunner` owns the Xray child process, stdin/stdout, startup probe, and retry/exit; `TunnelBackendController` owns Hev/SimpleTUN backend lifecycle; `SocksHealthMonitor`, `GeoUpdateScheduler`, `VpnNotificationHelper`, `VpnWakeLock`, and `TproxyConfigBuilder` cover their named concerns.
   - `common/`: Shared utilities and callbacks. `ConfigUtils.kt` is a facade over `common/config/` (`ConfigCodec`, `ConfigSanitizer`, `ConfigInjector`, `OutboundCatalog`).
   - `data/`: Data models and networking/storage logic. `data/source/FileManager.kt` is a facade over `ConfigFileStore`, `RuleFileStore`, and `FileUriHelper`; `LogFileManager` remains standalone.
   - `prefs/`: Preference contract, provider, and `SharedPreferences` access wrapper.
@@ -28,10 +28,9 @@ This file provides the necessary context and constraints for AI agents interacti
 - `app/src/main/proto/`: Protobuf definitions for gRPC.
 - `third_party/simpletun/`: In-tree Zig SimpleTUN engine, Android JNI bridge (`android/bridge.c`), architecture spec/tests, and host test harnesses. It is not a Git submodule; build it with `zig build android` (and `zig build test`) before Gradle native builds.
 - `third_party/hev-socks5-tunnel/` and `third_party/miuix/`: Git submodules for the Hev C/lwIP tunnel and the Miuix UI component library. See `third_party/miuix/AGENTS.md` for specific UI constraints.
-- `third_party/sing-tun/`: In-tree Go sing-tun stack used by the SingTUN backend.
 - `docs/benchmark/`: Per-device benchmark reports (`docs/benchmark/<profile>/report/benchmark_report.md`), datasets (`docs/benchmark/<profile>/data/`), and generated chart dashboards (`docs/benchmark/<profile>/charts/`).
 - `docs/images/`: Standardized 16:9 light-theme WebP dashboards, master infographic (`mega_benchmark_infographic.webp`), and architectural diagrams.
-- `version.properties`: Root version and release contract tracking `XRAY_CORE_VERSION`, `XRAY_CORE_COMMIT`, `XRAY_CORE_ZIP_SHA256`, `HEV_TUN_VERSION`, `SING_TUN_VERSION`, `GO_VERSION`, and `NDK_VERSION`. SimpleTUN is in-tree and is not hash-pinned there. Geo rule assets are rolling upstream `latest` downloads and are intentionally not hash-pinned. Release builds use the official prebuilt `Xray-android-arm64-v8a.zip`; the workflow verifies the release tag commit and the archive SHA-256 before the APK build.
+- `version.properties`: Root version and release contract tracking `XRAY_CORE_VERSION`, `XRAY_CORE_COMMIT`, `XRAY_CORE_ZIP_SHA256`, `HEV_TUN_VERSION`, `GO_VERSION`, and `NDK_VERSION`. SimpleTUN is in-tree and is not hash-pinned there. Geo rule assets are rolling upstream `latest` downloads and are intentionally not hash-pinned. Release builds use the official prebuilt `Xray-android-arm64-v8a.zip`; the workflow verifies the release tag commit and the archive SHA-256 before the APK build.
 - `tools/`: Automated benchmarking tools & modular pipeline:
   - `benchmark.py`: Unified master CLI runner orchestrating throughput, idle memory, bufferbloat, stability, weaknet, and CPS suites. Supports `--preset light` and `--preset full`.
   - `presets.py`: Formal benchmark contract definitions (`light` vs `full`).
@@ -48,7 +47,7 @@ This file provides the necessary context and constraints for AI agents interacti
 ## Build and Execution
 - **Build System**: Gradle with Kotlin DSL/Groovy.
 - **Native Build**: NDK via CMake (`externalNativeBuild`).
-- **Standalone TUN CLI**: `third_party/sing-tun` supports standalone CLI compilation via standard `go build` with `#if defined(__ANDROID__)` guards for dual host/Android compatibility. SimpleTUN's standalone CLI and unit tests are built with `cd third_party/simpletun && zig build` / `zig build test`.
+- **Standalone TUN CLI**: SimpleTUN's standalone CLI and unit tests are built with `cd third_party/simpletun && zig build` / `zig build test`.
 - **SimpleTUN Native Prerequisite**: Gradle's CMake configure requires `third_party/simpletun/zig-out/android/prebuilt/arm64-v8a/libsimpletun.a`. Run `cd third_party/simpletun && zig build android` (and `zig build test` for host tests) before invoking Gradle; CMake fails fast with a clear error when the archive is missing.
 - **Local Verification**: Run `./gradlew :app:testDebugUnitTest :app:assembleDebug` for the JVM unit tests and debug APK, and `python3 -m unittest discover -s tools/tests -v` for the Python benchmark/version tooling.
 - **Version Verification**: Run `python3 tools/sync_versions.py --check` before committing to verify that `version.properties` matches all submodules and `go.mod` dependency hashes.
@@ -66,7 +65,6 @@ This file provides the necessary context and constraints for AI agents interacti
 ## Key Constraints
 - NEVER break the `VpnService` transparent proxy behavior. Testing native traffic routing is critical.
 - Keep the UI responsive and aesthetic, prioritizing the `miuix` design system.
-- **SOCKS5 UDP ASSOCIATE Protocol Compliance**: When integrating or modifying user-space TUN handlers in Go (`sing-tun`, or `mips-tun` if that branch is used), `client.ListenPacket` must pass an unspecified bind address (`0.0.0.0:0` / `M.Socksaddr{}`) as `BND.ADDR`, NOT the remote target destination. Passing foreign destinations violates RFC 1928 and causes Xray's SOCKS5 inbound to drop client packets.
 - **SimpleTUN Scope (current)**: IPv4-only, dotted-decimal no-auth SOCKS5 inbound, MTU fixed at 1500, and no IPv6 route/address. Authenticated SOCKS5, IPv6, and IP fragment reassembly are out of scope until the 2027 IPv6 work; do not change these paths without explicit request.
 - **Xray Config Source**: The runtime always feeds the final config through stdin and must pass `-config stdin:` to both the `ProcessBuilder` path (`XrayProcessRunner.getProcessBuilder`) and the native launcher (`xray_exec.c` argv). Without the explicit flag, a same-named `config.json` in the working directory can shadow the sanitized stdin config. Do not remove the flag; filenames such as `config.json` are otherwise treated as ordinary configuration files.
 - **Runtime Sanitization Pipeline**: Runtime startup must sanitize the raw config exactly once with a real `Preferences` instance and then call `ConfigUtils.injectStatsServiceIntoSanitized`; never pre-sanitize with `prefs = null`, because that strips the existing TUN inbound before the prefs-aware pass can preserve it. The editor's `formatConfigContent` remains the null-prefs one-way sanitizer and is intentionally only used on save.
@@ -112,4 +110,3 @@ This file provides the necessary context and constraints for AI agents interacti
 - GitHub immutable releases/tags cannot be rewritten by a normal force-push. Older objects reachable through those tags remain unless the releases/tags themselves are handled separately.
 - Release tags may live on a pre-rewrite history and therefore need not be ancestors of `main`. Do not use `git describe` or `git merge-base` to infer release lineage; compare tree contents or release contracts instead.
 - `feat/simpletun` is a historical development branch whose SimpleTUN source is already reflected in `main`. Base new work on `main`, not on that branch.
-- `feat/mips-tun` (Mihomo mipstack) is unmerged; `libmipstun.so` and related artifacts are development remnants unless that branch is explicitly checked out.

@@ -18,7 +18,6 @@ REQUIRED_KEYS = (
     "XRAY_CORE_COMMIT",
     "XRAY_CORE_ZIP_SHA256",
     "HEV_TUN_VERSION",
-    "SING_TUN_VERSION",
     "GO_VERSION",
     "NDK_VERSION",
 )
@@ -28,7 +27,6 @@ PROPERTY_PATTERNS = {
     "XRAY_CORE_COMMIT": re.compile(r"^[0-9a-f]{40}$"),
     "XRAY_CORE_ZIP_SHA256": re.compile(r"^[0-9a-f]{64}$"),
     "HEV_TUN_VERSION": re.compile(r"^\d+\.\d+\.\d+(?: \([0-9a-f]{7,40}\))?$"),
-    "SING_TUN_VERSION": re.compile(r"^(?:v?\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?|[0-9a-f]{12})$"),
     "GO_VERSION": re.compile(r"^\d+\.\d+\.\d+$"),
     "NDK_VERSION": re.compile(r"^\d+\.\d+\.\d+$"),
 }
@@ -56,7 +54,7 @@ def validate_go_minimum(properties: dict) -> list:
     if not PROPERTY_PATTERNS["GO_VERSION"].match(pin):
         return errors  # format error is reported separately
 
-    for rel_path in ("third_party/sing-tun/go.mod", "tools/quic/go.mod"):
+    for rel_path in ("tools/quic/go.mod",):
         go_mod = os.path.join(REPO_ROOT, rel_path)
         directive = parse_go_directive(go_mod)
         if directive is None:
@@ -170,26 +168,6 @@ def get_hev_version() -> str:
     return tag
 
 
-def get_sing_tun_version() -> str:
-    go_mod = os.path.join(REPO_ROOT, "third_party", "sing-tun", "go.mod")
-    if not os.path.exists(go_mod):
-        return "unknown"
-    try:
-        with open(go_mod, "r", encoding="utf-8") as f:
-            content = f.read()
-        # Find github.com/sagernet/sing-tun v...-<hash>
-        m = re.search(r"github\.com/sagernet/sing-tun\s+v[0-9\.\-]+-([0-9a-fA-F]+)", content)
-        if m:
-            return m.group(1)[:12]
-        # Or standard tag v0.9.x
-        m_tag = re.search(r"github\.com/sagernet/sing-tun\s+(v[0-9\.]+)", content)
-        if m_tag:
-            return m_tag.group(1)
-    except Exception:
-        pass
-    return "unknown"
-
-
 def sync_versions(check_only: bool = False) -> bool:
     current = read_current_properties()
 
@@ -205,7 +183,6 @@ def sync_versions(check_only: bool = False) -> bool:
         "XRAY_CORE_COMMIT": current.get("XRAY_CORE_COMMIT", ""),
         "XRAY_CORE_ZIP_SHA256": current.get("XRAY_CORE_ZIP_SHA256", ""),
         "HEV_TUN_VERSION": get_hev_version(),
-        "SING_TUN_VERSION": get_sing_tun_version(),
         "GO_VERSION": current.get("GO_VERSION", "1.27.1"),
         "NDK_VERSION": current.get("NDK_VERSION", "28.2.13676358"),
     }

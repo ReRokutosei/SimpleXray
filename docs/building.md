@@ -60,15 +60,6 @@ The CMake configure step imports a prebuilt Zig archive and fails fast if it is 
 
 Output: `third_party/simpletun/zig-out/android/prebuilt/arm64-v8a/libsimpletun.a`.
 
-### SingTUN
-
-SingTUN is built as a Go shared library and placed in the JNI library directory:
-
-```bash
-ANDROID_NDK_HOME="$ANDROID_HOME/ndk/<ndk-version>" bash third_party/sing-tun/build.sh
-```
-
-Output: `app/src/main/jniLibs/arm64-v8a/libsingtun.so`.
 
 ### Xray-core
 
@@ -125,7 +116,7 @@ python3 tools/sync_versions.py --check
 
 The `verify.yml` workflow runs version-pin checks, Go formatting checks, SimpleTUN build/tests, and `testDebugUnitTest assembleDebug` on pushes to `main`/`dev` and on pull requests.
 
-The `release.yml` workflow triggers only on semver-like tags matching `v*`. It validates the tag, verifies the pinned Xray release commit and archive hash, downloads the rolling Geo assets, builds SingTUN and SimpleTUN, runs unit tests, signs both the normal and no-GEO APKs, and creates a draft GitHub release. Configure these repository secrets before using it:
+The `release.yml` workflow triggers only on semver-like tags matching `v*`. It validates the tag, verifies the pinned Xray release commit and archive hash, downloads the rolling Geo assets, builds SimpleTUN, runs unit tests, signs both the normal and no-GEO APKs, and creates a draft GitHub release. Configure these repository secrets before using it:
 
 - `SIGNING_KEY`: Base64-encoded JKS keystore.
 - `KEY_STORE_PASSWORD`
