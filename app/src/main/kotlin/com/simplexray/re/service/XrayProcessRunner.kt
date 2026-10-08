@@ -2,6 +2,7 @@ package com.simplexray.re.service
 
 import android.content.Context
 import android.os.ParcelFileDescriptor
+import android.os.SystemClock
 import android.system.ErrnoException
 import android.system.Os
 import android.system.OsConstants
@@ -27,6 +28,21 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.concurrent.Volatile
+
+/**
+ * Startup-probe deadline measured with a clock that stops while the device is
+ * suspended. A wall-clock deadline made a restart issued during Doze fail as
+ * soon as the device woke up, even though the core had barely been given CPU.
+ */
+internal class StartupProbeDeadline(
+    timeoutMs: Long,
+    private val nowMs: () -> Long = { SystemClock.uptimeMillis() },
+) {
+    private val expiresAtMs = nowMs() + timeoutMs
+
+    val isExpired: Boolean
+        get() = nowMs() >= expiresAtMs
+}
 
 internal class XrayProcessRunner(
     private val application: Context,
@@ -208,12 +224,12 @@ internal class XrayProcessRunner(
                 val probeProcess = currentProcess
                 val client = CoreStatsClient.create("127.0.0.1", prefs.apiPort)
                 try {
-                    val deadline = System.currentTimeMillis() + STARTUP_PROBE_TIMEOUT_MS
+                    val deadline = StartupProbeDeadline(STARTUP_PROBE_TIMEOUT_MS)
                     while (!isStarted &&
                         !callbacks.hasStartupFailed() &&
                         !callbacks.isStopping() &&
                         (probeProcess?.isAlive == true || currentPid > 0) &&
-                        System.currentTimeMillis() < deadline
+                        !deadline.isExpired
                     ) {
                         if (client.getSystemStats() != null) {
                             if (callbacks.hasStartupFailed() || callbacks.isStopping()) return@launch
@@ -234,7 +250,7 @@ internal class XrayProcessRunner(
                         !callbacks.hasStartupFailed() &&
                         !callbacks.isStopping() &&
                         (probeProcess?.isAlive == true || currentPid > 0) &&
-                        System.currentTimeMillis() >= deadline
+                        deadline.isExpired
                     ) {
                         Log.e(tag, "Xray startup probe timed out after ${STARTUP_PROBE_TIMEOUT_MS}ms.")
                         callbacks.onStartFailure(

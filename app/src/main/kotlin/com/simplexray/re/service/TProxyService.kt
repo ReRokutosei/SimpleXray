@@ -7,6 +7,7 @@ import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
+import android.os.PowerManager
 import android.util.Log
 import com.simplexray.re.R
 import com.simplexray.re.common.ConfigUtils
@@ -34,6 +35,7 @@ class TProxyService : VpnService() {
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val notificationHelper by lazy { VpnNotificationHelper(this) }
     private val vpnWakeLock by lazy { VpnWakeLock(this) }
+    private val powerManager by lazy { getSystemService(Context.POWER_SERVICE) as? PowerManager }
     private val geoUpdateScheduler by lazy { GeoUpdateScheduler(applicationContext) }
     private val socksHealthMonitor: SocksHealthMonitor by lazy {
         SocksHealthMonitor(
@@ -54,6 +56,12 @@ class TProxyService : VpnService() {
                 }
             },
             TAG,
+            shouldPauseProbe = {
+                shouldPauseSocksProbe(
+                    wakeLockHeld = vpnWakeLock.isHeld,
+                    interactive = powerManager?.isInteractive ?: true,
+                )
+            },
         )
     }
 

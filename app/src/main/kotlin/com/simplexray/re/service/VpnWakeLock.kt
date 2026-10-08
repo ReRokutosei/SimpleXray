@@ -6,7 +6,11 @@ import android.util.Log
 import com.simplexray.re.prefs.Preferences
 
 internal class VpnWakeLock(private val context: Context) {
+    @Volatile
     private var wakeLock: PowerManager.WakeLock? = null
+
+    val isHeld: Boolean
+        get() = wakeLock?.isHeld == true
 
     fun acquireIfEnabled() {
         val prefs = Preferences(context)
