@@ -20,4 +20,33 @@ class TproxyConfigBuilderTest {
         assertTrue(config.contains("password: 'pa''ss'"))
         assertFalse(config.contains("password: 'pa'ss'"))
     }
+
+    @Test
+    fun generatesAuthenticationFieldsWhenCredentialsPresent() {
+        val prefs = Preferences(FakeContext())
+        prefs.socksUsername = "alice"
+        prefs.socksPassword = "secret"
+        prefs.tunnelMtu = 1420
+        prefs.socksPort = 20808
+
+        val config = TproxyConfigBuilder.build(prefs)
+
+        assertTrue(config.contains("mtu: 1420"))
+        assertTrue(config.contains("port: 20808"))
+        assertTrue(config.contains("address: '127.0.0.1'"))
+        assertTrue(config.contains("username: 'alice'"))
+        assertTrue(config.contains("password: 'secret'"))
+    }
+
+    @Test
+    fun omitsAuthenticationFieldsWhenCredentialsEmpty() {
+        val prefs = Preferences(FakeContext())
+        prefs.socksUsername = ""
+        prefs.socksPassword = ""
+
+        val config = TproxyConfigBuilder.build(prefs)
+
+        assertFalse(config.contains("username:"))
+        assertFalse(config.contains("password:"))
+    }
 }

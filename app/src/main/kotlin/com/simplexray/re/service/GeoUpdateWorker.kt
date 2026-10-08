@@ -77,17 +77,20 @@ class GeoUpdateWorker(
          */
         suspend fun checkAndTriggerCatchUp(context: Context) {
             val prefs = Preferences(context)
-            val intervalHours = prefs.geoUpdateIntervalHours
-            if (intervalHours <= 0) return
-
-            val intervalMs = intervalHours * 60L * 60L * 1000L
-            val now = System.currentTimeMillis()
-            val lastUpdate = prefs.lastGeoUpdateTime
-
-            if (lastUpdate == 0L || (now - lastUpdate) >= intervalMs) {
-                Log.d(TAG, "Catch-up rule update triggered: lastUpdate=$lastUpdate, now=$now, intervalMs=$intervalMs")
+            if (isGeoUpdateDue(prefs.geoUpdateIntervalHours, prefs.lastGeoUpdateTime)) {
+                Log.d(TAG, "Catch-up rule update triggered: interval=${prefs.geoUpdateIntervalHours}h, lastUpdate=${prefs.lastGeoUpdateTime}")
                 performUpdate(context)
             }
+        }
+
+        internal fun isGeoUpdateDue(
+            intervalHours: Int,
+            lastUpdateMs: Long,
+            nowMs: Long = System.currentTimeMillis(),
+        ): Boolean {
+            if (intervalHours <= 0) return false
+            val intervalMs = intervalHours * 60L * 60L * 1000L
+            return lastUpdateMs == 0L || (nowMs - lastUpdateMs) >= intervalMs
         }
 
         /**

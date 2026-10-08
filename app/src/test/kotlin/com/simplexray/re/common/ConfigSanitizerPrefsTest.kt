@@ -214,6 +214,20 @@ class ConfigSanitizerPrefsTest {
         assertNull(ConfigUtils.extractPrimarySocksCredentials(noAuth))
     }
 
+    @Test
+    fun nonLoopbackSocksInboundIsOverriddenToLoopback() {
+        val raw = """
+        {
+          "inbounds": [
+            { "tag": "socks-in", "protocol": "socks", "listen": "0.0.0.0", "port": 10808 }
+          ]
+        }
+        """.trimIndent()
+        val sanitized = ConfigUtils.sanitizeConfig(raw, prefs)
+        val inbound = JSONObject(sanitized).getJSONArray("inbounds").getJSONObject(0)
+        assertEquals("127.0.0.1", inbound.getString("listen"))
+    }
+
     private fun findInbound(root: JSONObject, protocol: String): JSONObject {
         val inbounds: JSONArray = root.getJSONArray("inbounds")
         for (i in 0 until inbounds.length()) {

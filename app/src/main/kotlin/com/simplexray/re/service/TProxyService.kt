@@ -29,6 +29,34 @@ import java.io.FileOutputStream
 import java.io.IOException
 import kotlin.concurrent.Volatile
 
+/**
+ * Rejects persisted legacy values that cannot work with the local data
+ * plane: non-loopback SOCKS binds (health monitor/downloads assume
+ * 127.0.0.1) and one-sided credentials (all tunnel backends need both or
+ * neither). Returns a user-facing reason, or null when the preferences are
+ * valid.
+ */
+internal fun validateStartPreferences(
+    prefs: Preferences,
+    getString: (Int) -> String,
+): String? {
+    val address = prefs.socksAddress
+    if (address.isBlank() || !isLoopbackAddress(address)) {
+        return getString(R.string.socks_address_loopback_only)
+    }
+    val hasUser = prefs.socksUsername.isNotEmpty()
+    val hasPass = prefs.socksPassword.isNotEmpty()
+    if (hasUser != hasPass) {
+        return getString(R.string.socks_credentials_pair_required)
+    }
+    if (prefs.socksUsername.contains('\n') || prefs.socksUsername.contains('\r') ||
+        prefs.socksPassword.contains('\n') || prefs.socksPassword.contains('\r')
+    ) {
+        return getString(R.string.socks_credentials_no_line_breaks)
+    }
+    return null
+}
+
 class TProxyService : VpnService() {
 
 
@@ -244,30 +272,8 @@ class TProxyService : VpnService() {
         }
     }
 
-    /**
-     * Rejects persisted legacy values that cannot work with the local data
-     * plane: non-loopback SOCKS binds (health monitor/downloads assume
-     * 127.0.0.1) and one-sided credentials (all tunnel backends need both or
-     * neither). Returns a user-facing reason, or null when the preferences are
-     * valid.
-     */
-    private fun validateStartPreferences(prefs: Preferences): String? {
-        val address = prefs.socksAddress
-        if (address.isBlank() || !isLoopbackAddress(address)) {
-            return getString(R.string.socks_address_loopback_only)
-        }
-        val hasUser = prefs.socksUsername.isNotEmpty()
-        val hasPass = prefs.socksPassword.isNotEmpty()
-        if (hasUser != hasPass) {
-            return getString(R.string.socks_credentials_pair_required)
-        }
-        if (prefs.socksUsername.contains('\n') || prefs.socksUsername.contains('\r') ||
-            prefs.socksPassword.contains('\n') || prefs.socksPassword.contains('\r')
-        ) {
-            return getString(R.string.socks_credentials_no_line_breaks)
-        }
-        return null
-    }
+    private fun validateStartPreferences(prefs: Preferences): String? =
+        com.simplexray.re.service.validateStartPreferences(prefs) { getString(it) }
 
     /**
      * Serializes normal start requests. A reload intentionally replaces the
