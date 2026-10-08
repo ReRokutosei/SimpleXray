@@ -1,6 +1,6 @@
 [versions]
 agp = "9.4.1"
-kotlin = "2.4.20"
+kotlin = "2.4.21"
 kotlinxSerializationJson = "1.11.0"
 protobufPlugin = "0.10.0"
 gradleVersionsPlugin = "0.64.0"
