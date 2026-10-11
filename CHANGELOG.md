@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.4.0](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0...v2.4.0) (2026-10-11)
+
+
+### Features
+
+* **router:** support importing custom lua scripts ([f94852f](https://github.com/ReRokutosei/SimpleXray/commit/f94852f7ff653f593a2be004f89249bd2c9d98d9))
+
+
+### Bug Fixes
+
+* **deps:** update dependency androidx.navigationevent:navigationevent-compose to v1.2.0 ([#50](https://github.com/ReRokutosei/SimpleXray/issues/50)) ([344be37](https://github.com/ReRokutosei/SimpleXray/commit/344be37d00514d7300bb564211b7b0e867d8b142))
+* **deps:** update grpc-java monorepo to v1.84.1 ([#49](https://github.com/ReRokutosei/SimpleXray/issues/49)) ([e2afb42](https://github.com/ReRokutosei/SimpleXray/commit/e2afb42ef792a9f309d33224eba78bf06cb4aaef))
+* **deps:** update grpc-java monorepo to v1.84.2 ([#52](https://github.com/ReRokutosei/SimpleXray/issues/52)) ([74aa3e3](https://github.com/ReRokutosei/SimpleXray/commit/74aa3e3a4b1b495bf39a7ac3872549365a8b2208))
+* **deps:** update kotlin monorepo to v2.4.21 ([#51](https://github.com/ReRokutosei/SimpleXray/issues/51)) ([9af5e00](https://github.com/ReRokutosei/SimpleXray/commit/9af5e001bbc4774578b89e05bc2a6116a9e5a03a))
+* **service:** prevent doze from killing healthy xray ([48be52b](https://github.com/ReRokutosei/SimpleXray/commit/48be52bffd2753f98d961565dbf9e6def4077216))
+* **ui:** correct fileprovider path mapping for log export ([4f9ea81](https://github.com/ReRokutosei/SimpleXray/commit/4f9ea813a76f2d6891d992ba425194d2f92dee1e))
+
 ## [2.3.0](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0-alpha.8...v2.3.0) (2026-10-06)
 
 ## [2.3.0-alpha.8](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0-alpha.7...v2.3.0-alpha.8) (2026-10-05)
