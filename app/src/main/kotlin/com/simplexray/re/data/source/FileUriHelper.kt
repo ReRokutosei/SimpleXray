@@ -44,6 +44,20 @@ internal object FileUriHelper {
         return fileName
     }
 
+    fun getLuaFileNameFromUri(context: Context, uri: Uri): String? {
+        val originalName = getFileNameFromUri(context, uri) ?: return null
+        val fileName = sanitizeFileName(originalName, fallback = "")
+        if (!isLuaFileName(fileName)) {
+            return null
+        }
+        return fileName
+    }
+
+    fun isLuaFileName(fileName: String): Boolean {
+        val trimmed = fileName.trim().lowercase()
+        return trimmed.endsWith(".lua") && trimmed.length > 4 && trimmed != ".lua"
+    }
+
     fun isStandardGeoDat(fileName: String): Boolean {
         val lower = fileName.lowercase()
         return lower == "geoip.dat" || lower == "geosite.dat"

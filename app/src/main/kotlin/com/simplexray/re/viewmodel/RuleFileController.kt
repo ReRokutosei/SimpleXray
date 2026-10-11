@@ -286,6 +286,43 @@ internal class RuleFileController(
         _customDatVersion.value = System.currentTimeMillis()
     }
 
+    private val _luaScriptVersion = MutableStateFlow(0L)
+    val luaScriptVersion: StateFlow<Long> = _luaScriptVersion.asStateFlow()
+
+    fun refreshLuaScriptFiles() {
+        _luaScriptVersion.value = System.currentTimeMillis()
+    }
+
+    fun importLuaFile(uri: android.net.Uri) {
+        scope.launch(Dispatchers.IO) {
+            val candidateName = fileManager.getLuaFileNameFromUri(application, uri)
+            if (candidateName == null) {
+                sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.unsupported_lua_format)))
+                return@launch
+            }
+            val fileName = fileManager.importLuaFileFromUri(application, uri)
+            if (fileName != null) {
+                refreshLuaScriptFiles()
+                sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.file_imported, fileName)))
+            } else {
+                sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.save_fail)))
+            }
+        }
+    }
+
+    fun getLuaFileSummary(fileName: String): String = fileManager.getLuaFileSummary(fileName)
+
+    fun deleteLuaFile(fileName: String) {
+        scope.launch(Dispatchers.IO) {
+            val file = File(application.filesDir, fileName)
+            if (file.exists()) {
+                file.delete()
+            }
+            refreshLuaScriptFiles()
+            sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.file_deleted, fileName)))
+        }
+    }
+
     fun importCustomDatFile(uri: android.net.Uri) {
         scope.launch(Dispatchers.IO) {
             val candidateName = fileManager.getDatFileNameFromUri(application, uri)

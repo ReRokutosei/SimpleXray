@@ -111,6 +111,11 @@
     <string name="rule_file_restore_download_fallback">File is not bundled; downloading from the configured default URL</string>
     <string name="rule_file_restore_geosite_success">geosite.dat restored to default</string>
 
+    <!-- Lua Scripts Management -->
+    <string name="lua_scripts_category_title">Lua Scripts</string>
+    <string name="delete_lua_file_title">Delete Lua script</string>
+    <string name="delete_lua_file_message">Are you sure you want to delete %1$s?</string>
+
     <string name="icon_flat">Flat</string>
     <string name="icon_lineal">Lineal</string>
     <string name="icon_lineal_color">Lineal Color</string>
@@ -173,6 +178,7 @@
     <string name="import_failed">Import failed: No config found on clipboard</string>
     <string name="unsupported_config_format">Import failed: only JSON / YAML supported</string>
     <string name="unsupported_dat_format">Import failed: only .dat rule files supported</string>
+    <string name="unsupported_lua_format">Import failed: only .lua script files supported</string>
     <string name="core_start_failed">Core failed to start, please check the logs</string>
     <string name="vpn_establish_failed">VPN interface could not be established</string>
     <string name="backend_start_failed">%1$s backend failed to start</string>

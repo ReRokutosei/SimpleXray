@@ -64,8 +64,20 @@ class FileManager(application: Application, prefs: Preferences) {
     fun getDatFileNameFromUri(context: Context, uri: Uri): String? =
         FileUriHelper.getDatFileNameFromUri(context, uri)
 
+    suspend fun importLuaFileFromUri(context: Context, uri: Uri): String? =
+        ruleFileStore.importLuaFileFromUri(context, uri)
+
+    fun getLuaFileNameFromUri(context: Context, uri: Uri): String? =
+        FileUriHelper.getLuaFileNameFromUri(context, uri)
+
+    fun getLuaFileSummary(filename: String): String =
+        ruleFileStore.getLuaFileSummary(filename)
+
     companion object {
         fun isStandardGeoDat(fileName: String): Boolean =
             FileUriHelper.isStandardGeoDat(fileName)
+
+        fun isLuaFileName(fileName: String): Boolean =
+            FileUriHelper.isLuaFileName(fileName)
     }
 }

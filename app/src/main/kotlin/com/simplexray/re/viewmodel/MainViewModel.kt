@@ -380,6 +380,17 @@ class MainViewModel(application: Application) :
 
     fun updateCustomDatUrl(fileName: String, url: String) = ruleFileController.updateCustomDatUrl(fileName, url)
 
+    val luaScriptVersion: StateFlow<Long>
+        get() = ruleFileController.luaScriptVersion
+
+    fun refreshLuaScriptFiles() = ruleFileController.refreshLuaScriptFiles()
+
+    fun importLuaFile(uri: android.net.Uri) = ruleFileController.importLuaFile(uri)
+
+    fun getLuaFileSummary(fileName: String): String = ruleFileController.getLuaFileSummary(fileName)
+
+    fun deleteLuaFile(fileName: String) = ruleFileController.deleteLuaFile(fileName)
+
     fun checkForUpdates() = updateController.checkForUpdates()
 
     fun downloadNewVersion(versionTag: String) = updateController.downloadNewVersion(versionTag)

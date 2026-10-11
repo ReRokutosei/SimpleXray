@@ -344,4 +344,37 @@ internal class RuleFileStore(
             }
         }
     }
+
+    suspend fun importLuaFileFromUri(context: Context, uri: Uri): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val fileName = FileUriHelper.getLuaFileNameFromUri(context, uri) ?: return@withContext null
+                val targetFile = File(application.filesDir, fileName)
+                val tempFile = File(application.filesDir, "$fileName.tmp")
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    FileOutputStream(tempFile).use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                }
+                if (tempFile.renameTo(targetFile)) {
+                    fileName
+                } else {
+                    tempFile.delete()
+                    null
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error importing lua file from URI", e)
+                null
+            }
+        }
+    }
+
+    fun getLuaFileSummary(filename: String): String {
+        val file = File(application.filesDir, filename)
+        return if (file.exists()) {
+            formatRuleFileSummary(file) ?: ""
+        } else {
+            ""
+        }
+    }
 }

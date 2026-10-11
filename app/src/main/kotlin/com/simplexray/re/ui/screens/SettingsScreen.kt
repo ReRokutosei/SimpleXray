@@ -87,10 +87,12 @@ fun SettingsScreen(
     LaunchedEffect(Unit) {
         mainViewModel.updateSettingsState()
         mainViewModel.refreshCustomDatFiles()
+        mainViewModel.refreshLuaScriptFiles()
     }
 
     var showGeoipDeleteDialog by remember { mutableStateOf(false) }
     var showGeositeDeleteDialog by remember { mutableStateOf(false) }
+    var deletingLuaFileName by remember { mutableStateOf<String?>(null) }
 
     var editingRuleFile by remember { mutableStateOf<String?>(null) }
     var ruleFileUrl by remember { mutableStateOf("") }
@@ -225,6 +227,21 @@ fun SettingsScreen(
         )
     }
 
+    if (deletingLuaFileName != null) {
+        val fileName = deletingLuaFileName!!
+        ConfirmOverlayDialog(
+            title = stringResource(R.string.delete_lua_file_title),
+            summary = stringResource(R.string.delete_lua_file_message, fileName),
+            confirmText = stringResource(R.string.confirm),
+            cancelText = stringResource(R.string.cancel),
+            onConfirm = {
+                mainViewModel.deleteLuaFile(fileName)
+                deletingLuaFileName = null
+            },
+            onDismiss = { deletingLuaFileName = null }
+        )
+    }
+
     var activeHelpDialog by remember { mutableStateOf<Pair<String, String>?>(null) }
 
     if (activeHelpDialog != null) {
@@ -297,6 +314,13 @@ fun SettingsScreen(
                 onDeleteGeoip = { showGeoipDeleteDialog = true },
                 onDeleteGeosite = { showGeositeDeleteDialog = true },
                 onShowDatUrlImport = { showDatUrlImportSheet = true },
+            )
+        }
+
+        item {
+            SettingsLuaScriptsSection(
+                mainViewModel = mainViewModel,
+                onDeleteLuaScript = { fileName -> deletingLuaFileName = fileName },
             )
         }
 
