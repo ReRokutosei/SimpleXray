@@ -74,11 +74,12 @@ SimpleXray 是 Xray-core 的 Android 前端与启动器。它接受完整的 JSO
 - **SimpleTUN**：源码内 Zig 引擎。仅支持 IPv4 与无认证 SOCKS5，MTU 固定为 1500，不配置 IPv6 路由或地址。详见 [架构说明](./simpletun_spec.md)。
 - **Xray TUN**：由 JNI 启动器传入 VPN 文件描述符，使用 Xray 原生 TUN inbound。
 
-### 规则文件
-
+### 规则文件与脚本
+ 
 - 导入并替换标准 `geoip.dat` 与 `geosite.dat`。
 - 导入任意自定义 `.dat` 文件，并通过 `ext:<file>:<tag>` 引用条目。
 - 每个自定义规则文件可单独设置更新 URL；后台下载完成校验后才会安装。
+- **Lua 脚本**：支持导入 `.lua` 脚本文件（Xray-core v26.10.10+ 特性），配置中可直接通过相对路径（比如 `"script": "routing.lua"`）进行引用。
 
 ### Android 集成
 

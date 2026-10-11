@@ -74,11 +74,12 @@ The full structural comparison is in [Differences from Upstream](./upstream-diff
 - **SimpleTUN** — in-tree Zig engine. IPv4 only, SOCKS5 no-auth, MTU fixed at 1500, no IPv6 route or address. See the [architecture specification](./simpletun_spec.md).
 - **Xray TUN** — native Xray TUN inbound with the VPN file descriptor delivered by the JNI launcher.
 
-### Rule Files
+### Rule Files & Scripts
 
 - Import and replace the standard `geoip.dat` and `geosite.dat` files.
 - Import arbitrary custom `.dat` files and reference entries with `ext:<file>:<tag>`.
 - Configure independent update URLs per custom rule file. Downloads run in the background and are validated before installation.
+- **Lua Scripts**: Import `.lua` scripts (supported since Xray-core v26.10.10+), referencable directly via relative paths (e.g. `"script": "routing.lua"`).
 
 ### Android Integration
 
