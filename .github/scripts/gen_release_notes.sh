@@ -214,4 +214,8 @@ shopt -u nocasematch
   fi
 
   echo "**Full Changelog**: https://github.com/${repo}/compare/${range}"
+  echo
+  echo "> **Note on APK Variants**:"
+  echo "> * \`simplexray-arm64-v8a.apk\`: Full package bundled with built-in \`geoip.dat\` and \`geosite.dat\` rule assets."
+  echo "> * \`simplexray-arm64-v8a-noGeo.apk\`: Lightweight package without bundled GEO rule assets (rules can be imported or downloaded in-app)."
 } > "$out"
