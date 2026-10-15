@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.4.1](https://github.com/ReRokutosei/SimpleXray/compare/v2.4.0...v2.4.1) (2026-10-15)
+
+
+### Bug Fixes
+
+* **deps:** update grpc-java monorepo to v1.84.3 ([#53](https://github.com/ReRokutosei/SimpleXray/issues/53)) ([b08c77b](https://github.com/ReRokutosei/SimpleXray/commit/b08c77b47d48e7fe013bb0f7c50a0badded94794))
+
 ## [2.4.0](https://github.com/ReRokutosei/SimpleXray/compare/v2.3.0...v2.4.0) (2026-10-11)
 
 
