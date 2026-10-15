@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.22.1)
 project(simplexray_native C CXX ASM)
 
 # Global flags
-add_compile_options(-O3 -DPKGNAME=com/simplexray/re/service)
+add_compile_options(-O3 -DPKGNAME=com/simplexray/re/service -fno-stack-clash-protection)
 
 # Resolve path to third_party directory
 get_filename_component(PROJECT_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/../../../.." ABSOLUTE)
@@ -52,7 +52,6 @@ target_include_directories(hev-task-system PUBLIC
 )
 target_compile_definitions(hev-task-system PRIVATE
     ENABLE_STACK_OVERFLOW_DETECTION
-    ENABLE_MEMALLOC_SLICE
     ENABLE_IO_SPLICE_SYSCALL
     CONFIG_STACK_BACKEND=STACK_MMAP
     CONFIG_STACK_OVERFLOW_DETECTION=1
