@@ -8,7 +8,7 @@
 
 - Linux 构建主机。
 - 运行验证需要 Android 14 及以上设备；仅支持 `arm64-v8a`。
-- Android SDK，包含 `compileSdk 37`、Build Tools 和对应版本的 Platform SDK。`minSdk` 为 34，`targetSdk` 为 36。
+- Android SDK，包含 `compileSdk 37`、Build Tools 和对应版本的 Platform SDK。`minSdk` 为 34，`targetSdk` 为 37。
 - Android NDK，版本由 [`version.properties`](../version.properties) 中的 `NDK_VERSION` 固定。需要设置 `ANDROID_NDK_HOME` 或 `NDK_HOME`。
 - Zig，具体版本以 CI 工作流 [`.github/workflows/verify.yml`](../.github/workflows/verify.yml) 为准。
 - CMake 3.22.1 或更高版本。

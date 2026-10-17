@@ -89,7 +89,7 @@ android {
         applicationId = "com.simplexray.re"
         versionCode = appVersionCode
         versionName = appVersionName
-        targetSdk = 36
+        targetSdk = 37
         minSdk = 34
 
         externalNativeBuild {

@@ -85,6 +85,7 @@ SimpleXray 是 Xray-core 的 Android 前端与启动器。它接受完整的 JSO
 
 - Android 应用层（UI + `TProxyService`）运行于同一进程。服务状态与日志流通过内存 `StateFlow` / `SharedFlow` 传递。
 - 支持分应用代理、`127.0.0.1:<socksPort>` 本机 SOCKS5 直连、网络切换回调，以及手机与平板自适应布局。
+- **Target SDK 37（Android 17）**：声明了 `ACCESS_LOCAL_NETWORK`（系统权限设置归类为“附近设备”）。该声明仅用于满足 Android 17 的本地路由与局域网绕过规范。
 
 ### 基准测试与工具
 

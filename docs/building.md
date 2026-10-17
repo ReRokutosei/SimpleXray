@@ -8,7 +8,7 @@ This document covers toolchain requirements, native dependency builds, local APK
 
 - Linux build host.
 - Android 14+ device for runtime testing; only `arm64-v8a` is supported.
-- Android SDK with `compileSdk 37`, Build Tools, and Platform SDK for that API level. `minSdk` is 34, `targetSdk` is 36.
+- Android SDK with `compileSdk 37`, Build Tools, and Platform SDK for that API level. `minSdk` is 34, `targetSdk` is 37.
 - Android NDK, pinned by `NDK_VERSION` in [`version.properties`](../version.properties). Set `ANDROID_NDK_HOME` or `NDK_HOME`.
 - Zig. The exact version is pinned by the CI workflows; see [`.github/workflows/verify.yml`](../.github/workflows/verify.yml).
 - CMake 3.22.1 or newer.

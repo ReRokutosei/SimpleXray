@@ -85,6 +85,7 @@ The full structural comparison is in [Differences from Upstream](./upstream-diff
 
 - The Android app layer (UI + `TProxyService`) runs in a single process. Service state and log streams are delivered through in-memory `StateFlow` / `SharedFlow`.
 - Per-app proxy filtering, direct SOCKS5 access at `127.0.0.1:<socksPort>`, network handover callbacks, and adaptive layout for phones and tablets.
+- **Target SDK 37 (Android 17)**: Declares `ACCESS_LOCAL_NETWORK` (categorized by the OS as "Nearby devices") solely to comply with Android 17 local routing and LAN bypass requirements.
 
 ### Benchmark and Tooling
 
