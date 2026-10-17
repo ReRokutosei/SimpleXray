@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.5.0](https://github.com/ReRokutosei/SimpleXray/compare/v2.4.1...v2.5.0) (2026-10-17)
+
+
+### Features
+
+* **app:** bump targetSdk to 37 and declare local network permission ([274a27a](https://github.com/ReRokutosei/SimpleXray/commit/274a27a68e035a9562c861bad1b2251c993b3eb1))
+
 ### [2.4.1](https://github.com/ReRokutosei/SimpleXray/compare/v2.4.0...v2.4.1) (2026-10-15)
 
 
