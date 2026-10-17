@@ -43,7 +43,7 @@ class SyncVersionsValidationTest(unittest.TestCase):
     def test_go_pin_must_cover_go_mod_directives(self):
         errors = sync_versions.validate_go_minimum({"GO_VERSION": "1.24.0"})
         self.assertTrue(any("GO_VERSION" in error for error in errors))
-        self.assertEqual([], sync_versions.validate_go_minimum({"GO_VERSION": "1.27.1"}))
+        self.assertEqual([], sync_versions.validate_go_minimum({"GO_VERSION": "1.27.2"}))
 
     @unittest.skipUnless(
         os.path.isdir(os.path.join(sync_versions.REPO_ROOT, "third_party", "hev-socks5-tunnel")),
