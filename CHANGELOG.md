@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.5.1](https://github.com/ReRokutosei/SimpleXray/compare/v2.5.0...v2.5.1) (2026-10-21)
+
+
+### Bug Fixes
+
+* **deps:** update dependency org.jetbrains.kotlinx:kotlinx-serialization-json to v1.12.0 ([#58](https://github.com/ReRokutosei/SimpleXray/issues/58)) ([f69bc7a](https://github.com/ReRokutosei/SimpleXray/commit/f69bc7a5bc8b278b907d82b308e08e898ed7a2b0))
+
 ## [2.5.0](https://github.com/ReRokutosei/SimpleXray/compare/v2.4.1...v2.5.0) (2026-10-17)
 
 
