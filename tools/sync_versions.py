@@ -183,7 +183,7 @@ def sync_versions(check_only: bool = False) -> bool:
         "XRAY_CORE_COMMIT": current.get("XRAY_CORE_COMMIT", ""),
         "XRAY_CORE_ZIP_SHA256": current.get("XRAY_CORE_ZIP_SHA256", ""),
         "HEV_TUN_VERSION": get_hev_version(),
-        "GO_VERSION": current.get("GO_VERSION", "1.27.2"),
+        "GO_VERSION": current.get("GO_VERSION", "1.27.3"),
         "NDK_VERSION": current.get("NDK_VERSION", "28.2.13676358"),
     }
 

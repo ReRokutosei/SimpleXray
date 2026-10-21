@@ -38,7 +38,7 @@ This directory contains automated testing scripts and profiling tools for benchm
 3. **Python 3**: Python 3.8+ with `matplotlib` and `numpy` (for chart generation).
 4. **iPerf3**: Installed on both host and Android device (`/data/local/tmp/iperf3`).
 5. **iproute2**: Required for `weaknet` mode host-side `tc netem`.
-6. **Go**: Go 1.25+ for the small tooling helpers. CI uses the pinned `GO_VERSION` from [`version.properties`](../version.properties) (currently `1.27.2`).
+6. **Go**: Go 1.25+ for the small tooling helpers. CI uses the pinned `GO_VERSION` from [`version.properties`](../version.properties) (currently `1.27.3`).
 7. **Host Xray binary** (for `microbench` `xray` case): set `XRAY_BIN`, add `xray` to `PATH`, or place it at `tools/bin/xray` (gitignored).
 
 ## Usage
