@@ -38,8 +38,8 @@ git submodule update --init --recursive
 
 ```bash
 mkdir -p app/src/main/assets
-wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat -O app/src/main/assets/geoip.dat
-wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O app/src/main/assets/geosite.dat
+wget https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geoip-lite.dat -O app/src/main/assets/geoip.dat
+wget https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geosite.dat -O app/src/main/assets/geosite.dat
 ```
 
 发布构建会在构建时下载上游 `latest` 的当前文件。使用 `-PnoGeo=true` 时改为打包 `app/src/main/assets-no-geo/`。

@@ -115,8 +115,8 @@ git clone --recursive https://github.com/ReRokutosei/SimpleXray.git
 cd SimpleXray
 
 mkdir -p app/src/main/assets
-wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat -O app/src/main/assets/geoip.dat
-wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O app/src/main/assets/geosite.dat
+wget https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geoip-lite.dat -O app/src/main/assets/geoip.dat
+wget https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geosite.dat -O app/src/main/assets/geosite.dat
 
 (cd third_party/simpletun && zig build android)
 

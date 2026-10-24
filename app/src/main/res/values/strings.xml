@@ -3,8 +3,8 @@
     <!-- Non-translatable Base Configurations -->
     <string name="app_name" translatable="false">SimpleXray</string>
     <string name="source_url" translatable="false">https://github.com/ReRokutosei/SimpleXray</string>
-    <string name="geoip_url" translatable="false">https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat</string>
-    <string name="geosite_url" translatable="false">https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat</string>
+    <string name="geoip_url" translatable="false">https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geoip-lite.dat</string>
+    <string name="geosite_url" translatable="false">https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geosite.dat</string>
 
     <!-- SOCKS Local Inbound Settings -->
     <string name="socks_address">SOCKS Inbound Address</string>

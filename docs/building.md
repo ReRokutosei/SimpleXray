@@ -38,8 +38,8 @@ The `geoip.dat` and `geosite.dat` assets are not tracked. For a local debug buil
 
 ```bash
 mkdir -p app/src/main/assets
-wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip.dat -O app/src/main/assets/geoip.dat
-wget https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat -O app/src/main/assets/geosite.dat
+wget https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geoip-lite.dat -O app/src/main/assets/geoip.dat
+wget https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geosite.dat -O app/src/main/assets/geosite.dat
 ```
 
 Release builds download the current files from the upstream `latest` release at build time. Use `-PnoGeo=true` to build from `app/src/main/assets-no-geo/` instead.
