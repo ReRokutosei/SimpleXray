@@ -1,5 +1,6 @@
 package com.simplexray.re.viewmodel
 
+import com.simplexray.re.common.ColorMode
 import com.simplexray.re.common.ThemeMode
 
 import com.simplexray.re.prefs.LogLevel
@@ -20,6 +21,7 @@ data class SwitchStates(
     val disableVpn: Boolean,
     val tunnelMode: TunnelMode,
     val themeMode: ThemeMode,
+    val colorMode: ColorMode = ColorMode.Monochrome,
     val logLevel: LogLevel = LogLevel.Auto,
     val accessLog: Boolean = true,
     val dnsLog: Boolean = false

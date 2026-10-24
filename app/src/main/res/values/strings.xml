@@ -44,7 +44,7 @@
     <string name="tunnel_mode_hev_socks5">Hev TUN</string>
     <string name="tunnel_mode_hev_socks5_summary">Use Hev SOCKS5 Tunnel to forward VPN traffic to Xray</string>
     <string name="tunnel_mode_simpletun">Simple TUN</string>
-    <string name="tunnel_mode_simpletun_summary">Use SimpleTUN lightweight protocol shifter to forward VPN traffic to Xray</string>
+    <string name="tunnel_mode_simpletun_summary">Use lightweight protocol shifter to forward VPN traffic to Xray</string>
     <string name="tunnel_mtu_title">TUN Interface MTU</string>
     <string name="tunnel_mtu_summary">Maximum transmission unit for system VPN interface. Valid range: 1280 to 9000 (default: 1500)</string>
     <string name="invalid_mtu">MTU must be an integer between 1280 and 9000</string>
@@ -61,6 +61,9 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="auto">Auto</string>
+    <string name="color_title">Color</string>
+    <string name="color_monochrome">Monochrome</string>
+    <string name="color_dynamic">Dynamic Color</string>
 
     <!-- App-based Proxy -->
     <string name="apps_title">App-based Proxy</string>

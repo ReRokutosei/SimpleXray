@@ -38,6 +38,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
+import com.simplexray.re.common.ColorMode
 import com.simplexray.re.common.ThemeMode
 import com.simplexray.re.prefs.TunnelMode
 import com.simplexray.re.viewmodel.MainViewModel
@@ -82,6 +83,12 @@ internal fun SettingsGeneralSection(
     )
     val themeModes = listOf(ThemeMode.Light, ThemeMode.Dark, ThemeMode.Auto)
     val currentThemeIndex = themeModes.indexOf(settingsState.switches.themeMode).coerceAtLeast(0)
+    val colorOptions = listOf(
+        stringResource(R.string.color_monochrome),
+        stringResource(R.string.color_dynamic)
+    )
+    val colorModes = listOf(ColorMode.Monochrome, ColorMode.Dynamic)
+    val currentColorIndex = colorModes.indexOf(settingsState.switches.colorMode).coerceAtLeast(0)
     val iconOptions = listOf(
         stringResource(R.string.icon_flat),
         stringResource(R.string.icon_lineal),
@@ -97,6 +104,15 @@ internal fun SettingsGeneralSection(
                 selectedIndex = currentThemeIndex,
                 onSelectedIndexChange = { index ->
                     mainViewModel.setTheme(themeModes[index])
+                }
+            )
+
+            OverlayDropdownPreference(
+                title = stringResource(R.string.color_title),
+                items = colorOptions,
+                selectedIndex = currentColorIndex,
+                onSelectedIndexChange = { index ->
+                    mainViewModel.setColorMode(colorModes[index])
                 }
             )
 

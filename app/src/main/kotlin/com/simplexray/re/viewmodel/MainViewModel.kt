@@ -10,6 +10,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.simplexray.re.R
+import com.simplexray.re.common.ColorMode
 import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.SocksAuthenticatorInstaller
 import com.simplexray.re.common.ROUTE_APP_LIST
@@ -317,6 +318,8 @@ class MainViewModel(application: Application) :
     fun setTunnelMode(mode: com.simplexray.re.prefs.TunnelMode) = settingsController.setTunnelMode(mode)
 
     fun setTheme(mode: ThemeMode) = settingsController.setTheme(mode)
+
+    fun setColorMode(mode: ColorMode) = settingsController.setColorMode(mode)
 
     fun importRuleFile(uri: Uri, fileName: String) = ruleFileController.importRuleFile(uri, fileName)
 

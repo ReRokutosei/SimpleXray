@@ -15,8 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -24,14 +22,19 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
+import com.simplexray.re.common.ColorMode
 import com.simplexray.re.common.ThemeMode
 import com.simplexray.re.ui.navigation.AppNavHost
 import com.simplexray.re.viewmodel.MainViewModel
 import com.simplexray.re.viewmodel.MainViewModelFactory
+import top.yukonga.miuix.kmp.theme.ColorSchemeMode
+import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.theme.ThemeController
+import top.yukonga.miuix.kmp.theme.ThemePaletteStyle
 
 class MainActivity : ComponentActivity() {
     private val mainViewModel: MainViewModel by viewModels { MainViewModelFactory(application) }
@@ -45,10 +48,10 @@ class MainActivity : ComponentActivity() {
         updateTaskDescription()
 
         setContent {
-            val context = LocalContext.current
-            val dynamicColor = true
             val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
             val themeMode = settingsState.switches.themeMode
+            val colorMode = settingsState.switches.colorMode
+            val isMonochrome = colorMode == ColorMode.Monochrome
             val systemInDarkTheme = isSystemInDarkTheme()
 
             val isDark = when (themeMode) {
@@ -74,27 +77,48 @@ class MainActivity : ComponentActivity() {
                 updateTaskDescription()
             }
 
-            val colorScheme = when {
-                dynamicColor && isDark -> dynamicDarkColorScheme(context)
-                dynamicColor && !isDark -> dynamicLightColorScheme(context)
-                isDark -> darkColorScheme()
-                else -> lightColorScheme()
-            }
-
             val colorSchemeMode = when (themeMode) {
-                ThemeMode.Light -> if (dynamicColor) top.yukonga.miuix.kmp.theme.ColorSchemeMode.MonetLight else top.yukonga.miuix.kmp.theme.ColorSchemeMode.Light
-                ThemeMode.Dark -> if (dynamicColor) top.yukonga.miuix.kmp.theme.ColorSchemeMode.MonetDark else top.yukonga.miuix.kmp.theme.ColorSchemeMode.Dark
-                ThemeMode.Auto -> if (dynamicColor) top.yukonga.miuix.kmp.theme.ColorSchemeMode.MonetSystem else top.yukonga.miuix.kmp.theme.ColorSchemeMode.System
+                ThemeMode.Light -> ColorSchemeMode.MonetLight
+                ThemeMode.Dark -> ColorSchemeMode.MonetDark
+                ThemeMode.Auto -> ColorSchemeMode.MonetSystem
             }
 
-            val themeController = remember(colorSchemeMode, isDark) {
-                top.yukonga.miuix.kmp.theme.ThemeController(
+            val keyColor = if (isMonochrome) Color(0xFF808080) else null
+            val paletteStyle = if (isMonochrome) ThemePaletteStyle.Monochrome else ThemePaletteStyle.TonalSpot
+
+            val themeController = remember(colorSchemeMode, isDark, keyColor, paletteStyle) {
+                ThemeController(
                     colorSchemeMode = colorSchemeMode,
+                    keyColor = keyColor,
+                    paletteStyle = paletteStyle,
                     isDark = isDark
                 )
             }
 
             top.yukonga.miuix.kmp.theme.MiuixTheme(controller = themeController) {
+                val miuixColors = top.yukonga.miuix.kmp.theme.MiuixTheme.colorScheme
+                val colorScheme = remember(miuixColors, isDark) {
+                    if (isDark) {
+                        darkColorScheme(
+                            primary = miuixColors.primary,
+                            onPrimary = miuixColors.onPrimary,
+                            surface = miuixColors.surface,
+                            onSurface = miuixColors.onSurface,
+                            background = miuixColors.background,
+                            onBackground = miuixColors.onBackground
+                        )
+                    } else {
+                        lightColorScheme(
+                            primary = miuixColors.primary,
+                            onPrimary = miuixColors.onPrimary,
+                            surface = miuixColors.surface,
+                            onSurface = miuixColors.onSurface,
+                            background = miuixColors.background,
+                            onBackground = miuixColors.onBackground
+                        )
+                    }
+                }
+
                 CompositionLocalProvider(
                     top.yukonga.miuix.kmp.squircle.LocalSquircleEnabled provides true
                 ) {

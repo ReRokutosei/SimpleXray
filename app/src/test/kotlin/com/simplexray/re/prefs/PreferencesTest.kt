@@ -5,6 +5,7 @@ import android.content.ContextWrapper
 import android.content.SharedPreferences
 import android.content.res.Resources
 import com.simplexray.re.R
+import com.simplexray.re.common.ColorMode
 import com.simplexray.re.common.ThemeMode
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -194,6 +195,7 @@ class PreferencesTest {
         assertEquals(0, prefs.apiPort)
         assertFalse(prefs.bypassSelectedApps)
         assertEquals(ThemeMode.Auto, prefs.theme)
+        assertEquals(ColorMode.Monochrome, prefs.colorMode)
         assertFalse(prefs.notificationPrompted)
         assertTrue(prefs.customDatUrls.isEmpty())
         assertEquals(LogLevel.Auto, prefs.logLevel)
@@ -251,6 +253,10 @@ class PreferencesTest {
         prefs.theme = ThemeMode.Dark
         assertEquals(ThemeMode.Dark, prefs.theme)
         assertEquals("Dark", fakeContext.sharedPrefs.getString(Preferences.THEME, null))
+
+        prefs.colorMode = ColorMode.Dynamic
+        assertEquals(ColorMode.Dynamic, prefs.colorMode)
+        assertEquals("Dynamic", fakeContext.sharedPrefs.getString(Preferences.COLOR_MODE, null))
     }
 
     @Test

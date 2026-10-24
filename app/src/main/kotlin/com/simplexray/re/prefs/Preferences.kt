@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.core.content.edit
 import com.simplexray.re.R
+import com.simplexray.re.common.ColorMode
 import com.simplexray.re.common.ThemeMode
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -215,6 +216,12 @@ class Preferences(context: Context) {
             sp.edit { putString(THEME, value.value) }
         }
 
+    var colorMode: ColorMode
+        get() = sp.getString(COLOR_MODE, null)?.let { ColorMode.fromString(it) } ?: ColorMode.Monochrome
+        set(value) {
+            sp.edit { putString(COLOR_MODE, value.value) }
+        }
+
     var notificationPrompted: Boolean by booleanPref(NOTIFICATION_PROMPTED, false)
 
     var customDatUrls: Map<String, String>
@@ -281,6 +288,7 @@ class Preferences(context: Context) {
         const val API_PORT: String = "ApiPort"
         const val BYPASS_SELECTED_APPS: String = "BypassSelectedApps"
         const val THEME: String = "Theme"
+        const val COLOR_MODE: String = "ColorMode"
         const val HIDE_FROM_RECENTS: String = "HideFromRecents"
         const val KEEP_AWAKE: String = "KeepAwake"
         const val NOTIFICATION_PROMPTED: String = "NotificationPrompted"

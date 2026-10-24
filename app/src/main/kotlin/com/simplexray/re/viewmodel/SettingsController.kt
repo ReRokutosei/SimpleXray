@@ -7,6 +7,7 @@ import com.simplexray.re.R
 import com.simplexray.re.data.source.FileManager
 import com.simplexray.re.prefs.LogLevel
 import com.simplexray.re.prefs.Preferences
+import com.simplexray.re.common.ColorMode
 import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.ThemeMode
 import com.simplexray.re.common.isLoopbackAddress
@@ -57,6 +58,7 @@ internal class SettingsController(
                 disableVpn = prefs.disableVpn,
                 tunnelMode = prefs.tunnelMode,
                 themeMode = prefs.theme,
+                colorMode = prefs.colorMode,
                 logLevel = prefs.logLevel,
                 accessLog = prefs.accessLog,
                 dnsLog = prefs.dnsLog
@@ -97,6 +99,7 @@ internal class SettingsController(
                 disableVpn = prefs.disableVpn,
                 tunnelMode = prefs.tunnelMode,
                 themeMode = prefs.theme,
+                colorMode = prefs.colorMode,
                 logLevel = prefs.logLevel,
                 accessLog = prefs.accessLog,
                 dnsLog = prefs.dnsLog
@@ -511,6 +514,13 @@ internal class SettingsController(
         prefs.theme = mode
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(themeMode = mode)
+        )
+    }
+
+    fun setColorMode(mode: ColorMode) {
+        prefs.colorMode = mode
+        _settingsState.value = _settingsState.value.copy(
+            switches = _settingsState.value.switches.copy(colorMode = mode)
         )
     }
 }

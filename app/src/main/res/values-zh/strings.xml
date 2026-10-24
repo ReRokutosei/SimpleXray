@@ -38,7 +38,7 @@
     <string name="tunnel_mode_hev_socks5">Hev TUN</string>
     <string name="tunnel_mode_hev_socks5_summary">使用 Hev SOCKS5 Tunnel 将 VPN 流量转发至 Xray</string>
     <string name="tunnel_mode_simpletun">Simple TUN</string>
-    <string name="tunnel_mode_simpletun_summary">使用 SimpleTUN 轻量协议转换器将 VPN 流量转发至 Xray</string>
+    <string name="tunnel_mode_simpletun_summary">使用轻量协议转换器将 VPN 流量转发至 Xray</string>
     <string name="tunnel_mtu_title">TUN 接口 MTU</string>
     <string name="tunnel_mtu_summary">系统 VPN 虚拟网卡的最大传输单元。有效范围：1280 至 9000（默认：1500）</string>
     <string name="invalid_mtu">MTU 必须是 1280 到 9000 之间的整数</string>
@@ -55,6 +55,9 @@
     <string name="theme_light">浅色</string>
     <string name="theme_dark">深色</string>
     <string name="auto">自动</string>
+    <string name="color_title">颜色</string>
+    <string name="color_monochrome">黑白灰</string>
+    <string name="color_dynamic">动态色彩</string>
 
     <!-- 分应用代理 -->
     <string name="apps_title">分应用代理</string>
