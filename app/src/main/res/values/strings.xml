@@ -84,6 +84,12 @@
     <string name="filename">Filename</string>
     <string name="config_in_use">Configuration in Use</string>
     <string name="config_import_service_running">Service is running: the configuration was imported but not switched. Stop the service or select the file manually to switch.</string>
+    <string name="replace_config">Import and Replace</string>
+    <string name="config_replaced_success">%s replaced successfully</string>
+    <string name="config_replace_failed">Failed to replace configuration file</string>
+    <string name="config_replace_service_running">Configuration replaced. Please reload or restart core to apply.</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
     <string name="delete_config">Delete Configuration</string>
     <string name="not_select_config">No configuration selected</string>
     <string name="no_config_files">No configuration files</string>

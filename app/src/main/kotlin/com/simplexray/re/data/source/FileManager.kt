@@ -30,6 +30,9 @@ class FileManager(application: Application, prefs: Preferences) {
     suspend fun importConfigFileFromUri(context: Context, uri: Uri): String? =
         configFileStore.importConfigFileFromUri(context, uri)
 
+    suspend fun replaceConfigFileFromUri(context: Context, uri: Uri, targetFile: File): Boolean =
+        configFileStore.replaceConfigFileFromUri(context, uri, targetFile)
+
     fun extractAssetsIfNeeded() =
         ruleFileStore.extractAssetsIfNeeded()
 

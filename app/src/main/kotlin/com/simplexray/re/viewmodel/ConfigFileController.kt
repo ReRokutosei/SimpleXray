@@ -140,6 +140,35 @@ internal class ConfigFileController(
         }
     }
 
+    fun replaceConfigFile(uri: android.net.Uri, targetFile: File) {
+        scope.launch(Dispatchers.IO) {
+            val success = fileManager.replaceConfigFileFromUri(application, uri, targetFile)
+            if (success) {
+                rebuildConfigFileList()
+                val isSelected = prefs.selectedConfigPath == targetFile.absolutePath
+                if (isSelected && isVpnEnabled()) {
+                    sendEvent(
+                        MainViewUiEvent.ShowSnackbar(
+                            application.getString(R.string.config_replace_service_running)
+                        )
+                    )
+                } else {
+                    sendEvent(
+                        MainViewUiEvent.ShowSnackbar(
+                            application.getString(R.string.config_replaced_success, targetFile.name)
+                        )
+                    )
+                }
+            } else {
+                sendEvent(
+                    MainViewUiEvent.ShowSnackbar(
+                        application.getString(R.string.config_replace_failed)
+                    )
+                )
+            }
+        }
+    }
+
     fun refreshConfigFileList() {
         scope.launch(Dispatchers.IO) {
             rebuildConfigFileList()

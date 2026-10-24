@@ -51,6 +51,7 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -304,6 +305,17 @@ private fun ConfigListPane(
         }
     }
 
+    var targetFileForReplace by remember { mutableStateOf<File?>(null) }
+    val replaceConfigPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        val target = targetFileForReplace
+        if (uri != null && target != null) {
+            mainViewModel.replaceConfigFile(uri, target)
+        }
+        targetFileForReplace = null
+    }
+
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_RESUME) {
@@ -411,32 +423,38 @@ private fun ConfigListPane(
                             else MiuixTheme.colorScheme.surfaceContainer
                         )
                     ) {
-                        Row(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(IntrinsicSize.Max)
-                                .longPressDraggableHandle(),
-                            verticalAlignment = Alignment.CenterVertically
+                                .longPressDraggableHandle()
+                                .padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 8.dp)
                         ) {
-                            Row(
+                            val extIndex = file.name.lastIndexOf('.')
+                            val displayName = if (extIndex > 0) file.name.substring(0, extIndex) else file.name
+                            val extTag = if (extIndex > 0) file.name.substring(extIndex + 1).uppercase() else "JSON"
+
+                            Text(
+                                text = displayName,
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .padding(14.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .fillMaxWidth()
+                                    .padding(end = 8.dp),
+                                fontSize = MiuixTheme.textStyles.title4.fontSize,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                                color = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
+                            )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                val extIndex = file.name.lastIndexOf('.')
-                                val displayName = if (extIndex > 0) file.name.substring(0, extIndex) else file.name
-                                val extTag = if (extIndex > 0) file.name.substring(extIndex + 1).uppercase() else "JSON"
-                                Text(
-                                    text = displayName,
-                                    modifier = Modifier.weight(1f),
-                                    fontSize = MiuixTheme.textStyles.title4.fontSize,
-                                    color = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
-                                )
                                 Surface(
                                     color = if (isSelected) MiuixTheme.colorScheme.primary else MiuixTheme.colorScheme.secondaryContainer,
-                                    shape = RoundedCornerShape(6.dp),
-                                    modifier = Modifier.padding(end = 8.dp)
+                                    shape = RoundedCornerShape(6.dp)
                                 ) {
                                     Text(
                                         text = extTag,
@@ -445,21 +463,36 @@ private fun ConfigListPane(
                                         color = if (isSelected) MiuixTheme.colorScheme.onPrimary else MiuixTheme.colorScheme.onSecondaryContainer
                                     )
                                 }
-                                IconButton(onClick = {
-                                    onOpenFullscreenEditor(file)
-                                }) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.edit),
-                                        contentDescription = "Edit",
-                                        tint = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
-                                    )
-                                }
-                                IconButton(onClick = { showDeleteDialog.value = file }) {
-                                    Icon(
-                                        painter = painterResource(R.drawable.delete),
-                                        contentDescription = "Delete",
-                                        tint = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
-                                    )
+
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    IconButton(onClick = {
+                                        onOpenFullscreenEditor(file)
+                                    }) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.edit),
+                                            contentDescription = stringResource(R.string.edit),
+                                            tint = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                    IconButton(onClick = {
+                                        targetFileForReplace = file
+                                        replaceConfigPickerLauncher.launch(arrayOf("*/*"))
+                                    }) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.place_item),
+                                            contentDescription = stringResource(R.string.replace_config),
+                                            tint = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
+                                        )
+                                    }
+                                    IconButton(onClick = { showDeleteDialog.value = file }) {
+                                        Icon(
+                                            painter = painterResource(R.drawable.delete),
+                                            contentDescription = stringResource(R.string.delete),
+                                            tint = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
+                                        )
+                                    }
                                 }
                             }
                         }

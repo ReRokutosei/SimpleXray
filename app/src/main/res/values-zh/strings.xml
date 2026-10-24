@@ -78,6 +78,12 @@
     <string name="filename">文件名</string>
     <string name="config_in_use">配置文件正在使用</string>
     <string name="config_import_service_running">服务运行中：配置已导入但未切换。请先停止服务，或手动选择该文件进行切换。</string>
+    <string name="replace_config">导入替换</string>
+    <string name="config_replaced_success">%s 替换成功</string>
+    <string name="config_replace_failed">替换配置文件失败</string>
+    <string name="config_replace_service_running">配置已替换，请重新选择或重启内核以生效</string>
+    <string name="edit">编辑</string>
+    <string name="delete">删除</string>
     <string name="delete_config">删除配置</string>
     <string name="not_select_config">未选择配置文件</string>
     <string name="no_config_files">无配置文件</string>

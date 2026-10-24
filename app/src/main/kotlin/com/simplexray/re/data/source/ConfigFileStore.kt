@@ -209,4 +209,37 @@ internal class ConfigFileStore(
             }
         }
     }
+
+    suspend fun replaceConfigFileFromUri(context: Context, uri: Uri, targetFile: File): Boolean {
+        return withContext(Dispatchers.IO) {
+            try {
+                val tempFile = File(application.filesDir, "${targetFile.name}.tmp")
+                context.contentResolver.openInputStream(uri)?.use { inputStream ->
+                    FileOutputStream(tempFile).use { outputStream ->
+                        inputStream.copyTo(outputStream)
+                    }
+                } ?: return@withContext false
+
+                if (!tempFile.exists() || tempFile.length() == 0L) {
+                    tempFile.delete()
+                    return@withContext false
+                }
+
+                if (tempFile.renameTo(targetFile)) {
+                    true
+                } else {
+                    tempFile.inputStream().use { input ->
+                        FileOutputStream(targetFile).use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    tempFile.delete()
+                    true
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error replacing config file from URI: ${targetFile.name}", e)
+                false
+            }
+        }
+    }
 }

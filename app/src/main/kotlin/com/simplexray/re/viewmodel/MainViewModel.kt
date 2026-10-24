@@ -351,6 +351,8 @@ class MainViewModel(application: Application) :
 
     fun importConfigFromFile(uri: android.net.Uri) = configFileController.importConfigFromFile(uri)
 
+    fun replaceConfigFile(uri: android.net.Uri, targetFile: java.io.File) = configFileController.replaceConfigFile(uri, targetFile)
+
     fun refreshConfigFileList() = configFileController.refreshConfigFileList()
 
     fun updateSelectedConfigFile(file: File?) = configFileController.updateSelectedConfigFile(file)
