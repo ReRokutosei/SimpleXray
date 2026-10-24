@@ -60,7 +60,7 @@ target_compile_definitions(hev-task-system PRIVATE
     CONFIG_MEMALLOC_SLICE_MAX_COUNT=1000
     CONFIG_SCHED_CLOCK=CLOCK_NONE
 )
-target_compile_options(hev-task-system PRIVATE -fvisibility=hidden)
+target_compile_options(hev-task-system PRIVATE -U__ELF__ -fvisibility=hidden)
 
 # -----------------------------------------------------------------------------
 # 2. hev-socks5-tunnel shared library

@@ -50,17 +50,17 @@ class SyncVersionsValidationTest(unittest.TestCase):
         "hev submodule is not checked out",
     )
     def test_hev_version_falls_back_to_source_constants(self):
-        self.assertEqual("2.19.0", sync_versions.get_hev_config_version())
+        self.assertEqual("2.19.2", sync_versions.get_hev_config_version())
 
         def fake_check_output(args, **kwargs):
             if "describe" in args:
-                return "873541b\n"  # shallow CI checkout without tags
+                return "bd6f919\n"  # shallow CI checkout without tags
             if "rev-parse" in args:
-                return "873541b\n"
+                return "bd6f919\n"
             raise AssertionError(f"unexpected subprocess call: {args}")
 
         with patch.object(sync_versions.subprocess, "check_output", side_effect=fake_check_output):
-            self.assertEqual("2.19.0 (873541b)", sync_versions.get_hev_version())
+            self.assertEqual("2.19.2 (bd6f919)", sync_versions.get_hev_version())
 
     def test_check_mode_fails_on_invalid_properties(self):
         invalid = sync_versions.read_current_properties()
