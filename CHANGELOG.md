@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.5.2](https://github.com/ReRokutosei/SimpleXray/compare/v2.5.1...v2.5.2) (2026-10-24)
+
+
+### Features
+
+* **ui:** add color palette preference with Monochrome and Dynamic Color modes ([354f851](https://github.com/ReRokutosei/SimpleXray/commit/354f8510fbab3e1913e8ce320efdf799d8e8d9f9))
+* **ui:** redesign config card to two-row layout and add `replace` action ([c551dbf](https://github.com/ReRokutosei/SimpleXray/commit/c551dbf30d9acce5db7eb8836e8cdd70fc3018dd))
+
+
+### Bug Fixes
+
+* **deps:** update dependency androidx.datastore:datastore-preferences to v1.3.0 ([#59](https://github.com/ReRokutosei/SimpleXray/issues/59)) ([f62941a](https://github.com/ReRokutosei/SimpleXray/commit/f62941acb92c3f3d4211fe96fcbfd6c7f56d22ec))
+* **deps:** update dependency com.squareup.okhttp3:okhttp to v5.5.1 ([#60](https://github.com/ReRokutosei/SimpleXray/issues/60)) ([14f047d](https://github.com/ReRokutosei/SimpleXray/commit/14f047d504ef2140b0e4cd309ab3c3a33e4abd0f))
+* **ui:** restore system back dispatching for navigation and overlay dialogs ([728a050](https://github.com/ReRokutosei/SimpleXray/commit/728a050c3c134d962d55f3f5ccbe7d057e435710))
+
 ### [2.5.1](https://github.com/ReRokutosei/SimpleXray/compare/v2.5.0...v2.5.1) (2026-10-21)
 
 
