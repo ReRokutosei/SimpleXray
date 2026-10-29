@@ -97,8 +97,8 @@ Java_com_simplexray_re_service_TProxyService_nativeSpawnXray(
     }
     int ni = 0;
     for (int i = 0; i < parent_ec; i++) {
-        if (strncmp(environ[i], "XRAY_LOCATION_ASSET=", 20) == 0) continue;
-        if (strncmp(environ[i], "XRAY_TUN_FD=",         12) == 0) continue;
+        if (strncmp(environ[i], "XRAY_LOCATION_ASSET=",   20) == 0) continue;
+        if (strncmp(environ[i], "XRAY_TUN_FD=",           12) == 0) continue;
         new_env[ni++] = environ[i];
     }
     new_env[ni++] = asset_env;
@@ -129,6 +129,12 @@ Java_com_simplexray_re_service_TProxyService_nativeSpawnXray(
         /* child */
         /* Die if parent dies unexpectedly (prevent orphan Xray process) */
         prctl(PR_SET_PDEATHSIG, SIGKILL);
+
+        if (asset_dir && *asset_dir) {
+            if (chdir(asset_dir) < 0) {
+                LOGE("chdir to %s failed: %s", asset_dir, strerror(errno));
+            }
+        }
 
         dup2(stdin_pipe[0],  STDIN_FILENO);
         dup2(stdout_pipe[1], STDOUT_FILENO);
