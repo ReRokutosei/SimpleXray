@@ -82,9 +82,32 @@ internal fun SettingsNetworkSection(
 
         SmallTitle(text = stringResource(R.string.network_settings))
         Card(modifier = Modifier.fillMaxWidth()) {
+            val bypassLanTitle = stringResource(R.string.bypass_lan_title)
+            val bypassLanHelp = stringResource(R.string.bypass_lan_help)
             SwitchPreference(
-                title = stringResource(R.string.bypass_lan_title),
-                summary = stringResource(R.string.bypass_lan_summary),
+                title = "",
+                startAction = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = bypassLanTitle,
+                            fontSize = MiuixTheme.textStyles.headline1.fontSize,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
+                            color = MiuixTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconButton(
+                            onClick = { onShowHelp(bypassLanTitle, bypassLanHelp) },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Help,
+                                contentDescription = bypassLanTitle,
+                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                },
                 checked = settingsState.switches.bypassLanEnabled,
                 onCheckedChange = { mainViewModel.setBypassLanEnabled(it) },
                 enabled = !vpnDisabled

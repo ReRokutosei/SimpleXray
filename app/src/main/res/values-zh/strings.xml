@@ -31,7 +31,7 @@
     <string name="http_proxy_title">HTTP 代理</string>
     <string name="http_proxy_summary">向 Android 系统注册 127.0.0.1:10809 全局 HTTP 代理。TUN 模式下一般无需开启；开启后可能兼容部分不支持 TUN 的应用</string>
     <string name="bypass_lan_title">绕过局域网</string>
-    <string name="bypass_lan_summary">启用时，局域网流量不通过代理</string>
+    <string name="bypass_lan_help">开启后，访问路由器管理后台、本地 NAS 等局域网私有网段（10.x、192.168.x 等）将不走代理实现直连；关闭后局域网流量全部交由代理接管。\n\n提示：若配置中启用了 Lua 路由脚本（routing.script），应用将不再自动向内核注入规则，避免与脚本冲突。</string>
     <string name="tunnel_mode_title">TUN 传输组件</string>
     <string name="tunnel_mode_xray_tun">Xray TUN</string>
     <string name="tunnel_mode_xray_tun_summary">使用 Xray 原生 TUN 入站直接处理 VPN 数据包</string>

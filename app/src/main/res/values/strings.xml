@@ -37,7 +37,7 @@
     <string name="http_proxy_title">HTTP Proxy</string>
     <string name="http_proxy_summary">Register a system-wide HTTP proxy at 127.0.0.1:10809. Usually keep this disabled in TUN mode; enabling it may help some applications that do not support TUN.</string>
     <string name="bypass_lan_title">Bypass LAN</string>
-    <string name="bypass_lan_summary">When enabled, LAN traffic will not go through the proxy.</string>
+    <string name="bypass_lan_help">When enabled, traffic destined for local private networks (e.g. 10.x, 192.168.x, router admin consoles, local NAS) bypasses the proxy for direct connection. When disabled, all LAN traffic is routed through the proxy.\n\nNote: If the active configuration uses a Lua routing script (routing.script), the app skips automatic kernel rule injection to prevent configuration conflicts.</string>
     <string name="tunnel_mode_title">TUN Transport Mode</string>
     <string name="tunnel_mode_xray_tun">Xray TUN</string>
     <string name="tunnel_mode_xray_tun_summary">Use Xray\'s native TUN inbound to process VPN packets directly</string>

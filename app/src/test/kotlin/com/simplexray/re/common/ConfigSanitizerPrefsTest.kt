@@ -228,6 +228,30 @@ class ConfigSanitizerPrefsTest {
         assertEquals("127.0.0.1", inbound.getString("listen"))
     }
 
+    @Test
+    fun routingScriptSkipsBypassLanRuleInjection() {
+        prefs.bypassLan = true
+        val raw = """
+        {
+          "inbounds": [
+            { "tag": "socks-in", "protocol": "socks", "listen": "127.0.0.1", "port": 1080 }
+          ],
+          "outbounds": [
+            { "tag": "direct", "protocol": "freedom" }
+          ],
+          "routing": {
+            "script": "routing.lua"
+          }
+        }
+        """.trimIndent()
+
+        val routing = JSONObject(ConfigUtils.sanitizeConfig(raw, prefs))
+            .getJSONObject("routing")
+
+        assertEquals("routing.lua", routing.getString("script"))
+        assertFalse(routing.has("rules"))
+    }
+
     private fun findInbound(root: JSONObject, protocol: String): JSONObject {
         val inbounds: JSONArray = root.getJSONArray("inbounds")
         for (i in 0 until inbounds.length()) {

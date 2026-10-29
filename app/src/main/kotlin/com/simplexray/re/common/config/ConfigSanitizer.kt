@@ -222,114 +222,119 @@ internal object ConfigSanitizer {
                 Log.d(TAG, "Upgraded domainMatcher from mph to hybrid.")
             }
 
-            val rules = routing.optJSONArray("rules")
-            if (rules != null) {
-                for (i in rules.length() - 1 downTo 0) {
-                    val rule = rules.optJSONObject(i) ?: continue
+            val hasRoutingScript = routing.optString("script").isNotBlank()
+            if (hasRoutingScript) {
+                Log.d(TAG, "Routing script is active; skipping rules processing and bypassLan rules mutation to avoid kernel conflict.")
+            } else {
+                val rules = routing.optJSONArray("rules")
+                if (rules != null) {
+                    for (i in rules.length() - 1 downTo 0) {
+                        val rule = rules.optJSONObject(i) ?: continue
 
-                    // Auto-migrate legacy top-level "geosite" into "domain"
-                    val geositeArr = rule.optJSONArray("geosite")
-                    if (geositeArr != null && geositeArr.length() > 0) {
-                        val domainArr = rule.optJSONArray("domain") ?: JSONArray().also { rule.put("domain", it) }
-                        for (idx in 0 until geositeArr.length()) {
-                            val entry = geositeArr.optString(idx)
-                            if (entry.isNotEmpty()) {
-                                val formatted = if (entry.startsWith("geosite:", ignoreCase = true)) entry else "geosite:$entry"
-                                domainArr.put(formatted)
-                            }
-                        }
-                    }
-                    rule.remove("geosite")
-
-                    // Auto-migrate legacy top-level "geoip" into "ip"
-                    val geoipArr = rule.optJSONArray("geoip")
-                    if (geoipArr != null && geoipArr.length() > 0) {
-                        val ipArr = rule.optJSONArray("ip") ?: JSONArray().also { rule.put("ip", it) }
-                        for (idx in 0 until geoipArr.length()) {
-                            val entry = geoipArr.optString(idx)
-                            if (entry.isNotEmpty()) {
-                                val formatted = if (entry.startsWith("geoip:", ignoreCase = true)) entry else "geoip:$entry"
-                                ipArr.put(formatted)
-                            }
-                        }
-                    }
-                    rule.remove("geoip")
-
-                    // Process process array
-                    val processArr = rule.optJSONArray("process")
-                    if (processArr != null) {
-                        val cleanedProcess = JSONArray()
-                        for (j in 0 until processArr.length()) {
-                            val proc = processArr.optString(j)
-                            if (proc.isNotEmpty() && !proc.endsWith(".exe", ignoreCase = true)) {
-                                cleanedProcess.put(proc)
-                            }
-                        }
-                        if (cleanedProcess.length() > 0) {
-                            rule.put("process", cleanedProcess)
-                        } else {
-                            rule.remove("process")
-                        }
-                    }
-
-                    // Check for effective match criteria
-                    if (!hasEffectiveMatchField(rule)) {
-                        rules.remove(i)
-                        Log.d(TAG, "Pruned empty/invalid rule block at index $i.")
-                    }
-                }
-
-                if (prefs != null) {
-                    if (prefs.bypassLan) {
-                        val hasPrivateIpRule = (0 until rules.length()).any { idx ->
-                            val r = rules.optJSONObject(idx) ?: return@any false
-                            val ipArr = r.optJSONArray("ip") ?: return@any false
-                            (0 until ipArr.length()).any { ipArr.optString(it).equals("geoip:private", ignoreCase = true) }
-                        }
-                        if (!hasPrivateIpRule) {
-                            val privateRule = JSONObject().apply {
-                                put("ip", JSONArray().apply { put("geoip:private") })
-                                put("outboundTag", "direct")
-                            }
-                            val newRules = JSONArray().apply {
-                                put(privateRule)
-                                for (idx in 0 until rules.length()) {
-                                    put(rules.get(idx))
+                        // Auto-migrate legacy top-level "geosite" into "domain"
+                        val geositeArr = rule.optJSONArray("geosite")
+                        if (geositeArr != null && geositeArr.length() > 0) {
+                            val domainArr = rule.optJSONArray("domain") ?: JSONArray().also { rule.put("domain", it) }
+                            for (idx in 0 until geositeArr.length()) {
+                                val entry = geositeArr.optString(idx)
+                                if (entry.isNotEmpty()) {
+                                    val formatted = if (entry.startsWith("geosite:", ignoreCase = true)) entry else "geosite:$entry"
+                                    domainArr.put(formatted)
                                 }
                             }
-                            routing.put("rules", newRules)
-                            Log.d(TAG, "Injected top-priority geoip:private -> direct rule for bypassLan.")
                         }
-                    } else {
-                        for (i in rules.length() - 1 downTo 0) {
-                            val rule = rules.optJSONObject(i) ?: continue
-                            if (rule.optString("outboundTag").equals("direct", ignoreCase = true)) {
-                                val ipArr = rule.optJSONArray("ip") ?: continue
-                                val newIpArr = JSONArray()
-                                for (j in 0 until ipArr.length()) {
-                                    val item = ipArr.optString(j)
-                                    if (!item.equals("geoip:private", ignoreCase = true)) {
-                                        newIpArr.put(item)
+                        rule.remove("geosite")
+
+                        // Auto-migrate legacy top-level "geoip" into "ip"
+                        val geoipArr = rule.optJSONArray("geoip")
+                        if (geoipArr != null && geoipArr.length() > 0) {
+                            val ipArr = rule.optJSONArray("ip") ?: JSONArray().also { rule.put("ip", it) }
+                            for (idx in 0 until geoipArr.length()) {
+                                val entry = geoipArr.optString(idx)
+                                if (entry.isNotEmpty()) {
+                                    val formatted = if (entry.startsWith("geoip:", ignoreCase = true)) entry else "geoip:$entry"
+                                    ipArr.put(formatted)
+                                }
+                            }
+                        }
+                        rule.remove("geoip")
+
+                        // Process process array
+                        val processArr = rule.optJSONArray("process")
+                        if (processArr != null) {
+                            val cleanedProcess = JSONArray()
+                            for (j in 0 until processArr.length()) {
+                                val proc = processArr.optString(j)
+                                if (proc.isNotEmpty() && !proc.endsWith(".exe", ignoreCase = true)) {
+                                    cleanedProcess.put(proc)
+                                }
+                            }
+                            if (cleanedProcess.length() > 0) {
+                                rule.put("process", cleanedProcess)
+                            } else {
+                                rule.remove("process")
+                            }
+                        }
+
+                        // Check for effective match criteria
+                        if (!hasEffectiveMatchField(rule)) {
+                            rules.remove(i)
+                            Log.d(TAG, "Pruned empty/invalid rule block at index $i.")
+                        }
+                    }
+
+                    if (prefs != null) {
+                        if (prefs.bypassLan) {
+                            val hasPrivateIpRule = (0 until rules.length()).any { idx ->
+                                val r = rules.optJSONObject(idx) ?: return@any false
+                                val ipArr = r.optJSONArray("ip") ?: return@any false
+                                (0 until ipArr.length()).any { ipArr.optString(it).equals("geoip:private", ignoreCase = true) }
+                            }
+                            if (!hasPrivateIpRule) {
+                                val privateRule = JSONObject().apply {
+                                    put("ip", JSONArray().apply { put("geoip:private") })
+                                    put("outboundTag", "direct")
+                                }
+                                val newRules = JSONArray().apply {
+                                    put(privateRule)
+                                    for (idx in 0 until rules.length()) {
+                                        put(rules.get(idx))
                                     }
                                 }
-                                if (newIpArr.length() > 0) {
-                                    rule.put("ip", newIpArr)
-                                } else {
-                                    rule.remove("ip")
+                                routing.put("rules", newRules)
+                                Log.d(TAG, "Injected top-priority geoip:private -> direct rule for bypassLan.")
+                            }
+                        } else {
+                            for (i in rules.length() - 1 downTo 0) {
+                                val rule = rules.optJSONObject(i) ?: continue
+                                if (rule.optString("outboundTag").equals("direct", ignoreCase = true)) {
+                                    val ipArr = rule.optJSONArray("ip") ?: continue
+                                    val newIpArr = JSONArray()
+                                    for (j in 0 until ipArr.length()) {
+                                        val item = ipArr.optString(j)
+                                        if (!item.equals("geoip:private", ignoreCase = true)) {
+                                            newIpArr.put(item)
+                                        }
+                                    }
+                                    if (newIpArr.length() > 0) {
+                                        rule.put("ip", newIpArr)
+                                    } else {
+                                        rule.remove("ip")
+                                    }
                                 }
                             }
-                        }
-                        // Removing geoip:private may leave a rule with only an
-                        // outboundTag. Xray rejects such rules ("no effective fields"),
-                        // so re-run the same pruning pass after the mutation.
-                        for (i in rules.length() - 1 downTo 0) {
-                            val rule = rules.optJSONObject(i) ?: continue
-                            if (!hasEffectiveMatchField(rule)) {
-                                rules.remove(i)
-                                Log.d(TAG, "Pruned rule without match fields after bypassLan=false mutation at index $i.")
+                            // Removing geoip:private may leave a rule with only an
+                            // outboundTag. Xray rejects such rules ("no effective fields"),
+                            // so re-run the same pruning pass after the mutation.
+                            for (i in rules.length() - 1 downTo 0) {
+                                val rule = rules.optJSONObject(i) ?: continue
+                                if (!hasEffectiveMatchField(rule)) {
+                                    rules.remove(i)
+                                    Log.d(TAG, "Pruned rule without match fields after bypassLan=false mutation at index $i.")
+                                }
                             }
+                            Log.d(TAG, "Removed geoip:private direct routing because bypassLan is disabled.")
                         }
-                        Log.d(TAG, "Removed geoip:private direct routing because bypassLan is disabled.")
                     }
                 }
             }
