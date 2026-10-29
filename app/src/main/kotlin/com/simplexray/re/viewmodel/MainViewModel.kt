@@ -390,7 +390,8 @@ class MainViewModel(application: Application) :
 
     fun refreshLuaScriptFiles() = ruleFileController.refreshLuaScriptFiles()
 
-    fun importLuaFile(uri: android.net.Uri) = ruleFileController.importLuaFile(uri)
+    fun importLuaFile(uri: android.net.Uri, targetFileName: String? = null) =
+        ruleFileController.importLuaFile(uri, targetFileName)
 
     fun getLuaFileSummary(fileName: String): String = ruleFileController.getLuaFileSummary(fileName)
 

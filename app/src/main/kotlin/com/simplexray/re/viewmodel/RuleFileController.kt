@@ -293,14 +293,14 @@ internal class RuleFileController(
         _luaScriptVersion.value = System.currentTimeMillis()
     }
 
-    fun importLuaFile(uri: android.net.Uri) {
+    fun importLuaFile(uri: android.net.Uri, targetFileName: String? = null) {
         scope.launch(Dispatchers.IO) {
             val candidateName = fileManager.getLuaFileNameFromUri(application, uri)
             if (candidateName == null) {
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.unsupported_lua_format)))
                 return@launch
             }
-            val fileName = fileManager.importLuaFileFromUri(application, uri)
+            val fileName = fileManager.importLuaFileFromUri(application, uri, targetFileName)
             if (fileName != null) {
                 refreshLuaScriptFiles()
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.file_imported, fileName)))

@@ -38,7 +38,7 @@ internal fun SettingsLuaScriptsSection(
         contract = androidx.activity.result.contract.ActivityResultContracts.OpenDocument()
     ) { uri ->
         if (uri != null) {
-            mainViewModel.importLuaFile(uri)
+            mainViewModel.importLuaFile(uri, replacingLuaFileName)
         }
         replacingLuaFileName = null
     }
@@ -96,7 +96,7 @@ private fun LuaScriptFilesList(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { onReplace(fileName) }) {
                             Icon(
-                                painter = painterResource(id = R.drawable.place_item),
+                                painter = painterResource(id = R.drawable.upload_file),
                                 contentDescription = stringResource(R.string.import_file)
                             )
                         }

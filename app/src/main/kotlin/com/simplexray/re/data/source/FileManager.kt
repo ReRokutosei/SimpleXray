@@ -67,8 +67,8 @@ class FileManager(application: Application, prefs: Preferences) {
     fun getDatFileNameFromUri(context: Context, uri: Uri): String? =
         FileUriHelper.getDatFileNameFromUri(context, uri)
 
-    suspend fun importLuaFileFromUri(context: Context, uri: Uri): String? =
-        ruleFileStore.importLuaFileFromUri(context, uri)
+    suspend fun importLuaFileFromUri(context: Context, uri: Uri, targetFileName: String? = null): String? =
+        ruleFileStore.importLuaFileFromUri(context, uri, targetFileName)
 
     fun getLuaFileNameFromUri(context: Context, uri: Uri): String? =
         FileUriHelper.getLuaFileNameFromUri(context, uri)

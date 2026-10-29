@@ -345,19 +345,24 @@ internal class RuleFileStore(
         }
     }
 
-    suspend fun importLuaFileFromUri(context: Context, uri: Uri): String? {
+    suspend fun importLuaFileFromUri(context: Context, uri: Uri, targetFileName: String? = null): String? {
         return withContext(Dispatchers.IO) {
             try {
-                val fileName = FileUriHelper.getLuaFileNameFromUri(context, uri) ?: return@withContext null
-                val targetFile = File(application.filesDir, fileName)
-                val tempFile = File(application.filesDir, "$fileName.tmp")
+                val candidateName = FileUriHelper.getLuaFileNameFromUri(context, uri) ?: return@withContext null
+                val finalName = if (!targetFileName.isNullOrBlank() && FileUriHelper.isLuaFileName(targetFileName)) {
+                    targetFileName
+                } else {
+                    candidateName
+                }
+                val targetFile = File(application.filesDir, finalName)
+                val tempFile = File(application.filesDir, "$finalName.tmp")
                 context.contentResolver.openInputStream(uri)?.use { inputStream ->
                     FileOutputStream(tempFile).use { outputStream ->
                         inputStream.copyTo(outputStream)
                     }
                 }
                 if (tempFile.renameTo(targetFile)) {
-                    fileName
+                    finalName
                 } else {
                     tempFile.delete()
                     null
