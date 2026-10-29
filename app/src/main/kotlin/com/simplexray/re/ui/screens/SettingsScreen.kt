@@ -405,7 +405,7 @@ private fun CustomDatFilesSection(
                                 }
                             }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.place_item),
+                                    painter = painterResource(id = R.drawable.upload_file),
                                     contentDescription = stringResource(R.string.import_file)
                                 )
                             }

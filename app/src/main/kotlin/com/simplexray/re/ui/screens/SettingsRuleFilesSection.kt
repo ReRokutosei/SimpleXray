@@ -112,7 +112,7 @@ internal fun SettingsRuleFilesSection(
                             if (!settingsState.files.isGeoipCustom) {
                                 IconButton(onClick = { geoipFilePickerLauncher.launch(arrayOf("*/*")) }) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.place_item),
+                                        painter = painterResource(id = R.drawable.upload_file),
                                         contentDescription = stringResource(R.string.import_file)
                                     )
                                 }
@@ -151,7 +151,7 @@ internal fun SettingsRuleFilesSection(
                             if (!settingsState.files.isGeositeCustom) {
                                 IconButton(onClick = { geositeFilePickerLauncher.launch(arrayOf("*/*")) }) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.place_item),
+                                        painter = painterResource(id = R.drawable.upload_file),
                                         contentDescription = stringResource(R.string.import_file)
                                     )
                                 }
@@ -295,7 +295,7 @@ private fun CustomDatFilesSection(
                                 }
                             }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.place_item),
+                                    painter = painterResource(id = R.drawable.upload_file),
                                     contentDescription = stringResource(R.string.import_file)
                                 )
                             }

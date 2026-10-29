@@ -481,7 +481,7 @@ private fun ConfigListPane(
                                         replaceConfigPickerLauncher.launch(arrayOf("*/*"))
                                     }) {
                                         Icon(
-                                            painter = painterResource(R.drawable.place_item),
+                                            painter = painterResource(R.drawable.upload_file),
                                             contentDescription = stringResource(R.string.replace_config),
                                             tint = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
                                         )
