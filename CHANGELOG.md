@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.5.4](https://github.com/ReRokutosei/SimpleXray/compare/v2.5.3...v2.5.4) (2026-10-30)
+
+
+### Bug Fixes
+
+* **config:** preserve routing.script and explain bypassLan interaction ([bdb3c97](https://github.com/ReRokutosei/SimpleXray/commit/bdb3c9730d47e7ecd990e62cde8173d5263171e8))
+* **deps:** bump golang.org/x/net to v0.62.0 in tools/quic ([b2a14ab](https://github.com/ReRokutosei/SimpleXray/commit/b2a14ab3439207d7077deaf0aa73b8bb29f2c5b8))
+* **service:** align native TUN child working directory to filesDir ([9525302](https://github.com/ReRokutosei/SimpleXray/commit/952530227a9fc27b30a32c42c961833fc74acd26))
+* **ui:** support in-place Lua script replacement via targetFileName ([dfd4935](https://github.com/ReRokutosei/SimpleXray/commit/dfd49352d157e61e11855a99d0b0904454372726))
+
 ### [2.5.3](https://github.com/ReRokutosei/SimpleXray/compare/v2.5.1...v2.5.3) (2026-10-25)
 
 
