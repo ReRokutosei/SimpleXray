@@ -28,6 +28,19 @@ The sanitized result is what the core actually receives. Keep an external copy o
 | `log.dnsLog` | Overwritten with the app DNS log preference. |
 | `log.loglevel` | Overwritten with the app log level; when set to `Auto` and missing/empty, set to `"warning"`. |
 
+## Geodata Block
+
+| Field | Action |
+| --- | --- |
+| `geodata` | Removed entirely; rule asset lifecycle is managed exclusively by the app. |
+
+Xray-core's built-in `geodata` block allows the core to download and update rule assets. On Android, this block is stripped by `ConfigSanitizer` for several reasons:
+- **Lifecycle & Doze**: Core-driven background timers cannot reliably run under Android Doze mode or OEM background execution restrictions.
+- **Proxy Routing**: Asset downloads often require routing through an active proxy tunnel (e.g. GitHub connectivity in restricted regions), which SimpleXray coordinates via its foreground VPN service and Android `WorkManager` (`GeoUpdateWorker`).
+- **Asset Management**: SimpleXray handles atomic disk writes, custom `.dat` imports, fallback to bundled assets, and streaming Gzip (`.dat.gz`) decompression directly within the app's internal storage.
+
+Configure rule files and update intervals directly in the app's **Settings > Rule Files** instead.
+
 ## Inbounds
 
 | Field | Action |

@@ -23,7 +23,7 @@ SimpleXray 是 Xray-core 的 Android 前端与启动器。它接受完整的 JSO
 - **完整配置处理流程**：JSON/YAML 导入、内置编辑器、单向 Android 适配、日志级别控制，以及运行时统计注入。
 - **规则文件管理**：内置 `geoip.dat`/`geosite.dat`，支持任意自定义 `.dat`、`ext:` 引用、独立更新 URL 与后台更新。
 - **Miuix 界面**：Xiaomi HyperOS/MIUI 风格的 Compose 界面，支持手机/平板自适应布局、NavigationRail、浅色/深色/跟随系统主题与 Android 12+ 动态取色。
-- **Android 集成**：按应用代理、本地直连 SOCKS5、网络切换处理与 16 KB 内存页对齐。
+- **Android 集成**：分应用代理、本地直连 SOCKS5、网络切换处理与 16 KB 内存页对齐。
 - **基准测试工具**：headless 基准测试运行器、报告与图表生成，以及设备测试数据集。
 - **平台范围**：仅支持 Android 14+、仅提供`arm64-v8a`。
 
