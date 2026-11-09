@@ -135,19 +135,6 @@ jobs:
         run: |
           cp app/build/outputs/apk/release/simplexray-arm64-v8a.apk SimpleXray-arm64-v8a-${{ env.RELEASE_VERSION }}.apk
 
-      - name: Build release APK without GEO resources
-        run: |
-          bash ./gradlew clean assembleRelease -x lint -PnoGeo=true -PappVerName="${{ env.RELEASE_VERSION }}"
-        env:
-          KEYSTORE_PATH: ${{ github.workspace }}/release.jks
-          KEYSTORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-
-      - name: Prepare no-GEO release file
-        run: |
-          cp app/build/outputs/apk/release/simplexray-arm64-v8a.apk SimpleXray-arm64-v8a-NoGEO-${{ env.RELEASE_VERSION }}.apk
-
       - name: Generate release notes
         shell: bash
         run: |
@@ -173,4 +160,3 @@ jobs:
           body_path: release.md
           files: |
             SimpleXray-arm64-v8a-${{ env.RELEASE_VERSION }}.apk
-            SimpleXray-arm64-v8a-NoGEO-${{ env.RELEASE_VERSION }}.apk

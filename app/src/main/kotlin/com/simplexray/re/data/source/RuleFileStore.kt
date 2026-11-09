@@ -61,7 +61,7 @@ internal class RuleFileStore(
             }
 
             if (!hasBundledAsset(file)) {
-                // NoGEO builds intentionally ship without geo assets. Missing
+                // In case a bundled asset is missing or cannot be opened, missing
                 // GEO data is only an error when the selected config references
                 // it; the app itself must stay alive and let the GUI surface the
                 // missing rule-file state for import/download.

@@ -97,7 +97,7 @@ internal class RuleFileController(
             if (restored) {
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_restore_geoip_success)))
             } else {
-                // NoGEO build / missing bundled asset: degrade to a download from
+                // Missing bundled asset fallback: degrade to a download from
                 // the configured default URL instead of failing the action.
                 Log.i(TAG, "Bundled geoip.dat unavailable; falling back to download.")
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_restore_download_fallback)))

@@ -79,8 +79,6 @@ val appVersionCode = if (project.hasProperty("appVerCode")) {
     computeVersionCode(appVersionName)
 }
 
-val noGeoAssets = providers.gradleProperty("noGeo").map(String::toBoolean).orElse(false)
-
 android {
     namespace = "com.simplexray.re"
     compileSdk = 37
@@ -230,10 +228,7 @@ android {
             }
             assets {
                 directories.clear()
-                directories.add(
-                    if (noGeoAssets.get()) "src/main/assets-no-geo"
-                    else "src/main/assets"
-                )
+                directories.add("src/main/assets")
             }
         }
     }

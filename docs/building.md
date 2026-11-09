@@ -42,7 +42,7 @@ wget https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geoip-lite.
 wget https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geosite.dat -O app/src/main/assets/geosite.dat
 ```
 
-Release builds download the current files from the upstream `latest` release at build time. Use `-PnoGeo=true` to build from `app/src/main/assets-no-geo/` instead.
+Release builds download the current files from the upstream `latest` release at build time.
 
 ## 4. Build Native Dependencies
 
@@ -95,13 +95,6 @@ Environment overrides: `KEYSTORE_PATH`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_P
 Output: `app/build/outputs/apk/release/simplexray-arm64-v8a.apk`.
 
 Without a valid release signing configuration, Gradle falls back to debug signing; such an APK is not suitable for distribution.
-
-A no-GEO release builds from `app/src/main/assets-no-geo/`:
-
-```bash
-./gradlew clean assembleRelease -x lint -PnoGeo=true -PappVerName=vX.Y.Z
-```
-In no-GEO builds the app remains usable without bundled assets: missing `geoip.dat`/`geosite.dat` are reported as missing in Settings, can be imported or downloaded, and the restore action falls back to downloading from the configured URL. Xray still fails normally when the selected configuration references GEO data that has not been supplied.
 
 ## 6. Verification
 
