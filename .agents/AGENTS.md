@@ -109,6 +109,15 @@ This file provides the necessary context and constraints for AI agents interacti
 - For Android/VPN/TUN or other device-dependent changes, do not create a commit until the user confirms that the change has passed real-device testing.
 - Keep such changes uncommitted in the working tree while waiting for real-device verification.
 - Prior benchmark runs or long-run stability results do not waive real-device verification for a new behavioral change. Verify the current change on-device before committing.
+- **Commit Message Conventions**:
+  - Format: `<type>(<scope>): <concise subject>` in English without trailing period, single-line (no body unless documenting breaking changes via `BREAKING CHANGE:`).
+  - Scope and Release Notes Classification:
+    - `chore(deps): bump (xray-core|hev-socks5-tunnel|go ...)` -> Classified into **Core Updates** (prominently uncollapsed in release notes).
+    - `feat(...)`, `ui(...)` -> Classified into **Features & Improvements** (use `feat(rules):` instead of `build(rules):` for user-facing rule feature changes).
+    - `perf(...)` -> Classified into **Performance**.
+    - `fix(...)` -> Classified into **Bug Fixes** (tooling/CI scopes like `fix(ci):`, `fix(lint):` are routed to Maintenance).
+    - `refactor(...)`, `build(...)`, `ci(...)`, `docs(...)`, `test(...)`, `style(...)` -> Classified into **Maintenance**.
+    - `(fix|chore)(deps):` -> Classified into **Dependencies** (automated Renovate / library bumps; collapsed along with Maintenance when total technical items >= 4).
 
 ## Repository Operating Policy
 - This repository is maintained as a personal experimental project. It is public for reference, but it is not operated as a community-maintained product.

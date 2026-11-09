@@ -147,6 +147,7 @@ count_lines() {
 }
 
 breaking_changes=""
+core_updates=""
 features=""
 performance=""
 bug_fixes=""
@@ -155,6 +156,7 @@ maintenance=""
 
 breaking_title_regex="^[a-zA-Z]+(\([^)]+\))?![[:space:]]*:"
 breaking_body_regex="BREAKING[- ]CHANGE:"
+core_update_regex="(bump|update)[[:space:]]+(xray-core|hev-socks5-tunnel|simpletun|go[[:space:]]+to)"
 
 shopt -s nocasematch
 for sha in $(git rev-list --reverse "$range"); do
@@ -174,6 +176,8 @@ for sha in $(git rev-list --reverse "$range"); do
     continue
   elif [[ "$subject" =~ $breaking_title_regex ]] || [[ "$body" =~ $breaking_body_regex ]]; then
     append_line breaking_changes "$line"
+  elif [[ "$subject" =~ $core_update_regex ]]; then
+    append_line core_updates "$line"
   elif $is_renovate || [[ "$subject" =~ ^(fix|chore)\(deps\): ]]; then
     append_line dependencies "$line"
   elif [[ "$subject" =~ ^(feat|ui)(\(.+\))?: ]]; then
@@ -195,6 +199,7 @@ shopt -u nocasematch
 
 {
   emit_section "Breaking Changes" "$breaking_changes"
+  emit_section "Core Updates" "$core_updates"
   emit_section "Features & Improvements" "$features"
   emit_section "Performance" "$performance"
   emit_section "Bug Fixes" "$bug_fixes"
@@ -204,13 +209,32 @@ shopt -u nocasematch
     dependency_count="$(count_lines "$dependencies")"
     technical_count=$((maintenance_count + dependency_count))
 
-    echo "<details>"
-    echo "<summary>Maintenance and Dependencies (${technical_count} changes)</summary>"
-    echo
-    emit_subsection "Maintenance" "$maintenance"
-    emit_subsection "Dependencies" "$dependencies"
-    echo "</details>"
-    echo
+    if [[ "$technical_count" -ge 4 ]]; then
+      if [[ "$maintenance_count" -gt 0 && "$dependency_count" -gt 0 ]]; then
+        summary_title="Maintenance and Dependencies"
+      elif [[ "$maintenance_count" -gt 0 ]]; then
+        summary_title="Maintenance"
+      else
+        summary_title="Dependencies"
+      fi
+
+      if [[ "$technical_count" -eq 1 ]]; then
+        summary_label="${summary_title} (1 change)"
+      else
+        summary_label="${summary_title} (${technical_count} changes)"
+      fi
+
+      echo "<details>"
+      echo "<summary>${summary_label}</summary>"
+      echo
+      emit_subsection "Maintenance" "$maintenance"
+      emit_subsection "Dependencies" "$dependencies"
+      echo "</details>"
+      echo
+    else
+      emit_section "Maintenance" "$maintenance"
+      emit_section "Dependencies" "$dependencies"
+    fi
   fi
 
   echo "**Full Changelog**: https://github.com/${repo}/compare/${range}"
