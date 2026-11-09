@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.5.6](https://github.com/ReRokutosei/SimpleXray/compare/v2.5.5...v2.5.6) (2026-11-09)
+
+
+### Features
+
+* **app:** request local network permission contextually on android 17 ([88f0343](https://github.com/ReRokutosei/SimpleXray/commit/88f03431e00f5ded0c7cd3039b289d54f4bfefb7))
+* **rules:** support streaming gzip decompression for rule assets ([a8ef2c6](https://github.com/ReRokutosei/SimpleXray/commit/a8ef2c657758ae2c5ee0a61d13daf8a763e9b3d8))
+
+
+### Bug Fixes
+
+* **deps:** update module github.com/quic-go/quic-go to v0.65.0 ([#64](https://github.com/ReRokutosei/SimpleXray/issues/64)) ([7b55dbf](https://github.com/ReRokutosei/SimpleXray/commit/7b55dbf0ef05e252005352611b9c1f72a2f4b55d))
+
 ### [2.5.5](https://github.com/ReRokutosei/SimpleXray/compare/v2.5.4...v2.5.5) (2026-11-01)
 
 ### [2.5.4](https://github.com/ReRokutosei/SimpleXray/compare/v2.5.3...v2.5.4) (2026-10-30)
