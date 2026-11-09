@@ -181,6 +181,7 @@ android {
             excludes += "META-INF/*.version"
             excludes += "META-INF/**/*.txt"
             excludes += "**/*.proto"
+            excludes += "**/aboutlibraries.json"
         }
     }
 
@@ -390,5 +391,24 @@ val ensureXrayCore = tasks.register("ensureXrayCore") {
 
 tasks.named("preBuild").configure {
     dependsOn(ensureXrayCore)
+}
+
+if (project.hasProperty("exportLicenses")) {
+    apply(plugin = "com.mikepenz.aboutlibraries.plugin")
+    configure<com.mikepenz.aboutlibraries.plugin.AboutLibrariesExtension> {
+        collect {
+            includePlatform = true
+        }
+        export {
+            outputFile = rootProject.file("docs/aboutlibraries.json")
+            prettyPrint = true
+        }
+    }
+
+    tasks.register<Exec>("updateLicensesDoc") {
+        dependsOn("exportLibraryDefinitions")
+        workingDir(rootProject.projectDir)
+        commandLine("python3", "tools/update_licenses.py")
+    }
 }
 

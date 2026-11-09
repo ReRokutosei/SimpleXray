@@ -80,3 +80,4 @@ kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "ko
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }
 versions = { id = "io.github.ben-manes.versions", version.ref = "gradleVersionsPlugin" }
+aboutLibraries = { id = "com.mikepenz.aboutlibraries.plugin", version = "15.1.1" }

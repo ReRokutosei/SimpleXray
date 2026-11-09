@@ -1,0 +1,183 @@
+# Third-Party Open Source Licenses
+
+SimpleXray relies on the following open source libraries and components.
+We gratefully acknowledge the contributions of these projects.
+
+## Core & Native Components
+
+- [Xray-core](https://github.com/XTLS/Xray-core) v26.11.9 | Under Mozilla Public License 2.0
+- [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) 2.19.3 (c5584fe) | Under MIT License
+
+## Android & Kotlin Libraries
+
+- [Activity](https://developer.android.com/jetpack/androidx/releases/activity#1.13.0) 1.13.0 | Under Apache License 2.0
+- [Activity Compose](https://developer.android.com/jetpack/androidx/releases/activity#1.13.0) 1.13.0 | Under Apache License 2.0
+- [Activity Kotlin Extensions](https://developer.android.com/jetpack/androidx/releases/activity#1.13.0) 1.13.0 | Under Apache License 2.0
+- [Android Arch-Common](https://developer.android.com/jetpack/androidx/releases/arch-core#2.2.0) 2.2.0 | Under Apache License 2.0
+- [Android Arch-Runtime](https://developer.android.com/jetpack/androidx/releases/arch-core#2.2.0) 2.2.0 | Under Apache License 2.0
+- [Android Graphics Path](https://developer.android.com/jetpack/androidx/releases/graphics#1.0.1) 1.0.1 | Under Apache License 2.0
+- [Android Resource Inspection - Annotations](https://developer.android.com/jetpack/androidx/releases/resourceinspection#1.0.1) 1.0.1 | Under Apache License 2.0
+- [AndroidX Autofill](https://developer.android.com/jetpack/androidx) 1.0.0 | Under Apache License 2.0
+- [AndroidX Futures](https://developer.android.com/topic/libraries/architecture/index.html) 1.1.0 | Under Apache License 2.0
+- [AndroidX Futures Kotlin Extensions](https://developer.android.com/topic/libraries/architecture/index.html) 1.1.0 | Under Apache License 2.0
+- [AndroidX Widget ViewPager2](https://developer.android.com/jetpack/androidx) 1.0.0 | Under Apache License 2.0
+- [androidx.core:core-viewtree](https://developer.android.com/jetpack/androidx/releases/core#1.0.0) 1.0.0 | Under Apache License 2.0
+- [androidx.customview:poolingcontainer](https://developer.android.com/jetpack/androidx/releases/customview#1.0.0) 1.0.0 | Under Apache License 2.0
+- [Animal Sniffer Annotations](https://www.mojohaus.org/animal-sniffer/animal-sniffer-annotations) 1.27 | Under MIT License
+- [Annotation](https://developer.android.com/jetpack/androidx/releases/annotation#1.10.0) 1.10.0 | Under Apache License 2.0
+- [AppCompat](https://developer.android.com/jetpack/androidx/releases/appcompat#1.7.0) 1.7.0 | Under Apache License 2.0
+- [AppCompat Resources](https://developer.android.com/jetpack/androidx/releases/appcompat#1.7.0) 1.7.0 | Under Apache License 2.0
+- [atomicfu](https://github.com/Kotlin/kotlinx.atomicfu) 0.28.0 | Under Apache License 2.0
+- [collections](https://developer.android.com/jetpack/androidx/releases/collection#1.6.0) 1.6.0 | Under Apache License 2.0
+- [Collections Kotlin Extensions](https://developer.android.com/jetpack/androidx/releases/collection#1.6.0) 1.6.0 | Under Apache License 2.0
+- [Compose Animation](https://developer.android.com/jetpack/androidx/releases/compose-animation#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose Animation](https://github.com/JetBrains/compose-multiplatform) 1.12.1 | Under Apache License 2.0
+- [Compose Animation Core](https://developer.android.com/jetpack/androidx/releases/compose-animation#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose Animation Core](https://github.com/JetBrains/compose-multiplatform) 1.12.1 | Under Apache License 2.0
+- [Compose Foundation](https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose Foundation](https://github.com/JetBrains/compose-multiplatform) 1.12.1 | Under Apache License 2.0
+- [Compose Geometry](https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose Geometry](https://github.com/JetBrains/compose-multiplatform) 1.12.1 | Under Apache License 2.0
+- [Compose Graphics](https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose Graphics](https://github.com/JetBrains/compose-multiplatform) 1.12.1 | Under Apache License 2.0
+- [Compose Layouts](https://developer.android.com/jetpack/androidx/releases/compose-foundation#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose Layouts](https://github.com/JetBrains/compose-multiplatform) 1.12.1 | Under Apache License 2.0
+- [Compose Material 3 Window Size Class](https://developer.android.com/jetpack/androidx/releases/compose-material3#1.5.0-alpha22) 1.5.0-alpha22 | Under Apache License 2.0
+- [Compose Material 3 Window Size Class](https://github.com/JetBrains/compose-multiplatform) 1.12.0-alpha03 | Under Apache License 2.0
+- [Compose Material Icons Core](https://developer.android.com/jetpack/androidx/releases/compose-material#1.7.8) 1.7.8 | Under Apache License 2.0
+- [Compose Material Ripple](https://developer.android.com/jetpack/androidx/releases/compose-material#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose Material3 Components](https://developer.android.com/jetpack/androidx/releases/compose-material3#1.5.0-alpha22) 1.5.0-alpha22 | Under Apache License 2.0
+- [Compose Navigation](https://developer.android.com/jetpack/androidx/releases/navigation#2.10.2) 2.10.2 | Under Apache License 2.0
+- [Compose Runtime](https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose Runtime](https://github.com/JetBrains/compose-multiplatform) 1.12.1 | Under Apache License 2.0
+- [Compose Runtime Annotation](https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose Runtime Retain](https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose Saveable](https://developer.android.com/jetpack/androidx/releases/compose-runtime#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose Saveable](https://github.com/JetBrains/compose-multiplatform) 1.12.1 | Under Apache License 2.0
+- [Compose Testing manifest dependency](https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose UI](https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose UI](https://github.com/JetBrains/compose-multiplatform) 1.12.1 | Under Apache License 2.0
+- [Compose UI Preview Tooling](https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose UI Preview Tooling](https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose UI Preview Tooling](https://github.com/JetBrains/compose-multiplatform) 1.12.1 | Under Apache License 2.0
+- [Compose UI Text](https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose UI Text](https://github.com/JetBrains/compose-multiplatform) 1.12.1 | Under Apache License 2.0
+- [Compose Unit](https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose Unit](https://github.com/JetBrains/compose-multiplatform) 1.12.1 | Under Apache License 2.0
+- [Compose Util](https://developer.android.com/jetpack/androidx/releases/compose-ui#1.12.1) 1.12.1 | Under Apache License 2.0
+- [Compose Util](https://github.com/JetBrains/compose-multiplatform) 1.12.1 | Under Apache License 2.0
+- [ConstraintLayout](https://developer.android.com/jetpack/androidx/releases/constraintlayout#2.2.1) 2.2.1 | Under Apache License 2.0
+- [ConstraintLayout Core](https://developer.android.com/jetpack/androidx/releases/constraintlayout#1.1.1) 1.1.1 | Under Apache License 2.0
+- [Core](https://developer.android.com/jetpack/androidx/releases/core#1.19.1) 1.19.1 | Under Apache License 2.0
+- [Core Kotlin Extensions](https://developer.android.com/jetpack/androidx/releases/core#1.19.1) 1.19.1 | Under Apache License 2.0
+- [Custom View](https://developer.android.com/jetpack/androidx/releases/customview#1.2.0) 1.2.0 | Under Apache License 2.0
+- [DataStore](https://developer.android.com/jetpack/androidx/releases/datastore#1.3.0) 1.3.0 | Under Apache License 2.0
+- [DataStore Core](https://developer.android.com/jetpack/androidx/releases/datastore#1.3.0) 1.3.0 | Under Apache License 2.0
+- [DataStore Core Okio](https://developer.android.com/jetpack/androidx/releases/datastore#1.3.0) 1.3.0 | Under Apache License 2.0
+- [DynamicAnimation](https://developer.android.com/jetpack/androidx/releases/dynamicanimation#1.1.0) 1.1.0 | Under Apache License 2.0
+- [Emoji2](https://developer.android.com/jetpack/androidx/releases/emoji2#1.4.0) 1.4.0 | Under Apache License 2.0
+- [Emoji2 Views Helper](https://developer.android.com/jetpack/androidx/releases/emoji2#1.4.0) 1.4.0 | Under Apache License 2.0
+- [error-prone annotations](https://errorprone.info/error_prone_annotations) 2.50.0 | Under Apache License 2.0
+- [Experimental annotation](https://developer.android.com/jetpack/androidx/releases/annotation#1.4.1) 1.4.1 | Under Apache License 2.0
+- [FindBugs-jsr305](http://findbugs.sourceforge.net/) 3.0.2 | Under Apache License 2.0
+- [Google Android Annotations Library](http://source.android.com/) 4.1.1.4 | Under Apache License 2.0
+- [Graphics Shapes](https://developer.android.com/jetpack/androidx/releases/graphics#1.0.1) 1.0.1 | Under Apache License 2.0
+- [gRPC Kotlin Stub](https://github.com/grpc/grpc-kotlin) 1.5.0 | Under Apache License 2.0
+- [Gson](https://github.com/google/gson) 2.14.0 | Under Apache License 2.0
+- [Guava InternalFutureFailureAccess and InternalFutures](https://github.com/google/guava/failureaccess) 1.0.3 | Under Apache License 2.0
+- [Guava ListenableFuture only](https://github.com/google/guava/listenablefuture) 9999.0-empty-to-avoid-conflict-with-guava | Under Apache License 2.0
+- [Guava: Google Core Libraries for Java](https://github.com/google/guava) 33.6.0-android | Under Apache License 2.0
+- [io.grpc:grpc-api](https://github.com/grpc/grpc-java) 1.85.1 | Under Apache License 2.0
+- [io.grpc:grpc-context](https://github.com/grpc/grpc-java) 1.85.1 | Under Apache License 2.0
+- [io.grpc:grpc-core](https://github.com/grpc/grpc-java) 1.85.1 | Under Apache License 2.0
+- [io.grpc:grpc-okhttp](https://github.com/grpc/grpc-java) 1.85.1 | Under Apache License 2.0
+- [io.grpc:grpc-protobuf](https://github.com/grpc/grpc-java) 1.85.1 | Under Apache License 2.0
+- [io.grpc:grpc-protobuf-lite](https://github.com/grpc/grpc-java) 1.85.1 | Under Apache License 2.0
+- [io.grpc:grpc-stub](https://github.com/grpc/grpc-java) 1.85.1 | Under Apache License 2.0
+- [io.grpc:grpc-util](https://github.com/grpc/grpc-java) 1.85.1 | Under Apache License 2.0
+- [J2ObjC Annotations](https://github.com/google/j2objc/) 3.1 | Under Apache License 2.0
+- [javax.annotation API](http://jcp.org/en/jsr/detail?id=250) 1.3.2 | Under CDDL + GPLv2 with classpath exception
+- [JetBrains Java Annotations](https://github.com/JetBrains/java-annotations) 23.0.0 | Under Apache License 2.0
+- [Jetpack Compose Libraries BOM](https://developer.android.com/jetpack) 2026.09.00 | Under Apache License 2.0
+- [JSpecify annotations](http://jspecify.org/) 1.0.0 | Under Apache License 2.0
+- [Kotlin Libraries bill-of-materials](https://kotlinlang.org/) 1.8.22 | Under Apache License 2.0
+- [Kotlin Stdlib](https://kotlinlang.org/) 2.4.21 | Under Apache License 2.0
+- [Kotlin Stdlib Common](https://kotlinlang.org/) 2.4.21 | Under Apache License 2.0
+- [Kotlin Stdlib Jdk7](https://kotlinlang.org/) 1.9.0 | Under Apache License 2.0
+- [Kotlin Stdlib Jdk8](https://kotlinlang.org/) 1.9.0 | Under Apache License 2.0
+- [kotlinx-collections-immutable](https://github.com/Kotlin/kotlinx.collections.immutable) 0.5.1 | Under Apache License 2.0
+- [kotlinx-coroutines-android](https://github.com/Kotlin/kotlinx.coroutines) 1.10.2 | Under Apache License 2.0
+- [kotlinx-coroutines-bom](https://github.com/Kotlin/kotlinx.coroutines) 1.10.2 | Under Apache License 2.0
+- [kotlinx-coroutines-core](https://github.com/Kotlin/kotlinx.coroutines) 1.10.2 | Under Apache License 2.0
+- [kotlinx-serialization-bom](https://github.com/Kotlin/kotlinx.serialization) 1.12.0 | Under Apache License 2.0
+- [kotlinx-serialization-core](https://github.com/Kotlin/kotlinx.serialization) 1.12.0 | Under Apache License 2.0
+- [kotlinx-serialization-json](https://github.com/Kotlin/kotlinx.serialization) 1.12.0 | Under Apache License 2.0
+- [LazyColumnScrollbar](https://github.com/nanihadesuka/LazyColumnScrollbar) 3.0.0 | Under MIT License
+- [Lifecycle Kotlin Extensions](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [Lifecycle LiveData](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [Lifecycle LiveData Core](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [Lifecycle Process](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [Lifecycle Runtime](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [Lifecycle Runtime](https://github.com/JetBrains/compose-multiplatform) 2.11.0 | Under Apache License 2.0
+- [Lifecycle Runtime Compose](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [Lifecycle Runtime Compose](https://github.com/JetBrains/compose-multiplatform) 2.11.0 | Under Apache License 2.0
+- [Lifecycle Service](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [Lifecycle ViewModel](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [Lifecycle ViewModel](https://github.com/JetBrains/compose-multiplatform) 2.11.0 | Under Apache License 2.0
+- [Lifecycle ViewModel Compose](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [Lifecycle ViewModel Compose](https://github.com/JetBrains/compose-multiplatform) 2.11.0 | Under Apache License 2.0
+- [Lifecycle ViewModel Kotlin Extensions](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [Lifecycle ViewModel with SavedState](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [Lifecycle ViewModel with SavedState](https://github.com/JetBrains/compose-multiplatform) 2.11.0 | Under Apache License 2.0
+- [Lifecycle-Common](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [Lifecycle-Common](https://github.com/JetBrains/compose-multiplatform) 2.11.0 | Under Apache License 2.0
+- [Lifecycle-Common for Java 8](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [LiveData Core Kotlin Extensions](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
+- [Material Components for Android](https://github.com/material-components/material-components-android) 1.14.0 | Under Apache License 2.0
+- [MaterialKolor](https://github.com/jordond/materialkolor) 5.0.1 | Under MIT License
+- [Navigation Common](https://developer.android.com/jetpack/androidx/releases/navigation#2.10.2) 2.10.2 | Under Apache License 2.0
+- [Navigation Event](https://developer.android.com/jetpack/androidx/releases/navigationevent#1.2.0) 1.2.0 | Under Apache License 2.0
+- [Navigation Runtime](https://developer.android.com/jetpack/androidx/releases/navigation#2.10.2) 2.10.2 | Under Apache License 2.0
+- [NavigationEvent Compose](https://developer.android.com/jetpack/androidx/releases/navigationevent#1.2.0) 1.2.0 | Under Apache License 2.0
+- [okhttp](https://lysine.dev/okhttp/) 5.5.1 | Under Apache License 2.0
+- [okio](https://github.com/lysine-dev/okio/) 3.18.1 | Under Apache License 2.0
+- [perfmark:perfmark-api](https://github.com/perfmark/perfmark) 0.27.0 | Under Apache License 2.0
+- [Poko Annotations](https://github.com/drewhamilton/Poko) 0.23.1 | Under Apache License 2.0
+- [Preferences DataStore](https://developer.android.com/jetpack/androidx/releases/datastore#1.3.0) 1.3.0 | Under Apache License 2.0
+- [Preferences DataStore Core](https://developer.android.com/jetpack/androidx/releases/datastore#1.3.0) 1.3.0 | Under Apache License 2.0
+- [Preferences DataStore Proto](https://developer.android.com/jetpack/androidx/releases/datastore#1.3.0) 1.3.0 | Under Apache License 2.0
+- [Preferences External Protobuf](https://developer.android.com/jetpack/androidx/releases/datastore#1.3.0) 1.3.0 | Under BSD 3-Clause "New" or "Revised" License
+- [Profile Installer](https://developer.android.com/jetpack/androidx/releases/profileinstaller#1.4.0) 1.4.0 | Under Apache License 2.0
+- [proto-google-common-protos](https://github.com/googleapis/sdk-platform-java) 2.64.1 | Under Apache License 2.0
+- [Protocol Buffers [Core]](https://developers.google.com/protocol-buffers/protobuf-java/) 4.36.2 | Under BSD 3-Clause "New" or "Revised" License
+- [Reorderable](https://github.com/Calvin-LL/Reorderable) 3.1.0 | Under Apache License 2.0
+- [Room-Common](https://developer.android.com/jetpack/androidx/releases/room#2.7.0) 2.7.0 | Under Apache License 2.0
+- [Room-Runtime](https://developer.android.com/jetpack/androidx/releases/room#2.7.0) 2.7.0 | Under Apache License 2.0
+- [Saved State](https://developer.android.com/jetpack/androidx/releases/savedstate#1.5.0) 1.5.0 | Under Apache License 2.0
+- [Saved State](https://github.com/JetBrains/compose-jb) 1.3.6 | Under Apache License 2.0
+- [Saved State Compose](https://developer.android.com/jetpack/androidx/releases/savedstate#1.5.0) 1.5.0 | Under Apache License 2.0
+- [Saved State Compose](https://github.com/JetBrains/compose-jb) 1.3.6 | Under Apache License 2.0
+- [SavedState Kotlin Extensions](https://developer.android.com/jetpack/androidx/releases/savedstate#1.5.0) 1.5.0 | Under Apache License 2.0
+- [SnakeYAML](https://codeberg.org/snakeyaml/snakeyaml) 2.7 | Under Apache License 2.0
+- [SQLite](https://developer.android.com/jetpack/androidx/releases/sqlite#2.5.0) 2.5.0 | Under Apache License 2.0
+- [SQLite Framework Integration](https://developer.android.com/jetpack/androidx/releases/sqlite#2.5.0) 2.5.0 | Under Apache License 2.0
+- [Startup Runtime](https://developer.android.com/jetpack/androidx/releases/startup#1.2.0) 1.2.0 | Under Apache License 2.0
+- [Support AnimatedVectorDrawable](https://developer.android.com/jetpack/androidx) 1.1.0 | Under Apache License 2.0
+- [Support CardView v7](http://developer.android.com/tools/extras/support-library.html) 1.0.0 | Under Apache License 2.0
+- [Support Coordinator Layout](https://developer.android.com/jetpack/androidx) 1.1.0 | Under Apache License 2.0
+- [Support Cursor Adapter](http://developer.android.com/tools/extras/support-library.html) 1.0.0 | Under Apache License 2.0
+- [Support Drawer Layout](https://developer.android.com/jetpack/androidx) 1.1.1 | Under Apache License 2.0
+- [Support fragment](https://developer.android.com/jetpack/androidx/releases/fragment#1.5.4) 1.5.4 | Under Apache License 2.0
+- [Support Interpolators](http://developer.android.com/tools/extras/support-library.html) 1.0.0 | Under Apache License 2.0
+- [Support loader](http://developer.android.com/tools/extras/support-library.html) 1.0.0 | Under Apache License 2.0
+- [Support RecyclerView](https://developer.android.com/jetpack/androidx/releases/recyclerview#1.2.1) 1.2.1 | Under Apache License 2.0
+- [Support VectorDrawable](https://developer.android.com/jetpack/androidx) 1.1.0 | Under Apache License 2.0
+- [Support View Pager](http://developer.android.com/tools/extras/support-library.html) 1.0.0 | Under Apache License 2.0
+- [Tracing](https://developer.android.com/jetpack/androidx/releases/tracing#2.0.1) 2.0.1 | Under Apache License 2.0
+- [Tracing Kotlin Extensions](https://developer.android.com/jetpack/androidx/releases/tracing#2.0.1) 2.0.1 | Under Apache License 2.0
+- [Transition](https://developer.android.com/jetpack/androidx/releases/transition#1.5.0) 1.5.0 | Under Apache License 2.0
+- [VersionedParcelable](http://developer.android.com/tools/extras/support-library.html) 1.1.1 | Under Apache License 2.0
+- [WindowManager](https://developer.android.com/jetpack/androidx/releases/window#1.5.0) 1.5.0 | Under Apache License 2.0
+- [WindowManager Core](https://developer.android.com/jetpack/androidx/releases/window#1.5.0) 1.5.0 | Under Apache License 2.0
+- [WorkManager Kotlin Extensions](https://developer.android.com/jetpack/androidx/releases/work#2.12.0) 2.12.0 | Under Apache License 2.0
+- [WorkManager Runtime](https://developer.android.com/jetpack/androidx/releases/work#2.12.0) 2.12.0 | Under Apache License 2.0

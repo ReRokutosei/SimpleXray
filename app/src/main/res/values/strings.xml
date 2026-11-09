@@ -159,6 +159,8 @@
     <string name="download">Download</string>
 
     <!-- About & App Versioning -->
+    <string name="open_source_licenses_url" translatable="false">https://github.com/ReRokutosei/SimpleXray/blob/main/docs/third_party_licenses.md</string>
+    <string name="open_source_licenses_title">Open Source Licenses</string>
     <string name="privacy_disclaimer_url" translatable="false">https://github.com/ReRokutosei/SimpleXray/tree/main/docs</string>
     <string name="privacy_disclaimer_title">Privacy Policy &amp; Disclaimer</string>
     <string name="version">Version</string>

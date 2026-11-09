@@ -77,6 +77,7 @@ internal fun SettingsAboutSection(
     val context = LocalContext.current
     val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
     val sourceUrl = stringResource(R.string.source_url)
+    val openSourceLicensesUrl = stringResource(R.string.open_source_licenses_url)
     val privacyDisclaimerUrl = stringResource(R.string.privacy_disclaimer_url)
 
         SmallTitle(text = stringResource(R.string.about))
@@ -102,6 +103,14 @@ internal fun SettingsAboutSection(
                 title = stringResource(R.string.source),
                 onClick = {
                     val browserIntent = Intent(Intent.ACTION_VIEW, sourceUrl.toUri())
+                    context.startActivity(browserIntent)
+                }
+            )
+
+            ArrowPreference(
+                title = stringResource(R.string.open_source_licenses_title),
+                onClick = {
+                    val browserIntent = Intent(Intent.ACTION_VIEW, openSourceLicensesUrl.toUri())
                     context.startActivity(browserIntent)
                 }
             )

@@ -154,6 +154,7 @@
     <string name="download">下载</string>
 
     <!-- 关于与版本更新 -->
+    <string name="open_source_licenses_title">开源许可</string>
     <string name="privacy_disclaimer_title">隐私政策与免责声明</string>
     <string name="version">应用版本</string>
     <string name="kernel">内核版本</string>
