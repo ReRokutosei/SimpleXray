@@ -8,3 +8,4 @@ const val ROUTE_MAIN = "main"
 const val ROUTE_APP_LIST = "app_list"
 const val ROUTE_CONFIG_EDIT = "config_edit"
 const val NAVIGATION_DEBOUNCE_DELAY = 500L
+const val PERMISSION_ACCESS_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK"

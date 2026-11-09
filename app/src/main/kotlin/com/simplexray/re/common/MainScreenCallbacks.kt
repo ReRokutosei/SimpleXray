@@ -29,10 +29,12 @@ fun rememberMainScreenCallbacks(
     logViewModel: LogViewModel,
     launchers: MainScreenLaunchers,
     applicationContext: Context,
-    onRequestNotificationPermission: (() -> Unit)? = null
+    onRequestNotificationPermission: (() -> Unit)? = null,
+    onRequestLocalNetworkPermission: (() -> Unit)? = null
 ): MainScreenCallbacks {
     val scope = rememberCoroutineScope()
     val requestNotificationPermission = rememberUpdatedState(onRequestNotificationPermission)
+    val requestLocalNetworkPermission = rememberUpdatedState(onRequestLocalNetworkPermission)
 
     return remember(mainViewModel, logViewModel, launchers, applicationContext) {
         MainScreenCallbacks(
@@ -102,6 +104,18 @@ fun rememberMainScreenCallbacks(
                     if (!hasNotificationPermission && !mainViewModel.prefs.notificationPrompted) {
                         requestNotificationPermission.value?.invoke()
                         return@onSwitchVpnService
+                    }
+
+                    if (mainViewModel.prefs.bypassLan && android.os.Build.VERSION.SDK_INT >= 37) {
+                        val hasLocalNetworkPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+                            applicationContext,
+                            PERMISSION_ACCESS_LOCAL_NETWORK
+                        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+                        if (!hasLocalNetworkPermission && !mainViewModel.prefs.localNetworkPrompted) {
+                            requestLocalNetworkPermission.value?.invoke()
+                            return@onSwitchVpnService
+                        }
                     }
 
                     if (mainViewModel.settingsState.value.switches.disableVpn) {

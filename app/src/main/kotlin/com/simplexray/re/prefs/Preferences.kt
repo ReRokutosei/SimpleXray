@@ -223,6 +223,7 @@ class Preferences(context: Context) {
         }
 
     var notificationPrompted: Boolean by booleanPref(NOTIFICATION_PROMPTED, false)
+    var localNetworkPrompted: Boolean by booleanPref(LOCAL_NETWORK_PROMPTED, false)
 
     var customDatUrls: Map<String, String>
         get() {
@@ -292,6 +293,7 @@ class Preferences(context: Context) {
         const val HIDE_FROM_RECENTS: String = "HideFromRecents"
         const val KEEP_AWAKE: String = "KeepAwake"
         const val NOTIFICATION_PROMPTED: String = "NotificationPrompted"
+        const val LOCAL_NETWORK_PROMPTED: String = "LocalNetworkPrompted"
         const val GEO_UPDATE_INTERVAL_HOURS: String = "GeoUpdateIntervalHours"
         const val LAST_GEO_UPDATE_TIME: String = "LastGeoUpdateTime"
         const val CUSTOM_DAT_URLS: String = "CustomDatUrls"

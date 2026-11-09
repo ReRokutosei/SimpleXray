@@ -215,6 +215,8 @@
     <string name="invalid_geo_update_interval">请输入 0（禁用）或 1 到 168 之间的整数</string>
     <string name="notification_permission_title">通知权限说明</string>
     <string name="notification_permission_summary">为了保证 VPN 服务在后台持续稳定运行并防止系统误杀，建议授予通知权限。</string>
+    <string name="local_network_permission_title">本地网络权限说明</string>
+    <string name="local_network_permission_summary">为了保证在 Android 17 及以上版本上正常访问局域网设备以及使用“绕过局域网”分流规则，建议授予本地网络（附近设备）权限。</string>
     <string name="keep_awake_title">保持唤醒锁定</string>
     <string name="keep_awake_summary">在 VPN 连接时保持部分唤醒锁。HyperOS 或遇到熄屏断连的设备可开启；在原生/Pixel/三星设备上建议保持关闭以节省电量</string>
     <string name="inbound_settings">本地入站代理</string>

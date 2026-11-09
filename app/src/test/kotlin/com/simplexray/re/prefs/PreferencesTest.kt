@@ -197,6 +197,7 @@ class PreferencesTest {
         assertEquals(ThemeMode.Auto, prefs.theme)
         assertEquals(ColorMode.Monochrome, prefs.colorMode)
         assertFalse(prefs.notificationPrompted)
+        assertFalse(prefs.localNetworkPrompted)
         assertTrue(prefs.customDatUrls.isEmpty())
         assertEquals(LogLevel.Auto, prefs.logLevel)
         assertTrue(prefs.accessLog)

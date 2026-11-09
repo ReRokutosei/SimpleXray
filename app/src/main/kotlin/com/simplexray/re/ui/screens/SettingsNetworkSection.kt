@@ -1,8 +1,14 @@
 package com.simplexray.re.ui.screens
 
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.activity.result.ActivityResultLauncher
+import com.simplexray.re.common.PERMISSION_ACCESS_LOCAL_NETWORK
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -74,6 +80,13 @@ internal fun SettingsNetworkSection(
     mainViewModel: MainViewModel,
     onShowHelp: (String, String) -> Unit,
 ) {
+    val context = LocalContext.current
+    val localNetworkLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) {
+        mainViewModel.prefs.localNetworkPrompted = true
+    }
+
     val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
     val vpnDisabled = settingsState.switches.disableVpn
     val logLevelOptions = com.simplexray.re.prefs.LogLevel.entries
@@ -109,7 +122,18 @@ internal fun SettingsNetworkSection(
                     }
                 },
                 checked = settingsState.switches.bypassLanEnabled,
-                onCheckedChange = { mainViewModel.setBypassLanEnabled(it) },
+                onCheckedChange = { enabled ->
+                    mainViewModel.setBypassLanEnabled(enabled)
+                    if (enabled && Build.VERSION.SDK_INT >= 37) {
+                        val hasPermission = ContextCompat.checkSelfPermission(
+                            context,
+                            PERMISSION_ACCESS_LOCAL_NETWORK
+                        ) == PackageManager.PERMISSION_GRANTED
+                        if (!hasPermission) {
+                            localNetworkLauncher.launch(PERMISSION_ACCESS_LOCAL_NETWORK)
+                        }
+                    }
+                },
                 enabled = !vpnDisabled
             )
 

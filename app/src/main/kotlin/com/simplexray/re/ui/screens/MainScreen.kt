@@ -23,6 +23,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.simplexray.re.R
 import com.simplexray.re.common.NAVIGATION_DEBOUNCE_DELAY
+import com.simplexray.re.common.PERMISSION_ACCESS_LOCAL_NETWORK
 import com.simplexray.re.common.ROUTE_CONFIG
 import com.simplexray.re.common.ROUTE_LOG
 import com.simplexray.re.common.ROUTE_SETTINGS
@@ -52,6 +53,7 @@ fun MainScreen(
     val scope = rememberCoroutineScope()
 
     var showNotificationRationale by remember { mutableStateOf(false) }
+    var showLocalNetworkRationale by remember { mutableStateOf(false) }
     var pendingVpnStartAfterPermission by remember { mutableStateOf(false) }
 
     lateinit var callbacks: com.simplexray.re.common.MainScreenCallbacks
@@ -59,6 +61,22 @@ fun MainScreen(
     val launchers = rememberMainScreenLaunchers(
         mainViewModel = mainViewModel,
         onNotificationPermissionResult = { _ ->
+            if (pendingVpnStartAfterPermission) {
+                if (mainViewModel.prefs.bypassLan && android.os.Build.VERSION.SDK_INT >= 37) {
+                    val hasLocalNetworkPermission = ContextCompat.checkSelfPermission(
+                        context,
+                        PERMISSION_ACCESS_LOCAL_NETWORK
+                    ) == PackageManager.PERMISSION_GRANTED
+                    if (!hasLocalNetworkPermission && !mainViewModel.prefs.localNetworkPrompted) {
+                        showLocalNetworkRationale = true
+                        return@rememberMainScreenLaunchers
+                    }
+                }
+                pendingVpnStartAfterPermission = false
+                callbacks.onSwitchVpnService()
+            }
+        },
+        onLocalNetworkPermissionResult = { _ ->
             if (pendingVpnStartAfterPermission) {
                 pendingVpnStartAfterPermission = false
                 callbacks.onSwitchVpnService()
@@ -78,6 +96,10 @@ fun MainScreen(
         onRequestNotificationPermission = {
             pendingVpnStartAfterPermission = true
             showNotificationRationale = true
+        },
+        onRequestLocalNetworkPermission = {
+            pendingVpnStartAfterPermission = true
+            showLocalNetworkRationale = true
         }
     )
 
@@ -86,11 +108,11 @@ fun MainScreen(
     ) {}
 
     LaunchedEffect(Unit) {
-        val hasPermission = ContextCompat.checkSelfPermission(
+        val hasNotificationPermission = ContextCompat.checkSelfPermission(
             context,
             Manifest.permission.POST_NOTIFICATIONS
         ) == PackageManager.PERMISSION_GRANTED
-        if (!hasPermission && !mainViewModel.prefs.notificationPrompted) {
+        if (!hasNotificationPermission && !mainViewModel.prefs.notificationPrompted) {
             showNotificationRationale = true
         }
     }
@@ -159,6 +181,40 @@ fun MainScreen(
                     showNotificationRationale = false
                     mainViewModel.prefs.notificationPrompted = true
                     if (pendingVpnStartAfterPermission) {
+                        if (mainViewModel.prefs.bypassLan && android.os.Build.VERSION.SDK_INT >= 37) {
+                            val hasLocalNetworkPermission = ContextCompat.checkSelfPermission(
+                                context,
+                                PERMISSION_ACCESS_LOCAL_NETWORK
+                            ) == PackageManager.PERMISSION_GRANTED
+                            if (!hasLocalNetworkPermission && !mainViewModel.prefs.localNetworkPrompted) {
+                                showLocalNetworkRationale = true
+                                return@ConfirmOverlayDialog
+                            }
+                        }
+                        pendingVpnStartAfterPermission = false
+                        callbacks.onSwitchVpnService()
+                    }
+                }
+            )
+        }
+    }
+
+    val localNetworkRationaleDialog: @Composable () -> Unit = {
+        if (showLocalNetworkRationale) {
+            ConfirmOverlayDialog(
+                title = stringResource(R.string.local_network_permission_title),
+                summary = stringResource(R.string.local_network_permission_summary),
+                confirmText = stringResource(R.string.confirm),
+                cancelText = stringResource(R.string.cancel),
+                onConfirm = {
+                    showLocalNetworkRationale = false
+                    mainViewModel.prefs.localNetworkPrompted = true
+                    launchers.localNetworkPermissionLauncher.launch(PERMISSION_ACCESS_LOCAL_NETWORK)
+                },
+                onDismiss = {
+                    showLocalNetworkRationale = false
+                    mainViewModel.prefs.localNetworkPrompted = true
+                    if (pendingVpnStartAfterPermission) {
                         pendingVpnStartAfterPermission = false
                         callbacks.onSwitchVpnService()
                     }
@@ -197,6 +253,7 @@ fun MainScreen(
                 onSwitchVpnService = callbacks.onSwitchVpnService
             )
             notificationRationaleDialog()
+            localNetworkRationaleDialog()
         }
     } else {
         BottomNavHost(
@@ -215,5 +272,6 @@ fun MainScreen(
             onSwitchVpnService = callbacks.onSwitchVpnService
         )
         notificationRationaleDialog()
+        localNetworkRationaleDialog()
     }
 }
