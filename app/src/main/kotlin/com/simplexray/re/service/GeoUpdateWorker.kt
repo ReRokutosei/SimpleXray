@@ -140,7 +140,11 @@ class GeoUpdateWorker(
                             }
                             val body = response.body
                             val tempFile = File(context.filesDir, "$fileName.autoupdate.tmp")
-                            FileOutputStream(tempFile).use { body.byteStream().copyTo(it) }
+                            body.byteStream().use { rawStream ->
+                                com.simplexray.re.common.GzipUtils.wrapIfNeeded(rawStream).use { decodedStream ->
+                                    FileOutputStream(tempFile).use { decodedStream.copyTo(it) }
+                                }
+                            }
                             val success = fileManager.saveRuleFileFromTemp(tempFile, fileName)
                             if (success) {
                                 anySuccess = true

@@ -141,14 +141,15 @@ internal class RuleFileStore(
             val targetFile = File(application.filesDir, filename)
             val tempFile = File(application.filesDir, "$filename.tmp")
             try {
-                application.contentResolver.openInputStream(uri).use { inputStream ->
+                application.contentResolver.openInputStream(uri).use { rawStream ->
+                    if (rawStream == null) {
+                        throw IOException("Failed to open input stream for URI: $uri")
+                    }
+                    val decodedStream = com.simplexray.re.common.GzipUtils.wrapIfNeeded(rawStream)
                     FileOutputStream(tempFile).use { outputStream ->
-                        if (inputStream == null) {
-                            throw IOException("Failed to open input stream for URI: $uri")
-                        }
                         val buffer = ByteArray(4096)
                         var read: Int
-                        while ((inputStream.read(buffer).also { read = it }) != -1) {
+                        while ((decodedStream.read(buffer).also { read = it }) != -1) {
                             outputStream.write(buffer, 0, read)
                         }
                     }
@@ -187,10 +188,11 @@ internal class RuleFileStore(
             val targetFile = File(application.filesDir, filename)
             val tempFile = File(application.filesDir, "$filename.tmp")
             try {
+                val decodedStream = com.simplexray.re.common.GzipUtils.wrapIfNeeded(inputStream)
                 FileOutputStream(tempFile).use { outputStream ->
                     val buffer = ByteArray(4096)
                     var read: Int
-                    while (inputStream.read(buffer).also { read = it } != -1) {
+                    while (decodedStream.read(buffer).also { read = it } != -1) {
                         outputStream.write(buffer, 0, read)
                         onProgress(read)
                     }

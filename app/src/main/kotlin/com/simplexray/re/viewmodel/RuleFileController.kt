@@ -223,7 +223,7 @@ internal class RuleFileController(
                         ensureActive()
                         bytesRead += read
                         if (totalBytes > 0) {
-                            val progress = (bytesRead * 100 / totalBytes).toInt()
+                            val progress = (bytesRead * 100 / totalBytes).toInt().coerceAtMost(99)
                             if (progress != lastProgress) {
                                 setProgress(
                                     application.getString(R.string.downloading, progress)
