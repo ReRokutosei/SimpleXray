@@ -30,3 +30,9 @@ includeBuild("third_party/miuix") {
         substitute(module("top.yukonga.miuix.kmp:miuix-nav")).using(project(":miuix-nav"))
     }
 }
+
+includeBuild("third_party/scripta") {
+    dependencySubstitution {
+        substitute(module("top.yukonga.scripta:editor")).using(project(":editor"))
+    }
+}

@@ -2,14 +2,13 @@ package com.simplexray.re.viewmodel
 
 import android.app.Application
 import android.util.Log
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.simplexray.re.R
 import com.simplexray.re.common.ConfigUtils
-import com.simplexray.re.common.isConfigFile
 import com.simplexray.re.common.FilenameValidator
+import com.simplexray.re.common.isConfigFile
 import com.simplexray.re.data.source.FileManager
 import com.simplexray.re.prefs.Preferences
 import kotlinx.coroutines.Dispatchers
@@ -28,24 +27,32 @@ private const val TAG = "ConfigEditViewModel"
 
 sealed class ConfigEditUiEvent {
     data class ShowSnackbar(val message: String) : ConfigEditUiEvent()
+    data class MarkSaved(val documentVersion: Int) : ConfigEditUiEvent()
     data object NavigateBack : ConfigEditUiEvent()
 }
+
+data class ConfigDocumentSnapshot(
+    val content: String = "",
+    val generation: Int = 0
+)
 
 class ConfigEditViewModel(
     application: Application,
     private val initialFilePath: String,
     prefs: Preferences
-) :
-    AndroidViewModel(application) {
+) : AndroidViewModel(application) {
 
     private var _configFile: File
     private var _originalFilePath: String = initialFilePath
 
-    private val _configTextFieldValue = MutableStateFlow(TextFieldValue())
-    val configTextFieldValue: StateFlow<TextFieldValue> = _configTextFieldValue.asStateFlow()
+    private val _documentSnapshot = MutableStateFlow(ConfigDocumentSnapshot())
+    val documentSnapshot: StateFlow<ConfigDocumentSnapshot> = _documentSnapshot.asStateFlow()
 
     private val _filename = MutableStateFlow("")
     val filename: StateFlow<String> = _filename.asStateFlow()
+
+    private val _fileExtension = MutableStateFlow("json")
+    val fileExtension: StateFlow<String> = _fileExtension.asStateFlow()
 
     private val _filenameErrorMessage = MutableStateFlow<String?>(null)
     val filenameErrorMessage: StateFlow<String?> = _filenameErrorMessage.asStateFlow()
@@ -53,19 +60,23 @@ class ConfigEditViewModel(
     private val _uiEvent = Channel<ConfigEditUiEvent>(Channel.BUFFERED)
     val uiEvent = _uiEvent.receiveAsFlow()
 
-    private val _hasConfigChanged = MutableStateFlow(false)
-    val hasConfigChanged: StateFlow<Boolean> = _hasConfigChanged.asStateFlow()
+    private val _hasFilenameChanged = MutableStateFlow(false)
+    val hasFilenameChanged: StateFlow<Boolean> = _hasFilenameChanged.asStateFlow()
 
     private val fileManager: FileManager = FileManager(application, prefs)
 
     init {
         _configFile = File(initialFilePath)
         _filename.value = _configFile.nameWithoutExtension
+        _fileExtension.value = _configFile.extension.lowercase().ifEmpty { "json" }
 
         viewModelScope.launch(Dispatchers.IO) {
             val content = readConfigFileContent()
             withContext(Dispatchers.Main) {
-                _configTextFieldValue.value = _configTextFieldValue.value.copy(text = content)
+                _documentSnapshot.value = ConfigDocumentSnapshot(
+                    content = content,
+                    generation = _documentSnapshot.value.generation + 1
+                )
             }
         }
     }
@@ -90,29 +101,17 @@ class ConfigEditViewModel(
         }
     }
 
-    fun onConfigContentChange(newValue: TextFieldValue) {
-        _configTextFieldValue.value = newValue
-        _hasConfigChanged.value = true
-    }
-
     fun onFilenameChange(newFilename: String) {
         _filename.value = newFilename
         _filenameErrorMessage.value = validateFilename(newFilename)
-        _hasConfigChanged.value = true
+        _hasFilenameChanged.value = newFilename.trim() != _configFile.nameWithoutExtension
     }
 
     private fun validateFilename(name: String): String? {
         return FilenameValidator.validateFilename(application, name)
     }
 
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
-
-    fun onSearchQueryChange(query: String) {
-        _searchQuery.value = query
-    }
-
-    fun saveConfigFile() {
+    fun saveConfigFile(rawContent: String, documentVersion: Int) {
         viewModelScope.launch(Dispatchers.IO) {
             val oldFilePath = _configFile.absolutePath
 
@@ -145,7 +144,7 @@ class ConfigEditViewModel(
                 return@launch
             }
 
-            var formattedContent: String = _configTextFieldValue.value.text
+            var formattedContent: String = rawContent
             if (newFile.name.lowercase().endsWith(".json")) {
                 try {
                     formattedContent = ConfigUtils.formatConfigContent(formattedContent)
@@ -168,15 +167,24 @@ class ConfigEditViewModel(
                     _originalFilePath = newFile.absolutePath
                 }
 
-                _uiEvent.trySend(
-                    ConfigEditUiEvent.ShowSnackbar(
-                        application.getString(R.string.config_save_success)
+                withContext(Dispatchers.Main) {
+                    _filename.value = _configFile.nameWithoutExtension
+                    _fileExtension.value = _configFile.extension.lowercase().ifEmpty { "json" }
+                    _hasFilenameChanged.value = false
+                    if (formattedContent != rawContent) {
+                        _documentSnapshot.value = ConfigDocumentSnapshot(
+                            content = formattedContent,
+                            generation = _documentSnapshot.value.generation + 1
+                        )
+                    } else {
+                        _uiEvent.trySend(ConfigEditUiEvent.MarkSaved(documentVersion))
+                    }
+                    _uiEvent.trySend(
+                        ConfigEditUiEvent.ShowSnackbar(
+                            application.getString(R.string.config_save_success)
+                        )
                     )
-                )
-                _configTextFieldValue.value =
-                    _configTextFieldValue.value.copy(text = formattedContent)
-                _filename.value = _configFile.nameWithoutExtension
-                _hasConfigChanged.value = false
+                }
             } else {
                 _uiEvent.trySend(
                     ConfigEditUiEvent.ShowSnackbar(
@@ -185,29 +193,5 @@ class ConfigEditViewModel(
                 )
             }
         }
-    }
-
-    fun handleAutoIndent(text: String, newlinePosition: Int): Pair<String, Int> {
-        val prevLineStart = text.lastIndexOf('\n', newlinePosition - 1).let {
-            if (it == -1) 0 else it + 1
-        }
-        val prevLine = text.substring(prevLineStart, newlinePosition)
-        val leadingSpaces = prevLine.takeWhile { it.isWhitespace() }.length
-        val additionalIndent = if (prevLine.trimEnd().let {
-                it.endsWith('{') || it.endsWith('[')
-            }) 2 else 0
-        val shouldDedent = run {
-            val nextLineStart = newlinePosition + 1
-            nextLineStart < text.length &&
-                    text.substring(nextLineStart).substringBefore('\n').trimStart().let {
-                        it.startsWith('}') || it.startsWith(']')
-                    }
-        }
-        val finalIndent = (
-                leadingSpaces + additionalIndent - if (shouldDedent) 2 else 0
-                ).coerceAtLeast(0)
-        val indent = " ".repeat(finalIndent)
-        val indentedText = StringBuilder(text).insert(newlinePosition + 1, indent).toString()
-        return indentedText to (newlinePosition + 1 + finalIndent)
     }
 }

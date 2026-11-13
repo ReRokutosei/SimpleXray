@@ -139,6 +139,8 @@
 
     <!-- 通用 UI 操作与交互 -->
     <string name="save">保存</string>
+    <string name="undo">撤销</string>
+    <string name="redo">重做</string>
     <string name="search">搜索</string>
     <string name="close_search">关闭搜索</string>
     <string name="clear_search">清除搜索</string>

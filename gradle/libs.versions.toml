@@ -72,6 +72,7 @@ miuix-blur = { module = "top.yukonga.miuix.kmp:miuix-blur" }
 miuix-squircle = { module = "top.yukonga.miuix.kmp:miuix-squircle" }
 miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons" }
 miuix-nav = { module = "top.yukonga.miuix.kmp:miuix-nav" }
+scripta-editor = { module = "top.yukonga.scripta:editor" }
 
 
 [plugins]

@@ -144,6 +144,8 @@
 
     <!-- Common UI Actions & Labels -->
     <string name="save">Save</string>
+    <string name="undo">Undo</string>
+    <string name="redo">Redo</string>
     <string name="search">Search</string>
     <string name="close_search">Close search</string>
     <string name="clear_search">Clear search</string>

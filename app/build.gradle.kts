@@ -81,7 +81,11 @@ val appVersionCode = if (project.hasProperty("appVerCode")) {
 
 android {
     namespace = "com.simplexray.re"
-    compileSdk = 37
+    compileSdk {
+        version = release(37) {
+            minorApiLevel = 2
+        }
+    }
 
     defaultConfig {
         applicationId = "com.simplexray.re"
@@ -269,6 +273,7 @@ dependencies {
     implementation(libs.miuix.squircle)
     implementation(libs.miuix.icons)
     implementation(libs.miuix.nav)
+    implementation(libs.scripta.editor)
     testImplementation(libs.junit)
     testImplementation(libs.org.json)
     androidTestImplementation(platform(libs.androidx.compose.bom))

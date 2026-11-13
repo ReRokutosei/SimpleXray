@@ -1,8 +1,6 @@
 package com.simplexray.re.ui.screens
 
-import android.content.Intent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,60 +10,47 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.TextLayoutResult
-import androidx.compose.ui.text.TextRange
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
-import com.simplexray.re.ui.util.bracketMatcherTransformation
 import com.simplexray.re.viewmodel.ConfigEditUiEvent
 import com.simplexray.re.viewmodel.ConfigEditViewModel
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.InputField
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
+import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.extended.Redo
+import top.yukonga.miuix.kmp.icon.extended.Undo
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.scripta.editor.CodeEditor
+import top.yukonga.scripta.editor.EditorColors
+import top.yukonga.scripta.editor.EditorLanguage
+import top.yukonga.scripta.editor.highlight.SyntaxColors
+import top.yukonga.scripta.editor.rememberSaveableCodeEditorController
 
 @Composable
 fun ConfigEditScreen(
@@ -91,20 +76,34 @@ fun ConfigEditPane(
     isExpanded: Boolean = false
 ) {
     val filename by viewModel.filename.collectAsStateWithLifecycle()
-    val configTextFieldValue by viewModel.configTextFieldValue.collectAsStateWithLifecycle()
+    val fileExtension by viewModel.fileExtension.collectAsStateWithLifecycle()
+    val documentSnapshot by viewModel.documentSnapshot.collectAsStateWithLifecycle()
     val filenameErrorMessage by viewModel.filenameErrorMessage.collectAsStateWithLifecycle()
-    val hasConfigChanged by viewModel.hasConfigChanged.collectAsStateWithLifecycle()
+    val hasFilenameChanged by viewModel.hasFilenameChanged.collectAsStateWithLifecycle()
 
-    val scrollState = rememberScrollState()
-    val scrollBehavior = MiuixScrollBehavior()
-    val isKeyboardOpen = WindowInsets.ime.getBottom(LocalDensity.current) > 0
+    val controller = rememberSaveableCodeEditorController()
     val focusManager = LocalFocusManager.current
+
+    var syncedGeneration by rememberSaveable {
+        mutableIntStateOf(0)
+    }
+
+    LaunchedEffect(documentSnapshot.generation) {
+        if (documentSnapshot.generation > 0 && documentSnapshot.generation != syncedGeneration) {
+            controller.setDocument(documentSnapshot.content)
+            syncedGeneration = documentSnapshot.generation
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.uiEvent.collect { event ->
             when (event) {
                 is ConfigEditUiEvent.NavigateBack -> {
                     onBackClick()
+                }
+
+                is ConfigEditUiEvent.MarkSaved -> {
+                    controller.markSaved(event.documentVersion)
                 }
 
                 is ConfigEditUiEvent.ShowSnackbar -> {
@@ -116,114 +115,70 @@ fun ConfigEditPane(
         }
     }
 
-    val coroutineScope = rememberCoroutineScope()
-    var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+    val editorLanguage = remember(fileExtension) {
+        when (fileExtension.lowercase()) {
+            "yaml", "yml" -> EditorLanguage.Yaml
+            else -> EditorLanguage.JavaScript
+        }
+    }
+    val editorColors = rememberMiuixEditorColors()
+    val hasUnsavedChanges = hasFilenameChanged || controller.isModified
 
-    var isSearching by remember { mutableStateOf(false) }
-    var searchQuery by remember { mutableStateOf("") }
-    var matchIndices by remember { mutableStateOf(listOf<Int>()) }
-    var currentMatchIndex by remember { mutableIntStateOf(0) }
+    val onSaveClick = {
+        val version = controller.documentVersion
+        val rawContent = controller.getText(controller.lineEnding)
+        viewModel.saveConfigFile(rawContent, version)
+        focusManager.clearFocus()
+    }
 
-    val updateMatches = { query: String, text: String ->
-        if (query.isBlank()) {
-            matchIndices = emptyList()
-            currentMatchIndex = 0
+    val onSearchToggle = {
+        if (controller.isFindVisible) {
+            controller.closeFind()
         } else {
-            val list = mutableListOf<Int>()
-            var idx = text.indexOf(query, ignoreCase = true)
-            while (idx >= 0) {
-                list.add(idx)
-                idx = text.indexOf(query, idx + 1, ignoreCase = true)
-            }
-            matchIndices = list
-            if (currentMatchIndex >= list.size) {
-                currentMatchIndex = (list.size - 1).coerceAtLeast(0)
-            }
+            controller.openReplace()
         }
     }
-
-    val jumpToMatch = { index: Int ->
-        if (matchIndices.isNotEmpty() && index in matchIndices.indices) {
-            val start = matchIndices[index]
-            val end = start + searchQuery.length
-            viewModel.onConfigContentChange(
-                configTextFieldValue.copy(selection = TextRange(start, end))
-            )
-            textLayoutResult?.let { layout ->
-                if (start in 0..layout.layoutInput.text.length) {
-                    val cursorRect = layout.getCursorRect(start)
-                    coroutineScope.launch {
-                        scrollState.animateScrollTo(cursorRect.top.toInt().coerceAtLeast(0))
-                    }
-                }
-            }
-        }
-    }
-
-
 
     val editorContent: @Composable (PaddingValues) -> Unit = { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .imePadding()
                 .padding(paddingValues)
-                .padding(horizontal = 12.dp)
-                .verticalScroll(scrollState)
         ) {
-            TextField(
-                value = filename,
-                onValueChange = { v ->
-                    viewModel.onFilenameChange(v)
-                },
-                label = stringResource(id = R.string.filename),
-                singleLine = true,
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp)
-            )
-
-            if (filenameErrorMessage != null) {
-                Text(
-                    text = filenameErrorMessage!!,
-                    color = MiuixTheme.colorScheme.error,
-                    fontSize = MiuixTheme.textStyles.body2.fontSize,
-                    modifier = Modifier.padding(bottom = 8.dp)
+                    .padding(horizontal = 12.dp)
+            ) {
+                TextField(
+                    value = filename,
+                    onValueChange = { v ->
+                        viewModel.onFilenameChange(v)
+                    },
+                    label = stringResource(id = R.string.filename),
+                    singleLine = true,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp)
                 )
+
+                if (filenameErrorMessage != null) {
+                    Text(
+                        text = filenameErrorMessage!!,
+                        color = MiuixTheme.colorScheme.error,
+                        fontSize = MiuixTheme.textStyles.body2.fontSize,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
             }
 
-            TextField(
-                value = configTextFieldValue,
-                onValueChange = { newTextFieldValue ->
-                    val newText = newTextFieldValue.text
-                    val oldText = configTextFieldValue.text
-                    val cursorPosition = newTextFieldValue.selection.start
-
-                    if (newText.length == oldText.length + 1 &&
-                        cursorPosition > 0 &&
-                        newText[cursorPosition - 1] == '\n'
-                    ) {
-                        val pair = viewModel.handleAutoIndent(newText, cursorPosition - 1)
-                        viewModel.onConfigContentChange(
-                            TextFieldValue(
-                                text = pair.first,
-                                selection = TextRange(pair.second)
-                            )
-                        )
-                    } else {
-                        viewModel.onConfigContentChange(newTextFieldValue.copy(text = newText))
-                    }
-                },
-                visualTransformation = bracketMatcherTransformation(configTextFieldValue),
-                label = stringResource(R.string.content),
+            CodeEditor(
+                controller = controller,
+                language = editorLanguage,
+                colors = editorColors,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = if (isKeyboardOpen) 0.dp else 16.dp),
-                textStyle = MiuixTheme.textStyles.main.copy(fontFamily = FontFamily.Monospace),
-                onTextLayout = { textLayoutResult = it },
-                keyboardOptions = KeyboardOptions.Default.copy(
-                    keyboardType = KeyboardType.Text
-                )
+                    .weight(1f)
             )
         }
     }
@@ -231,14 +186,12 @@ fun ConfigEditPane(
     if (showNavigationIcon) {
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = if (isSearching) "" else (filename.ifEmpty { stringResource(id = R.string.config) }),
+                SmallTopAppBar(
+                    title = "",
                     navigationIcon = {
                         IconButton(onClick = {
-                            if (isSearching) {
-                                isSearching = false
-                                searchQuery = ""
-                                matchIndices = emptyList()
+                            if (controller.isFindVisible) {
+                                controller.closeFind()
                             } else {
                                 onBackClick()
                             }
@@ -250,64 +203,40 @@ fun ConfigEditPane(
                         }
                     },
                     actions = {
-                        if (isSearching) {
-                            InputField(
-                                query = searchQuery,
-                                onQueryChange = { q ->
-                                    searchQuery = q
-                                    updateMatches(q, configTextFieldValue.text)
-                                    if (matchIndices.isNotEmpty()) {
-                                        jumpToMatch(0)
-                                    }
-                                },
-                                onSearch = {},
-                                expanded = isSearching,
-                                onExpandedChange = { isSearching = it },
-                                label = stringResource(R.string.search),
-                                modifier = Modifier.fillMaxWidth(0.5f)
+                        IconButton(
+                            onClick = { controller.undo() },
+                            enabled = controller.canUndo
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Undo,
+                                contentDescription = stringResource(R.string.undo)
                             )
-                            if (matchIndices.isNotEmpty()) {
-                                Text(
-                                    text = "${currentMatchIndex + 1}/${matchIndices.size}",
-                                    fontSize = MiuixTheme.textStyles.body2.fontSize,
-                                    modifier = Modifier.padding(horizontal = 4.dp)
-                                )
-                                IconButton(onClick = {
-                                    if (matchIndices.isNotEmpty()) {
-                                        currentMatchIndex = if (currentMatchIndex > 0) currentMatchIndex - 1 else matchIndices.size - 1
-                                        jumpToMatch(currentMatchIndex)
-                                    }
-                                }) {
-                                    Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Prev")
-                                }
-                                IconButton(onClick = {
-                                    if (matchIndices.isNotEmpty()) {
-                                        currentMatchIndex = (currentMatchIndex + 1) % matchIndices.size
-                                        jumpToMatch(currentMatchIndex)
-                                    }
-                                }) {
-                                    Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Next")
-                                }
-                            }
-                        } else {
-                            IconButton(onClick = { isSearching = true }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.search),
-                                    contentDescription = stringResource(R.string.search)
-                                )
-                            }
-                            IconButton(onClick = {
-                                viewModel.saveConfigFile()
-                                focusManager.clearFocus()
-                            }, enabled = hasConfigChanged) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.save),
-                                    contentDescription = stringResource(id = R.string.save)
-                                )
-                            }
                         }
-                    },
-                    scrollBehavior = scrollBehavior
+                        IconButton(
+                            onClick = { controller.redo() },
+                            enabled = controller.canRedo
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Redo,
+                                contentDescription = stringResource(R.string.redo)
+                            )
+                        }
+                        IconButton(onClick = onSearchToggle) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.search),
+                                contentDescription = stringResource(R.string.search)
+                            )
+                        }
+                        IconButton(
+                            onClick = onSaveClick,
+                            enabled = hasUnsavedChanges
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.save),
+                                contentDescription = stringResource(id = R.string.save)
+                            )
+                        }
+                    }
                 )
             },
             snackbarHost = { SnackbarHost(state = snackbarHostState) },
@@ -323,94 +252,57 @@ fun ConfigEditPane(
                         .fillMaxWidth()
                         .height(48.dp)
                         .padding(horizontal = 8.dp),
+                    horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (isSearching) {
-                        IconButton(onClick = {
-                            isSearching = false
-                            searchQuery = ""
-                            matchIndices = emptyList()
-                        }) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.close_search)
-                            )
+                    if (onToggleExpand != null) {
+                        IconButton(onClick = onToggleExpand) {
+                            if (isExpanded) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.back)
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.code),
+                                    contentDescription = "Expand"
+                                )
+                            }
                         }
-                        InputField(
-                            query = searchQuery,
-                            onQueryChange = { q ->
-                                searchQuery = q
-                                updateMatches(q, configTextFieldValue.text)
-                                if (matchIndices.isNotEmpty()) {
-                                    jumpToMatch(0)
-                                }
-                            },
-                            onSearch = {},
-                            expanded = isSearching,
-                            onExpandedChange = { isSearching = it },
-                            label = stringResource(R.string.search),
-                            modifier = Modifier.weight(1f)
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    IconButton(
+                        onClick = { controller.undo() },
+                        enabled = controller.canUndo
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Undo,
+                            contentDescription = stringResource(R.string.undo)
                         )
-                        if (matchIndices.isNotEmpty()) {
-                            Text(
-                                text = "${currentMatchIndex + 1}/${matchIndices.size}",
-                                fontSize = MiuixTheme.textStyles.body2.fontSize,
-                                modifier = Modifier.padding(horizontal = 4.dp)
-                            )
-                            IconButton(onClick = {
-                                if (matchIndices.isNotEmpty()) {
-                                    currentMatchIndex = if (currentMatchIndex > 0) currentMatchIndex - 1 else matchIndices.size - 1
-                                    jumpToMatch(currentMatchIndex)
-                                }
-                            }) {
-                                Icon(Icons.Default.KeyboardArrowUp, contentDescription = "Prev")
-                            }
-                            IconButton(onClick = {
-                                if (matchIndices.isNotEmpty()) {
-                                    currentMatchIndex = (currentMatchIndex + 1) % matchIndices.size
-                                    jumpToMatch(currentMatchIndex)
-                                }
-                            }) {
-                                Icon(Icons.Default.KeyboardArrowDown, contentDescription = "Next")
-                            }
-                        }
-                    } else {
-                        Text(
-                            text = filename.ifEmpty { stringResource(id = R.string.config) },
-                            style = MiuixTheme.textStyles.title3,
-                            modifier = Modifier.weight(1f)
+                    }
+                    IconButton(
+                        onClick = { controller.redo() },
+                        enabled = controller.canRedo
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Redo,
+                            contentDescription = stringResource(R.string.redo)
                         )
-
-                        if (onToggleExpand != null) {
-                            IconButton(onClick = onToggleExpand) {
-                                if (isExpanded) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = stringResource(R.string.back)
-                                    )
-                                } else {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.code),
-                                        contentDescription = "Expand"
-                                    )
-                                }
-                            }
-                        }
-                        IconButton(onClick = { isSearching = true }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.search),
-                                contentDescription = stringResource(R.string.search)
-                            )
-                        }
-                        IconButton(onClick = {
-                            viewModel.saveConfigFile()
-                            focusManager.clearFocus()
-                        }, enabled = hasConfigChanged) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.save),
-                                contentDescription = stringResource(id = R.string.save)
-                            )
-                        }
+                    }
+                    IconButton(onClick = onSearchToggle) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.search),
+                            contentDescription = stringResource(R.string.search)
+                        )
+                    }
+                    IconButton(
+                        onClick = onSaveClick,
+                        enabled = hasUnsavedChanges
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.save),
+                            contentDescription = stringResource(id = R.string.save)
+                        )
                     }
                 }
 
@@ -424,5 +316,39 @@ fun ConfigEditPane(
                     .windowInsetsPadding(WindowInsets.navigationBars)
             )
         }
+    }
+}
+
+@Composable
+private fun rememberMiuixEditorColors(): EditorColors {
+    val scheme = MiuixTheme.colorScheme
+    val isDark = scheme.background.luminance() < 0.5f
+    return remember(
+        isDark,
+        scheme.background,
+        scheme.onBackground,
+        scheme.surface,
+        scheme.surfaceContainer,
+        scheme.surfaceContainerHighest,
+        scheme.onSurface,
+        scheme.onSurfaceSecondary,
+        scheme.onSurfaceContainerVariant,
+        scheme.primary
+    ) {
+        val base = if (isDark) EditorColors.Default else EditorColors.Light
+        base.copy(
+            background = scheme.background,
+            foreground = scheme.onSurface,
+            gutterBackground = scheme.surface,
+            gutterForeground = scheme.onSurfaceContainerVariant,
+            cursor = scheme.primary,
+            selection = scheme.primary.copy(alpha = 0.30f),
+            handle = scheme.primary,
+            symbolBarBackground = scheme.surfaceContainerHighest,
+            symbolBarForeground = scheme.onSurface,
+            symbolBarPressed = scheme.onSurface.copy(alpha = if (isDark) 0.20f else 0.08f),
+            currentLine = scheme.surfaceContainer.copy(alpha = if (isDark) 0.65f else 0.85f),
+            syntax = if (isDark) SyntaxColors.Dark else SyntaxColors.Light
+        )
     }
 }
