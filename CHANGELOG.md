@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.5.7](https://github.com/ReRokutosei/SimpleXray/compare/v2.5.6...v2.5.7) (2026-11-13)
+
+
+### Features
+
+* **editor:** add unsaved changes guard and active config edit notice ([1ec0cde](https://github.com/ReRokutosei/SimpleXray/commit/1ec0cdee510c2a797f8125d3861de2cd9b5716cd))
+* **editor:** replace config editor with scripta code editor ([b82006b](https://github.com/ReRokutosei/SimpleXray/commit/b82006bf1ae8034cf32a4864656908b2484c9c40))
+
+
+### Bug Fixes
+
+* **ci:** pin hev short commit length to 7 chars in sync_versions ([c81b29a](https://github.com/ReRokutosei/SimpleXray/commit/c81b29a8321a5bb0d9f6f3cabe14a66d8c24d388))
+* **deps:** update dependency org.jetbrains.kotlinx:kotlinx-serialization-json to v1.13.0 ([#69](https://github.com/ReRokutosei/SimpleXray/issues/69)) ([c893be1](https://github.com/ReRokutosei/SimpleXray/commit/c893be1f5853e6d817bf046386b8aa81dd007e82))
+
 ### [2.5.6](https://github.com/ReRokutosei/SimpleXray/compare/v2.5.5...v2.5.6) (2026-11-09)
 
 
