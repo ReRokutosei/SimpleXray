@@ -56,7 +56,7 @@ class SyncVersionsValidationTest(unittest.TestCase):
             if "describe" in args:
                 return "c5584fe\n"  # shallow CI checkout without tags
             if "rev-parse" in args:
-                return "c5584fe\n"
+                return "c5584feca0123456789abcdef0123456789abcde\n"
             raise AssertionError(f"unexpected subprocess call: {args}")
 
         with patch.object(sync_versions.subprocess, "check_output", side_effect=fake_check_output):

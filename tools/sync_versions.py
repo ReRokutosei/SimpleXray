@@ -157,10 +157,10 @@ def get_hev_version() -> str:
 
     try:
         commit = subprocess.check_output(
-            ["git", "-C", hev_dir, "rev-parse", "--short", "HEAD"],
+            ["git", "-C", hev_dir, "rev-parse", "HEAD"],
             stderr=subprocess.DEVNULL,
             text=True
-        ).strip()
+        ).strip()[:7]
         if commit:
             return f"{tag} ({commit})"
     except Exception:
