@@ -66,7 +66,7 @@ The full structural comparison is in [Differences from Upstream](./upstream-diff
 - Complete JSON and YAML configurations, imported through SAF or the clipboard (`.json`, `.yaml`, `.yml`).
 - A one-way sanitizer removes desktop/root-oriented fields and adapts inbounds, routing rules, DNS bootstrap hosts, logging, and outbound transport settings for Android. See [Configuration Overrides and Removals](./configuration.md).
 - Error, access, and DNS logs are controlled separately. The `Auto` log level maps to `warning` when no explicit level is configured.
-- The built-in editor supports text editing, search, and bracket matching.
+- The built-in [scripta](https://github.com/YuKongA/scripta) editor supports syntax highlighting, search and replace, undo/redo, and a quick-symbol bar.
 
 ### TUN Backends
 
@@ -123,7 +123,7 @@ wget https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geosite.dat
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
 
-Debug APK: `app/build/outputs/apk/debug/simplexray-arm64-v8a.apk`. Release signing, no-GEO builds, and CI details are documented in [Building from Source](./building.md).
+Debug APK: `app/build/outputs/apk/debug/simplexray-arm64-v8a.apk`. Release signing and CI details are documented in [Building from Source](./building.md).
 
 ## Documentation
 
@@ -136,12 +136,12 @@ Debug APK: `app/build/outputs/apk/debug/simplexray-arm64-v8a.apk`. Release signi
 
 ## Upstream and Third-Party
 
-Built on [Xray-core](https://github.com/XTLS/Xray-core), [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel), and [compose-miuix-ui](https://github.com/compose-miuix-ui/miuix), and derived from the upstream [SimpleXray](https://github.com/lhear/SimpleXray) project.
+Built on [Xray-core](https://github.com/XTLS/Xray-core), [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel), [compose-miuix-ui](https://github.com/compose-miuix-ui/miuix), and [scripta](https://github.com/YuKongA/scripta), and derived from the upstream [SimpleXray](https://github.com/lhear/SimpleXray) project.
 
 Application icon assets use free Cookie Icons provided by [Magnific](https://www.magnific.com).
 
 ## Privacy and License
 
-See the [Privacy Policy](./PrivacyPolicy_EN.md) and [Disclaimer](./Disclaimer_EN.md).
+See the [Privacy Policy](./PrivacyPolicy_EN.md), [Disclaimer](./Disclaimer_EN.md), and [Open Source Licenses](./third_party_licenses.md).
 
 Unless otherwise stated, this project is distributed under the Mozilla Public License 2.0 (MPL-2.0). See [`LICENSE`](../LICENSE) for the full text.

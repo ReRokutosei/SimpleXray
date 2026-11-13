@@ -10,9 +10,19 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 DOCS_DIR = REPO_ROOT / "docs"
 JSON_PATH = DOCS_DIR / "aboutlibraries.json"
 OUTPUT_MD = DOCS_DIR / "third_party_licenses.md"
+VERSION_PROPS_PATH = REPO_ROOT / "version.properties"
 
-sys.path.insert(0, str(REPO_ROOT))
-from tools.common.dataset import load_version_properties
+
+def load_version_properties():
+    props = {}
+    if VERSION_PROPS_PATH.exists():
+        with open(VERSION_PROPS_PATH, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    props[k.strip()] = v.strip()
+    return props
 
 
 def run_gradle_export():
@@ -72,6 +82,8 @@ def generate_markdown(libraries_data):
 
     lines.append(f"- [Xray-core](https://github.com/XTLS/Xray-core){xray_str} | Under Mozilla Public License 2.0")
     lines.append(f"- [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel){hev_str} | Under MIT License")
+    lines.append("- [compose-miuix-ui](https://github.com/compose-miuix-ui/miuix) | Under Apache License 2.0")
+    lines.append("- [scripta](https://github.com/YuKongA/scripta) | Under Apache License 2.0")
     lines.append("")
 
     lines.append("## Android & Kotlin Libraries")

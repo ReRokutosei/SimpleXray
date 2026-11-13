@@ -66,7 +66,7 @@ SimpleXray 是 Xray-core 的 Android 前端与启动器。它接受完整的 JSO
 - 通过 SAF 或剪贴板导入完整 JSON/YAML 配置（`.json`、`.yaml`、`.yml`）。
 - 单向 sanitizer 会移除面向桌面/Root 的字段，并适配 inbounds、路由规则、DNS 引导 hosts、日志与部分出站传输参数。详见 [配置覆写与删除](./configuration_CN.md)。
 - 错误日志、访问日志与 DNS 日志分别控制；未显式设置级别时，`Auto` 映射为 `warning`。
-- 内置编辑器支持文本编辑、搜索与括号匹配。
+- 内置基于 [scripta](https://github.com/YuKongA/scripta) 的代码编辑器，支持语法高亮、查找与替换、撤销/重做以及快捷符号栏。
 
 ### TUN 后端
 
@@ -123,7 +123,7 @@ wget https://github.com/XTLS/Xray-rules-dat/releases/latest/download/geosite.dat
 ./gradlew :app:testDebugUnitTest :app:assembleDebug
 ```
 
-Debug APK 位于 `app/build/outputs/apk/debug/simplexray-arm64-v8a.apk`。发布签名、No-GEO 构建与 CI 说明见 [从源码构建](./building_CN.md)。
+Debug APK 位于 `app/build/outputs/apk/debug/simplexray-arm64-v8a.apk`。发布签名与 CI 说明见 [从源码构建](./building_CN.md)。
 
 ## 文档
 
@@ -136,10 +136,10 @@ Debug APK 位于 `app/build/outputs/apk/debug/simplexray-arm64-v8a.apk`。发布
 
 ## 上游与第三方
 
-项目基于 [Xray-core](https://github.com/XTLS/Xray-core)、[hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) 与 [compose-miuix-ui](https://github.com/compose-miuix-ui/miuix) 构建，并沿用上游 [SimpleXray](https://github.com/lhear/SimpleXray) 项目。应用图标使用 [Magnific](https://www.magnific.com) 提供的免费 Cookie Icons。
+项目基于 [Xray-core](https://github.com/XTLS/Xray-core)、[hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel)、[compose-miuix-ui](https://github.com/compose-miuix-ui/miuix) 与 [scripta](https://github.com/YuKongA/scripta) 构建，并沿用上游 [SimpleXray](https://github.com/lhear/SimpleXray) 项目。应用图标使用 [Magnific](https://www.magnific.com) 提供的免费 Cookie Icons。
 
 ## 隐私与许可
 
-隐私政策与免责声明见[《隐私政策》](./PrivacyPolicy_CN.md)和[《免责声明》](./Disclaimer_CN.md)。
+隐私政策、免责声明与第三方开源许可详见[《隐私政策》](./PrivacyPolicy_CN.md)、[《免责声明》](./Disclaimer_CN.md)及[《开源许可证》](./third_party_licenses.md)。
 
 除另有说明外，本项目以 Mozilla Public License 2.0（MPL-2.0）分发。完整条款见 [`LICENSE`](../LICENSE)。

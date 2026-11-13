@@ -7,6 +7,8 @@ We gratefully acknowledge the contributions of these projects.
 
 - [Xray-core](https://github.com/XTLS/Xray-core) v26.11.9 | Under Mozilla Public License 2.0
 - [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) 2.19.3 (c5584fe) | Under MIT License
+- [compose-miuix-ui](https://github.com/compose-miuix-ui/miuix) | Under Apache License 2.0
+- [scripta](https://github.com/YuKongA/scripta) | Under Apache License 2.0
 
 ## Android & Kotlin Libraries
 
@@ -109,9 +111,9 @@ We gratefully acknowledge the contributions of these projects.
 - [kotlinx-coroutines-android](https://github.com/Kotlin/kotlinx.coroutines) 1.10.2 | Under Apache License 2.0
 - [kotlinx-coroutines-bom](https://github.com/Kotlin/kotlinx.coroutines) 1.10.2 | Under Apache License 2.0
 - [kotlinx-coroutines-core](https://github.com/Kotlin/kotlinx.coroutines) 1.10.2 | Under Apache License 2.0
-- [kotlinx-serialization-bom](https://github.com/Kotlin/kotlinx.serialization) 1.12.0 | Under Apache License 2.0
-- [kotlinx-serialization-core](https://github.com/Kotlin/kotlinx.serialization) 1.12.0 | Under Apache License 2.0
-- [kotlinx-serialization-json](https://github.com/Kotlin/kotlinx.serialization) 1.12.0 | Under Apache License 2.0
+- [kotlinx-serialization-bom](https://github.com/Kotlin/kotlinx.serialization) 1.13.0 | Under Apache License 2.0
+- [kotlinx-serialization-core](https://github.com/Kotlin/kotlinx.serialization) 1.13.0 | Under Apache License 2.0
+- [kotlinx-serialization-json](https://github.com/Kotlin/kotlinx.serialization) 1.13.0 | Under Apache License 2.0
 - [LazyColumnScrollbar](https://github.com/nanihadesuka/LazyColumnScrollbar) 3.0.0 | Under MIT License
 - [Lifecycle Kotlin Extensions](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
 - [Lifecycle LiveData](https://developer.android.com/jetpack/androidx/releases/lifecycle#2.11.0) 2.11.0 | Under Apache License 2.0
