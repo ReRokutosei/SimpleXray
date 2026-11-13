@@ -6,7 +6,7 @@ We gratefully acknowledge the contributions of these projects.
 ## Core & Native Components
 
 - [Xray-core](https://github.com/XTLS/Xray-core) v26.11.9 | Under Mozilla Public License 2.0
-- [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) 2.19.3 (c5584fe) | Under MIT License
+- [hev-socks5-tunnel](https://github.com/heiher/hev-socks5-tunnel) 2.20.0 (75dbc1e) | Under MIT License
 - [compose-miuix-ui](https://github.com/compose-miuix-ui/miuix) | Under Apache License 2.0
 - [scripta](https://github.com/YuKongA/scripta) | Under Apache License 2.0
 
