@@ -355,6 +355,13 @@ class MainViewModel(application: Application) :
 
     fun refreshConfigFileList() = configFileController.refreshConfigFileList()
 
+    fun onConfigEditFinished(savedSelectedConfig: Boolean) {
+        refreshConfigFileList()
+        if (savedSelectedConfig && isVpnEnabled()) {
+            showSnackbar(application.getString(R.string.config_edited_service_running))
+        }
+    }
+
     fun updateSelectedConfigFile(file: File?) = configFileController.updateSelectedConfigFile(file)
 
     fun restoreDefaultGeoip(callback: () -> Unit) = ruleFileController.restoreDefaultGeoip(callback)

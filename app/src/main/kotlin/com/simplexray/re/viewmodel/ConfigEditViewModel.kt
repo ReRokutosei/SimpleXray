@@ -3,6 +3,8 @@ package com.simplexray.re.viewmodel
 import android.app.Application
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.simplexray.re.R
@@ -39,11 +41,13 @@ data class ConfigDocumentSnapshot(
 class ConfigEditViewModel(
     application: Application,
     private val initialFilePath: String,
-    prefs: Preferences
+    private val prefs: Preferences
 ) : AndroidViewModel(application) {
 
     private var _configFile: File
     private var _originalFilePath: String = initialFilePath
+    @Volatile
+    private var _savedSelectedConfig: Boolean = false
 
     private val _documentSnapshot = MutableStateFlow(ConfigDocumentSnapshot())
     val documentSnapshot: StateFlow<ConfigDocumentSnapshot> = _documentSnapshot.asStateFlow()
@@ -107,6 +111,21 @@ class ConfigEditViewModel(
         _hasFilenameChanged.value = newFilename.trim() != _configFile.nameWithoutExtension
     }
 
+    fun discardUnsavedChanges() {
+        _filename.value = _configFile.nameWithoutExtension
+        _filenameErrorMessage.value = null
+        _hasFilenameChanged.value = false
+        _documentSnapshot.value = _documentSnapshot.value.copy(
+            generation = _documentSnapshot.value.generation + 1
+        )
+    }
+
+    fun consumeSavedSelectedConfig(): Boolean {
+        val saved = _savedSelectedConfig
+        _savedSelectedConfig = false
+        return saved
+    }
+
     private fun validateFilename(name: String): String? {
         return FilenameValidator.validateFilename(application, name)
     }
@@ -166,6 +185,9 @@ class ConfigEditViewModel(
                     _configFile = newFile
                     _originalFilePath = newFile.absolutePath
                 }
+                if (prefs.selectedConfigPath == _configFile.absolutePath) {
+                    _savedSelectedConfig = true
+                }
 
                 withContext(Dispatchers.Main) {
                     _filename.value = _configFile.nameWithoutExtension
@@ -177,6 +199,9 @@ class ConfigEditViewModel(
                             generation = _documentSnapshot.value.generation + 1
                         )
                     } else {
+                        _documentSnapshot.value = _documentSnapshot.value.copy(
+                            content = formattedContent
+                        )
                         _uiEvent.trySend(ConfigEditUiEvent.MarkSaved(documentVersion))
                     }
                     _uiEvent.trySend(
@@ -191,6 +216,23 @@ class ConfigEditViewModel(
                         application.getString(R.string.save_fail)
                     )
                 )
+            }
+        }
+    }
+
+    companion object {
+        fun factory(
+            application: Application,
+            initialFilePath: String,
+            prefs: Preferences
+        ): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return ConfigEditViewModel(
+                    application = application,
+                    initialFilePath = initialFilePath,
+                    prefs = prefs
+                ) as T
             }
         }
     }

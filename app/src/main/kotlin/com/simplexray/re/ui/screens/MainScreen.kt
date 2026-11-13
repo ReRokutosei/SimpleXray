@@ -160,11 +160,6 @@ fun MainScreen(
     val configListState = rememberLazyListState()
     val settingsScrollState = rememberLazyListState()
 
-    val navBackStackEntry by bottomNavController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-
-    val mainScreenRoutes = listOf(ROUTE_STATS, ROUTE_CONFIG, ROUTE_LOG, ROUTE_SETTINGS)
-
     val notificationRationaleDialog: @Composable () -> Unit = {
         if (showNotificationRationale) {
             ConfirmOverlayDialog(
@@ -223,42 +218,22 @@ fun MainScreen(
         }
     }
 
-    if (currentRoute in mainScreenRoutes) {
-        AppScaffold(
-            navController = bottomNavController,
-            snackbarHostState = snackbarHostState,
-            mainViewModel = mainViewModel,
-            logViewModel = logViewModel,
-            onCreateNewConfigFileAndEdit = callbacks.onCreateNewConfigFileAndEdit,
-            onImportConfigFromClipboard = callbacks.onImportConfigFromClipboard,
-            onPerformExport = callbacks.onPerformExport,
-            onSwitchVpnService = callbacks.onSwitchVpnService,
-            logListState = logListState,
-            configListState = configListState,
-            settingsScrollState = settingsScrollState
-        ) { paddingValues ->
-            BottomNavHost(
-                navController = bottomNavController,
-                paddingValues = paddingValues,
-                mainViewModel = mainViewModel,
-                onDeleteConfigClick = callbacks.onDeleteConfigClick,
-                onCreateNewConfigFileAndEdit = callbacks.onCreateNewConfigFileAndEdit,
-                onImportConfigFromClipboard = callbacks.onImportConfigFromClipboard,
-                logViewModel = logViewModel,
-                geoipFilePickerLauncher = launchers.geoipFilePickerLauncher,
-                geositeFilePickerLauncher = launchers.geositeFilePickerLauncher,
-                logListState = logListState,
-                configListState = configListState,
-                settingsScrollState = settingsScrollState,
-                onSwitchVpnService = callbacks.onSwitchVpnService
-            )
-            notificationRationaleDialog()
-            localNetworkRationaleDialog()
-        }
-    } else {
+    AppScaffold(
+        navController = bottomNavController,
+        snackbarHostState = snackbarHostState,
+        mainViewModel = mainViewModel,
+        logViewModel = logViewModel,
+        onCreateNewConfigFileAndEdit = callbacks.onCreateNewConfigFileAndEdit,
+        onImportConfigFromClipboard = callbacks.onImportConfigFromClipboard,
+        onPerformExport = callbacks.onPerformExport,
+        onSwitchVpnService = callbacks.onSwitchVpnService,
+        logListState = logListState,
+        configListState = configListState,
+        settingsScrollState = settingsScrollState
+    ) { paddingValues ->
         BottomNavHost(
             navController = bottomNavController,
-            paddingValues = androidx.compose.foundation.layout.PaddingValues(),
+            paddingValues = paddingValues,
             mainViewModel = mainViewModel,
             onDeleteConfigClick = callbacks.onDeleteConfigClick,
             onCreateNewConfigFileAndEdit = callbacks.onCreateNewConfigFileAndEdit,

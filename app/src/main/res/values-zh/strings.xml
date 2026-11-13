@@ -82,6 +82,9 @@
     <string name="config_replaced_success">%s 替换成功</string>
     <string name="config_replace_failed">替换配置文件失败</string>
     <string name="config_replace_service_running">配置已替换，请重新选择或重启内核以生效</string>
+    <string name="config_edited_service_running">当前配置已更改，请重启内核以生效</string>
+    <string name="discard_changes_title">舍弃更改</string>
+    <string name="discard_changes_message">当前有未保存的更改，确定要舍弃吗？</string>
     <string name="edit">编辑</string>
     <string name="delete">删除</string>
     <string name="delete_config">删除配置</string>

@@ -1,5 +1,6 @@
 package com.simplexray.re.ui.screens
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -31,6 +33,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
+import com.simplexray.re.ui.components.ConfirmOverlayDialog
 import com.simplexray.re.viewmodel.ConfigEditUiEvent
 import com.simplexray.re.viewmodel.ConfigEditViewModel
 import kotlinx.coroutines.launch
@@ -123,6 +126,19 @@ fun ConfigEditPane(
     }
     val editorColors = rememberMiuixEditorColors()
     val hasUnsavedChanges = hasFilenameChanged || controller.isModified
+    var showDiscardDialog by remember { mutableStateOf(false) }
+
+    val handleBack = {
+        when {
+            controller.isFindVisible -> controller.closeFind()
+            hasUnsavedChanges -> showDiscardDialog = true
+            else -> onBackClick()
+        }
+    }
+
+    BackHandler(enabled = controller.isFindVisible || hasUnsavedChanges) {
+        handleBack()
+    }
 
     val onSaveClick = {
         val version = controller.documentVersion
@@ -181,6 +197,23 @@ fun ConfigEditPane(
                     .weight(1f)
             )
         }
+
+        if (showDiscardDialog) {
+            ConfirmOverlayDialog(
+                title = stringResource(R.string.discard_changes_title),
+                summary = stringResource(R.string.discard_changes_message),
+                confirmText = stringResource(R.string.confirm),
+                cancelText = stringResource(R.string.cancel),
+                onConfirm = {
+                    showDiscardDialog = false
+                    viewModel.discardUnsavedChanges()
+                    onBackClick()
+                },
+                onDismiss = {
+                    showDiscardDialog = false
+                }
+            )
+        }
     }
 
     if (showNavigationIcon) {
@@ -189,13 +222,7 @@ fun ConfigEditPane(
                 SmallTopAppBar(
                     title = "",
                     navigationIcon = {
-                        IconButton(onClick = {
-                            if (controller.isFindVisible) {
-                                controller.closeFind()
-                            } else {
-                                onBackClick()
-                            }
-                        }) {
+                        IconButton(onClick = handleBack) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = stringResource(R.string.back)

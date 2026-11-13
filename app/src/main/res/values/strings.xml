@@ -88,6 +88,9 @@
     <string name="config_replaced_success">%s replaced successfully</string>
     <string name="config_replace_failed">Failed to replace configuration file</string>
     <string name="config_replace_service_running">Configuration replaced. Please reload or restart core to apply.</string>
+    <string name="config_edited_service_running">Current configuration changed. Please restart core to apply.</string>
+    <string name="discard_changes_title">Discard Changes</string>
+    <string name="discard_changes_message">You have unsaved changes. Are you sure you want to discard them?</string>
     <string name="edit">Edit</string>
     <string name="delete">Delete</string>
     <string name="delete_config">Delete Configuration</string>

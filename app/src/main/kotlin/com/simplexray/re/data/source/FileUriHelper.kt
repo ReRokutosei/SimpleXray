@@ -7,14 +7,18 @@ internal object FileUriHelper {
     fun getFileNameFromUri(context: Context, uri: Uri): String? {
         var result: String? = null
         if (uri.scheme == "content") {
-            val cursor = context.contentResolver.query(uri, null, null, null, null)
-            cursor?.use {
-                if (it.moveToFirst()) {
-                    val index = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
-                    if (index >= 0) {
-                        result = it.getString(index)
+            try {
+                val cursor = context.contentResolver.query(uri, null, null, null, null)
+                cursor?.use {
+                    if (it.moveToFirst()) {
+                        val index = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (index >= 0) {
+                            result = it.getString(index)
+                        }
                     }
                 }
+            } catch (_: Exception) {
+                // Fall back to URI path segment if provider rejects query
             }
         }
         if (result == null) {

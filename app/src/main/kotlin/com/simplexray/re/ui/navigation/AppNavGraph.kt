@@ -12,8 +12,6 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.NavHost
@@ -36,6 +34,7 @@ fun AppNavHost(
     mainViewModel: MainViewModel
 ) {
     val navController = rememberNavController()
+    val mainSnackbarHostState = remember { SnackbarHostState() }
 
     NavHost(
         navController = navController,
@@ -51,7 +50,7 @@ fun AppNavHost(
             MainScreen(
                 mainViewModel = mainViewModel,
                 appNavController = navController,
-                snackbarHostState = remember { SnackbarHostState() }
+                snackbarHostState = mainSnackbarHostState
             )
         }
 
@@ -80,23 +79,19 @@ fun AppNavHost(
             if (!path.isNullOrEmpty() && File(path).exists()) {
                 val configEditViewModel: ConfigEditViewModel = viewModel(
                     key = path,
-                    factory = object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return ConfigEditViewModel(
-                                application = mainViewModel.getApplication(),
-                                initialFilePath = path,
-                                prefs = mainViewModel.prefs
-                            ) as T
-                        }
-                    }
+                    factory = ConfigEditViewModel.factory(
+                        application = mainViewModel.getApplication(),
+                        initialFilePath = path,
+                        prefs = mainViewModel.prefs
+                    )
                 )
                 ConfigEditScreen(
                     onBackClick = {
+                        val savedSelected = configEditViewModel.consumeSavedSelectedConfig()
                         mainViewModel.editingFilePath = null
                         // Renaming in the editor updates prefs.selectedConfigPath
                         // on disk; refresh so ConfigScreen shows the new name.
-                        mainViewModel.refreshConfigFileList()
+                        mainViewModel.onConfigEditFinished(savedSelected)
                         navController.popBackStack()
                     },
                     snackbarHostState = remember { SnackbarHostState() },

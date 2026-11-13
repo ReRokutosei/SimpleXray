@@ -57,6 +57,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.simplexray.re.R
 import com.simplexray.re.viewmodel.ConfigEditViewModel
 import com.simplexray.re.viewmodel.MainViewModel
@@ -221,18 +222,34 @@ fun ConfigScreen(
                 if (selectedFileForDetail != null) {
                     val activeFile = selectedFileForDetail!!
                     key(activeFile.absolutePath) {
-                        val editViewModel = remember(activeFile.absolutePath) {
-                            ConfigEditViewModel(
-                                mainViewModel.getApplication(),
-                                activeFile.absolutePath,
-                                mainViewModel.prefs
+                        val editViewModel: ConfigEditViewModel = viewModel(
+                            key = activeFile.absolutePath,
+                            factory = ConfigEditViewModel.factory(
+                                application = mainViewModel.getApplication(),
+                                initialFilePath = activeFile.absolutePath,
+                                prefs = mainViewModel.prefs
                             )
+                        )
+                        val collapseExpandedEditor = {
+                            if (isEditorExpanded) {
+                                isEditorExpanded = false
+                                mainViewModel.onConfigEditFinished(
+                                    editViewModel.consumeSavedSelectedConfig()
+                                )
+                            }
                         }
                         ConfigEditPane(
+                            onBackClick = collapseExpandedEditor,
                             viewModel = editViewModel,
                             snackbarHostState = snackbarHostState,
                             showNavigationIcon = false,
-                            onToggleExpand = { isEditorExpanded = !isEditorExpanded },
+                            onToggleExpand = {
+                                if (isEditorExpanded) {
+                                    collapseExpandedEditor()
+                                } else {
+                                    isEditorExpanded = true
+                                }
+                            },
                             isExpanded = isEditorExpanded
                         )
                     }
