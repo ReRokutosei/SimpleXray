@@ -147,6 +147,11 @@ internal class XrayProcessRunner(
             val rawConfigContent = runCatching { configFile.readText() }.getOrDefault("")
             Log.d(tag, "Loaded raw user config: ${configFile.name}, ${rawConfigContent.length} chars")
 
+            ConfigUtils.parseConfigError(rawConfigContent)?.let { parseErr ->
+                callbacks.onStartFailure("Failed to parse config (${configFile.name}): $parseErr")
+                return
+            }
+
             val sanitizedConfigContent = ConfigUtils.sanitizeConfig(rawConfigContent, prefs)
 
             val isYaml = configFile.extension.lowercase() in listOf("yaml", "yml")
@@ -386,5 +391,7 @@ internal class XrayProcessRunner(
         private const val STARTUP_PROBE_INTERVAL_MS: Long = 500
         private val GO_LOG_TIMESTAMP_PREFIX = Regex("""^\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}(\.\d+)? """)
         private val logTimestampFormat = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss.SSS", Locale.US)
+        fun formatAppLogLine(message: String): String =
+            "${LocalDateTime.now().format(logTimestampFormat)} $message"
     }
 }

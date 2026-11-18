@@ -25,11 +25,21 @@ object VpnStateHub {
     )
     val logFlow: SharedFlow<String> = _logFlow.asSharedFlow()
 
+    private val _clearLogsFlow = MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val clearLogsFlow: SharedFlow<Unit> = _clearLogsFlow.asSharedFlow()
+
     fun updateState(newState: VpnRunningState) {
         _state.value = newState
     }
 
     fun emitLog(line: String) {
         _logFlow.tryEmit(line)
+    }
+
+    fun notifyLogsCleared() {
+        _clearLogsFlow.tryEmit(Unit)
     }
 }

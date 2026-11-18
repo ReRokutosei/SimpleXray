@@ -37,6 +37,9 @@ object ConfigUtils {
     fun isValidConfigContent(content: String): Boolean =
         ConfigCodec.isValid(content)
 
+    fun parseConfigError(content: String): String? =
+        ConfigCodec.parseError(content)
+
     @Throws(JSONException::class)
     fun injectStatsService(prefs: Preferences, configContent: String): String =
         ConfigInjector.injectStatsService(prefs, configContent)

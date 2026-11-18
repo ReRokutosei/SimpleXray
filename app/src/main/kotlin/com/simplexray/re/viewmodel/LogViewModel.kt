@@ -27,6 +27,24 @@ import java.util.Collections
 
 private const val TAG = "LogViewModel"
 private const val MAX_LOG_ENTRIES = 300
+private val LOG_TIMESTAMP_START_REGEX = Regex("""^\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}(\.\d+)? """)
+
+internal fun groupMultilineLogEntries(rawLines: List<String>): List<String> {
+    if (rawLines.isEmpty()) return emptyList()
+    val entries = ArrayList<String>(rawLines.size)
+    var currentBuilder: StringBuilder? = null
+    for (line in rawLines) {
+        if (line.trim().isEmpty()) continue
+        if (LOG_TIMESTAMP_START_REGEX.containsMatchIn(line) || currentBuilder == null) {
+            currentBuilder?.let { entries.add(it.toString()) }
+            currentBuilder = StringBuilder(line)
+        } else {
+            currentBuilder.append('\n').append(line)
+        }
+    }
+    currentBuilder?.let { entries.add(it.toString()) }
+    return entries
+}
 
 @OptIn(FlowPreview::class)
 class LogViewModel(application: Application) :
@@ -63,6 +81,15 @@ class LogViewModel(application: Application) :
     init {
         Log.d(TAG, "LogViewModel initialized.")
         viewModelScope.launch {
+            VpnStateHub.clearLogsFlow.collect {
+                pendingBatchJob?.cancel()
+                logMutex.withLock {
+                    logBuffer.clear()
+                    _logEntries.value = emptyList()
+                }
+            }
+        }
+        viewModelScope.launch {
             VpnStateHub.logFlow.collect { line ->
                 processNewLogs(listOf(line))
             }
@@ -79,7 +106,7 @@ class LogViewModel(application: Application) :
             Log.d(TAG, "Loading logs.")
             val savedLogData = logFileManager.readLogs()
             val initialLogs = if (!savedLogData.isNullOrEmpty()) {
-                savedLogData.split("\n").filter { it.trim().isNotEmpty() }
+                groupMultilineLogEntries(savedLogData.split("\n"))
             } else {
                 emptyList()
             }

@@ -113,7 +113,7 @@ fun LogScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 12.dp),
-                        contentPadding = PaddingValues(top = bottomPadding, bottom = 12.dp),
+                        contentPadding = PaddingValues(top = 12.dp, bottom = bottomPadding),
                         reverseLayout = true
                     ) {
                         items(filteredEntries) { logEntry ->

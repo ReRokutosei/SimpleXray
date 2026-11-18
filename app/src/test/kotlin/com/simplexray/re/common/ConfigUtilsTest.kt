@@ -453,4 +453,25 @@ class ConfigUtilsTest {
         assertEquals(1, custom.length())
         assertEquals("7", custom.getJSONObject(0).getString("value"))
     }
+
+    @Test
+    fun testParseConfigErrorReturnsDetailsForMalformedYamlAndJson() {
+        assertNull(ConfigUtils.parseConfigError("""{"inbounds": []}"""))
+        assertNull(ConfigUtils.parseConfigError("inbounds: []\noutbounds: []"))
+
+        val yamlError = ConfigUtils.parseConfigError(
+            """
+            outbounds:
+              - protocol: vless
+                settings:
+                  vnext:
+                    - address: *undefined_anchor
+            """.trimIndent()
+        )
+        assertNotNull(yamlError)
+        assertTrue(yamlError!!.contains("undefined_anchor"))
+
+        val jsonError = ConfigUtils.parseConfigError("""{"inbounds": [""")
+        assertNotNull(jsonError)
+    }
 }

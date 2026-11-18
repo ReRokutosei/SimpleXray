@@ -101,4 +101,27 @@ class LogFileManagerTest {
         assertNotNull(finalLogs)
         assertTrue(finalLogs!!.isNotEmpty())
     }
+
+    @Test
+    fun testGroupMultilineLogEntriesPreservesMultilineBlocksInOrder() {
+        val rawLines = listOf(
+            "2026/11/18 20:05:46.791 [Error] Failed to parse config (android.yaml): found undefined alias vmiss_hkg_ip_v6",
+            " in 'string', line 151, column 16:",
+            "        - address: *vmiss_hkg_ip_v6",
+            "                   ^",
+            "2026/11/18 20:05:47.000 [Info] Next timestamped log line"
+        )
+        val grouped = com.simplexray.re.viewmodel.groupMultilineLogEntries(rawLines)
+        assertEquals(2, grouped.size)
+        assertEquals(
+            """
+            2026/11/18 20:05:46.791 [Error] Failed to parse config (android.yaml): found undefined alias vmiss_hkg_ip_v6
+             in 'string', line 151, column 16:
+                    - address: *vmiss_hkg_ip_v6
+                               ^
+            """.trimIndent(),
+            grouped[0]
+        )
+        assertEquals("2026/11/18 20:05:47.000 [Info] Next timestamped log line", grouped[1])
+    }
 }

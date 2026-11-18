@@ -248,6 +248,7 @@ class TProxyService : VpnService() {
         VpnStateHub.updateState(VpnRunningState.Connecting)
         vpnWakeLock.acquireIfEnabled()
         logFileManager.clearLogs()
+        VpnStateHub.notifyLogsCleared()
 
         if (coreOnly) {
             xrayProcessRunner.launch(serviceScope)
@@ -304,6 +305,26 @@ class TProxyService : VpnService() {
         }
         startupFailed = true
         Log.e(TAG, "Xray startup failed: $reason")
+        val lines = reason.lines()
+            .map { it.trimEnd() }
+            .filter { it.isNotBlank() }
+        val logEntry = if (lines.isEmpty()) {
+            XrayProcessRunner.formatAppLogLine("[Error] Xray startup failed")
+        } else {
+            val firstLine = XrayProcessRunner.formatAppLogLine("[Error] ${lines.first()}")
+            if (lines.size == 1) {
+                firstLine
+            } else {
+                buildString {
+                    append(firstLine)
+                    for (i in 1 until lines.size) {
+                        append('\n').append(lines[i])
+                    }
+                }
+            }
+        }
+        logFileManager.appendLog(logEntry)
+        VpnStateHub.emitLog(logEntry)
         val failedState = VpnRunningState.Failed(
             applicationContext.getString(R.string.core_start_failed)
         )

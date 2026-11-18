@@ -69,4 +69,21 @@ class VpnStateHubTest {
         }
         assertTrue(true)
     }
+
+    @Test
+    fun testNotifyLogsClearedDeliversSignal() = runBlocking {
+        var clearedCount = 0
+        val job: Job = launch {
+            VpnStateHub.clearLogsFlow.collect {
+                clearedCount++
+            }
+        }
+
+        delay(20)
+        VpnStateHub.notifyLogsCleared()
+        delay(50)
+        job.cancel()
+
+        assertEquals(1, clearedCount)
+    }
 }
