@@ -65,7 +65,6 @@ import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.blur.BlendColorEntry
 import top.yukonga.miuix.kmp.blur.BlurDefaults
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
-import top.yukonga.miuix.kmp.blur.highlight.Highlight
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.blur.textureBlur
@@ -358,12 +357,8 @@ fun AppNavigationRail(navController: NavHostController) {
 fun AppBottomNavigationBar(navController: NavHostController, backdrop: LayerBackdrop? = null) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val isDark = androidx.compose.foundation.isSystemInDarkTheme()
     val surfaceContainer = MiuixTheme.colorScheme.surfaceContainer
     val barShape = remember { RoundedCornerShape(FloatingToolbarDefaults.CornerRadius) }
-    val highlight = remember(isDark) {
-        if (isDark) Highlight.GlassStrokeMiddleDark else Highlight.GlassStrokeMiddleLight
-    }
     val blurColors = BlurDefaults.blurColors(
         blendColors = listOf(
             BlendColorEntry(color = surfaceContainer.copy(alpha = 0.65f))
@@ -376,8 +371,7 @@ fun AppBottomNavigationBar(navController: NavHostController, backdrop: LayerBack
                 backdrop = backdrop,
                 shape = barShape,
                 blurRadius = 25f,
-                colors = blurColors,
-                highlight = null
+                colors = blurColors
             )
         } else Modifier,
         color = if (backdrop != null) Color.Transparent else surfaceContainer
