@@ -55,20 +55,17 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.glass.GlassDropdownPreference
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.basic.DropdownArrowEndAction
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
-import top.yukonga.miuix.kmp.popup.OverlayDropdownPopup
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.simplexray.re.ui.components.ConfirmOverlayDialog
 import com.simplexray.re.ui.components.InfoOverlayDialog
+import com.simplexray.re.ui.scaffold.LocalLayerBackdrop
 
 @Composable
 internal fun SettingsGeneralSection(
@@ -76,6 +73,7 @@ internal fun SettingsGeneralSection(
     onShowHelp: (String, String) -> Unit,
 ) {
     val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
+    val backdrop = LocalLayerBackdrop.current
     val themeOptions = listOf(
         stringResource(R.string.theme_light),
         stringResource(R.string.theme_dark),
@@ -98,33 +96,36 @@ internal fun SettingsGeneralSection(
 
         SmallTitle(text = stringResource(R.string.general))
         Card(modifier = Modifier.fillMaxWidth()) {
-            OverlayDropdownPreference(
+            GlassDropdownPreference(
                 title = stringResource(R.string.theme_title),
                 items = themeOptions,
                 selectedIndex = currentThemeIndex,
                 onSelectedIndexChange = { index ->
                     mainViewModel.setTheme(themeModes[index])
-                }
+                },
+                backdrop = backdrop
             )
 
-            OverlayDropdownPreference(
+            GlassDropdownPreference(
                 title = stringResource(R.string.color_title),
                 items = colorOptions,
                 selectedIndex = currentColorIndex,
                 onSelectedIndexChange = { index ->
                     mainViewModel.setColorMode(colorModes[index])
-                }
+                },
+                backdrop = backdrop
             )
 
             val currentIcon by mainViewModel.appIcon.collectAsStateWithLifecycle()
             val currentIconIndex = iconKeys.indexOf(currentIcon).coerceAtLeast(0)
-            OverlayDropdownPreference(
+            GlassDropdownPreference(
                 title = stringResource(R.string.app_icon),
                 items = iconOptions,
                 selectedIndex = currentIconIndex,
                 onSelectedIndexChange = { index ->
                     mainViewModel.setAppIcon(iconKeys[index])
-                }
+                },
+                backdrop = backdrop
             )
 
             SwitchPreference(

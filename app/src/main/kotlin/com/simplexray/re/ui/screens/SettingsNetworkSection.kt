@@ -60,20 +60,17 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.glass.GlassDropdownPreference
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.basic.DropdownArrowEndAction
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
-import top.yukonga.miuix.kmp.popup.OverlayDropdownPopup
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.simplexray.re.ui.components.ConfirmOverlayDialog
 import com.simplexray.re.ui.components.InfoOverlayDialog
+import com.simplexray.re.ui.scaffold.LocalLayerBackdrop
 
 @Composable
 internal fun SettingsNetworkSection(
@@ -81,6 +78,7 @@ internal fun SettingsNetworkSection(
     onShowHelp: (String, String) -> Unit,
 ) {
     val context = LocalContext.current
+    val backdrop = LocalLayerBackdrop.current
     val localNetworkLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) {
@@ -139,9 +137,7 @@ internal fun SettingsNetworkSection(
 
             val errorLogTitle = stringResource(R.string.error_log_title)
             val loglevelSummary = stringResource(R.string.loglevel_summary)
-            var isLogLevelDropdownExpanded by remember { mutableStateOf(false) }
-            val currentLogLevelName = logLevelNames.getOrNull(currentLogLevelIndex) ?: ""
-            BasicComponent(
+            GlassDropdownPreference(
                 title = "",
                 startAction = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -165,42 +161,12 @@ internal fun SettingsNetworkSection(
                         }
                     }
                 },
-                endActions = {
-                    Text(
-                        text = currentLogLevelName,
-                        fontSize = MiuixTheme.textStyles.body2.fontSize,
-                        color = MiuixTheme.colorScheme.onSurfaceVariantActions,
-                        modifier = Modifier.align(Alignment.CenterVertically)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    DropdownArrowEndAction(
-                        actionColor = MiuixTheme.colorScheme.onSurfaceVariantActions
-                    )
-                    val logLevelDropdownEntry = remember(logLevelNames, currentLogLevelIndex) {
-                        DropdownEntry(
-                            logLevelNames.mapIndexed { index, name ->
-                                DropdownItem(
-                                    text = name,
-                                    selected = index == currentLogLevelIndex,
-                                    onClick = { mainViewModel.setLogLevel(logLevelOptions[index]) }
-                                )
-                            }
-                        )
-                    }
-                    OverlayDropdownPopup(
-                        entry = logLevelDropdownEntry,
-                        show = isLogLevelDropdownExpanded,
-                        onDismiss = { isLogLevelDropdownExpanded = false },
-                        onDismissFinished = {},
-                        maxHeight = null,
-                        dropdownColors = DropdownDefaults.dropdownColors(),
-                        renderInRootScaffold = true,
-                        collapseOnSelection = true
-                    )
+                items = logLevelNames,
+                selectedIndex = currentLogLevelIndex,
+                onSelectedIndexChange = { index ->
+                    mainViewModel.setLogLevel(logLevelOptions[index])
                 },
-                onClick = {
-                    isLogLevelDropdownExpanded = !isLogLevelDropdownExpanded
-                }
+                backdrop = backdrop
             )
 
             SwitchPreference(

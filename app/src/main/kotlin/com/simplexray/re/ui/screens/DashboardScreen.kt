@@ -84,6 +84,7 @@ fun DashboardScreen(
     val isWideScreen = with(LocalDensity.current) {
         LocalWindowInfo.current.containerSize.width >= 600.dp.roundToPx()
     }
+    val topPadding = paddingValues.calculateTopPadding() + 12.dp
     val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
 
     Box(
@@ -96,7 +97,7 @@ fun DashboardScreen(
                 .then(
                     if (isWideScreen) Modifier.widthIn(max = 840.dp) else Modifier
                 ),
-            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = bottomPadding)
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = topPadding, bottom = bottomPadding)
         ) {
             item {
                 SmallTitle(text = stringResource(id = R.string.traffic_info))

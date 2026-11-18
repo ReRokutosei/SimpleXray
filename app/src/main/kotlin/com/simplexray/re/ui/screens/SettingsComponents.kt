@@ -54,20 +54,17 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.basic.DropdownArrowEndAction
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
-import top.yukonga.miuix.kmp.popup.OverlayDropdownPopup
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.simplexray.re.ui.components.ConfirmOverlayDialog
 import com.simplexray.re.ui.components.InfoOverlayDialog
+import com.simplexray.re.ui.scaffold.LocalLayerBackdrop
 
 @Composable
 fun EditableListItemWithMiuixBottomSheet(
@@ -82,11 +79,13 @@ fun EditableListItemWithMiuixBottomSheet(
 ) {
     var showSheet by remember { mutableStateOf(false) }
     var tempValue by remember { mutableStateOf(currentValue) }
+    val backdrop = LocalLayerBackdrop.current
 
     if (showSheet) {
-        OverlayBottomSheet(
+        GlassBottomSheet(
             title = headline,
             show = true,
+            backdrop = backdrop,
             onDismissRequest = { showSheet = false },
             startAction = {
                 IconButton(onClick = { showSheet = false }) {

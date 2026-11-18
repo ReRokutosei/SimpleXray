@@ -1,24 +1,25 @@
 package com.simplexray.re.ui.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import top.yukonga.miuix.kmp.basic.ButtonDefaults
+import com.simplexray.re.ui.scaffold.LocalLayerBackdrop
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TextButton
-import top.yukonga.miuix.kmp.overlay.OverlayDialog
+import top.yukonga.miuix.kmp.blur.Backdrop
+import top.yukonga.miuix.kmp.glass.GlassDialog
+import top.yukonga.miuix.kmp.glass.GlassDialogButton
+import top.yukonga.miuix.kmp.glass.GlassDialogButtonRole
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 /**
  * Generic confirmation dialog: a title, a summary and a cancel/confirm button row.
- * Collapses the repeated `OverlayDialog` + `Row` + two `TextButton` boilerplate.
+ * Collapses the repeated `GlassDialog` + `Row` + two `GlassDialogButton` boilerplate.
  */
 @Composable
 fun ConfirmOverlayDialog(
@@ -28,26 +29,29 @@ fun ConfirmOverlayDialog(
     cancelText: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    backdrop: Backdrop? = LocalLayerBackdrop.current,
 ) {
-    OverlayDialog(
+    GlassDialog(
         show = true,
+        backdrop = backdrop,
         title = title,
         summary = summary,
         onDismissRequest = onDismiss,
         content = {
-            Row {
-                TextButton(
-                    text = cancelText,
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                GlassDialogButton(
                     onClick = onDismiss,
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(Modifier.width(16.dp))
-                TextButton(
-                    text = confirmText,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(text = cancelText, style = MiuixTheme.textStyles.button)
+                }
+                GlassDialogButton(
                     onClick = onConfirm,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.textButtonColorsPrimary()
-                )
+                    role = GlassDialogButtonRole.Primary,
+                ) {
+                    Text(text = confirmText, style = MiuixTheme.textStyles.button)
+                }
             }
         }
     )
@@ -62,9 +66,11 @@ fun InfoOverlayDialog(
     summary: String,
     buttonText: String = "OK",
     onDismiss: () -> Unit,
+    backdrop: Backdrop? = LocalLayerBackdrop.current,
 ) {
-    OverlayDialog(
+    GlassDialog(
         show = true,
+        backdrop = backdrop,
         title = title,
         onDismissRequest = onDismiss,
         content = {
@@ -81,12 +87,13 @@ fun InfoOverlayDialog(
                     )
                 }
                 Row {
-                    TextButton(
-                        text = buttonText,
+                    GlassDialogButton(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.textButtonColorsPrimary()
-                    )
+                        role = GlassDialogButtonRole.Primary,
+                    ) {
+                        Text(text = buttonText, style = MiuixTheme.textStyles.button)
+                    }
                 }
             }
         }

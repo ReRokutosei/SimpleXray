@@ -10,12 +10,15 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavBackStackEntry
@@ -115,13 +118,17 @@ fun BottomNavHost(
 ) {
     val onReloadConfig = remember(mainViewModel) { createReloadConfigCallback(mainViewModel) }
     val onEditConfigClick = remember(mainViewModel) { createEditConfigCallback(mainViewModel) }
+    val layoutDirection = LocalLayoutDirection.current
 
     NavHost(
         navController = navController,
         startDestination = ROUTE_STATS,
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = paddingValues.calculateTopPadding())
+            .padding(
+                start = paddingValues.calculateStartPadding(layoutDirection),
+                end = paddingValues.calculateEndPadding(layoutDirection)
+            )
     ) {
         composable(
             route = ROUTE_STATS,

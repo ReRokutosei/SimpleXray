@@ -13,10 +13,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -34,17 +36,20 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
 import com.simplexray.re.ui.components.ConfirmOverlayDialog
+import com.simplexray.re.ui.scaffold.LocalLayerBackdrop
 import com.simplexray.re.viewmodel.ConfigEditUiEvent
 import com.simplexray.re.viewmodel.ConfigEditViewModel
 import kotlinx.coroutines.launch
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Redo
 import top.yukonga.miuix.kmp.icon.extended.Undo
@@ -155,6 +160,13 @@ fun ConfigEditPane(
         }
     }
 
+    val surfaceColor = MiuixTheme.colorScheme.surface
+    val localBackdrop = rememberLayerBackdrop {
+        drawRect(surfaceColor)
+        drawContent()
+    }
+    val backdrop = LocalLayerBackdrop.current ?: localBackdrop
+
     val editorContent: @Composable (PaddingValues) -> Unit = { paddingValues ->
         Column(
             modifier = Modifier
@@ -217,59 +229,81 @@ fun ConfigEditPane(
     }
 
     if (showNavigationIcon) {
-        Scaffold(
-            topBar = {
-                SmallTopAppBar(
-                    title = "",
-                    navigationIcon = {
-                        IconButton(onClick = handleBack) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back)
-                            )
+        CompositionLocalProvider(LocalLayerBackdrop provides localBackdrop) {
+            Scaffold(
+                topBar = {
+                    GlassTopAppBar(
+                        title = "",
+                        expandable = false,
+                        progressiveBlur = true,
+                        backdrop = localBackdrop,
+                        navigationIcon = {
+                            GlassIconButton(onClick = handleBack) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.back)
+                                )
+                            }
+                        },
+                        actions = {
+                            GlassIconButton(
+                                onClick = {
+                                    if (controller.canUndo) controller.undo()
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Undo,
+                                    contentDescription = stringResource(R.string.undo),
+                                    tint = MiuixTheme.colorScheme.onSurface.copy(
+                                        alpha = if (controller.canUndo) 1f else 0.38f
+                                    )
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            GlassIconButton(
+                                onClick = {
+                                    if (controller.canRedo) controller.redo()
+                                }
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Redo,
+                                    contentDescription = stringResource(R.string.redo),
+                                    tint = MiuixTheme.colorScheme.onSurface.copy(
+                                        alpha = if (controller.canRedo) 1f else 0.38f
+                                    )
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            GlassIconButton(onClick = onSearchToggle) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.search),
+                                    contentDescription = stringResource(R.string.search)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            GlassIconButton(
+                                onClick = {
+                                    if (hasUnsavedChanges) onSaveClick()
+                                }
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.save),
+                                    contentDescription = stringResource(id = R.string.save),
+                                    tint = MiuixTheme.colorScheme.onSurface.copy(
+                                        alpha = if (hasUnsavedChanges) 1f else 0.38f
+                                    )
+                                )
+                            }
                         }
-                    },
-                    actions = {
-                        IconButton(
-                            onClick = { controller.undo() },
-                            enabled = controller.canUndo
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Undo,
-                                contentDescription = stringResource(R.string.undo)
-                            )
-                        }
-                        IconButton(
-                            onClick = { controller.redo() },
-                            enabled = controller.canRedo
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Redo,
-                                contentDescription = stringResource(R.string.redo)
-                            )
-                        }
-                        IconButton(onClick = onSearchToggle) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.search),
-                                contentDescription = stringResource(R.string.search)
-                            )
-                        }
-                        IconButton(
-                            onClick = onSaveClick,
-                            enabled = hasUnsavedChanges
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.save),
-                                contentDescription = stringResource(id = R.string.save)
-                            )
-                        }
-                    }
-                )
-            },
-            snackbarHost = { SnackbarHost(state = snackbarHostState) },
-            contentWindowInsets = WindowInsets(0)
-        ) { paddingValues ->
-            editorContent(paddingValues)
+                    )
+                },
+                snackbarHost = { SnackbarHost(state = snackbarHostState) },
+                contentWindowInsets = WindowInsets(0)
+            ) { paddingValues ->
+                Box(modifier = Modifier.fillMaxSize().layerBackdrop(localBackdrop)) {
+                    editorContent(paddingValues)
+                }
+            }
         }
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -277,13 +311,16 @@ fun ConfigEditPane(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp)
+                        .height(56.dp)
                         .padding(horizontal = 8.dp),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (onToggleExpand != null) {
-                        IconButton(onClick = onToggleExpand) {
+                        GlassIconButton(
+                            onClick = onToggleExpand,
+                            backdrop = backdrop
+                        ) {
                             if (isExpanded) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
@@ -298,37 +335,58 @@ fun ConfigEditPane(
                         }
                     }
                     Spacer(modifier = Modifier.weight(1f))
-                    IconButton(
-                        onClick = { controller.undo() },
-                        enabled = controller.canUndo
+                    GlassIconButton(
+                        onClick = {
+                            if (controller.canUndo) controller.undo()
+                        },
+                        backdrop = backdrop
                     ) {
                         Icon(
                             imageVector = MiuixIcons.Undo,
-                            contentDescription = stringResource(R.string.undo)
+                            contentDescription = stringResource(R.string.undo),
+                            tint = MiuixTheme.colorScheme.onSurface.copy(
+                                alpha = if (controller.canUndo) 1f else 0.38f
+                            )
                         )
                     }
-                    IconButton(
-                        onClick = { controller.redo() },
-                        enabled = controller.canRedo
+                    Spacer(modifier = Modifier.width(8.dp))
+                    GlassIconButton(
+                        onClick = {
+                            if (controller.canRedo) controller.redo()
+                        },
+                        backdrop = backdrop
                     ) {
                         Icon(
                             imageVector = MiuixIcons.Redo,
-                            contentDescription = stringResource(R.string.redo)
+                            contentDescription = stringResource(R.string.redo),
+                            tint = MiuixTheme.colorScheme.onSurface.copy(
+                                alpha = if (controller.canRedo) 1f else 0.38f
+                            )
                         )
                     }
-                    IconButton(onClick = onSearchToggle) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    GlassIconButton(
+                        onClick = onSearchToggle,
+                        backdrop = backdrop
+                    ) {
                         Icon(
                             painter = painterResource(id = R.drawable.search),
                             contentDescription = stringResource(R.string.search)
                         )
                     }
-                    IconButton(
-                        onClick = onSaveClick,
-                        enabled = hasUnsavedChanges
+                    Spacer(modifier = Modifier.width(8.dp))
+                    GlassIconButton(
+                        onClick = {
+                            if (hasUnsavedChanges) onSaveClick()
+                        },
+                        backdrop = backdrop
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.save),
-                            contentDescription = stringResource(id = R.string.save)
+                            contentDescription = stringResource(id = R.string.save),
+                            tint = MiuixTheme.colorScheme.onSurface.copy(
+                                alpha = if (hasUnsavedChanges) 1f else 0.38f
+                            )
                         )
                     }
                 }

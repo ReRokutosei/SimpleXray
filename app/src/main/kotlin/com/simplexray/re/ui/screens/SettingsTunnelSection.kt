@@ -54,20 +54,17 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.glass.GlassDropdownPreference
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.basic.DropdownArrowEndAction
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
-import top.yukonga.miuix.kmp.popup.OverlayDropdownPopup
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.simplexray.re.ui.components.ConfirmOverlayDialog
 import com.simplexray.re.ui.components.InfoOverlayDialog
+import com.simplexray.re.ui.scaffold.LocalLayerBackdrop
 
 @Composable
 internal fun SettingsTunnelSection(
@@ -75,6 +72,7 @@ internal fun SettingsTunnelSection(
 ) {
     val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
     val vpnDisabled = settingsState.switches.disableVpn
+    val backdrop = LocalLayerBackdrop.current
 
     val xrayTunTitle = stringResource(R.string.tunnel_mode_xray_tun)
     val xrayTunSummary = stringResource(R.string.tunnel_mode_xray_tun_summary)
@@ -83,40 +81,17 @@ internal fun SettingsTunnelSection(
     val simpleTunTitle = stringResource(R.string.tunnel_mode_simpletun)
     val simpleTunSummary = stringResource(R.string.tunnel_mode_simpletun_summary)
 
-    val tunnelModeEntries = remember(
-        mainViewModel,
-        settingsState.switches.tunnelMode,
-        xrayTunTitle,
-        xrayTunSummary,
-        hevTitle,
-        hevSummary,
-        simpleTunTitle,
-        simpleTunSummary
-    ) {
-        listOf(
-            DropdownEntry(
-                items = listOf(
-                    DropdownItem(
-                        text = xrayTunTitle,
-                        summary = xrayTunSummary,
-                        selected = settingsState.switches.tunnelMode == TunnelMode.XrayTun,
-                        onClick = { mainViewModel.setTunnelMode(TunnelMode.XrayTun) }
-                    ),
-                    DropdownItem(
-                        text = hevTitle,
-                        summary = hevSummary,
-                        selected = settingsState.switches.tunnelMode == TunnelMode.HevSocks5Tunnel,
-                        onClick = { mainViewModel.setTunnelMode(TunnelMode.HevSocks5Tunnel) }
-                    ),
-                    DropdownItem(
-                        text = simpleTunTitle,
-                        summary = simpleTunSummary,
-                        selected = settingsState.switches.tunnelMode == TunnelMode.SimpleTun,
-                        onClick = { mainViewModel.setTunnelMode(TunnelMode.SimpleTun) }
-                    )
-                )
-            )
-        )
+    val tunnelModes = remember {
+        listOf(TunnelMode.XrayTun, TunnelMode.HevSocks5Tunnel, TunnelMode.SimpleTun)
+    }
+    val tunnelModeTitles = remember(xrayTunTitle, hevTitle, simpleTunTitle) {
+        listOf(xrayTunTitle, hevTitle, simpleTunTitle)
+    }
+    val currentTunnelModeIndex = tunnelModes.indexOf(settingsState.switches.tunnelMode).coerceAtLeast(0)
+    val currentTunnelModeSummary = when (settingsState.switches.tunnelMode) {
+        TunnelMode.XrayTun -> xrayTunSummary
+        TunnelMode.HevSocks5Tunnel -> hevSummary
+        TunnelMode.SimpleTun -> simpleTunSummary
     }
 
         SmallTitle(text = stringResource(R.string.vpn_interface))
@@ -133,9 +108,15 @@ internal fun SettingsTunnelSection(
                 onCheckedChange = { mainViewModel.setDisableVpnEnabled(it) }
             )
 
-            OverlayDropdownPreference(
+            GlassDropdownPreference(
                 title = stringResource(R.string.tunnel_mode_title),
-                entries = tunnelModeEntries,
+                summary = currentTunnelModeSummary,
+                items = tunnelModeTitles,
+                selectedIndex = currentTunnelModeIndex,
+                onSelectedIndexChange = { index ->
+                    mainViewModel.setTunnelMode(tunnelModes[index])
+                },
+                backdrop = backdrop,
                 enabled = !vpnDisabled
             )
 

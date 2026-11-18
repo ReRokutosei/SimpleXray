@@ -10,7 +10,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -46,8 +45,8 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -61,7 +60,6 @@ import com.simplexray.re.viewmodel.AppListViewModel
 import com.simplexray.re.viewmodel.AppListViewUiEvent
 import com.simplexray.re.viewmodel.Package
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import top.yukonga.miuix.kmp.basic.Card
@@ -71,19 +69,24 @@ import top.yukonga.miuix.kmp.basic.CircularProgressIndicator
 import top.yukonga.miuix.kmp.basic.DropdownEntry
 import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.basic.VerticalScrollBar
-import top.yukonga.miuix.kmp.basic.TabRowWithContour
 import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.blur.layerBackdrop
+import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
+import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassIconDropdownMenu
+import top.yukonga.miuix.kmp.glass.GlassSegmentedTabRow
+import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
+import top.yukonga.miuix.kmp.glass.glassPopupAnchor
+import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
+import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
-import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 @OptIn(ExperimentalScrollBarApi::class)
@@ -93,6 +96,8 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var isSearching by remember { mutableStateOf(false) }
+    var showMoreMenu by remember { mutableStateOf(false) }
+    val moreAnchor = rememberGlassPopupAnchor()
     val filteredList by viewModel.filteredList.collectAsStateWithLifecycle()
     val showSystemApps by viewModel.showSystemApps.collectAsStateWithLifecycle()
     val showNoInternetApps by viewModel.showNoInternetApps.collectAsStateWithLifecycle()
@@ -101,7 +106,20 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
     val lazyListState = rememberLazyListState()
     val focusRequester = remember { FocusRequester() }
     val snackbarHostState = remember { SnackbarHostState() }
-    val scrollBehavior = MiuixScrollBehavior()
+
+    val surfaceColor = MiuixTheme.colorScheme.surface
+    val backdrop = rememberLayerBackdrop {
+        drawRect(surfaceColor)
+        drawContent()
+    }
+    val pageBackdrop = rememberLayerBackdrop {
+        drawRect(surfaceColor)
+        drawContent()
+    }
+
+    val isWideScreen = with(LocalDensity.current) {
+        LocalWindowInfo.current.containerSize.width >= 600.dp.roundToPx()
+    }
 
     LaunchedEffect(lazyListState.isScrollInProgress) {
         if (lazyListState.isScrollInProgress) {
@@ -173,123 +191,142 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
         )
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = if (isSearching) "" else stringResource(R.string.apps_title),
-                subtitle = if (isSearching) "" else stringResource(R.string.apps_summary),
-                navigationIcon = {
-                    IconButton(onClick = {
-                        if (isSearching) {
-                            isSearching = false
-                            viewModel.onSearchQueryChange("")
-                        } else {
-                            onBackClick()
+    Box(modifier = Modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize().layerBackdrop(pageBackdrop),
+            topBar = {
+                GlassTopAppBar(
+                    title = if (isSearching) "" else stringResource(R.string.apps_title),
+                    subtitle = if (isSearching) "" else stringResource(R.string.apps_summary),
+                    expandable = false,
+                    progressiveBlur = true,
+                    backdrop = backdrop,
+                    navigationIcon = {
+                        GlassIconButton(onClick = {
+                            if (isSearching) {
+                                isSearching = false
+                                viewModel.onSearchQueryChange("")
+                            } else {
+                                onBackClick()
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.back)
+                            )
                         }
-                    }) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.back)
-                        )
-                    }
-                },
-                actions = {
-                    if (isSearching) {
-                        InputField(
-                            query = searchQuery,
-                            onQueryChange = { viewModel.onSearchQueryChange(it) },
-                            onSearch = {},
-                            expanded = isSearching,
-                            onExpandedChange = { isSearching = it },
-                            label = stringResource(R.string.search),
-                            modifier = Modifier
-                                .fillMaxWidth(0.7f)
-                                .focusRequester(focusRequester)
-                        )
-                        if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                    },
+                    actions = {
+                        if (isSearching) {
+                            InputField(
+                                query = searchQuery,
+                                onQueryChange = { viewModel.onSearchQueryChange(it) },
+                                onSearch = {},
+                                expanded = isSearching,
+                                onExpandedChange = { isSearching = it },
+                                label = stringResource(R.string.search),
+                                modifier = Modifier
+                                    .fillMaxWidth(0.7f)
+                                    .focusRequester(focusRequester)
+                            )
+                            if (searchQuery.isNotEmpty()) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                GlassIconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Clear,
+                                        contentDescription = stringResource(R.string.clear_search)
+                                    )
+                                }
+                            }
+                        } else {
+                            GlassIconButton(onClick = { isSearching = true }) {
                                 Icon(
-                                    imageVector = Icons.Default.Clear,
-                                    contentDescription = stringResource(R.string.clear_search)
+                                    painter = painterResource(id = R.drawable.search),
+                                    contentDescription = stringResource(R.string.search)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            GlassIconButton(
+                                onClick = { showMoreMenu = !showMoreMenu },
+                                modifier = Modifier.glassPopupAnchor(
+                                    anchor = moreAnchor,
+                                    cornerRadius = GlassTopAppBarDefaults.ButtonSize / 2,
+                                    floating = true,
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = stringResource(R.string.more),
+                                    modifier = Modifier.glassPopupAnchorContent(moreAnchor)
                                 )
                             }
                         }
-                    } else {
-                        IconButton(onClick = { isSearching = true }) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.search),
-                                contentDescription = stringResource(R.string.search)
-                            )
-                        }
-                        OverlayIconDropdownMenu(
-                            entry = menuEntry,
-                            collapseOnSelection = true
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = stringResource(R.string.more)
-                            )
+                    },
+                    bottomContent = {
+                        if (!isLoading) {
+                            val modeTabs = listOf(onlyProxySelectedAppsText, bypassSelectedAppsText)
+                            val selectedTabIndex = if (bypassSelectedApps) 1 else 0
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                GlassSegmentedTabRow(
+                                    tabs = modeTabs,
+                                    selectedIndex = selectedTabIndex,
+                                    onSelect = { index ->
+                                        viewModel.onBypassSelectedAppsChange(index == 1)
+                                    },
+                                    backdrop = backdrop,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .then(
+                                            if (isWideScreen) Modifier.widthIn(max = 840.dp) else Modifier
+                                        )
+                                )
+                            }
                         }
                     }
-                },
-                scrollBehavior = scrollBehavior
+                )
+            },
+            snackbarHost = { SnackbarHost(state = snackbarHostState) },
+            contentWindowInsets = WindowInsets(0)
+        ) { paddingValues ->
+            val topPadding = paddingValues.calculateTopPadding() + 4.dp
+            val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
+            val listContentPadding = PaddingValues(
+                start = 12.dp,
+                end = 12.dp,
+                top = topPadding,
+                bottom = bottomPadding
             )
-        },
-        snackbarHost = { SnackbarHost(state = snackbarHostState) },
-        contentWindowInsets = WindowInsets(0)
-    ) { paddingValues ->
-        val isWideScreen = with(LocalDensity.current) {
-            LocalWindowInfo.current.containerSize.width >= 600.dp.roundToPx()
-        }
 
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            contentAlignment = Alignment.TopCenter
-        ) {
-            if (isLoading) {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            } else {
-                val modeTabs = listOf(onlyProxySelectedAppsText, bypassSelectedAppsText)
-                val selectedTabIndex = if (bypassSelectedApps) 1 else 0
-
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .then(
-                            if (isWideScreen) Modifier.widthIn(max = 840.dp) else Modifier
-                        ),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .layerBackdrop(backdrop),
+                contentAlignment = Alignment.TopCenter
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(top = topPadding)
+                    )
+                } else {
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
-                    ) {
-                        TabRowWithContour(
-                            tabs = modeTabs,
-                            selectedTabIndex = selectedTabIndex,
-                            onTabSelected = { index ->
-                                viewModel.onBypassSelectedAppsChange(index == 1)
-                            },
-                            height = 56.dp,
-                            cornerRadius = 11.dp,
-                            minWidth = 140.dp,
-                            maxWidth = 400.dp
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f)
+                            .fillMaxSize()
+                            .then(
+                                if (isWideScreen) Modifier.widthIn(max = 840.dp) else Modifier
+                            )
                     ) {
                         val adapter = rememberScrollBarAdapter(scrollState = lazyListState)
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             state = lazyListState,
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            contentPadding = listContentPadding,
                             verticalArrangement = Arrangement.spacedBy(4.dp),
                         ) {
                             items(filteredList, key = { it.packageName }) { pkg ->
@@ -300,12 +337,15 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
                         }
                         VerticalScrollBar(
                             adapter = adapter,
-                            modifier = Modifier.align(Alignment.CenterEnd)
+                            modifier = Modifier.align(Alignment.CenterEnd),
+                            trackPadding = listContentPadding
                         )
                         if (filteredList.isEmpty() && searchQuery.isNotBlank()) {
                             Text(
                                 text = stringResource(R.string.apps_not_found),
-                                modifier = Modifier.align(Alignment.Center),
+                                modifier = Modifier
+                                    .align(Alignment.Center)
+                                    .padding(top = topPadding),
                                 style = MiuixTheme.textStyles.body1,
                                 color = MiuixTheme.colorScheme.onSurfaceSecondary
                             )
@@ -314,6 +354,21 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
                 }
             }
         }
+
+        GlassIconDropdownMenu(
+            show = showMoreMenu,
+            onDismissRequest = { showMoreMenu = false },
+            anchor = moreAnchor,
+            anchorContent = {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = null
+                )
+            },
+            entries = listOf(menuEntry),
+            backdrop = pageBackdrop,
+            collapseOnSelection = true
+        )
     }
 }
 

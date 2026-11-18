@@ -55,20 +55,17 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
+import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
 import top.yukonga.miuix.kmp.icon.extended.Help
 import top.yukonga.miuix.kmp.icon.extended.Ok
-import top.yukonga.miuix.kmp.basic.DropdownArrowEndAction
-import top.yukonga.miuix.kmp.basic.DropdownDefaults
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
-import top.yukonga.miuix.kmp.popup.OverlayDropdownPopup
 import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.OverlayDropdownPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.simplexray.re.ui.components.ConfirmOverlayDialog
 import com.simplexray.re.ui.components.InfoOverlayDialog
+import com.simplexray.re.ui.scaffold.LocalLayerBackdrop
 
 @Composable
 fun SettingsScreen(
@@ -102,11 +99,13 @@ fun SettingsScreen(
 
     val geoipUrlDefault = stringResource(R.string.geoip_url)
     val geositeUrlDefault = stringResource(R.string.geosite_url)
+    val backdrop = LocalLayerBackdrop.current
 
     if (editingRuleFile != null) {
-        OverlayBottomSheet(
+        GlassBottomSheet(
             title = editingRuleFile ?: "Rule File URL",
             show = editingRuleFile != null,
+            backdrop = backdrop,
             onDismissRequest = { editingRuleFile = null },
             startAction = {
                 IconButton(onClick = { editingRuleFile = null }) {
@@ -159,9 +158,10 @@ fun SettingsScreen(
     }
 
     if (showDatUrlImportSheet) {
-        OverlayBottomSheet(
+        GlassBottomSheet(
             title = stringResource(R.string.download_from_url_import),
             show = showDatUrlImportSheet,
+            backdrop = backdrop,
             onDismissRequest = {
                 showDatUrlImportSheet = false
                 datImportUrl = ""
@@ -266,6 +266,7 @@ fun SettingsScreen(
     val isWideScreen = with(LocalDensity.current) {
         LocalWindowInfo.current.containerSize.width >= 600.dp.roundToPx()
     }
+    val topPadding = paddingValues.calculateTopPadding() + 12.dp
     val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
 
     androidx.compose.foundation.layout.Box(
@@ -279,7 +280,7 @@ fun SettingsScreen(
                 .then(
                     if (isWideScreen) Modifier.widthIn(max = 840.dp) else Modifier
                 ),
-            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = bottomPadding)
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = topPadding, bottom = bottomPadding)
         ) {
         item {
             SettingsGeneralSection(

@@ -72,6 +72,9 @@ miuix-blur = { module = "top.yukonga.miuix.kmp:miuix-blur" }
 miuix-squircle = { module = "top.yukonga.miuix.kmp:miuix-squircle" }
 miuix-icons = { module = "top.yukonga.miuix.kmp:miuix-icons" }
 miuix-nav = { module = "top.yukonga.miuix.kmp:miuix-nav" }
+miuix-material = { module = "top.yukonga.miuix.kmp:miuix-material" }
+miuix-glass = { module = "top.yukonga.miuix.kmp:miuix-glass" }
+miuix-glass-icons = { module = "top.yukonga.miuix.kmp:miuix-glass-icons" }
 scripta-editor = { module = "top.yukonga.scripta:editor" }
 
 

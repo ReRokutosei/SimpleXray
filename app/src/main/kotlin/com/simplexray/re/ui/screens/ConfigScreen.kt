@@ -74,12 +74,13 @@ import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.overlay.OverlayBottomSheet
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.simplexray.re.ui.components.ConfirmOverlayDialog
+import com.simplexray.re.ui.scaffold.LocalLayerBackdrop
 import java.io.File
 
 private const val TAG = "ConfigScreen"
@@ -99,6 +100,7 @@ fun ConfigScreen(
     val isMasterDetailSupported = isLandscape && with(LocalDensity.current) {
         LocalWindowInfo.current.containerSize.width >= 840.dp.roundToPx()
     }
+    val topPadding = paddingValues.calculateTopPadding()
     val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
 
     val files by mainViewModel.configFiles.collectAsStateWithLifecycle()
@@ -136,7 +138,7 @@ fun ConfigScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .widthIn(max = 480.dp)
-                    .padding(start = 24.dp, end = 24.dp, top = 24.dp, bottom = bottomPadding + 12.dp)
+                    .padding(start = 24.dp, end = 24.dp, top = topPadding + 24.dp, bottom = bottomPadding + 12.dp)
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -217,7 +219,7 @@ fun ConfigScreen(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .padding(start = if (isEditorExpanded) 0.dp else 8.dp)
+                    .padding(top = topPadding, start = if (isEditorExpanded) 0.dp else 8.dp)
             ) {
                 if (selectedFileForDetail != null) {
                     val activeFile = selectedFileForDetail!!
@@ -306,6 +308,7 @@ private fun ConfigListPane(
     isWideScreen: Boolean,
     paddingValues: PaddingValues = PaddingValues()
 ) {
+    val topPadding = paddingValues.calculateTopPadding() + 12.dp
     val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
     val showDeleteDialog = remember { mutableStateOf<File?>(null) }
     var showAddConfigSheet by remember { mutableStateOf(false) }
@@ -372,7 +375,7 @@ private fun ConfigListPane(
     Column(modifier = Modifier.fillMaxSize()) {
         LazyColumn(
             modifier = Modifier.fillMaxHeight(),
-            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 12.dp, bottom = bottomPadding),
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = topPadding, bottom = bottomPadding),
             state = listState
         ) {
             item(key = "add_config_item") {
@@ -520,9 +523,10 @@ private fun ConfigListPane(
     }
 
     if (showAddConfigSheet) {
-        OverlayBottomSheet(
+        GlassBottomSheet(
             title = stringResource(R.string.add_config_profile),
             show = true,
+            backdrop = LocalLayerBackdrop.current,
             onDismissRequest = { showAddConfigSheet = false },
             startAction = {
                 IconButton(onClick = { showAddConfigSheet = false }) {

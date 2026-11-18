@@ -50,6 +50,7 @@ fun LogScreen(
     val filteredEntries by logViewModel.filteredEntries.collectAsStateWithLifecycle()
     val searchQuery by logViewModel.searchQuery.collectAsStateWithLifecycle()
     val isInitialLoad = remember { mutableStateOf(true) }
+    val topPadding = paddingValues.calculateTopPadding() + 12.dp
     val bottomPadding = paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
 
     DisposableEffect(key1 = Unit) {
@@ -80,7 +81,9 @@ fun LogScreen(
             // entry and show a centered card instead. File logging continues so
             // switching back to another level immediately shows history.
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = topPadding, bottom = bottomPadding),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -93,7 +96,9 @@ fun LogScreen(
             }
         } else if (filteredEntries.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = topPadding, bottom = bottomPadding),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
@@ -108,12 +113,13 @@ fun LogScreen(
             SelectionContainer {
                 Box(modifier = Modifier.fillMaxSize()) {
                     val adapter = rememberScrollBarAdapter(scrollState = listState)
+                    val listContentPadding = PaddingValues(top = topPadding, bottom = bottomPadding)
                     LazyColumn(
                         state = listState,
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(horizontal = 12.dp),
-                        contentPadding = PaddingValues(top = 12.dp, bottom = bottomPadding),
+                        contentPadding = listContentPadding,
                         reverseLayout = true
                     ) {
                         items(filteredEntries) { logEntry ->
@@ -122,7 +128,8 @@ fun LogScreen(
                     }
                     VerticalScrollBar(
                         adapter = adapter,
-                        modifier = Modifier.align(Alignment.CenterEnd)
+                        modifier = Modifier.align(Alignment.CenterEnd),
+                        trackPadding = listContentPadding
                     )
                 }
             }

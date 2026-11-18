@@ -2,40 +2,37 @@ package com.simplexray.re.ui.scaffold
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.unit.dp
-
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.vectorResource
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -46,30 +43,28 @@ import com.simplexray.re.common.ROUTE_SETTINGS
 import com.simplexray.re.common.ROUTE_STATS
 import com.simplexray.re.viewmodel.LogViewModel
 import com.simplexray.re.viewmodel.MainViewModel
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
-import top.yukonga.miuix.kmp.basic.FloatingNavigationBar
-import top.yukonga.miuix.kmp.basic.FloatingNavigationBarItem
-import top.yukonga.miuix.kmp.basic.FloatingToolbarDefaults
 import top.yukonga.miuix.kmp.basic.Icon
-import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.InputField
-import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
 import top.yukonga.miuix.kmp.basic.Scaffold
-import top.yukonga.miuix.kmp.basic.SmallTopAppBar
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
-import top.yukonga.miuix.kmp.basic.TopAppBar
-import top.yukonga.miuix.kmp.blur.BlendColorEntry
-import top.yukonga.miuix.kmp.blur.BlurDefaults
+import top.yukonga.miuix.kmp.blur.Backdrop
 import top.yukonga.miuix.kmp.blur.LayerBackdrop
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
-import top.yukonga.miuix.kmp.blur.textureBlur
-import top.yukonga.miuix.kmp.menu.OverlayIconDropdownMenu
+import top.yukonga.miuix.kmp.glass.GlassIconButton
+import top.yukonga.miuix.kmp.glass.GlassNavigationBar
+import top.yukonga.miuix.kmp.glass.GlassNavigationItem
+import top.yukonga.miuix.kmp.glass.GlassNavigationRail
+import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
+import top.yukonga.miuix.kmp.glass.GlassNavigationRailState
+import top.yukonga.miuix.kmp.glass.GlassTopAppBar
+import top.yukonga.miuix.kmp.glass.rememberGlassNavigationRailState
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+
+val LocalLayerBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
+
+private val NAV_ROUTES = listOf(ROUTE_STATS, ROUTE_CONFIG, ROUTE_LOG, ROUTE_SETTINGS)
 
 @Composable
 fun AppScaffold(
@@ -84,7 +79,7 @@ fun AppScaffold(
     logListState: LazyListState,
     configListState: LazyListState,
     settingsScrollState: LazyListState,
-    content: @Composable (paddingValues: androidx.compose.foundation.layout.PaddingValues) -> Unit
+    content: @Composable (paddingValues: PaddingValues) -> Unit
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -100,6 +95,26 @@ fun AppScaffold(
 
     val isWideScreen = with(LocalDensity.current) {
         LocalWindowInfo.current.containerSize.width >= 600.dp.roundToPx()
+    }
+
+    val surfaceColor = MiuixTheme.colorScheme.surface
+    val backdrop = rememberLayerBackdrop {
+        drawRect(surfaceColor)
+        drawContent()
+    }
+
+    val railState = rememberGlassNavigationRailState(initialExpanded = true)
+    val railWidth = if (isWideScreen) {
+        (GlassNavigationRailDefaults.Margin + GlassNavigationRailDefaults.ExpandedWidth) * railState.progress
+    } else {
+        0.dp
+    }
+    val titleAlpha: () -> Float = remember(isWideScreen, railState) {
+        if (isWideScreen) {
+            { railState.progress }
+        } else {
+            { 1f }
+        }
     }
 
     val topBarContent: @Composable () -> Unit = {
@@ -119,46 +134,47 @@ fun AppScaffold(
             logSearchQuery = logSearchQuery,
             onLogSearchQueryChange = { logViewModel.onSearchQueryChange(it) },
             focusRequester = focusRequester,
-            mainViewModel = mainViewModel
+            mainViewModel = mainViewModel,
+            backdrop = backdrop,
+            titleAlpha = titleAlpha,
+            contentModifier = if (isWideScreen) Modifier.padding(start = railWidth) else Modifier
         )
     }
 
-    if (isWideScreen) {
-        androidx.compose.foundation.layout.Row(modifier = Modifier.fillMaxSize()) {
-            AppNavigationRail(navController = navController)
+    CompositionLocalProvider(LocalLayerBackdrop provides backdrop) {
+        Box(modifier = Modifier.fillMaxSize()) {
             Scaffold(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fillMaxSize(),
                 topBar = topBarContent,
+                bottomBar = {
+                    if (!isWideScreen) {
+                        AppBottomNavigationBar(navController = navController, backdrop = backdrop)
+                    }
+                },
                 snackbarHost = { SnackbarHost(state = snackbarHostState) },
                 contentWindowInsets = WindowInsets(0)
             ) { paddingValues ->
-                content(paddingValues)
+                val bottomPad = if (isWideScreen) {
+                    paddingValues.calculateBottomPadding().coerceAtLeast(12.dp)
+                } else {
+                    (paddingValues.calculateBottomPadding() + 12.dp).coerceAtLeast(100.dp)
+                }
+                val overlayPaddingValues = PaddingValues(
+                    start = paddingValues.calculateStartPadding(LayoutDirection.Ltr) + railWidth,
+                    top = paddingValues.calculateTopPadding(),
+                    end = paddingValues.calculateEndPadding(LayoutDirection.Ltr),
+                    bottom = bottomPad
+                )
+                Box(modifier = Modifier.fillMaxSize().layerBackdrop(backdrop)) {
+                    content(overlayPaddingValues)
+                }
             }
-        }
-    } else {
-        val surfaceColor = MiuixTheme.colorScheme.surface
-        val backdrop = rememberLayerBackdrop {
-            drawRect(surfaceColor)
-            drawContent()
-        }
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            topBar = topBarContent,
-            floatingToolbar = {
-                AppBottomNavigationBar(navController, backdrop)
-            },
-            floatingToolbarPosition = top.yukonga.miuix.kmp.basic.ToolbarPosition.BottomCenter,
-            snackbarHost = { SnackbarHost(state = snackbarHostState) },
-            contentWindowInsets = WindowInsets(0)
-        ) { paddingValues ->
-            val overlayPaddingValues = PaddingValues(
-                start = paddingValues.calculateStartPadding(LayoutDirection.Ltr),
-                top = paddingValues.calculateTopPadding(),
-                end = paddingValues.calculateEndPadding(LayoutDirection.Ltr),
-                bottom = 100.dp
-            )
-            Box(modifier = Modifier.fillMaxSize().layerBackdrop(backdrop)) {
-                content(overlayPaddingValues)
+            if (isWideScreen) {
+                AppNavigationRail(
+                    navController = navController,
+                    backdrop = backdrop,
+                    state = railState
+                )
             }
         }
     }
@@ -181,7 +197,10 @@ fun AppTopAppBar(
     logSearchQuery: String = "",
     onLogSearchQueryChange: (String) -> Unit = {},
     focusRequester: FocusRequester? = null,
-    mainViewModel: MainViewModel
+    mainViewModel: MainViewModel,
+    backdrop: Backdrop? = null,
+    titleAlpha: () -> Float = { 1f },
+    contentModifier: Modifier = Modifier
 ) {
     val title = when (currentRoute) {
         ROUTE_STATS -> stringResource(R.string.core_stats_title)
@@ -191,17 +210,21 @@ fun AppTopAppBar(
         else -> stringResource(R.string.app_name)
     }
 
-    val topAppBarScrollBehavior = MiuixScrollBehavior()
-
-    SmallTopAppBar(
+    GlassTopAppBar(
         title = if (currentRoute == ROUTE_LOG && isLogSearching) "" else title,
-        color = MiuixTheme.colorScheme.surface,
+        contentModifier = contentModifier,
+        expandable = false,
+        progressiveBlur = true,
+        backdrop = backdrop,
+        titleAlpha = titleAlpha,
         navigationIcon = {
             if (currentRoute == ROUTE_LOG && isLogSearching) {
-                IconButton(onClick = {
-                    onLogSearchingChange(false)
-                    onLogSearchQueryChange("")
-                }) {
+                GlassIconButton(
+                    onClick = {
+                        onLogSearchingChange(false)
+                        onLogSearchQueryChange("")
+                    }
+                ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = stringResource(R.string.close_search)
@@ -226,7 +249,8 @@ fun AppTopAppBar(
                     modifier = inputModifier
                 )
                 if (logSearchQuery.isNotEmpty()) {
-                    IconButton(onClick = { onLogSearchQueryChange("") }) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    GlassIconButton(onClick = { onLogSearchQueryChange("") }) {
                         Icon(
                             imageVector = Icons.Default.Clear,
                             contentDescription = stringResource(R.string.clear_search)
@@ -246,8 +270,7 @@ fun AppTopAppBar(
                     mainViewModel = mainViewModel
                 )
             }
-        },
-        scrollBehavior = topAppBarScrollBehavior
+        }
     )
 }
 
@@ -290,120 +313,142 @@ private fun LogActions(
     val logEntries by logViewModel.logEntries.collectAsStateWithLifecycle()
     val logsCleared = stringResource(R.string.logs_cleared)
 
-    IconButton(onClick = { onLogSearchingChange(true) }) {
+    GlassIconButton(onClick = { onLogSearchingChange(true) }) {
         Icon(
             painter = painterResource(id = R.drawable.search),
             contentDescription = stringResource(R.string.search)
         )
     }
-    IconButton(
-        onClick = { onPerformExport() },
-        enabled = hasLogsToExport
+    Spacer(modifier = Modifier.width(8.dp))
+    GlassIconButton(
+        onClick = {
+            if (hasLogsToExport) {
+                onPerformExport()
+            }
+        }
     ) {
         Icon(
             painter = painterResource(id = R.drawable.ic_export),
-            contentDescription = stringResource(R.string.export)
+            contentDescription = stringResource(R.string.export),
+            tint = MiuixTheme.colorScheme.onSurface.copy(alpha = if (hasLogsToExport) 1f else 0.38f)
         )
     }
-    IconButton(
+    Spacer(modifier = Modifier.width(8.dp))
+    val hasEntries = logEntries.isNotEmpty()
+    GlassIconButton(
         onClick = {
-            logViewModel.clearLogs()
-            mainViewModel.showSnackbar(logsCleared)
-        },
-        enabled = logEntries.isNotEmpty()
+            if (hasEntries) {
+                logViewModel.clearLogs()
+                mainViewModel.showSnackbar(logsCleared)
+            }
+        }
     ) {
         Icon(
             painter = painterResource(id = R.drawable.delete),
-            contentDescription = stringResource(R.string.clear_logs)
+            contentDescription = stringResource(R.string.clear_logs),
+            tint = MiuixTheme.colorScheme.onSurface.copy(alpha = if (hasEntries) 1f else 0.38f)
         )
     }
 }
 
 @Composable
-fun AppNavigationRail(navController: NavHostController) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-    val railState = remember { top.yukonga.miuix.kmp.basic.NavigationRailState(initialValue = top.yukonga.miuix.kmp.basic.NavigationRailValue.Expanded) }
+private fun rememberGlassNavigationItems(includeLabels: Boolean = true): List<GlassNavigationItem> {
+    val statsIcon = ImageVector.vectorResource(id = R.drawable.dashboard)
+    val statsLabel = stringResource(R.string.core_stats_title)
+    val configIcon = ImageVector.vectorResource(id = R.drawable.code)
+    val configLabel = stringResource(R.string.configuration)
+    val logIcon = ImageVector.vectorResource(id = R.drawable.history)
+    val logLabel = stringResource(R.string.log)
+    val settingsIcon = ImageVector.vectorResource(id = R.drawable.settings)
+    val settingsLabel = stringResource(R.string.settings)
 
-    top.yukonga.miuix.kmp.basic.NavigationRail(state = railState) {
-        top.yukonga.miuix.kmp.basic.NavigationRailItem(
-            selected = currentRoute == ROUTE_STATS,
-            onClick = { navigateToRoute(navController, ROUTE_STATS) },
-            icon = ImageVector.vectorResource(id = R.drawable.dashboard),
-            label = stringResource(R.string.core_stats_title)
-        )
-        top.yukonga.miuix.kmp.basic.NavigationRailItem(
-            selected = currentRoute == ROUTE_CONFIG,
-            onClick = { navigateToRoute(navController, ROUTE_CONFIG) },
-            icon = ImageVector.vectorResource(id = R.drawable.code),
-            label = stringResource(R.string.configuration)
-        )
-        top.yukonga.miuix.kmp.basic.NavigationRailItem(
-            selected = currentRoute == ROUTE_LOG,
-            onClick = { navigateToRoute(navController, ROUTE_LOG) },
-            icon = ImageVector.vectorResource(id = R.drawable.history),
-            label = stringResource(R.string.log)
-        )
-        top.yukonga.miuix.kmp.basic.NavigationRailItem(
-            selected = currentRoute == ROUTE_SETTINGS,
-            onClick = { navigateToRoute(navController, ROUTE_SETTINGS) },
-            icon = ImageVector.vectorResource(id = R.drawable.settings),
-            label = stringResource(R.string.settings)
-        )
-    }
-}
-
-@Composable
-fun AppBottomNavigationBar(navController: NavHostController, backdrop: LayerBackdrop? = null) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
-    val surfaceContainer = MiuixTheme.colorScheme.surfaceContainer
-    val barShape = remember { RoundedCornerShape(FloatingToolbarDefaults.CornerRadius) }
-    val blurColors = BlurDefaults.blurColors(
-        blendColors = listOf(
-            BlendColorEntry(color = surfaceContainer.copy(alpha = 0.65f))
-        )
-    )
-
-    FloatingNavigationBar(
-        modifier = if (backdrop != null) {
-            Modifier.textureBlur(
-                backdrop = backdrop,
-                shape = barShape,
-                blurRadius = 25f,
-                colors = blurColors
-            )
-        } else Modifier,
-        color = if (backdrop != null) Color.Transparent else surfaceContainer
+    return remember(
+        includeLabels,
+        statsIcon,
+        statsLabel,
+        configIcon,
+        configLabel,
+        logIcon,
+        logLabel,
+        settingsIcon,
+        settingsLabel
     ) {
-        FloatingNavigationBarItem(
-            selected = currentRoute == ROUTE_STATS,
-            onClick = { navigateToRoute(navController, ROUTE_STATS) },
-            icon = ImageVector.vectorResource(id = R.drawable.dashboard),
-            label = stringResource(R.string.core_stats_title)
-        )
-        FloatingNavigationBarItem(
-            selected = currentRoute == ROUTE_CONFIG,
-            onClick = { navigateToRoute(navController, ROUTE_CONFIG) },
-            icon = ImageVector.vectorResource(id = R.drawable.code),
-            label = stringResource(R.string.configuration)
-        )
-        FloatingNavigationBarItem(
-            selected = currentRoute == ROUTE_LOG,
-            onClick = { navigateToRoute(navController, ROUTE_LOG) },
-            icon = ImageVector.vectorResource(id = R.drawable.history),
-            label = stringResource(R.string.log)
-        )
-        FloatingNavigationBarItem(
-            selected = currentRoute == ROUTE_SETTINGS,
-            onClick = { navigateToRoute(navController, ROUTE_SETTINGS) },
-            icon = ImageVector.vectorResource(id = R.drawable.settings),
-            label = stringResource(R.string.settings)
+        listOf(
+            GlassNavigationItem(
+                icon = statsIcon,
+                label = if (includeLabels) statsLabel else null,
+                contentDescription = statsLabel
+            ),
+            GlassNavigationItem(
+                icon = configIcon,
+                label = if (includeLabels) configLabel else null,
+                contentDescription = configLabel
+            ),
+            GlassNavigationItem(
+                icon = logIcon,
+                label = if (includeLabels) logLabel else null,
+                contentDescription = logLabel
+            ),
+            GlassNavigationItem(
+                icon = settingsIcon,
+                label = if (includeLabels) settingsLabel else null,
+                contentDescription = settingsLabel
+            )
         )
     }
+}
+
+@Composable
+fun AppNavigationRail(
+    navController: NavHostController,
+    backdrop: Backdrop? = null,
+    state: GlassNavigationRailState = rememberGlassNavigationRailState(initialExpanded = true)
+) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val items = rememberGlassNavigationItems(includeLabels = true)
+    val selectedIndex = NAV_ROUTES.indexOf(currentRoute).coerceAtLeast(0)
+
+    GlassNavigationRail(
+        items = items,
+        selectedIndex = selectedIndex,
+        onSelect = { index ->
+            NAV_ROUTES.getOrNull(index)?.let { route ->
+                navigateToRoute(navController, route)
+            }
+        },
+        backdrop = backdrop,
+        state = state
+    )
+}
+
+@Composable
+fun AppBottomNavigationBar(
+    navController: NavHostController,
+    backdrop: LayerBackdrop? = null
+) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+    val items = rememberGlassNavigationItems(includeLabels = false)
+    val selectedIndex = NAV_ROUTES.indexOf(currentRoute).coerceAtLeast(0)
+
+    GlassNavigationBar(
+        items = items,
+        selectedIndex = selectedIndex,
+        onSelect = { index ->
+            NAV_ROUTES.getOrNull(index)?.let { route ->
+                navigateToRoute(navController, route)
+            }
+        },
+        backdrop = backdrop,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+    )
 }
 
 private fun navigateToRoute(navController: NavHostController, route: String) {
+    if (navController.currentDestination?.route == route) return
     navController.navigate(route) {
         popUpTo(navController.graph.startDestinationId) {
             saveState = true
