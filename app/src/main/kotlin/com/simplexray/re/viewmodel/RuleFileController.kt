@@ -87,16 +87,21 @@ internal class RuleFileController(
         }
     }
 
+    private fun showSuccessSnackbar(message: String) {
+        val finalMessage = if (isVpnEnabled()) {
+            application.getString(R.string.restart_core_to_apply_format, message)
+        } else {
+            message
+        }
+        sendEvent(MainViewUiEvent.ShowSnackbar(finalMessage))
+    }
+
     fun importRuleFile(uri: Uri, fileName: String) {
         scope.launch(Dispatchers.IO) {
             val success = fileManager.importRuleFile(uri, fileName)
             if (success) {
                 onRuleFileStateChanged(fileName)
-                sendEvent(
-                    MainViewUiEvent.ShowSnackbar(
-                        "$fileName ${application.getString(R.string.import_success)}"
-                    )
-                )
+                showSuccessSnackbar(application.getString(R.string.file_imported, fileName))
             } else {
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_validation_failed)))
             }
@@ -112,7 +117,7 @@ internal class RuleFileController(
             val restored = fileManager.restoreDefaultGeoip()
             onRuleFileStateChanged("geoip.dat")
             if (restored) {
-                sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_restore_geoip_success)))
+                showSuccessSnackbar(application.getString(R.string.rule_file_restore_geoip_success))
             } else {
                 // Missing bundled asset fallback: degrade to a download from
                 // the configured default URL instead of failing the action.
@@ -132,7 +137,7 @@ internal class RuleFileController(
             val restored = fileManager.restoreDefaultGeosite()
             onRuleFileStateChanged("geosite.dat")
             if (restored) {
-                sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_restore_geosite_success)))
+                showSuccessSnackbar(application.getString(R.string.rule_file_restore_geosite_success))
             } else {
                 Log.i(TAG, "Bundled geosite.dat unavailable; falling back to download.")
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_restore_download_fallback)))
@@ -268,7 +273,7 @@ internal class RuleFileController(
                         }
                         onSettingsRefreshNeeded()
                         refreshCustomDatFiles()
-                        sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.download_success)))
+                        showSuccessSnackbar(application.getString(R.string.download_success))
                     } else {
                         sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_validation_failed)))
                     }
@@ -344,7 +349,7 @@ internal class RuleFileController(
             val fileName = fileManager.importLuaFileFromUri(application, uri, targetFileName)
             if (fileName != null) {
                 refreshLuaScriptFiles()
-                sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.file_imported, fileName)))
+                showSuccessSnackbar(application.getString(R.string.file_imported, fileName))
             } else {
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.save_fail)))
             }
@@ -360,7 +365,7 @@ internal class RuleFileController(
                 file.delete()
             }
             refreshLuaScriptFiles()
-            sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.file_deleted, fileName)))
+            showSuccessSnackbar(application.getString(R.string.file_deleted, fileName))
         }
     }
 
@@ -379,7 +384,7 @@ internal class RuleFileController(
             val fileName = fileManager.importDatFileFromUri(application, uri, targetFileName)
             if (fileName != null) {
                 refreshCustomDatFiles()
-                sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.file_imported, fileName)))
+                showSuccessSnackbar(application.getString(R.string.file_imported, fileName))
             } else {
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.rule_file_validation_failed)))
             }
@@ -432,7 +437,7 @@ internal class RuleFileController(
             }
             mutateCustomDatUrls { it.remove(fileName) }
             refreshCustomDatFiles()
-            sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.file_deleted, fileName)))
+            showSuccessSnackbar(application.getString(R.string.file_deleted, fileName))
         }
     }
 

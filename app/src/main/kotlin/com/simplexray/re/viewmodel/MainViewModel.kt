@@ -373,6 +373,12 @@ class MainViewModel(application: Application) :
         }
     }
 
+    fun onAppListEditFinished(hasChanges: Boolean) {
+        if (hasChanges && isVpnEnabled() && !prefs.disableVpn) {
+            showSnackbar(application.getString(R.string.settings_restart_notice))
+        }
+    }
+
     fun updateSelectedConfigFile(file: File?) = configFileController.updateSelectedConfigFile(file)
 
     fun restoreDefaultGeoip(callback: () -> Unit) = ruleFileController.restoreDefaultGeoip(callback)

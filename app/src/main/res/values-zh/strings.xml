@@ -12,7 +12,6 @@
     <string name="socks_pass">SOCKS 认证密码</string>
     <string name="socks_pass_summary">SOCKS5 代理连接验证所需密码（可选）</string>
     <string name="socks_address_loopback_only">SOCKS 入站地址必须是回环地址（127.0.0.0/8 或 ::1）</string>
-    <string name="socks_settings_restart_notice">SOCKS 设置已修改，请重启服务以生效</string>
     <string name="socks_credentials_pair_required">用户名和密码必须同时填写或同时留空</string>
     <string name="socks_credentials_no_line_breaks">凭据不能包含换行符</string>
     <string name="socks_username_too_long">用户名长度不能超过 255 字节</string>
@@ -231,5 +230,6 @@
     <string name="keep_awake_summary">在 VPN 连接时保持部分唤醒锁。HyperOS 或遇到熄屏断连的设备可开启；在原生/Pixel/三星设备上建议保持关闭以节省电量</string>
     <string name="inbound_settings">本地入站代理</string>
     <string name="network_settings">其他</string>
-    <string name="tunnel_mode_restart_notice">TUN 传输组件已切换，请重启内核以生效</string>
+    <string name="settings_restart_notice">设置已修改，请重启内核以生效</string>
+    <string name="restart_core_to_apply_format">%1$s，请重启内核以生效</string>
 </resources>

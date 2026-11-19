@@ -214,7 +214,7 @@ internal class SettingsController(
         _settingsState.value = _settingsState.value.copy(
             socksAddress = InputFieldState(addressString)
         )
-        if (changed) notifySocksSettingsChangedWhileRunning()
+        if (changed) notifyRestartRequiredIfRunning()
         return true
     }
 
@@ -227,7 +227,7 @@ internal class SettingsController(
                 _settingsState.value = _settingsState.value.copy(
                     socksPort = InputFieldState(portString)
                 )
-                if (changed) notifySocksSettingsChangedWhileRunning()
+                if (changed) notifyRestartRequiredIfRunning()
                 true
             } else {
                 showSnackbar(application.getString(R.string.invalid_port_range))
@@ -258,7 +258,7 @@ internal class SettingsController(
             socksUser = InputFieldState(userString, error = error, isValid = paired),
             socksPass = _settingsState.value.socksPass.copy(error = error, isValid = paired)
         )
-        if (changed) notifySocksSettingsChangedWhileRunning()
+        if (changed) notifyRestartRequiredIfRunning()
         if (!paired) showSnackbar(error ?: application.getString(R.string.socks_credentials_pair_required))
         return paired
     }
@@ -282,7 +282,7 @@ internal class SettingsController(
             socksUser = _settingsState.value.socksUser.copy(error = error, isValid = paired),
             socksPass = InputFieldState(passString, error = error, isValid = paired)
         )
-        if (changed) notifySocksSettingsChangedWhileRunning()
+        if (changed) notifyRestartRequiredIfRunning()
         if (!paired) showSnackbar(error ?: application.getString(R.string.socks_credentials_pair_required))
         return paired
     }
@@ -316,19 +316,21 @@ internal class SettingsController(
         }
     }
 
-    private fun notifySocksSettingsChangedWhileRunning() {
+    private fun notifyRestartRequiredIfRunning() {
         if (isVpnEnabled()) {
-            showSnackbar(application.getString(R.string.socks_settings_restart_notice))
+            showSnackbar(application.getString(R.string.settings_restart_notice))
         }
     }
 
     fun updateDnsIpv4(ipv4Addr: String): Boolean {
         val matcher = IPV4_PATTERN.matcher(ipv4Addr)
         return if (matcher.matches()) {
+            val changed = prefs.dnsIpv4 != ipv4Addr
             prefs.dnsIpv4 = ipv4Addr
             _settingsState.value = _settingsState.value.copy(
                 dnsIpv4 = InputFieldState(ipv4Addr)
             )
+            if (changed) notifyRestartRequiredIfRunning()
             true
         } else {
             _settingsState.value = _settingsState.value.copy(
@@ -345,10 +347,12 @@ internal class SettingsController(
     fun updateDnsIpv6(ipv6Addr: String): Boolean {
         val matcher = IPV6_PATTERN.matcher(ipv6Addr)
         return if (matcher.matches()) {
+            val changed = prefs.dnsIpv6 != ipv6Addr
             prefs.dnsIpv6 = ipv6Addr
             _settingsState.value = _settingsState.value.copy(
                 dnsIpv6 = InputFieldState(ipv6Addr)
             )
+            if (changed) notifyRestartRequiredIfRunning()
             true
         } else {
             _settingsState.value = _settingsState.value.copy(
@@ -363,10 +367,12 @@ internal class SettingsController(
     }
 
     fun setIpv6Enabled(enabled: Boolean) {
+        val changed = prefs.ipv6 != enabled
         prefs.ipv6 = enabled
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(ipv6Enabled = enabled)
         )
+        if (changed) notifyRestartRequiredIfRunning()
     }
 
     fun setHideFromRecentsEnabled(enabled: Boolean) {
@@ -439,10 +445,12 @@ internal class SettingsController(
                 false
             }
             mtu in 1280..9000 -> {
+                val changed = prefs.tunnelMtu != mtu
                 prefs.tunnelMtu = mtu
                 _settingsState.value = _settingsState.value.copy(
                     tunnelMtu = InputFieldState(mtu.toString())
                 )
+                if (changed) notifyRestartRequiredIfRunning()
                 true
             }
             else -> {
@@ -459,52 +467,66 @@ internal class SettingsController(
     }
 
     fun setHttpProxyEnabled(enabled: Boolean) {
+        val changed = prefs.httpProxyEnabled != enabled
         prefs.httpProxyEnabled = enabled
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(httpProxyEnabled = enabled)
         )
+        if (changed) notifyRestartRequiredIfRunning()
     }
 
     fun setBypassLanEnabled(enabled: Boolean) {
+        val changed = prefs.bypassLan != enabled
         prefs.bypassLan = enabled
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(bypassLanEnabled = enabled)
         )
+        if (changed) notifyRestartRequiredIfRunning()
     }
 
     fun setKeepAwakeEnabled(enabled: Boolean) {
+        val changed = prefs.keepAwake != enabled
         prefs.keepAwake = enabled
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(keepAwake = enabled)
         )
+        if (changed) notifyRestartRequiredIfRunning()
     }
 
     fun setLogLevel(logLevel: LogLevel) {
+        val changed = prefs.logLevel != logLevel
         prefs.logLevel = logLevel
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(logLevel = logLevel)
         )
+        if (changed) notifyRestartRequiredIfRunning()
     }
 
     fun setAccessLog(enabled: Boolean) {
+        val changed = prefs.accessLog != enabled
         prefs.accessLog = enabled
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(accessLog = enabled)
         )
+        if (changed) notifyRestartRequiredIfRunning()
     }
 
     fun setDnsLog(enabled: Boolean) {
+        val changed = prefs.dnsLog != enabled
         prefs.dnsLog = enabled
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(dnsLog = enabled)
         )
+        if (changed) notifyRestartRequiredIfRunning()
     }
 
     fun setDisableVpnEnabled(enabled: Boolean) {
+        val changed = prefs.disableVpn != enabled
         prefs.disableVpn = enabled
         _settingsState.value = _settingsState.value.copy(
             switches = _settingsState.value.switches.copy(disableVpn = enabled)
         )
+        if (changed) notifyRestartRequiredIfRunning()
     }
 
     fun setTunnelMode(mode: com.simplexray.re.prefs.TunnelMode) {
@@ -513,9 +535,7 @@ internal class SettingsController(
             _settingsState.value = _settingsState.value.copy(
                 switches = _settingsState.value.switches.copy(tunnelMode = mode)
             )
-            if (isVpnEnabled()) {
-                showSnackbar(application.getString(R.string.tunnel_mode_restart_notice))
-            }
+            notifyRestartRequiredIfRunning()
         }
     }
 

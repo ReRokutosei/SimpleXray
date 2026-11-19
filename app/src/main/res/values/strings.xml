@@ -18,7 +18,6 @@
     <string name="socks_pass">SOCKS Password</string>
     <string name="socks_pass_summary">Optional password required for local SOCKS5 authentication</string>
     <string name="socks_address_loopback_only">SOCKS inbound address must be a loopback address (127.0.0.0/8 or ::1)</string>
-    <string name="socks_settings_restart_notice">SOCKS settings changed. Restart the service to apply.</string>
     <string name="socks_credentials_pair_required">Username and password must be set together or both left empty</string>
     <string name="socks_credentials_no_line_breaks">Credentials must not contain line breaks</string>
     <string name="socks_username_too_long">Username length must not exceed 255 bytes</string>
@@ -238,5 +237,6 @@
     <string name="keep_awake_summary">Acquire a partial wake lock while VPN is connected. Recommended if your device (e.g. HyperOS) freezes connections on screen-off; keep disabled on Pixel/Samsung to save battery.</string>
     <string name="inbound_settings">Local Inbound</string>
     <string name="network_settings">Others</string>
-    <string name="tunnel_mode_restart_notice">Tunnel mode changed. Please restart core to apply.</string>
+    <string name="settings_restart_notice">Setting updated. Restart core to take effect.</string>
+    <string name="restart_core_to_apply_format">%1$s. Restart core to take effect.</string>
 </resources>

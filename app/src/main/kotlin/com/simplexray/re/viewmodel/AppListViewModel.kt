@@ -82,6 +82,12 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     @Volatile
     private var isChanged = false
     private val saveMutex = Mutex()
+    private val initialBypassSelectedApps: Boolean = prefs.bypassSelectedApps
+    @Volatile
+    private var initialSelectedApps: Set<String> = prefs.apps?.filterNotNull()?.toSet() ?: emptySet()
+    @Volatile
+    private var userModified: Boolean = false
+    private var changeNotified: Boolean = false
 
     private val _uiEvent = Channel<AppListViewUiEvent>(Channel.BUFFERED)
     val uiEvent = _uiEvent.receiveAsFlow()
@@ -119,6 +125,7 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                 prefs.apps = validSelectedApps
                 Log.d(TAG, "Pruned ${apps.size - validSelectedApps.size} uninstalled app(s) from per-app proxy list.")
             }
+            initialSelectedApps = validSelectedApps.filterNotNull().toSet()
 
             val list = loadedPackages.asSequence()
                 .mapNotNull {
@@ -155,6 +162,7 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
             updated[index] = pkg.copy(selected = isSelected)
             _packageList.value = updated
             isChanged = true
+            userModified = true
             saveChanges()
         }
     }
@@ -172,8 +180,11 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun onBypassSelectedAppsChange(bypass: Boolean) {
-        _bypassSelectedApps.value = bypass
-        prefs.bypassSelectedApps = bypass
+        if (_bypassSelectedApps.value != bypass) {
+            _bypassSelectedApps.value = bypass
+            prefs.bypassSelectedApps = bypass
+            userModified = true
+        }
     }
 
     fun exportAppsToClipboard(context: Context) {
@@ -209,6 +220,7 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
                         }
                         _packageList.value = updatedPackageList
                         isChanged = true
+                        userModified = true
                         saveChanges()
                         _uiEvent.trySend(AppListViewUiEvent.ShowSnackbar(context.getString(R.string.import_success)))
                     } else {
@@ -244,6 +256,7 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
         _packageList.value = _packageList.value.map { pkg ->
             if (!pkg.selected) {
                 isChanged = true
+                userModified = true
                 pkg.copy(selected = true)
             } else {
                 pkg
@@ -255,9 +268,25 @@ class AppListViewModel(application: Application) : AndroidViewModel(application)
     fun inverseSelection() {
         _packageList.value = _packageList.value.map { pkg ->
             isChanged = true
+            userModified = true
             pkg.copy(selected = !pkg.selected)
         }
         saveChanges()
+    }
+
+    fun consumeHasChanges(): Boolean {
+        if (changeNotified || !userModified) return false
+        val currentSelectedApps = _packageList.value
+            .asSequence()
+            .filter { it.selected }
+            .map { it.packageName }
+            .toSet()
+        val hasDiff = _bypassSelectedApps.value != initialBypassSelectedApps ||
+            currentSelectedApps != initialSelectedApps
+        if (hasDiff) {
+            changeNotified = true
+        }
+        return hasDiff
     }
 
     companion object {

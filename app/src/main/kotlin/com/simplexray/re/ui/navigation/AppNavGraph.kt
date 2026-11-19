@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -62,6 +63,13 @@ fun AppNavHost(
             popExitTransition = { popExitTransition() }
         ) {
             val appListViewModel: AppListViewModel = viewModel()
+            DisposableEffect(appListViewModel) {
+                onDispose {
+                    if (navController.currentDestination?.route != ROUTE_APP_LIST) {
+                        mainViewModel.onAppListEditFinished(appListViewModel.consumeHasChanges())
+                    }
+                }
+            }
             AppListScreen(
                 viewModel = appListViewModel,
                 onBackClick = { navController.popBackStack() }
