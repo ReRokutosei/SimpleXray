@@ -27,6 +27,12 @@ import java.net.URL
 
 private const val TAG = "RuleFileController"
 
+data class CustomDatFileItem(
+    val name: String,
+    val summary: String,
+    val url: String,
+)
+
 internal class RuleFileController(
     private val application: Application,
     private val prefs: Preferences,
@@ -51,14 +57,25 @@ internal class RuleFileController(
     private val customDatDownloadJobs = ConcurrentHashMap<String, Job>()
     private val customDatUrlsLock = Any()
 
-    private val _customDatVersion = MutableStateFlow(0L)
-    val customDatVersion: StateFlow<Long> = _customDatVersion.asStateFlow()
+    private val _customDatFiles = MutableStateFlow<List<CustomDatFileItem>>(emptyList())
+    val customDatFiles: StateFlow<List<CustomDatFileItem>> = _customDatFiles.asStateFlow()
+
+    init {
+        refreshCustomDatFiles()
+    }
 
     private fun updateCustomDatProgress(fileName: String, progress: String?) {
         // Atomic update: concurrent custom-dat downloads must not overwrite
         // each other's just-published progress entries.
+        var membershipChanged = false
         _customDatDownloadProgress.update { current ->
+            val wasPresent = current.containsKey(fileName)
+            val nowPresent = progress != null
+            membershipChanged = wasPresent != nowPresent
             if (progress == null) current - fileName else current + (fileName to progress)
+        }
+        if (membershipChanged) {
+            refreshCustomDatFiles()
         }
     }
 
@@ -140,6 +157,12 @@ internal class RuleFileController(
     }
 
     fun downloadRuleFile(url: String, fileName: String) {
+        val trimmedUrl = url.trim()
+        if (trimmedUrl.isBlank()) {
+            Log.w(TAG, "Ignoring download with blank URL for $fileName")
+            sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.download_failed)))
+            return
+        }
         // Normalize standard GEO file names (case-insensitive) so e.g. "GEOIP.dat"
         // always targets the built-in geoip.dat instead of an orphan custom file.
         val targetName = if (FileManager.isStandardGeoDat(fileName)) fileName.lowercase() else fileName
@@ -161,18 +184,18 @@ internal class RuleFileController(
         job = scope.launch(Dispatchers.IO) {
             val standardProgress: MutableStateFlow<String?>? = when (targetName) {
                 "geoip.dat" -> {
-                    prefs.geoipUrl = url
+                    prefs.geoipUrl = trimmedUrl
                     _geoipDownloadProgress
                 }
 
                 "geosite.dat" -> {
-                    prefs.geositeUrl = url
+                    prefs.geositeUrl = trimmedUrl
                     _geositeDownloadProgress
                 }
 
                 else -> {
                     // Third-party dat: persist its URL and report progress per file.
-                    mutateCustomDatUrls { it[targetName] = url }
+                    mutateCustomDatUrls { it[targetName] = trimmedUrl }
                     null
                 }
             }
@@ -204,7 +227,7 @@ internal class RuleFileController(
             try {
                 setProgress(application.getString(R.string.connecting))
 
-                val request = Request.Builder().url(url).build()
+                val request = Request.Builder().url(trimmedUrl).build()
                 val call = client.newCall(request)
                 val response = call.await()
 
@@ -283,7 +306,25 @@ internal class RuleFileController(
     }
 
     fun refreshCustomDatFiles() {
-        _customDatVersion.value = System.currentTimeMillis()
+        scope.launch(Dispatchers.IO) {
+            val names = LinkedHashSet<String>()
+            application.filesDir.listFiles { file ->
+                file.isFile &&
+                    file.name.lowercase().endsWith(".dat") &&
+                    !FileManager.isStandardGeoDat(file.name) &&
+                    !file.name.lowercase().startsWith("profileinstaller_")
+            }?.forEach { names.add(it.name) }
+            // Include files that are still downloading (may not exist on disk yet).
+            names.addAll(_customDatDownloadProgress.value.keys)
+            val urls = synchronized(customDatUrlsLock) { prefs.customDatUrls }
+            _customDatFiles.value = names.sorted().map { name ->
+                CustomDatFileItem(
+                    name = name,
+                    summary = fileManager.getCustomDatSummary(name),
+                    url = urls[name] ?: "",
+                )
+            }
+        }
     }
 
     private val _luaScriptVersion = MutableStateFlow(0L)
@@ -323,19 +364,19 @@ internal class RuleFileController(
         }
     }
 
-    fun importCustomDatFile(uri: android.net.Uri) {
+    fun importCustomDatFile(uri: android.net.Uri, targetFileName: String? = null) {
         scope.launch(Dispatchers.IO) {
             val candidateName = fileManager.getDatFileNameFromUri(application, uri)
             if (candidateName == null) {
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.unsupported_dat_format)))
                 return@launch
             }
-            // Defense: reject standard GEO file names (case-insensitive) before importing.
-            if (FileManager.isStandardGeoDat(candidateName)) {
+            // Defense: reject standard GEO file names (case-insensitive) when adding a new custom file.
+            if (targetFileName == null && FileManager.isStandardGeoDat(candidateName)) {
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.standard_geo_file_rejected)))
                 return@launch
             }
-            val fileName = fileManager.importDatFileFromUri(application, uri)
+            val fileName = fileManager.importDatFileFromUri(application, uri, targetFileName)
             if (fileName != null) {
                 refreshCustomDatFiles()
                 sendEvent(MainViewUiEvent.ShowSnackbar(application.getString(R.string.file_imported, fileName)))
@@ -396,7 +437,14 @@ internal class RuleFileController(
     }
 
     fun updateCustomDatUrl(fileName: String, url: String) {
-        mutateCustomDatUrls { it[fileName] = url }
+        val trimmed = url.trim()
+        mutateCustomDatUrls {
+            if (trimmed.isEmpty()) {
+                it.remove(fileName)
+            } else {
+                it[fileName] = trimmed
+            }
+        }
         refreshCustomDatFiles()
     }
 }

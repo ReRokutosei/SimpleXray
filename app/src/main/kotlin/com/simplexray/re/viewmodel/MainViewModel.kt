@@ -167,8 +167,8 @@ class MainViewModel(application: Application) :
     val customDatDownloadProgress: StateFlow<Map<String, String?>>
         get() = ruleFileController.customDatDownloadProgress
 
-    val customDatVersion: StateFlow<Long>
-        get() = ruleFileController.customDatVersion
+    val customDatFiles: StateFlow<List<CustomDatFileItem>>
+        get() = ruleFileController.customDatFiles
 
     val isCheckingForUpdates: StateFlow<Boolean>
         get() = updateController.isCheckingForUpdates
@@ -375,7 +375,8 @@ class MainViewModel(application: Application) :
 
     fun refreshCustomDatFiles() = ruleFileController.refreshCustomDatFiles()
 
-    fun importCustomDatFile(uri: android.net.Uri) = ruleFileController.importCustomDatFile(uri)
+    fun importCustomDatFile(uri: android.net.Uri, targetFileName: String? = null) =
+        ruleFileController.importCustomDatFile(uri, targetFileName)
 
     /**
      * Download and import a new third-party .dat file from a direct link.

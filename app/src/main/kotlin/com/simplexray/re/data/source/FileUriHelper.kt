@@ -42,10 +42,15 @@ internal object FileUriHelper {
     fun getDatFileNameFromUri(context: Context, uri: Uri): String? {
         val originalName = getFileNameFromUri(context, uri) ?: return null
         val fileName = sanitizeFileName(originalName, fallback = "")
-        if (!fileName.lowercase().endsWith(".dat")) {
+        if (!isDatFileName(fileName)) {
             return null
         }
         return fileName
+    }
+
+    fun isDatFileName(fileName: String): Boolean {
+        val trimmed = fileName.trim().lowercase()
+        return trimmed.endsWith(".dat") && trimmed.length > 4 && trimmed != ".dat"
     }
 
     fun getLuaFileNameFromUri(context: Context, uri: Uri): String? {

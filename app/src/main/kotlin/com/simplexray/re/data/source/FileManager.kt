@@ -61,8 +61,12 @@ class FileManager(application: Application, prefs: Preferences) {
     suspend fun restoreDefaultGeosite(): Boolean =
         ruleFileStore.restoreDefaultGeosite()
 
-    suspend fun importDatFileFromUri(context: Context, uri: Uri): String? =
-        ruleFileStore.importDatFileFromUri(context, uri)
+    suspend fun importDatFileFromUri(
+        context: Context,
+        uri: Uri,
+        targetFileName: String? = null,
+    ): String? =
+        ruleFileStore.importDatFileFromUri(context, uri, targetFileName)
 
     fun getDatFileNameFromUri(context: Context, uri: Uri): String? =
         FileUriHelper.getDatFileNameFromUri(context, uri)

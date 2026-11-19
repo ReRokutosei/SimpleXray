@@ -316,31 +316,47 @@ internal class RuleFileStore(
         }
     }
 
-    suspend fun importDatFileFromUri(context: Context, uri: Uri): String? {
+    suspend fun importDatFileFromUri(
+        context: Context,
+        uri: Uri,
+        targetFileName: String? = null,
+    ): String? {
         return withContext(Dispatchers.IO) {
+            var tempFile: File? = null
             try {
-                val fileName = FileUriHelper.getDatFileNameFromUri(context, uri) ?: return@withContext null
-                // Defense: standard GEO file names (case-insensitive) must not be
-                // imported through the third-party dat path.
-                if (FileUriHelper.isStandardGeoDat(fileName)) {
-                    Log.w(TAG, "Rejected import of standard GEO file via custom dat path: $fileName")
-                    return@withContext null
+                val candidateName = FileUriHelper.getDatFileNameFromUri(context, uri) ?: return@withContext null
+                val finalName = if (!targetFileName.isNullOrBlank() &&
+                    FileUriHelper.isDatFileName(targetFileName) &&
+                    !FileUriHelper.isStandardGeoDat(targetFileName)
+                ) {
+                    targetFileName
+                } else {
+                    // Defense: standard GEO file names (case-insensitive) must not be
+                    // imported through the third-party dat path.
+                    if (FileUriHelper.isStandardGeoDat(candidateName)) {
+                        Log.w(TAG, "Rejected import of standard GEO file via custom dat path: $candidateName")
+                        return@withContext null
+                    }
+                    candidateName
                 }
-                val targetFile = File(application.filesDir, fileName)
-                val tempFile = File(application.filesDir, "$fileName.tmp")
-                context.contentResolver.openInputStream(uri)?.use { inputStream ->
-                    FileOutputStream(tempFile).use { outputStream ->
-                        inputStream.copyTo(outputStream)
+                val targetFile = File(application.filesDir, finalName)
+                val tmp = File(application.filesDir, "$finalName.tmp")
+                tempFile = tmp
+                context.contentResolver.openInputStream(uri)?.use { rawStream ->
+                    val decodedStream = com.simplexray.re.common.GzipUtils.wrapIfNeeded(rawStream)
+                    FileOutputStream(tmp).use { outputStream ->
+                        decodedStream.copyTo(outputStream)
+                    }
+                } ?: return@withContext null
+                if (com.simplexray.re.common.GeoDataValidator.validateDatFile(application, tmp, finalName)) {
+                    if (tmp.renameTo(targetFile)) {
+                        return@withContext finalName
                     }
                 }
-                if (com.simplexray.re.common.GeoDataValidator.validateDatFile(application, tempFile, fileName)) {
-                    if (tempFile.renameTo(targetFile)) {
-                        return@withContext fileName
-                    }
-                }
-                tempFile.delete()
+                tmp.delete()
                 null
             } catch (e: Exception) {
+                tempFile?.delete()
                 Log.e(TAG, "Error importing dat file from URI", e)
                 null
             }

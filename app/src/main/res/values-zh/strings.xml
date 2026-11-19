@@ -110,6 +110,7 @@
     <string name="reset_file">重置</string>
     <string name="delete_rule_file_title">删除规则文件</string>
     <string name="delete_rule_file_message">这将恢复为默认规则文件，确定吗？</string>
+    <string name="delete_custom_dat_file_message">确定要删除 %1$s 吗？</string>
     <string name="restore_default_url">恢复默认地址</string>
     <string name="download_from_url_import">从 URL 下载并导入</string>
     <string name="standard_geo_file_rejected">该文件属于标准 GEO 资源，请前往上方专门区域进行替换或更新</string>

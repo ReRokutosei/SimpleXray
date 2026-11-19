@@ -1,73 +1,45 @@
 package com.simplexray.re.ui.screens
 
-import android.content.Intent
-import androidx.core.net.toUri
 import androidx.activity.result.ActivityResultLauncher
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalClipboard
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
-import com.simplexray.re.common.ThemeMode
-import com.simplexray.re.prefs.TunnelMode
+import com.simplexray.re.ui.components.ConfirmOverlayDialog
+import com.simplexray.re.ui.components.InfoOverlayDialog
+import com.simplexray.re.ui.scaffold.LocalLayerBackdrop
 import com.simplexray.re.viewmodel.MainViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
-import top.yukonga.miuix.kmp.basic.BasicComponent
-import top.yukonga.miuix.kmp.basic.Card
-import top.yukonga.miuix.kmp.basic.DropdownEntry
-import top.yukonga.miuix.kmp.basic.DropdownItem
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
-import top.yukonga.miuix.kmp.basic.InputField
-import top.yukonga.miuix.kmp.basic.SmallTitle
-import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.Close
-import top.yukonga.miuix.kmp.icon.glass.Close2
-import top.yukonga.miuix.kmp.icon.glass.Delete
-import top.yukonga.miuix.kmp.icon.glass.Download
-import top.yukonga.miuix.kmp.icon.glass.Import
 import top.yukonga.miuix.kmp.icon.glass.Ok
-import top.yukonga.miuix.kmp.preference.ArrowPreference
-import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import com.simplexray.re.ui.components.ConfirmOverlayDialog
-import com.simplexray.re.ui.components.InfoOverlayDialog
-import com.simplexray.re.ui.scaffold.LocalLayerBackdrop
 
 @Composable
 fun SettingsScreen(
@@ -91,9 +63,11 @@ fun SettingsScreen(
 
     var showGeoipDeleteDialog by remember { mutableStateOf(false) }
     var showGeositeDeleteDialog by remember { mutableStateOf(false) }
+    var deletingCustomDatFileName by remember { mutableStateOf<String?>(null) }
     var deletingLuaFileName by remember { mutableStateOf<String?>(null) }
 
     var editingRuleFile by remember { mutableStateOf<String?>(null) }
+    var editingRuleFileOriginalUrl by remember { mutableStateOf("") }
     var ruleFileUrl by remember { mutableStateOf("") }
 
     var showDatUrlImportSheet by remember { mutableStateOf(false) }
@@ -104,8 +78,12 @@ fun SettingsScreen(
     val backdrop = LocalLayerBackdrop.current
 
     if (editingRuleFile != null) {
+        val fileName = editingRuleFile!!
+        val isStandard = fileName == "geoip.dat" || fileName == "geosite.dat"
+        val trimmedUrl = ruleFileUrl.trim()
+        val canConfirm = trimmedUrl.isNotEmpty() || (!isStandard && editingRuleFileOriginalUrl.isNotBlank())
         GlassBottomSheet(
-            title = editingRuleFile ?: "Rule File URL",
+            title = fileName,
             show = editingRuleFile != null,
             backdrop = backdrop,
             onDismissRequest = { editingRuleFile = null },
@@ -119,20 +97,27 @@ fun SettingsScreen(
                 }
             },
             endAction = {
-                IconButton(onClick = {
-                    val fileName = editingRuleFile
-                    if (fileName != null) {
-                        if (fileName != "geoip.dat" && fileName != "geosite.dat") {
-                            mainViewModel.updateCustomDatUrl(fileName, ruleFileUrl)
+                IconButton(
+                    enabled = canConfirm,
+                    onClick = {
+                        if (isStandard) {
+                            mainViewModel.downloadRuleFile(trimmedUrl, fileName)
+                        } else {
+                            mainViewModel.updateCustomDatUrl(fileName, trimmedUrl)
+                            if (trimmedUrl.isNotEmpty()) {
+                                mainViewModel.downloadRuleFile(trimmedUrl, fileName)
+                            }
                         }
-                        mainViewModel.downloadRuleFile(ruleFileUrl, fileName)
+                        editingRuleFile = null
                     }
-                    editingRuleFile = null
-                }) {
+                ) {
                     Icon(
                         imageVector = MiuixIcons.Glass.Ok,
                         contentDescription = stringResource(R.string.update),
-                        modifier = Modifier.size(24.dp)
+                        modifier = Modifier.size(24.dp),
+                        tint = MiuixTheme.colorScheme.onSurface.copy(
+                            alpha = if (canConfirm) 1f else 0.38f
+                        )
                     )
                 }
             }
@@ -153,12 +138,12 @@ fun SettingsScreen(
 
                 // "Restore default URL" only applies to the built-in GEO files;
                 // third-party dat files have no default address.
-                if (editingRuleFile == "geoip.dat" || editingRuleFile == "geosite.dat") {
+                if (isStandard) {
                     TextButton(
                         text = stringResource(id = R.string.restore_default_url),
                         onClick = {
                             ruleFileUrl =
-                                if (editingRuleFile == "geoip.dat") geoipUrlDefault
+                                if (fileName == "geoip.dat") geoipUrlDefault
                                 else geositeUrlDefault
                         }
                     )
@@ -245,6 +230,21 @@ fun SettingsScreen(
         )
     }
 
+    if (deletingCustomDatFileName != null) {
+        val fileName = deletingCustomDatFileName!!
+        ConfirmOverlayDialog(
+            title = stringResource(R.string.delete_rule_file_title),
+            summary = stringResource(R.string.delete_custom_dat_file_message, fileName),
+            confirmText = stringResource(R.string.confirm),
+            cancelText = stringResource(R.string.cancel),
+            onConfirm = {
+                mainViewModel.deleteCustomDatFile(fileName)
+                deletingCustomDatFileName = null
+            },
+            onDismiss = { deletingCustomDatFileName = null }
+        )
+    }
+
     if (deletingLuaFileName != null) {
         val fileName = deletingLuaFileName!!
         ConfirmOverlayDialog(
@@ -327,11 +327,13 @@ fun SettingsScreen(
                 geoipFilePickerLauncher = geoipFilePickerLauncher,
                 geositeFilePickerLauncher = geositeFilePickerLauncher,
                 onEditRuleFile = { fileName, url ->
+                    editingRuleFileOriginalUrl = url
                     ruleFileUrl = url
                     editingRuleFile = fileName
                 },
                 onDeleteGeoip = { showGeoipDeleteDialog = true },
                 onDeleteGeosite = { showGeositeDeleteDialog = true },
+                onDeleteCustomDat = { fileName -> deletingCustomDatFileName = fileName },
                 onShowDatUrlImport = { showDatUrlImportSheet = true },
             )
         }
@@ -358,90 +360,4 @@ fun SettingsScreen(
         }
     }
 }
-}
-
-
-
-/**
- * Renders the third-party dat file rows. Kept as a separate composable so that
- * list-size changes (a download in progress adds/removes entries) are isolated
- * from the sibling ArrowPreference rows that follow in the settings card —
- * otherwise Compose slot movement can leak into those groups and crash with
- * "Boolean cannot be cast to ComposableLambdaImpl".
- */
-@Composable
-private fun CustomDatFilesSection(
-    mainViewModel: MainViewModel,
-    prefs: com.simplexray.re.prefs.Preferences,
-    customDatProgress: Map<String, String?>,
-    customDatPickerLauncher: androidx.activity.result.ActivityResultLauncher<Array<String>>,
-    onEditUrl: (datName: String, url: String) -> Unit,
-) {
-    val context = LocalContext.current
-    val customDatVersion by mainViewModel.customDatVersion.collectAsStateWithLifecycle()
-    val customDatFiles = remember(customDatVersion, customDatProgress) {
-        val names = LinkedHashSet<String>()
-        context.filesDir.listFiles { file ->
-            file.isFile &&
-                file.name.lowercase().endsWith(".dat") &&
-                !file.name.equals("geoip.dat", ignoreCase = true) &&
-                !file.name.equals("geosite.dat", ignoreCase = true) &&
-                !file.name.lowercase().startsWith("profileinstaller_")
-        }?.forEach { names.add(it.name) }
-        // Include files that are still downloading (may not exist on disk yet).
-        names.addAll(customDatProgress.keys)
-        names.toList()
-    }
-
-    customDatFiles.forEach { datName ->
-        val customUrl = prefs.customDatUrls[datName] ?: ""
-        val isDownloading = customDatProgress[datName] != null
-        key(datName) {
-            BasicComponent(
-                title = datName,
-                summary = customDatProgress[datName] ?: mainViewModel.getCustomDatSummary(datName),
-                endActions = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (isDownloading) {
-                            IconButton(onClick = { mainViewModel.cancelDownload(datName) }) {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.Close2,
-                                    contentDescription = stringResource(R.string.cancel),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        } else {
-                            IconButton(onClick = { onEditUrl(datName, customUrl) }) {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.Download,
-                                    contentDescription = stringResource(R.string.rule_file_update_url),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                            IconButton(onClick = {
-                                if (customUrl.isNotEmpty()) {
-                                    mainViewModel.downloadRuleFile(customUrl, datName)
-                                } else {
-                                    customDatPickerLauncher.launch(arrayOf("*/*"))
-                                }
-                            }) {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.Import,
-                                    contentDescription = stringResource(R.string.import_file),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                            IconButton(onClick = { mainViewModel.deleteCustomDatFile(datName) }) {
-                                Icon(
-                                    imageVector = MiuixIcons.Glass.Delete,
-                                    contentDescription = stringResource(R.string.delete_config),
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            )
-        }
-    }
 }
