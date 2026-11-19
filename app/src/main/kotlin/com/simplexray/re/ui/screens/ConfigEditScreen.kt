@@ -168,7 +168,6 @@ fun ConfigEditPane(
         drawRect(surfaceColor)
         drawContent()
     }
-    val backdrop = LocalLayerBackdrop.current ?: localBackdrop
 
     val editorContent: @Composable (PaddingValues) -> Unit = { paddingValues ->
         Column(
@@ -326,8 +325,7 @@ fun ConfigEditPane(
                 ) {
                     if (onToggleExpand != null) {
                         GlassIconButton(
-                            onClick = onToggleExpand,
-                            backdrop = backdrop
+                            onClick = onToggleExpand
                         ) {
                             if (isExpanded) {
                                 Icon(
@@ -348,8 +346,7 @@ fun ConfigEditPane(
                     GlassIconButton(
                         onClick = {
                             if (controller.canUndo) controller.undo()
-                        },
-                        backdrop = backdrop
+                        }
                     ) {
                         Icon(
                             imageVector = MiuixIcons.Glass.Undo,
@@ -364,8 +361,7 @@ fun ConfigEditPane(
                     GlassIconButton(
                         onClick = {
                             if (controller.canRedo) controller.redo()
-                        },
-                        backdrop = backdrop
+                        }
                     ) {
                         Icon(
                             imageVector = MiuixIcons.Glass.Redo,
@@ -378,8 +374,7 @@ fun ConfigEditPane(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     GlassIconButton(
-                        onClick = onSearchToggle,
-                        backdrop = backdrop
+                        onClick = onSearchToggle
                     ) {
                         Icon(
                             imageVector = MiuixIcons.Glass.Search,
@@ -391,8 +386,7 @@ fun ConfigEditPane(
                     GlassIconButton(
                         onClick = {
                             if (hasUnsavedChanges) onSaveClick()
-                        },
-                        backdrop = backdrop
+                        }
                     ) {
                         Icon(
                             imageVector = MiuixIcons.Glass.Save,
