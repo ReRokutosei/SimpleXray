@@ -335,6 +335,7 @@ fun SettingsScreen(
                 onDeleteGeosite = { showGeositeDeleteDialog = true },
                 onDeleteCustomDat = { fileName -> deletingCustomDatFileName = fileName },
                 onShowDatUrlImport = { showDatUrlImportSheet = true },
+                onShowHelp = { title, summary -> activeHelpDialog = title to summary },
             )
         }
 

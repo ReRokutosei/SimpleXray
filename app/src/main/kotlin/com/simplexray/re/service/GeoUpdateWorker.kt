@@ -162,6 +162,9 @@ class GeoUpdateWorker(
 
                 if (anySuccess) {
                     prefs.lastGeoUpdateTime = System.currentTimeMillis()
+                    if (prefs.geoUpdateAutoRestart && prefs.geoUpdateIntervalHours > 0) {
+                        VpnStateHub.notifyGeoRulesUpdated()
+                    }
                 }
 
                 // Only post failure notification if proxy was active or if targets genuinely failed while reachable

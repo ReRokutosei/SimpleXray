@@ -179,6 +179,7 @@ class Preferences(context: Context) {
     var bypassLan: Boolean by booleanPref(BYPASS_LAN, true)
     var hideFromRecents: Boolean by booleanPref(HIDE_FROM_RECENTS, true)
     var geoUpdateIntervalHours: Int by intPref(GEO_UPDATE_INTERVAL_HOURS, 0)
+    var geoUpdateAutoRestart: Boolean by booleanPref(GEO_UPDATE_AUTO_RESTART, false)
     var lastGeoUpdateTime: Long by longPref(LAST_GEO_UPDATE_TIME, 0L)
     var httpProxyEnabled: Boolean by booleanPref(HTTP_PROXY_ENABLED, false)
     var httpPort: Int by intPref(HTTP_PORT, 10809)
@@ -295,6 +296,7 @@ class Preferences(context: Context) {
         const val NOTIFICATION_PROMPTED: String = "NotificationPrompted"
         const val LOCAL_NETWORK_PROMPTED: String = "LocalNetworkPrompted"
         const val GEO_UPDATE_INTERVAL_HOURS: String = "GeoUpdateIntervalHours"
+        const val GEO_UPDATE_AUTO_RESTART: String = "GeoUpdateAutoRestart"
         const val LAST_GEO_UPDATE_TIME: String = "LastGeoUpdateTime"
         const val CUSTOM_DAT_URLS: String = "CustomDatUrls"
         const val TUNNEL_IPV4_ADDRESS: String = "198.18.0.1"

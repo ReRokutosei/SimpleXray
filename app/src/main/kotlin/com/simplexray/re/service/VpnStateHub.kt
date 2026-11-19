@@ -31,6 +31,12 @@ object VpnStateHub {
     )
     val clearLogsFlow: SharedFlow<Unit> = _clearLogsFlow.asSharedFlow()
 
+    private val _geoRulesUpdatedFlow = MutableSharedFlow<Unit>(
+        extraBufferCapacity = 1,
+        onBufferOverflow = BufferOverflow.DROP_OLDEST
+    )
+    val geoRulesUpdatedFlow: SharedFlow<Unit> = _geoRulesUpdatedFlow.asSharedFlow()
+
     fun updateState(newState: VpnRunningState) {
         _state.value = newState
     }
@@ -41,5 +47,9 @@ object VpnStateHub {
 
     fun notifyLogsCleared() {
         _clearLogsFlow.tryEmit(Unit)
+    }
+
+    fun notifyGeoRulesUpdated() {
+        _geoRulesUpdatedFlow.tryEmit(Unit)
     }
 }

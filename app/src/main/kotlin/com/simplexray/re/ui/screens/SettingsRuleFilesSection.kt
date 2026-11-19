@@ -4,8 +4,10 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -16,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -26,12 +29,16 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.Close2
 import top.yukonga.miuix.kmp.icon.glass.Delete
 import top.yukonga.miuix.kmp.icon.glass.Download
+import top.yukonga.miuix.kmp.icon.glass.Help
 import top.yukonga.miuix.kmp.icon.glass.Import
 import top.yukonga.miuix.kmp.preference.ArrowPreference
+import top.yukonga.miuix.kmp.preference.SwitchPreference
+import top.yukonga.miuix.kmp.theme.MiuixTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -49,6 +56,7 @@ internal fun SettingsRuleFilesSection(
     onDeleteGeosite: () -> Unit,
     onDeleteCustomDat: (String) -> Unit,
     onShowDatUrlImport: () -> Unit,
+    onShowHelp: (String, String) -> Unit,
 ) {
     val settingsState by mainViewModel.settingsState.collectAsStateWithLifecycle()
     var replacingDatFileName by remember { mutableStateOf<String?>(null) }
@@ -150,6 +158,42 @@ internal fun SettingsRuleFilesSection(
             supportingText = stringResource(R.string.geo_update_dialog_supporting_text),
             customSummary = geoSummaryText,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+
+        val autoRestartEnabled = geoIntervalHours > 0
+        val autoRestartTitle = stringResource(R.string.geo_update_auto_restart_title)
+        val autoRestartHelp = stringResource(R.string.geo_update_auto_restart_help)
+        SwitchPreference(
+            title = "",
+            startAction = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = autoRestartTitle,
+                        fontSize = MiuixTheme.textStyles.headline1.fontSize,
+                        fontWeight = FontWeight.Medium,
+                        color = MiuixTheme.colorScheme.onSurface.copy(
+                            alpha = if (autoRestartEnabled) 1f else 0.38f
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    IconButton(
+                        onClick = { onShowHelp(autoRestartTitle, autoRestartHelp) },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = MiuixIcons.Glass.Help,
+                            contentDescription = autoRestartTitle,
+                            tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            },
+            checked = settingsState.switches.geoUpdateAutoRestart,
+            onCheckedChange = { enabled ->
+                mainViewModel.setGeoUpdateAutoRestartEnabled(enabled)
+            },
+            enabled = autoRestartEnabled
         )
     }
 }

@@ -162,6 +162,19 @@ class TProxyService : VpnService() {
     override fun onCreate() {
         super.onCreate()
         logFileManager = LogFileManager(this)
+        serviceScope.launch {
+            VpnStateHub.geoRulesUpdatedFlow.collect {
+                val prefs = Preferences(this@TProxyService)
+                if (!prefs.geoUpdateAutoRestart || isStopping || startupFailed || !xrayProcessRunner.isStarted) {
+                    return@collect
+                }
+                if (!prefs.disableVpn && tunFd == null) {
+                    return@collect
+                }
+                Log.i(TAG, "Rule files auto-updated; restarting Xray core to apply new rules.")
+                xrayProcessRunner.restart(serviceScope)
+            }
+        }
         Log.d(TAG, "TProxyService created.")
     }
 

@@ -308,6 +308,8 @@ class MainViewModel(application: Application) :
 
     fun updateGeoUpdateInterval(hoursString: String): Boolean = settingsController.updateGeoUpdateInterval(hoursString)
 
+    fun setGeoUpdateAutoRestartEnabled(enabled: Boolean) = settingsController.setGeoUpdateAutoRestartEnabled(enabled)
+
     fun updateTunnelMtu(mtuString: String): Boolean = settingsController.updateTunnelMtu(mtuString)
 
     fun setHttpProxyEnabled(enabled: Boolean) = settingsController.setHttpProxyEnabled(enabled)

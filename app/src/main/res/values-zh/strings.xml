@@ -218,6 +218,8 @@
     <string name="geo_last_update_format">每 %1$d 小时 | 上次更新：%2$s</string>
     <string name="geo_never_updated">尚未更新</string>
     <string name="geo_update_dialog_supporting_text">输入 0 可关闭自动更新，有效范围 1–168 小时。\n当到达更新周期或连接 VPN 后发现已超出更新间隔时，将在后台静默下载并原子替换规则文件。若更新未完成将保留原规则，不影响正常使用。</string>
+    <string name="geo_update_auto_restart_title">更新后自动重启内核</string>
+    <string name="geo_update_auto_restart_help">开启后，后台自动更新规则文件完成时会自动重启 Xray 内核子进程，不断开系统 VPN 接口，以立即加载新规则。重启过程很快，但仍会短暂中断当前活跃的长连接。\n\n注：为避免与应用的规则管理冲突，本应用会剥离配置中的 geodata 块，统一由设置页负责规则文件的下载、校验与替换，因此需要重启内核来载入更新后的规则。</string>
     <string name="geo_update_failed_title">规则文件自动更新失败</string>
     <string name="geo_update_failed_body">下载或校验未完成，已保留现有规则文件。</string>
     <string name="invalid_geo_update_interval">请输入 0（禁用）或 1 到 168 之间的整数</string>

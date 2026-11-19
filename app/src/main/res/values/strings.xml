@@ -225,6 +225,8 @@
     <string name="geo_last_update_format">Every %1$d hrs | Last updated: %2$s</string>
     <string name="geo_never_updated">Never</string>
     <string name="geo_update_dialog_supporting_text">Enter 0 to disable auto-update, valid range: 1–168 hours.\nWhen the update interval is reached or when connecting to VPN after exceeding the interval, rule files will be silently downloaded and atomically replaced in the background. If the update fails, existing rule files are kept untouched.</string>
+    <string name="geo_update_auto_restart_title">Auto-restart Core After Update</string>
+    <string name="geo_update_auto_restart_help">When enabled, the Xray core child process restarts automatically after background rule-file updates complete to load new rules immediately. The system VPN interface stays up. The restart is fast but may briefly interrupt active long-lived connections.\n\nNote: To avoid conflicts with the app\'s rule management, the app removes the config\'s geodata block and handles rule-file download, validation, and replacement in Settings instead, so the core must restart to load updated rules.</string>
     <string name="geo_update_failed_title">Rule Files Auto-update Failed</string>
     <string name="geo_update_failed_body">Download or validation incomplete; existing rule files were kept.</string>
     <string name="invalid_geo_update_interval">Please enter 0 (disabled) or an integer between 1 and 168</string>

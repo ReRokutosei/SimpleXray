@@ -61,7 +61,8 @@ internal class SettingsController(
                 colorMode = prefs.colorMode,
                 logLevel = prefs.logLevel,
                 accessLog = prefs.accessLog,
-                dnsLog = prefs.dnsLog
+                dnsLog = prefs.dnsLog,
+                geoUpdateAutoRestart = prefs.geoUpdateAutoRestart
             ),
             info = InfoStates(
                 appVersion = BuildConfig.VERSION_NAME,
@@ -102,7 +103,8 @@ internal class SettingsController(
                 colorMode = prefs.colorMode,
                 logLevel = prefs.logLevel,
                 accessLog = prefs.accessLog,
-                dnsLog = prefs.dnsLog
+                dnsLog = prefs.dnsLog,
+                geoUpdateAutoRestart = prefs.geoUpdateAutoRestart
             ),
             info = _settingsState.value.info.copy(
                 appVersion = BuildConfig.VERSION_NAME,
@@ -414,6 +416,13 @@ internal class SettingsController(
                 false
             }
         }
+    }
+
+    fun setGeoUpdateAutoRestartEnabled(enabled: Boolean) {
+        prefs.geoUpdateAutoRestart = enabled
+        _settingsState.value = _settingsState.value.copy(
+            switches = _settingsState.value.switches.copy(geoUpdateAutoRestart = enabled)
+        )
     }
 
     fun updateTunnelMtu(mtuString: String): Boolean {
