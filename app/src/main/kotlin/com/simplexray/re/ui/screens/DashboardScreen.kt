@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +23,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
@@ -52,6 +54,7 @@ import top.yukonga.miuix.kmp.icon.glass.Pause
 import top.yukonga.miuix.kmp.icon.glass.Play
 import top.yukonga.miuix.kmp.icon.glass.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 private const val LatencyStaleSeconds = 60L
 
@@ -63,7 +66,9 @@ fun DashboardScreen(
 ) {
     val coreStats by mainViewModel.coreStatsState.collectAsStateWithLifecycle()
     val outboundNodes by mainViewModel.outboundNodes.collectAsStateWithLifecycle()
+    val testableTags by mainViewModel.testableOutboundTags.collectAsStateWithLifecycle()
     val outboundLatency by mainViewModel.outboundLatency.collectAsStateWithLifecycle()
+    val testingTags by mainViewModel.testingOutboundTags.collectAsStateWithLifecycle()
     val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
@@ -71,14 +76,18 @@ fun DashboardScreen(
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             mainViewModel.refreshOutboundNodes()
             launch {
-                mainViewModel.testOutboundLatency()
-            }
-            launch {
                 while (isActive) {
                     mainViewModel.updateCoreStats()
                     delay(1000)
                 }
             }
+        }
+    }
+
+    LaunchedEffect(isServiceEnabled) {
+        if (!isServiceEnabled) return@LaunchedEffect
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            mainViewModel.refreshLatency()
         }
     }
 
@@ -165,7 +174,7 @@ fun DashboardScreen(
                             modifier = Modifier.padding(end = 8.dp).size(24.dp)
                         )
                         Text(
-                            text = if (isServiceEnabled) stringResource(R.string.cancel) else stringResource(R.string.app_name),
+                            text = if (isServiceEnabled) stringResource(R.string.stop_core) else stringResource(R.string.app_name),
                             fontSize = MiuixTheme.textStyles.body1.fontSize
                         )
                     }
@@ -183,15 +192,19 @@ fun DashboardScreen(
                             text = stringResource(id = R.string.outbound_nodes),
                             modifier = Modifier.weight(1f)
                         )
+                        val canRefreshAll = isServiceEnabled && testingTags.isEmpty()
                         IconButton(
                             onClick = { mainViewModel.refreshLatency() },
+                            enabled = canRefreshAll,
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
                                 imageVector = MiuixIcons.Glass.Refresh,
                                 contentDescription = stringResource(R.string.refresh_latency),
                                 modifier = Modifier.size(24.dp),
-                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
+                                tint = MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(
+                                    alpha = if (canRefreshAll) 1f else 0.38f
+                                )
                             )
                         }
                     }
@@ -201,7 +214,10 @@ fun DashboardScreen(
                     OutboundNodeCard(
                         node = node,
                         latency = outboundLatency[node.tag],
-                        serviceEnabled = isServiceEnabled
+                        serviceEnabled = isServiceEnabled,
+                        isTesting = node.tag in testingTags,
+                        canTest = node.tag in testableTags,
+                        onClick = { mainViewModel.refreshNodeLatency(node.tag) }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -239,7 +255,10 @@ fun StatRow(label: String, value: String) {
 private fun OutboundNodeCard(
     node: ConfigUtils.OutboundInfo,
     latency: OutboundLatency?,
-    serviceEnabled: Boolean
+    serviceEnabled: Boolean,
+    isTesting: Boolean,
+    canTest: Boolean,
+    onClick: () -> Unit,
 ) {
     val nowSeconds = System.currentTimeMillis() / 1000
     val stale = latency != null && nowSeconds - latency.lastTryTime > LatencyStaleSeconds
@@ -247,7 +266,11 @@ private fun OutboundNodeCard(
     val fairColor = lerp(goodColor, MiuixTheme.colorScheme.error, 0.5f)
 
     val (text, color) = when {
-        !serviceEnabled || latency == null || stale || !latency.alive ->
+        !serviceEnabled ->
+            "-ms" to MiuixTheme.colorScheme.onSurfaceVariantSummary
+        isTesting ->
+            "--ms" to MiuixTheme.colorScheme.onSurfaceVariantSummary
+        latency == null || stale || !latency.alive ->
             "-ms" to MiuixTheme.colorScheme.onSurfaceVariantSummary
         latency.delayMs <= 100 ->
             "${latency.delayMs}ms" to goodColor
@@ -257,7 +280,13 @@ private fun OutboundNodeCard(
             "${latency.delayMs}ms" to MiuixTheme.colorScheme.error
     }
 
-    Card(modifier = Modifier.fillMaxWidth()) {
+    val clickable = serviceEnabled && canTest && !isTesting
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        pressFeedbackType = if (clickable) PressFeedbackType.Sink else PressFeedbackType.None,
+        showIndication = clickable,
+        onClick = if (clickable) onClick else null,
+    ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -269,15 +298,18 @@ private fun OutboundNodeCard(
                     text = node.tag,
                     fontSize = MiuixTheme.textStyles.body1.fontSize,
                     color = MiuixTheme.colorScheme.onSurface,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     text = node.protocol,
                     fontSize = MiuixTheme.textStyles.body2.fontSize,
                     color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
-                    maxLines = 1
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
+            Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = text,
                 fontSize = MiuixTheme.textStyles.body1.fontSize,

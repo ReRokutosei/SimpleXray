@@ -29,7 +29,6 @@ object TcpPing {
         dnsTimeoutMs: Long = 2000L
     ): Long {
         if (host.isBlank() || port !in 1..65535) return -1L
-        val start = System.currentTimeMillis()
         try {
             val addressFuture = dnsExecutor.submit(Callable { InetAddress.getByName(host) })
             val inetAddress = try {
@@ -41,10 +40,11 @@ object TcpPing {
                 return -1L
             }
 
+            val startNs = System.nanoTime()
             Socket().use { socket ->
                 socket.connect(InetSocketAddress(inetAddress, port), timeoutMs)
             }
-            return System.currentTimeMillis() - start
+            return (System.nanoTime() - startNs) / 1_000_000L
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

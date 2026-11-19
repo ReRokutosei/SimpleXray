@@ -8,16 +8,16 @@ import com.simplexray.re.prefs.Preferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import java.io.File
+import java.util.concurrent.ConcurrentHashMap
 
 private const val TAG = "DashboardController"
 
@@ -31,6 +31,8 @@ internal class DashboardController(
     private var coreStatsClient: CoreStatsClient? = null
     private val statsClientLock = Any()
     private var latencyTestJob: Job? = null
+    private val singleNodeJobs = ConcurrentHashMap<String, Job>()
+    private val pingDispatcher = Dispatchers.IO.limitedParallelism(8)
 
     private val _coreStatsState = MutableStateFlow(CoreStatsState())
     val coreStatsState: StateFlow<CoreStatsState> = _coreStatsState.asStateFlow()
@@ -38,11 +40,23 @@ internal class DashboardController(
     private val _outboundNodes = MutableStateFlow<List<ConfigUtils.OutboundInfo>>(emptyList())
     val outboundNodes: StateFlow<List<ConfigUtils.OutboundInfo>> = _outboundNodes.asStateFlow()
 
+    private val _testableOutboundTags = MutableStateFlow<Set<String>>(emptySet())
+    val testableOutboundTags: StateFlow<Set<String>> = _testableOutboundTags.asStateFlow()
+
     private val _outboundLatency = MutableStateFlow<Map<String, OutboundLatency>>(emptyMap())
     val outboundLatency: StateFlow<Map<String, OutboundLatency>> = _outboundLatency.asStateFlow()
 
+    private val _testingTags = MutableStateFlow<Set<String>>(emptySet())
+    val testingTags: StateFlow<Set<String>> = _testingTags.asStateFlow()
+
     fun reset() {
+        latencyTestJob?.cancel()
+        latencyTestJob = null
+        singleNodeJobs.values.forEach { it.cancel() }
+        singleNodeJobs.clear()
         _coreStatsState.value = CoreStatsState()
+        _outboundLatency.value = emptyMap()
+        _testingTags.value = emptySet()
         close()
     }
 
@@ -103,45 +117,92 @@ internal class DashboardController(
             runCatching { file.readText() }.getOrNull()
         } ?: return
         val nodes = ConfigUtils.extractOutbounds(content)
+        val testableTags = ConfigUtils.extractOutboundEndpoints(content).map { it.tag }.toSet()
         _outboundNodes.value = nodes
-        Log.d(TAG, "Refreshed ${nodes.size} outbound nodes from ${file.name}")
+        _testableOutboundTags.value = testableTags
+        _outboundLatency.update { current -> current.filterKeys { it in testableTags } }
+        Log.d(TAG, "Refreshed ${nodes.size} outbound nodes (${testableTags.size} TCP-testable) from ${file.name}")
     }
 
     suspend fun testOutboundLatency() {
+        if (!isVpnEnabled()) return
         val file = selectedConfig.value ?: return
         val content = withContext(Dispatchers.IO) {
             runCatching { file.readText() }.getOrNull()
         } ?: return
         val endpoints = ConfigUtils.extractOutboundEndpoints(content)
+        val tags = endpoints.map { it.tag }.toSet()
+        _testableOutboundTags.value = tags
         if (endpoints.isEmpty()) {
             _outboundLatency.value = emptyMap()
             return
         }
-        val now = System.currentTimeMillis() / 1000
-        val io = Dispatchers.IO.limitedParallelism(8)
-        val results = coroutineScope {
-            endpoints.map { ep ->
-                async(io) {
-                    val delay = withTimeoutOrNull(4000L) {
-                        TcpPing.pingBlocking(ep.host, ep.port)
-                    } ?: -1L
-                    ep.tag to delay
+        singleNodeJobs.values.forEach { it.cancel() }
+        singleNodeJobs.clear()
+        _outboundLatency.update { current -> current.filterKeys { it in tags } }
+        _testingTags.update { it + tags }
+        try {
+            coroutineScope {
+                endpoints.forEach { ep ->
+                    launch(pingDispatcher) {
+                        try {
+                            probeEndpoint(ep)
+                        } finally {
+                            _testingTags.update { it - ep.tag }
+                        }
+                    }
                 }
-            }.awaitAll()
+            }
+            Log.d(TAG, "Outbound latency (TCPing) updated: ${endpoints.size} entries")
+        } finally {
+            _testingTags.update { it - tags }
         }
-        _outboundLatency.value = results.associate { (tag, delay) ->
-            Log.d(TAG, "[tcping] tag=$tag delay=${if (delay >= 0) "${delay}ms" else "failed"}")
-            tag to OutboundLatency(
+    }
+
+    private suspend fun probeEndpoint(ep: ConfigUtils.OutboundEndpoint) {
+        val delay = withTimeoutOrNull(4000L) {
+            TcpPing.pingBlocking(ep.host, ep.port)
+        } ?: -1L
+        val now = System.currentTimeMillis() / 1000
+        Log.d(TAG, "[tcping] tag=${ep.tag} delay=${if (delay >= 0) "${delay}ms" else "failed"}")
+        _outboundLatency.update { current ->
+            current + (ep.tag to OutboundLatency(
                 alive = delay >= 0,
                 delayMs = delay.coerceAtLeast(0),
                 lastTryTime = now
-            )
+            ))
         }
-        Log.d(TAG, "Outbound latency (TCPing) updated: ${results.size} entries")
     }
 
     fun refreshLatency() {
+        if (!isVpnEnabled()) return
         if (latencyTestJob?.isActive == true) return
         latencyTestJob = scope.launch { testOutboundLatency() }
+    }
+
+    fun refreshNodeLatency(tag: String) {
+        if (!isVpnEnabled()) return
+        if (latencyTestJob?.isActive == true || singleNodeJobs[tag]?.isActive == true) return
+        var job: Job? = null
+        job = scope.launch {
+            val file = selectedConfig.value ?: return@launch
+            val content = withContext(Dispatchers.IO) {
+                runCatching { file.readText() }.getOrNull()
+            } ?: return@launch
+            val ep = ConfigUtils.extractOutboundEndpoints(content).firstOrNull { it.tag == tag }
+                ?: return@launch
+            _testingTags.update { it + tag }
+            try {
+                withContext(pingDispatcher) {
+                    probeEndpoint(ep)
+                }
+            } finally {
+                _testingTags.update { it - tag }
+            }
+        }
+        singleNodeJobs[tag] = job
+        job.invokeOnCompletion {
+            singleNodeJobs.remove(tag, job)
+        }
     }
 }

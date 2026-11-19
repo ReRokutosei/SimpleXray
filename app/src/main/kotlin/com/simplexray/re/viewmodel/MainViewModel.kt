@@ -136,8 +136,14 @@ class MainViewModel(application: Application) :
     val outboundNodes: StateFlow<List<ConfigUtils.OutboundInfo>>
         get() = dashboardController.outboundNodes
 
+    val testableOutboundTags: StateFlow<Set<String>>
+        get() = dashboardController.testableOutboundTags
+
     val outboundLatency: StateFlow<Map<String, OutboundLatency>>
         get() = dashboardController.outboundLatency
+
+    val testingOutboundTags: StateFlow<Set<String>>
+        get() = dashboardController.testingTags
 
     val isServiceEnabled: StateFlow<Boolean>
         get() = vpnServiceController.isServiceEnabled
@@ -274,6 +280,9 @@ class MainViewModel(application: Application) :
 
     /** Non-suspend wrapper for UI callbacks (e.g. the dashboard refresh button). */
     fun refreshLatency() = dashboardController.refreshLatency()
+
+    /** Non-suspend wrapper to retest a single outbound node from its dashboard card. */
+    fun refreshNodeLatency(tag: String) = dashboardController.refreshNodeLatency(tag)
 
     suspend fun importConfigFromClipboard(): String? = configFileController.importConfigFromClipboard()
 
