@@ -94,7 +94,8 @@ internal fun SettingsTunnelSection(
         Card(modifier = Modifier.fillMaxWidth()) {
             ArrowPreference(
                 title = stringResource(R.string.apps_title),
-                onClick = { mainViewModel.navigateToAppList() }
+                onClick = { mainViewModel.navigateToAppList() },
+                enabled = !vpnDisabled
             )
 
             SwitchPreference(
@@ -153,7 +154,7 @@ internal fun SettingsTunnelSection(
                 label = stringResource(R.string.dns_ipv6),
                 supportingText = stringResource(R.string.dns_ipv6_summary),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                enabled = settingsState.switches.ipv6Enabled && !vpnDisabled
+                enabled = settingsState.switches.ipv6Enabled && !vpnDisabled && !isSimpleTun
             )
         }
     

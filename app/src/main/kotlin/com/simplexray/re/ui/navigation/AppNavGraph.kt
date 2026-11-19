@@ -93,15 +93,19 @@ fun AppNavHost(
                         prefs = mainViewModel.prefs
                     )
                 )
+                DisposableEffect(configEditViewModel) {
+                    onDispose {
+                        if (navController.currentDestination?.route != ROUTE_CONFIG_EDIT) {
+                            val savedSelected = configEditViewModel.consumeSavedSelectedConfig()
+                            mainViewModel.editingFilePath = null
+                            // Renaming in the editor updates prefs.selectedConfigPath
+                            // on disk; refresh so ConfigScreen shows the new name.
+                            mainViewModel.onConfigEditFinished(savedSelected)
+                        }
+                    }
+                }
                 ConfigEditScreen(
-                    onBackClick = {
-                        val savedSelected = configEditViewModel.consumeSavedSelectedConfig()
-                        mainViewModel.editingFilePath = null
-                        // Renaming in the editor updates prefs.selectedConfigPath
-                        // on disk; refresh so ConfigScreen shows the new name.
-                        mainViewModel.onConfigEditFinished(savedSelected)
-                        navController.popBackStack()
-                    },
+                    onBackClick = { navController.popBackStack() },
                     snackbarHostState = remember { SnackbarHostState() },
                     viewModel = configEditViewModel
                 )

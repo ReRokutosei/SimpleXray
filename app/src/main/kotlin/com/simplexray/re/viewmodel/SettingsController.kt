@@ -116,7 +116,8 @@ internal class SettingsController(
                 isGeositeCustom = prefs.customGeositeImported
             ),
             geoUpdateIntervalHours = InputFieldState(prefs.geoUpdateIntervalHours.toString()),
-            lastGeoUpdateTime = prefs.lastGeoUpdateTime
+            lastGeoUpdateTime = prefs.lastGeoUpdateTime,
+            tunnelMtu = InputFieldState(prefs.tunnelMtu.toString())
         )
         refreshRuleFileSummaries()
     }
@@ -221,7 +222,7 @@ internal class SettingsController(
     fun updateSocksPort(portString: String): Boolean {
         return try {
             val port = portString.toInt()
-            if (port in 1025..65535) {
+            if (port in 1024..65535) {
                 val changed = prefs.socksPort != port
                 prefs.socksPort = port
                 _settingsState.value = _settingsState.value.copy(
@@ -333,13 +334,7 @@ internal class SettingsController(
             if (changed) notifyRestartRequiredIfRunning()
             true
         } else {
-            _settingsState.value = _settingsState.value.copy(
-                dnsIpv4 = InputFieldState(
-                    value = ipv4Addr,
-                    error = application.getString(R.string.invalid_ipv4),
-                    isValid = false
-                )
-            )
+            showSnackbar(application.getString(R.string.invalid_ipv4))
             false
         }
     }
@@ -355,13 +350,7 @@ internal class SettingsController(
             if (changed) notifyRestartRequiredIfRunning()
             true
         } else {
-            _settingsState.value = _settingsState.value.copy(
-                dnsIpv6 = InputFieldState(
-                    value = ipv6Addr,
-                    error = application.getString(R.string.invalid_ipv6),
-                    isValid = false
-                )
-            )
+            showSnackbar(application.getString(R.string.invalid_ipv6))
             false
         }
     }
@@ -386,13 +375,7 @@ internal class SettingsController(
         val hours = hoursString.toIntOrNull()
         return when {
             hoursString.isBlank() || hours == null -> {
-                _settingsState.value = _settingsState.value.copy(
-                    geoUpdateIntervalHours = InputFieldState(
-                        value = hoursString,
-                        error = application.getString(R.string.invalid_geo_update_interval),
-                        isValid = false
-                    )
-                )
+                showSnackbar(application.getString(R.string.invalid_geo_update_interval))
                 false
             }
             hours == 0 -> {
@@ -412,13 +395,7 @@ internal class SettingsController(
                 true
             }
             else -> {
-                _settingsState.value = _settingsState.value.copy(
-                    geoUpdateIntervalHours = InputFieldState(
-                        value = hoursString,
-                        error = application.getString(R.string.invalid_geo_update_interval),
-                        isValid = false
-                    )
-                )
+                showSnackbar(application.getString(R.string.invalid_geo_update_interval))
                 false
             }
         }
@@ -435,13 +412,7 @@ internal class SettingsController(
         val mtu = mtuString.toIntOrNull()
         return when {
             mtu == null -> {
-                _settingsState.value = _settingsState.value.copy(
-                    tunnelMtu = InputFieldState(
-                        value = mtuString,
-                        error = application.getString(R.string.invalid_mtu),
-                        isValid = false
-                    )
-                )
+                showSnackbar(application.getString(R.string.invalid_mtu))
                 false
             }
             mtu in 1280..9000 -> {
@@ -454,13 +425,7 @@ internal class SettingsController(
                 true
             }
             else -> {
-                _settingsState.value = _settingsState.value.copy(
-                    tunnelMtu = InputFieldState(
-                        value = mtuString,
-                        error = application.getString(R.string.invalid_mtu),
-                        isValid = false
-                    )
-                )
+                showSnackbar(application.getString(R.string.invalid_mtu))
                 false
             }
         }
