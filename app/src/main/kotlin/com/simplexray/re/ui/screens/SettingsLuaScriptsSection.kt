@@ -2,6 +2,7 @@ package com.simplexray.re.ui.screens
 
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -12,8 +13,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simplexray.re.R
 import com.simplexray.re.viewmodel.MainViewModel
@@ -24,6 +25,9 @@ import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Delete
+import top.yukonga.miuix.kmp.icon.glass.Import
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 @Composable
@@ -96,14 +100,16 @@ private fun LuaScriptFilesList(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { onReplace(fileName) }) {
                             Icon(
-                                painter = painterResource(id = R.drawable.upload_file),
-                                contentDescription = stringResource(R.string.import_file)
+                                imageVector = MiuixIcons.Glass.Import,
+                                contentDescription = stringResource(R.string.import_file),
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                         IconButton(onClick = { onDelete(fileName) }) {
                             Icon(
-                                painter = painterResource(id = R.drawable.delete),
-                                contentDescription = stringResource(R.string.delete_config)
+                                imageVector = MiuixIcons.Glass.Delete,
+                                contentDescription = stringResource(R.string.delete_config),
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     }

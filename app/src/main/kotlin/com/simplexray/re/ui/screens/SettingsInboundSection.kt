@@ -55,9 +55,7 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.extended.Help
-import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.icon.glass.Help
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -139,7 +137,7 @@ internal fun SettingsInboundSection(
                             modifier = Modifier.size(28.dp)
                         ) {
                             Icon(
-                                imageVector = MiuixIcons.Help,
+                                imageVector = MiuixIcons.Glass.Help,
                                 contentDescription = httpProxyTitle,
                                 tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier.size(18.dp)

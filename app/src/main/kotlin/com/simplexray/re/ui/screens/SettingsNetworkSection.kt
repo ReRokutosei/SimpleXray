@@ -62,9 +62,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.glass.GlassDropdownPreference
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.extended.Help
-import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.icon.glass.Help
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -111,7 +109,7 @@ internal fun SettingsNetworkSection(
                             modifier = Modifier.size(28.dp)
                         ) {
                             Icon(
-                                imageVector = MiuixIcons.Help,
+                                imageVector = MiuixIcons.Glass.Help,
                                 contentDescription = bypassLanTitle,
                                 tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier.size(18.dp)
@@ -153,7 +151,7 @@ internal fun SettingsNetworkSection(
                             modifier = Modifier.size(28.dp)
                         ) {
                             Icon(
-                                imageVector = MiuixIcons.Help,
+                                imageVector = MiuixIcons.Glass.Help,
                                 contentDescription = errorLogTitle,
                                 tint = MiuixTheme.colorScheme.onSurfaceVariantSummary,
                                 modifier = Modifier.size(18.dp)

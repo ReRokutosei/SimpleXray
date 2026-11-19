@@ -25,10 +25,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -48,7 +44,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,6 +81,11 @@ import top.yukonga.miuix.kmp.glass.GlassTopAppBarDefaults
 import top.yukonga.miuix.kmp.glass.glassPopupAnchor
 import top.yukonga.miuix.kmp.glass.glassPopupAnchorContent
 import top.yukonga.miuix.kmp.glass.rememberGlassPopupAnchor
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Back
+import top.yukonga.miuix.kmp.icon.glass.Close
+import top.yukonga.miuix.kmp.icon.glass.More
+import top.yukonga.miuix.kmp.icon.glass.Search
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -211,8 +211,9 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
                             }
                         }) {
                             Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back)
+                                imageVector = MiuixIcons.Glass.Back,
+                                contentDescription = stringResource(R.string.back),
+                                modifier = Modifier.size(24.dp)
                             )
                         }
                     },
@@ -233,16 +234,18 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
                                 Spacer(modifier = Modifier.width(8.dp))
                                 GlassIconButton(onClick = { viewModel.onSearchQueryChange("") }) {
                                     Icon(
-                                        imageVector = Icons.Default.Clear,
-                                        contentDescription = stringResource(R.string.clear_search)
+                                        imageVector = MiuixIcons.Glass.Close,
+                                        contentDescription = stringResource(R.string.clear_search),
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
                             }
                         } else {
                             GlassIconButton(onClick = { isSearching = true }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.search),
-                                    contentDescription = stringResource(R.string.search)
+                                    imageVector = MiuixIcons.Glass.Search,
+                                    contentDescription = stringResource(R.string.search),
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
@@ -255,9 +258,9 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
                                 )
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.MoreVert,
+                                    imageVector = MiuixIcons.Glass.More,
                                     contentDescription = stringResource(R.string.more),
-                                    modifier = Modifier.glassPopupAnchorContent(moreAnchor)
+                                    modifier = Modifier.size(24.dp).glassPopupAnchorContent(moreAnchor)
                                 )
                             }
                         }
@@ -361,8 +364,9 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
             anchor = moreAnchor,
             anchorContent = {
                 Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = null
+                    imageVector = MiuixIcons.Glass.More,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp)
                 )
             },
             entries = listOf(menuEntry),

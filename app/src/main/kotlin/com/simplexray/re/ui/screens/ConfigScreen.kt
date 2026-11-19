@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,9 +28,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -48,7 +46,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,7 +73,12 @@ import top.yukonga.miuix.kmp.basic.Surface
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Close
+import top.yukonga.miuix.kmp.icon.glass.Add
+import top.yukonga.miuix.kmp.icon.glass.Close
+import top.yukonga.miuix.kmp.icon.glass.Delete
+import top.yukonga.miuix.kmp.icon.glass.Edit
+import top.yukonga.miuix.kmp.icon.glass.File
+import top.yukonga.miuix.kmp.icon.glass.Import
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.simplexray.re.ui.components.ConfirmOverlayDialog
@@ -143,7 +145,7 @@ fun ConfigScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.code),
+                    imageVector = MiuixIcons.Glass.File,
                     contentDescription = null,
                     modifier = Modifier
                         .padding(bottom = 12.dp),
@@ -393,10 +395,10 @@ private fun ConfigListPane(
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Add,
+                            imageVector = MiuixIcons.Glass.Add,
                             contentDescription = "Add Config",
                             tint = MiuixTheme.colorScheme.primary,
-                            modifier = Modifier.padding(end = 8.dp)
+                            modifier = Modifier.padding(end = 8.dp).size(24.dp)
                         )
                         Text(
                             text = stringResource(R.string.add_config_profile),
@@ -491,8 +493,9 @@ private fun ConfigListPane(
                                         onOpenFullscreenEditor(file)
                                     }) {
                                         Icon(
-                                            painter = painterResource(R.drawable.edit),
+                                            imageVector = MiuixIcons.Glass.Edit,
                                             contentDescription = stringResource(R.string.edit),
+                                            modifier = Modifier.size(24.dp),
                                             tint = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
                                         )
                                     }
@@ -501,15 +504,17 @@ private fun ConfigListPane(
                                         replaceConfigPickerLauncher.launch(arrayOf("*/*"))
                                     }) {
                                         Icon(
-                                            painter = painterResource(R.drawable.upload_file),
+                                            imageVector = MiuixIcons.Glass.Import,
                                             contentDescription = stringResource(R.string.replace_config),
+                                            modifier = Modifier.size(24.dp),
                                             tint = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
                                         )
                                     }
                                     IconButton(onClick = { showDeleteDialog.value = file }) {
                                         Icon(
-                                            painter = painterResource(R.drawable.delete),
+                                            imageVector = MiuixIcons.Glass.Delete,
                                             contentDescription = stringResource(R.string.delete),
+                                            modifier = Modifier.size(24.dp),
                                             tint = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
                                         )
                                     }
@@ -530,7 +535,11 @@ private fun ConfigListPane(
             onDismissRequest = { showAddConfigSheet = false },
             startAction = {
                 IconButton(onClick = { showAddConfigSheet = false }) {
-                    Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.cancel))
+                    Icon(
+                        imageVector = MiuixIcons.Glass.Close,
+                        contentDescription = stringResource(R.string.cancel),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             },
             content = {

@@ -33,7 +33,6 @@ import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -58,9 +57,10 @@ import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.extended.Help
-import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.icon.glass.Close2
+import top.yukonga.miuix.kmp.icon.glass.Delete
+import top.yukonga.miuix.kmp.icon.glass.Download
+import top.yukonga.miuix.kmp.icon.glass.Import
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -93,29 +93,33 @@ internal fun SettingsRuleFilesSection(
                         if (geoipProgress != null) {
                             IconButton(onClick = { mainViewModel.cancelDownload("geoip.dat") }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.cancel),
-                                    contentDescription = stringResource(R.string.cancel)
+                                    imageVector = MiuixIcons.Glass.Close2,
+                                    contentDescription = stringResource(R.string.cancel),
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         } else {
                             IconButton(onClick = { onEditRuleFile("geoip.dat", settingsState.info.geoipUrl) }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.cloud_download),
-                                    contentDescription = stringResource(R.string.rule_file_update_url)
+                                    imageVector = MiuixIcons.Glass.Download,
+                                    contentDescription = stringResource(R.string.rule_file_update_url),
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                             if (!settingsState.files.isGeoipCustom) {
                                 IconButton(onClick = { geoipFilePickerLauncher.launch(arrayOf("*/*")) }) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.upload_file),
-                                        contentDescription = stringResource(R.string.import_file)
+                                        imageVector = MiuixIcons.Glass.Import,
+                                        contentDescription = stringResource(R.string.import_file),
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
                             } else {
                                 IconButton(onClick = { onDeleteGeoip() }) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.delete),
-                                        contentDescription = stringResource(R.string.reset_file)
+                                        imageVector = MiuixIcons.Glass.Delete,
+                                        contentDescription = stringResource(R.string.reset_file),
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
                             }
@@ -132,29 +136,33 @@ internal fun SettingsRuleFilesSection(
                         if (geositeProgress != null) {
                             IconButton(onClick = { mainViewModel.cancelDownload("geosite.dat") }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.cancel),
-                                    contentDescription = stringResource(R.string.cancel)
+                                    imageVector = MiuixIcons.Glass.Close2,
+                                    contentDescription = stringResource(R.string.cancel),
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         } else {
                             IconButton(onClick = { onEditRuleFile("geosite.dat", settingsState.info.geositeUrl) }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.cloud_download),
-                                    contentDescription = stringResource(R.string.rule_file_update_url)
+                                    imageVector = MiuixIcons.Glass.Download,
+                                    contentDescription = stringResource(R.string.rule_file_update_url),
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                             if (!settingsState.files.isGeositeCustom) {
                                 IconButton(onClick = { geositeFilePickerLauncher.launch(arrayOf("*/*")) }) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.upload_file),
-                                        contentDescription = stringResource(R.string.import_file)
+                                        imageVector = MiuixIcons.Glass.Import,
+                                        contentDescription = stringResource(R.string.import_file),
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
                             } else {
                                 IconButton(onClick = { onDeleteGeosite() }) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.delete),
-                                        contentDescription = stringResource(R.string.reset_file)
+                                        imageVector = MiuixIcons.Glass.Delete,
+                                        contentDescription = stringResource(R.string.reset_file),
+                                        modifier = Modifier.size(24.dp)
                                     )
                                 }
                             }
@@ -271,15 +279,17 @@ private fun CustomDatFilesSection(
                         if (isDownloading) {
                             IconButton(onClick = { mainViewModel.cancelDownload(datName) }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.cancel),
-                                    contentDescription = stringResource(R.string.cancel)
+                                    imageVector = MiuixIcons.Glass.Close2,
+                                    contentDescription = stringResource(R.string.cancel),
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         } else {
                             IconButton(onClick = { onEditUrl(datName, customUrl) }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.cloud_download),
-                                    contentDescription = stringResource(R.string.rule_file_update_url)
+                                    imageVector = MiuixIcons.Glass.Download,
+                                    contentDescription = stringResource(R.string.rule_file_update_url),
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                             IconButton(onClick = {
@@ -290,14 +300,16 @@ private fun CustomDatFilesSection(
                                 }
                             }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.upload_file),
-                                    contentDescription = stringResource(R.string.import_file)
+                                    imageVector = MiuixIcons.Glass.Import,
+                                    contentDescription = stringResource(R.string.import_file),
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                             IconButton(onClick = { mainViewModel.deleteCustomDatFile(datName) }) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.delete),
-                                    contentDescription = stringResource(R.string.delete_config)
+                                    imageVector = MiuixIcons.Glass.Delete,
+                                    contentDescription = stringResource(R.string.delete_config),
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         }

@@ -9,11 +9,9 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Clear
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -26,11 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.VectorGroup
+import androidx.compose.ui.graphics.vector.VectorPath
+import androidx.compose.ui.graphics.vector.group
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.vectorResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -60,6 +59,16 @@ import top.yukonga.miuix.kmp.glass.GlassNavigationRailDefaults
 import top.yukonga.miuix.kmp.glass.GlassNavigationRailState
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.glass.rememberGlassNavigationRailState
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Back
+import top.yukonga.miuix.kmp.icon.glass.Clear
+import top.yukonga.miuix.kmp.icon.glass.ClockOutline
+import top.yukonga.miuix.kmp.icon.glass.Close
+import top.yukonga.miuix.kmp.icon.glass.DigitalStatistics
+import top.yukonga.miuix.kmp.icon.glass.File
+import top.yukonga.miuix.kmp.icon.glass.Search
+import top.yukonga.miuix.kmp.icon.glass.SettingsOutline
+import top.yukonga.miuix.kmp.icon.glass.Share
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 val LocalLayerBackdrop = staticCompositionLocalOf<LayerBackdrop?> { null }
@@ -226,8 +235,9 @@ fun AppTopAppBar(
                     }
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = stringResource(R.string.close_search)
+                        imageVector = MiuixIcons.Glass.Back,
+                        contentDescription = stringResource(R.string.close_search),
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
@@ -252,8 +262,9 @@ fun AppTopAppBar(
                     Spacer(modifier = Modifier.width(8.dp))
                     GlassIconButton(onClick = { onLogSearchQueryChange("") }) {
                         Icon(
-                            imageVector = Icons.Default.Clear,
-                            contentDescription = stringResource(R.string.clear_search)
+                            imageVector = MiuixIcons.Glass.Close,
+                            contentDescription = stringResource(R.string.clear_search),
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
@@ -315,8 +326,9 @@ private fun LogActions(
 
     GlassIconButton(onClick = { onLogSearchingChange(true) }) {
         Icon(
-            painter = painterResource(id = R.drawable.search),
-            contentDescription = stringResource(R.string.search)
+            imageVector = MiuixIcons.Glass.Search,
+            contentDescription = stringResource(R.string.search),
+            modifier = Modifier.size(24.dp)
         )
     }
     Spacer(modifier = Modifier.width(8.dp))
@@ -328,8 +340,9 @@ private fun LogActions(
         }
     ) {
         Icon(
-            painter = painterResource(id = R.drawable.ic_export),
+            imageVector = MiuixIcons.Glass.Share,
             contentDescription = stringResource(R.string.export),
+            modifier = Modifier.size(24.dp),
             tint = MiuixTheme.colorScheme.onSurface.copy(alpha = if (hasLogsToExport) 1f else 0.38f)
         )
     }
@@ -344,26 +357,31 @@ private fun LogActions(
         }
     ) {
         Icon(
-            painter = painterResource(id = R.drawable.delete),
+            imageVector = MiuixIcons.Glass.Clear,
             contentDescription = stringResource(R.string.clear_logs),
+            modifier = Modifier.size(24.dp),
             tint = MiuixTheme.colorScheme.onSurface.copy(alpha = if (hasEntries) 1f else 0.38f)
         )
     }
 }
 
 @Composable
-private fun rememberGlassNavigationItems(includeLabels: Boolean = true): List<GlassNavigationItem> {
-    val statsIcon = ImageVector.vectorResource(id = R.drawable.dashboard)
+private fun rememberGlassNavigationItems(
+    includeLabels: Boolean = true,
+    iconScale: Float = 1f
+): List<GlassNavigationItem> {
+    val statsIcon = MiuixIcons.Glass.DigitalStatistics
     val statsLabel = stringResource(R.string.core_stats_title)
-    val configIcon = ImageVector.vectorResource(id = R.drawable.code)
+    val configIcon = MiuixIcons.Glass.File
     val configLabel = stringResource(R.string.configuration)
-    val logIcon = ImageVector.vectorResource(id = R.drawable.history)
+    val logIcon = MiuixIcons.Glass.ClockOutline
     val logLabel = stringResource(R.string.log)
-    val settingsIcon = ImageVector.vectorResource(id = R.drawable.settings)
+    val settingsIcon = MiuixIcons.Glass.SettingsOutline
     val settingsLabel = stringResource(R.string.settings)
 
     return remember(
         includeLabels,
+        iconScale,
         statsIcon,
         statsLabel,
         configIcon,
@@ -375,27 +393,87 @@ private fun rememberGlassNavigationItems(includeLabels: Boolean = true): List<Gl
     ) {
         listOf(
             GlassNavigationItem(
-                icon = statsIcon,
+                icon = statsIcon.scaled(iconScale),
                 label = if (includeLabels) statsLabel else null,
                 contentDescription = statsLabel
             ),
             GlassNavigationItem(
-                icon = configIcon,
+                icon = configIcon.scaled(iconScale),
                 label = if (includeLabels) configLabel else null,
                 contentDescription = configLabel
             ),
             GlassNavigationItem(
-                icon = logIcon,
+                icon = logIcon.scaled(iconScale),
                 label = if (includeLabels) logLabel else null,
                 contentDescription = logLabel
             ),
             GlassNavigationItem(
-                icon = settingsIcon,
+                icon = settingsIcon.scaled(iconScale),
                 label = if (includeLabels) settingsLabel else null,
                 contentDescription = settingsLabel
             )
         )
     }
+}
+
+private fun ImageVector.scaled(scale: Float): ImageVector {
+    if (scale == 1f) return this
+    val pivotX = viewportWidth / 2f
+    val pivotY = viewportHeight / 2f
+    return ImageVector.Builder(
+        name = "$name.scaled($scale)",
+        defaultWidth = defaultWidth,
+        defaultHeight = defaultHeight,
+        viewportWidth = viewportWidth,
+        viewportHeight = viewportHeight,
+        tintColor = tintColor,
+        tintBlendMode = tintBlendMode,
+        autoMirror = autoMirror,
+    ).apply {
+        group(
+            scaleX = scale,
+            scaleY = scale,
+            pivotX = pivotX,
+            pivotY = pivotY,
+        ) {
+            fun VectorGroup.copyTo(builder: ImageVector.Builder) {
+                for (i in 0 until size) {
+                    when (val node = this[i]) {
+                        is VectorPath -> builder.addPath(
+                            pathData = node.pathData,
+                            pathFillType = node.pathFillType,
+                            name = node.name,
+                            fill = node.fill,
+                            fillAlpha = node.fillAlpha,
+                            stroke = node.stroke,
+                            strokeAlpha = node.strokeAlpha,
+                            strokeLineWidth = node.strokeLineWidth,
+                            strokeLineCap = node.strokeLineCap,
+                            strokeLineJoin = node.strokeLineJoin,
+                            strokeLineMiter = node.strokeLineMiter,
+                            trimPathStart = node.trimPathStart,
+                            trimPathEnd = node.trimPathEnd,
+                            trimPathOffset = node.trimPathOffset,
+                        )
+                        is VectorGroup -> builder.group(
+                            name = node.name,
+                            rotate = node.rotation,
+                            pivotX = node.pivotX,
+                            pivotY = node.pivotY,
+                            scaleX = node.scaleX,
+                            scaleY = node.scaleY,
+                            translationX = node.translationX,
+                            translationY = node.translationY,
+                            clipPathData = node.clipPathData,
+                        ) {
+                            node.copyTo(this)
+                        }
+                    }
+                }
+            }
+            root.copyTo(this)
+        }
+    }.build()
 }
 
 @Composable
@@ -429,7 +507,7 @@ fun AppBottomNavigationBar(
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
-    val items = rememberGlassNavigationItems(includeLabels = false)
+    val items = rememberGlassNavigationItems(includeLabels = false, iconScale = 1.15f)
     val selectedIndex = NAV_ROUTES.indexOf(currentRoute).coerceAtLeast(0)
 
     GlassNavigationBar(

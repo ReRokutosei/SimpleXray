@@ -13,10 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -30,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,8 +49,13 @@ import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.glass.GlassIconButton
 import top.yukonga.miuix.kmp.glass.GlassTopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Redo
-import top.yukonga.miuix.kmp.icon.extended.Undo
+import top.yukonga.miuix.kmp.icon.glass.Back
+import top.yukonga.miuix.kmp.icon.glass.FitToScreen
+import top.yukonga.miuix.kmp.icon.glass.FullScreen
+import top.yukonga.miuix.kmp.icon.glass.Redo
+import top.yukonga.miuix.kmp.icon.glass.Save
+import top.yukonga.miuix.kmp.icon.glass.Search
+import top.yukonga.miuix.kmp.icon.glass.Undo
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.scripta.editor.CodeEditor
 import top.yukonga.scripta.editor.EditorColors
@@ -240,8 +243,9 @@ fun ConfigEditPane(
                         navigationIcon = {
                             GlassIconButton(onClick = handleBack) {
                                 Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.back)
+                                    imageVector = MiuixIcons.Glass.Back,
+                                    contentDescription = stringResource(R.string.back),
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         },
@@ -252,8 +256,9 @@ fun ConfigEditPane(
                                 }
                             ) {
                                 Icon(
-                                    imageVector = MiuixIcons.Undo,
+                                    imageVector = MiuixIcons.Glass.Undo,
                                     contentDescription = stringResource(R.string.undo),
+                                    modifier = Modifier.size(24.dp),
                                     tint = MiuixTheme.colorScheme.onSurface.copy(
                                         alpha = if (controller.canUndo) 1f else 0.38f
                                     )
@@ -266,8 +271,9 @@ fun ConfigEditPane(
                                 }
                             ) {
                                 Icon(
-                                    imageVector = MiuixIcons.Redo,
+                                    imageVector = MiuixIcons.Glass.Redo,
                                     contentDescription = stringResource(R.string.redo),
+                                    modifier = Modifier.size(24.dp),
                                     tint = MiuixTheme.colorScheme.onSurface.copy(
                                         alpha = if (controller.canRedo) 1f else 0.38f
                                     )
@@ -276,8 +282,9 @@ fun ConfigEditPane(
                             Spacer(modifier = Modifier.width(8.dp))
                             GlassIconButton(onClick = onSearchToggle) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.search),
-                                    contentDescription = stringResource(R.string.search)
+                                    imageVector = MiuixIcons.Glass.Search,
+                                    contentDescription = stringResource(R.string.search),
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                             Spacer(modifier = Modifier.width(8.dp))
@@ -287,8 +294,9 @@ fun ConfigEditPane(
                                 }
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.save),
+                                    imageVector = MiuixIcons.Glass.Save,
                                     contentDescription = stringResource(id = R.string.save),
+                                    modifier = Modifier.size(24.dp),
                                     tint = MiuixTheme.colorScheme.onSurface.copy(
                                         alpha = if (hasUnsavedChanges) 1f else 0.38f
                                     )
@@ -323,13 +331,15 @@ fun ConfigEditPane(
                         ) {
                             if (isExpanded) {
                                 Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.back)
+                                    imageVector = MiuixIcons.Glass.FitToScreen,
+                                    contentDescription = stringResource(R.string.back),
+                                    modifier = Modifier.size(24.dp)
                                 )
                             } else {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.code),
-                                    contentDescription = "Expand"
+                                    imageVector = MiuixIcons.Glass.FullScreen,
+                                    contentDescription = "Expand",
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         }
@@ -342,8 +352,9 @@ fun ConfigEditPane(
                         backdrop = backdrop
                     ) {
                         Icon(
-                            imageVector = MiuixIcons.Undo,
+                            imageVector = MiuixIcons.Glass.Undo,
                             contentDescription = stringResource(R.string.undo),
+                            modifier = Modifier.size(24.dp),
                             tint = MiuixTheme.colorScheme.onSurface.copy(
                                 alpha = if (controller.canUndo) 1f else 0.38f
                             )
@@ -357,8 +368,9 @@ fun ConfigEditPane(
                         backdrop = backdrop
                     ) {
                         Icon(
-                            imageVector = MiuixIcons.Redo,
+                            imageVector = MiuixIcons.Glass.Redo,
                             contentDescription = stringResource(R.string.redo),
+                            modifier = Modifier.size(24.dp),
                             tint = MiuixTheme.colorScheme.onSurface.copy(
                                 alpha = if (controller.canRedo) 1f else 0.38f
                             )
@@ -370,8 +382,9 @@ fun ConfigEditPane(
                         backdrop = backdrop
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.search),
-                            contentDescription = stringResource(R.string.search)
+                            imageVector = MiuixIcons.Glass.Search,
+                            contentDescription = stringResource(R.string.search),
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                     Spacer(modifier = Modifier.width(8.dp))
@@ -382,8 +395,9 @@ fun ConfigEditPane(
                         backdrop = backdrop
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.save),
+                            imageVector = MiuixIcons.Glass.Save,
                             contentDescription = stringResource(id = R.string.save),
+                            modifier = Modifier.size(24.dp),
                             tint = MiuixTheme.colorScheme.onSurface.copy(
                                 alpha = if (hasUnsavedChanges) 1f else 0.38f
                             )

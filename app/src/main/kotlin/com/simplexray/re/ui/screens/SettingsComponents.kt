@@ -56,9 +56,8 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TextField
 import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.icon.MiuixIcons
-import top.yukonga.miuix.kmp.icon.extended.Close
-import top.yukonga.miuix.kmp.icon.extended.Help
-import top.yukonga.miuix.kmp.icon.extended.Ok
+import top.yukonga.miuix.kmp.icon.glass.Close
+import top.yukonga.miuix.kmp.icon.glass.Ok
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -89,7 +88,11 @@ fun EditableListItemWithMiuixBottomSheet(
             onDismissRequest = { showSheet = false },
             startAction = {
                 IconButton(onClick = { showSheet = false }) {
-                    Icon(imageVector = MiuixIcons.Close, contentDescription = stringResource(R.string.cancel))
+                    Icon(
+                        imageVector = MiuixIcons.Glass.Close,
+                        contentDescription = stringResource(R.string.cancel),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             },
             endAction = {
@@ -97,7 +100,11 @@ fun EditableListItemWithMiuixBottomSheet(
                     onValueConfirmed(tempValue)
                     showSheet = false
                 }) {
-                    Icon(imageVector = MiuixIcons.Ok, contentDescription = stringResource(R.string.confirm))
+                    Icon(
+                        imageVector = MiuixIcons.Glass.Ok,
+                        contentDescription = stringResource(R.string.confirm),
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         ) {

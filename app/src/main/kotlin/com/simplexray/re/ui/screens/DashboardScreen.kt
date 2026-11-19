@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -22,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.platform.LocalDensity
@@ -50,6 +47,10 @@ import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
+import top.yukonga.miuix.kmp.icon.MiuixIcons
+import top.yukonga.miuix.kmp.icon.glass.Pause
+import top.yukonga.miuix.kmp.icon.glass.Play
+import top.yukonga.miuix.kmp.icon.glass.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
 private const val LatencyStaleSeconds = 60L
@@ -159,11 +160,9 @@ fun DashboardScreen(
                         ) else ButtonDefaults.buttonColorsPrimary()
                     ) {
                         Icon(
-                            painter = painterResource(
-                                id = if (isServiceEnabled) R.drawable.pause else R.drawable.play
-                            ),
+                            imageVector = if (isServiceEnabled) MiuixIcons.Glass.Pause else MiuixIcons.Glass.Play,
                             contentDescription = null,
-                            modifier = Modifier.padding(end = 8.dp)
+                            modifier = Modifier.padding(end = 8.dp).size(24.dp)
                         )
                         Text(
                             text = if (isServiceEnabled) stringResource(R.string.cancel) else stringResource(R.string.app_name),
@@ -189,8 +188,9 @@ fun DashboardScreen(
                             modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Refresh,
+                                imageVector = MiuixIcons.Glass.Refresh,
                                 contentDescription = stringResource(R.string.refresh_latency),
+                                modifier = Modifier.size(24.dp),
                                 tint = MiuixTheme.colorScheme.onSurfaceVariantSummary
                             )
                         }
