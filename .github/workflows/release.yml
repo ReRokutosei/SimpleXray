@@ -139,10 +139,15 @@ jobs:
         shell: bash
         run: |
           CURRENT_TAG="${RELEASE_VERSION}"
-          # No previous tag on first release: grep exits 1 on no match, which
-          # pipefail turns into a step failure. `|| true` keeps PREV_TAG empty
-          # so the script falls back to a single-tag range.
-          PREV_TAG="$(git tag --sort=-v:refname | grep -Fxv "$CURRENT_TAG" | head -n 1 || true)"
+          # Use versionsort.suffix=- so prereleases sort below their final release
+          # (e.g. v2.6.0 > v2.6.0-beta.2 > v2.6.0-beta.1 > v2.5.8). For stable
+          # releases, skip prerelease tags so the release notes cover the full
+          # range since the previous stable release.
+          if [[ "$CURRENT_TAG" == *-* ]]; then
+            PREV_TAG="$(git -c versionsort.suffix=- tag --sort=-v:refname | awk -v cur="$CURRENT_TAG" 'found {print; exit} $0 == cur {found=1}')"
+          else
+            PREV_TAG="$(git -c versionsort.suffix=- tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | awk -v cur="$CURRENT_TAG" 'found {print; exit} $0 == cur {found=1}')"
+          fi
           if [ -z "$PREV_TAG" ]; then
             RANGE="$CURRENT_TAG"
           else
