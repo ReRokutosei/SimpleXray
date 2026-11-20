@@ -35,7 +35,7 @@ import top.yukonga.miuix.kmp.icon.glass.Close2
 import top.yukonga.miuix.kmp.icon.glass.Delete
 import top.yukonga.miuix.kmp.icon.glass.Download
 import top.yukonga.miuix.kmp.icon.glass.Help
-import top.yukonga.miuix.kmp.icon.glass.Import
+import top.yukonga.miuix.kmp.icon.glass.ConvertFile
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.preference.SwitchPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
@@ -233,7 +233,7 @@ private fun RuleFileRow(
                     }
                     IconButton(onClick = onImportClick) {
                         Icon(
-                            imageVector = MiuixIcons.Glass.Import,
+                            imageVector = MiuixIcons.Glass.ConvertFile,
                             contentDescription = stringResource(R.string.import_file),
                             modifier = Modifier.size(24.dp)
                         )

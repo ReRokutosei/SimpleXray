@@ -65,7 +65,7 @@ import top.yukonga.miuix.kmp.icon.glass.Clear
 import top.yukonga.miuix.kmp.icon.glass.ClockOutline
 import top.yukonga.miuix.kmp.icon.glass.Close
 import top.yukonga.miuix.kmp.icon.glass.DigitalStatistics
-import top.yukonga.miuix.kmp.icon.glass.File
+import top.yukonga.miuix.kmp.icon.glass.Install
 import top.yukonga.miuix.kmp.icon.glass.Search
 import top.yukonga.miuix.kmp.icon.glass.SettingsOutline
 import top.yukonga.miuix.kmp.icon.glass.Share
@@ -372,7 +372,7 @@ private fun rememberGlassNavigationItems(
 ): List<GlassNavigationItem> {
     val statsIcon = MiuixIcons.Glass.DigitalStatistics
     val statsLabel = stringResource(R.string.core_stats_title)
-    val configIcon = MiuixIcons.Glass.File
+    val configIcon = MiuixIcons.Glass.Install
     val configLabel = stringResource(R.string.configuration)
     val logIcon = MiuixIcons.Glass.ClockOutline
     val logLabel = stringResource(R.string.log)

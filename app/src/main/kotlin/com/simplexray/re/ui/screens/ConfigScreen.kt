@@ -78,7 +78,7 @@ import top.yukonga.miuix.kmp.icon.glass.Close
 import top.yukonga.miuix.kmp.icon.glass.Delete
 import top.yukonga.miuix.kmp.icon.glass.Edit
 import top.yukonga.miuix.kmp.icon.glass.File
-import top.yukonga.miuix.kmp.icon.glass.Import
+import top.yukonga.miuix.kmp.icon.glass.ConvertFile
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import com.simplexray.re.ui.components.ConfirmOverlayDialog
@@ -504,7 +504,7 @@ private fun ConfigListPane(
                                         replaceConfigPickerLauncher.launch(arrayOf("*/*"))
                                     }) {
                                         Icon(
-                                            imageVector = MiuixIcons.Glass.Import,
+                                            imageVector = MiuixIcons.Glass.ConvertFile,
                                             contentDescription = stringResource(R.string.replace_config),
                                             modifier = Modifier.size(24.dp),
                                             tint = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface

@@ -27,7 +27,7 @@ import top.yukonga.miuix.kmp.basic.IconButton
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.Delete
-import top.yukonga.miuix.kmp.icon.glass.Import
+import top.yukonga.miuix.kmp.icon.glass.ConvertFile
 import top.yukonga.miuix.kmp.preference.ArrowPreference
 
 @Composable
@@ -100,7 +100,7 @@ private fun LuaScriptFilesList(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { onReplace(fileName) }) {
                             Icon(
-                                imageVector = MiuixIcons.Glass.Import,
+                                imageVector = MiuixIcons.Glass.ConvertFile,
                                 contentDescription = stringResource(R.string.import_file),
                                 modifier = Modifier.size(24.dp)
                             )
