@@ -32,8 +32,7 @@ import com.simplexray.re.R
 import com.simplexray.re.prefs.LogLevel
 import com.simplexray.re.viewmodel.LogViewModel
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.VerticalScrollBar
-import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.basic.verticalScrollBar
 import top.yukonga.miuix.kmp.interfaces.ExperimentalScrollBarApi
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -111,26 +110,22 @@ fun LogScreen(
             }
         } else {
             SelectionContainer {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    val adapter = rememberScrollBarAdapter(scrollState = listState)
-                    val listContentPadding = PaddingValues(top = topPadding, bottom = bottomPadding)
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 12.dp),
-                        contentPadding = listContentPadding,
-                        reverseLayout = true
-                    ) {
-                        items(filteredEntries) { logEntry ->
-                            LogEntryItem(logEntry = logEntry, searchQuery = searchQuery)
-                        }
+                val listContentPadding = PaddingValues(top = topPadding, bottom = bottomPadding)
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScrollBar(
+                            state = listState,
+                            trackPadding = listContentPadding,
+                        )
+                        .padding(horizontal = 12.dp),
+                    contentPadding = listContentPadding,
+                    reverseLayout = true
+                ) {
+                    items(filteredEntries) { logEntry ->
+                        LogEntryItem(logEntry = logEntry, searchQuery = searchQuery)
                     }
-                    VerticalScrollBar(
-                        adapter = adapter,
-                        modifier = Modifier.align(Alignment.CenterEnd),
-                        trackPadding = listContentPadding
-                    )
                 }
             }
         }

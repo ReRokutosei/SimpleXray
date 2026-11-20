@@ -69,8 +69,7 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.SnackbarHost
 import top.yukonga.miuix.kmp.basic.SnackbarHostState
 import top.yukonga.miuix.kmp.basic.Text
-import top.yukonga.miuix.kmp.basic.VerticalScrollBar
-import top.yukonga.miuix.kmp.basic.rememberScrollBarAdapter
+import top.yukonga.miuix.kmp.basic.verticalScrollBar
 import top.yukonga.miuix.kmp.blur.layerBackdrop
 import top.yukonga.miuix.kmp.blur.rememberLayerBackdrop
 import top.yukonga.miuix.kmp.glass.GlassIconButton
@@ -325,9 +324,13 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
                                 if (isWideScreen) Modifier.widthIn(max = 840.dp) else Modifier
                             )
                     ) {
-                        val adapter = rememberScrollBarAdapter(scrollState = lazyListState)
                         LazyColumn(
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .verticalScrollBar(
+                                    state = lazyListState,
+                                    trackPadding = listContentPadding,
+                                ),
                             state = lazyListState,
                             contentPadding = listContentPadding,
                             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -338,11 +341,6 @@ fun AppListScreen(viewModel: AppListViewModel, onBackClick: () -> Unit) {
                                 }
                             }
                         }
-                        VerticalScrollBar(
-                            adapter = adapter,
-                            modifier = Modifier.align(Alignment.CenterEnd),
-                            trackPadding = listContentPadding
-                        )
                         if (filteredList.isEmpty() && searchQuery.isNotBlank()) {
                             Text(
                                 text = stringResource(R.string.apps_not_found),
