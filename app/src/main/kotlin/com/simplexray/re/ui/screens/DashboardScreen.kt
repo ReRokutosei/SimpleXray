@@ -15,38 +15,36 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.repeatOnLifecycle
 import com.simplexray.re.R
-import com.simplexray.re.common.ConfigUtils
 import com.simplexray.re.common.formatBytes
 import com.simplexray.re.common.formatNumber
 import com.simplexray.re.common.formatUptime
+import com.simplexray.re.viewmodel.LatencyState
 import com.simplexray.re.viewmodel.MainViewModel
-import com.simplexray.re.viewmodel.OutboundLatency
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
+import com.simplexray.re.viewmodel.OutboundNodeUiItem
 import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.ButtonDefaults
 import top.yukonga.miuix.kmp.basic.Card
 import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
+import top.yukonga.miuix.kmp.basic.InfiniteProgressIndicator
 import top.yukonga.miuix.kmp.basic.SmallTitle
 import top.yukonga.miuix.kmp.basic.Text
 import top.yukonga.miuix.kmp.icon.MiuixIcons
@@ -56,8 +54,6 @@ import top.yukonga.miuix.kmp.icon.glass.Refresh
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
-private const val LatencyStaleSeconds = 60L
-
 @Composable
 fun DashboardScreen(
     mainViewModel: MainViewModel,
@@ -66,28 +62,21 @@ fun DashboardScreen(
 ) {
     val coreStats by mainViewModel.coreStatsState.collectAsStateWithLifecycle()
     val outboundNodes by mainViewModel.outboundNodes.collectAsStateWithLifecycle()
-    val testableTags by mainViewModel.testableOutboundTags.collectAsStateWithLifecycle()
-    val outboundLatency by mainViewModel.outboundLatency.collectAsStateWithLifecycle()
-    val testingTags by mainViewModel.testingOutboundTags.collectAsStateWithLifecycle()
     val isServiceEnabled by mainViewModel.isServiceEnabled.collectAsStateWithLifecycle()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    LaunchedEffect(Unit) {
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            mainViewModel.refreshOutboundNodes()
-            launch {
-                while (isActive) {
-                    mainViewModel.updateCoreStats()
-                    delay(1000)
-                }
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> mainViewModel.setDashboardVisible(true)
+                Lifecycle.Event.ON_PAUSE -> mainViewModel.setDashboardVisible(false)
+                else -> Unit
             }
         }
-    }
-
-    LaunchedEffect(isServiceEnabled) {
-        if (!isServiceEnabled) return@LaunchedEffect
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            mainViewModel.refreshLatency()
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+            mainViewModel.setDashboardVisible(false)
         }
     }
 
@@ -192,7 +181,9 @@ fun DashboardScreen(
                             text = stringResource(id = R.string.outbound_nodes),
                             modifier = Modifier.weight(1f)
                         )
-                        val canRefreshAll = isServiceEnabled && testingTags.isEmpty()
+                        val canRefreshAll = isServiceEnabled &&
+                            outboundNodes.any { it.testable } &&
+                            outboundNodes.none { it.latency is LatencyState.Testing }
                         IconButton(
                             onClick = { mainViewModel.refreshLatency() },
                             enabled = canRefreshAll,
@@ -213,10 +204,7 @@ fun DashboardScreen(
                 items(outboundNodes, key = { it.tag }) { node ->
                     OutboundNodeCard(
                         node = node,
-                        latency = outboundLatency[node.tag],
                         serviceEnabled = isServiceEnabled,
-                        isTesting = node.tag in testingTags,
-                        canTest = node.tag in testableTags,
                         onClick = { mainViewModel.refreshNodeLatency(node.tag) }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
@@ -253,34 +241,30 @@ fun StatRow(label: String, value: String) {
 
 @Composable
 private fun OutboundNodeCard(
-    node: ConfigUtils.OutboundInfo,
-    latency: OutboundLatency?,
+    node: OutboundNodeUiItem,
     serviceEnabled: Boolean,
-    isTesting: Boolean,
-    canTest: Boolean,
     onClick: () -> Unit,
 ) {
-    val nowSeconds = System.currentTimeMillis() / 1000
-    val stale = latency != null && nowSeconds - latency.lastTryTime > LatencyStaleSeconds
     val goodColor = MiuixTheme.colorScheme.primary
     val fairColor = lerp(goodColor, MiuixTheme.colorScheme.error, 0.5f)
+    val mutedColor = MiuixTheme.colorScheme.onSurfaceVariantSummary
+    val errorColor = MiuixTheme.colorScheme.error
+    val timeoutText = stringResource(R.string.latency_timeout)
 
+    val state = node.latency
+    val isTesting = serviceEnabled && state is LatencyState.Testing
     val (text, color) = when {
-        !serviceEnabled ->
-            "-ms" to MiuixTheme.colorScheme.onSurfaceVariantSummary
-        isTesting ->
-            "--ms" to MiuixTheme.colorScheme.onSurfaceVariantSummary
-        latency == null || stale || !latency.alive ->
-            "-ms" to MiuixTheme.colorScheme.onSurfaceVariantSummary
-        latency.delayMs <= 100 ->
-            "${latency.delayMs}ms" to goodColor
-        latency.delayMs <= 300 ->
-            "${latency.delayMs}ms" to fairColor
-        else ->
-            "${latency.delayMs}ms" to MiuixTheme.colorScheme.error
+        !serviceEnabled || state is LatencyState.Idle -> "--" to mutedColor
+        state is LatencyState.Failed -> timeoutText to errorColor
+        state is LatencyState.Measured -> when {
+            state.delayMs <= 100 -> "${state.delayMs}ms" to goodColor
+            state.delayMs <= 300 -> "${state.delayMs}ms" to fairColor
+            else -> "${state.delayMs}ms" to errorColor
+        }
+        else -> "--" to mutedColor
     }
 
-    val clickable = serviceEnabled && canTest && !isTesting
+    val clickable = serviceEnabled && node.testable && !isTesting
     Card(
         modifier = Modifier.fillMaxWidth(),
         pressFeedbackType = if (clickable) PressFeedbackType.Sink else PressFeedbackType.None,
@@ -310,12 +294,25 @@ private fun OutboundNodeCard(
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Text(
-                text = text,
-                fontSize = MiuixTheme.textStyles.body1.fontSize,
-                color = color,
-                fontFamily = FontFamily.Monospace
-            )
+            if (isTesting) {
+                InfiniteProgressIndicator(
+                    color = mutedColor,
+                    size = 18.dp,
+                    strokeWidth = 1.8.dp,
+                    orbitingDotSize = 2.dp,
+                )
+            } else {
+                Text(
+                    text = text,
+                    fontSize = MiuixTheme.textStyles.body1.fontSize,
+                    color = color,
+                    fontFamily = if (state is LatencyState.Failed && serviceEnabled) {
+                        FontFamily.Default
+                    } else {
+                        FontFamily.Monospace
+                    }
+                )
+            }
         }
     }
 }

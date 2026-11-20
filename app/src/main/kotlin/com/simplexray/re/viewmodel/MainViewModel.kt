@@ -3,6 +3,9 @@ package com.simplexray.re.viewmodel
 import android.app.Application
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.net.Uri
 import android.util.Log
 import androidx.activity.result.ActivityResultLauncher
@@ -102,12 +105,15 @@ class MainViewModel(application: Application) :
 
     private val dashboardController by lazy {
         DashboardController(
-            prefs,
+            { prefs.apiAddress to prefs.apiPort },
             viewModelScope,
             configFileController.selectedConfigFile,
-            { isVpnEnabled() },
+            vpnServiceController.isServiceEnabled,
         )
     }
+
+    private var connectivityManager: ConnectivityManager? = null
+    private var defaultNetworkCallback: ConnectivityManager.NetworkCallback? = null
 
     private val vpnServiceController by lazy {
         VpnServiceController(
@@ -133,17 +139,8 @@ class MainViewModel(application: Application) :
     val coreStatsState: StateFlow<CoreStatsState>
         get() = dashboardController.coreStatsState
 
-    val outboundNodes: StateFlow<List<ConfigUtils.OutboundInfo>>
+    val outboundNodes: StateFlow<List<OutboundNodeUiItem>>
         get() = dashboardController.outboundNodes
-
-    val testableOutboundTags: StateFlow<Set<String>>
-        get() = dashboardController.testableOutboundTags
-
-    val outboundLatency: StateFlow<Map<String, OutboundLatency>>
-        get() = dashboardController.outboundLatency
-
-    val testingOutboundTags: StateFlow<Set<String>>
-        get() = dashboardController.testingTags
 
     val isServiceEnabled: StateFlow<Boolean>
         get() = vpnServiceController.isServiceEnabled
@@ -186,6 +183,7 @@ class MainViewModel(application: Application) :
         Log.d(TAG, "MainViewModel initialized.")
 
         SocksAuthenticatorInstaller.install(application)
+        registerNetworkChangeCallback(application)
 
         viewModelScope.launch {
             VpnStateHub.state.collect { state ->
@@ -262,24 +260,10 @@ class MainViewModel(application: Application) :
 
     suspend fun createConfigFile(): String? = configFileController.createConfigFile()
 
-    suspend fun updateCoreStats() = dashboardController.updateCoreStats()
-
-    /**
-     * Refreshes the outbound node list from the currently selected config file.
-     * Works whether or not the service is running.
-     */
-    suspend fun refreshOutboundNodes() = dashboardController.refreshOutboundNodes()
-
-    /**
-     * Latency-tests every TCP-capable outbound endpoint (1-RTT TCP connect,
-     * independent of the core). Called when the dashboard is shown and on
-     * manual refresh. UDP-only protocols (wireguard/hysteria2) and QUIC
-     * transports are skipped and keep showing no data.
-     */
-    suspend fun testOutboundLatency() = dashboardController.testOutboundLatency()
+    fun setDashboardVisible(visible: Boolean) = dashboardController.setDashboardVisible(visible)
 
     /** Non-suspend wrapper for UI callbacks (e.g. the dashboard refresh button). */
-    fun refreshLatency() = dashboardController.refreshLatency()
+    fun refreshLatency() = dashboardController.refreshLatency(force = true)
 
     /** Non-suspend wrapper to retest a single outbound node from its dashboard card. */
     fun refreshNodeLatency(tag: String) = dashboardController.refreshNodeLatency(tag)
@@ -429,7 +413,60 @@ class MainViewModel(application: Application) :
     fun clearNewVersionAvailable() = updateController.clearNewVersionAvailable()
 
 
+    private fun registerNetworkChangeCallback(application: Application) {
+        val cm = application.getSystemService(ConnectivityManager::class.java) ?: return
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            private var lastNonVpnNetwork: Network? = null
+            private var lastPhysicalTransports: Int? = null
+
+            override fun onAvailable(network: Network) {
+                val caps = cm.getNetworkCapabilities(network) ?: return
+                if (!caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN)) {
+                    val prev = lastNonVpnNetwork
+                    lastNonVpnNetwork = network
+                    val transports = physicalTransportMask(caps)
+                    if (transports != 0) {
+                        lastPhysicalTransports = transports
+                    }
+                    if (prev != null && prev != network) {
+                        dashboardController.invalidateLatencyCache()
+                    }
+                }
+            }
+
+            override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
+                val transports = physicalTransportMask(caps)
+                if (transports == 0) return
+                val prev = lastPhysicalTransports
+                lastPhysicalTransports = transports
+                if (prev != null && prev != transports) {
+                    dashboardController.invalidateLatencyCache()
+                }
+            }
+        }
+        runCatching {
+            cm.registerDefaultNetworkCallback(callback)
+            connectivityManager = cm
+            defaultNetworkCallback = callback
+        }.onFailure { e ->
+            Log.w(TAG, "Failed to register default network callback", e)
+        }
+    }
+
+    private fun physicalTransportMask(caps: NetworkCapabilities): Int {
+        var mask = 0
+        if (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) mask = mask or 1
+        if (caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) mask = mask or 2
+        if (caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)) mask = mask or 4
+        return mask
+    }
+
     override fun onCleared() {
+        defaultNetworkCallback?.let { cb ->
+            runCatching { connectivityManager?.unregisterNetworkCallback(cb) }
+        }
+        defaultNetworkCallback = null
+        connectivityManager = null
         dashboardController.close()
         super.onCleared()
     }

@@ -1,5 +1,7 @@
 package com.simplexray.re.common
 
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -64,5 +66,19 @@ class TcpPingTest {
         } finally {
             server.close()
         }
+    }
+
+    @Test
+    fun testPingSuspend_cancelsPromptly() = runBlocking {
+        // 192.0.2.1 is TEST-NET-1 (RFC 5737), typically non-routable / blackholed
+        val elapsed = measureTimeMillis {
+            val job = launch {
+                TcpPing.ping("192.0.2.1", 81, timeoutMs = 5000, dnsTimeoutMs = 5000)
+            }
+            delay(100)
+            job.cancel()
+            job.join()
+        }
+        assertTrue("Cancelled ping should exit promptly, took ${elapsed}ms", elapsed < 1500)
     }
 }

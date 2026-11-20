@@ -20,8 +20,16 @@ data class CoreStatsState(
     val uptime: Int = 0
 )
 
-data class OutboundLatency(
-    val alive: Boolean,
-    val delayMs: Long,
-    val lastTryTime: Long
+sealed interface LatencyState {
+    data object Idle : LatencyState
+    data object Testing : LatencyState
+    data class Measured(val delayMs: Long, val elapsedMs: Long) : LatencyState
+    data class Failed(val elapsedMs: Long) : LatencyState
+}
+
+data class OutboundNodeUiItem(
+    val tag: String,
+    val protocol: String,
+    val testable: Boolean,
+    val latency: LatencyState = LatencyState.Idle,
 )
