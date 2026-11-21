@@ -75,8 +75,8 @@ import top.yukonga.miuix.kmp.glass.GlassBottomSheet
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.glass.Add
 import top.yukonga.miuix.kmp.icon.glass.Close
+import top.yukonga.miuix.kmp.icon.glass.Custom
 import top.yukonga.miuix.kmp.icon.glass.Delete
-import top.yukonga.miuix.kmp.icon.glass.Edit
 import top.yukonga.miuix.kmp.icon.glass.File
 import top.yukonga.miuix.kmp.icon.glass.ConvertFile
 import top.yukonga.miuix.kmp.preference.ArrowPreference
@@ -493,7 +493,7 @@ private fun ConfigListPane(
                                         onOpenFullscreenEditor(file)
                                     }) {
                                         Icon(
-                                            imageVector = MiuixIcons.Glass.Edit,
+                                            imageVector = MiuixIcons.Glass.Custom,
                                             contentDescription = stringResource(R.string.edit),
                                             modifier = Modifier.size(24.dp),
                                             tint = if (isSelected) MiuixTheme.colorScheme.onPrimaryContainer else MiuixTheme.colorScheme.onSurface
