@@ -254,10 +254,15 @@ class DashboardControllerTest {
             // Switch config while visible -> resets & probes new config
             selectedConfig.value = configB
             awaitCondition { synchronized(probedHosts) { probedHosts.size == 2 } }
+            awaitCondition {
+                (controller.outboundNodes.value.firstOrNull { it.tag == "proxy" }?.latency as? LatencyState.Measured)?.delayMs == 15L
+            }
             assertEquals("8.8.8.8", synchronized(probedHosts) { probedHosts[1] })
 
             // Stop service + reset -> latency returns to Idle, nodes remain listed
             serviceEnabled.value = false
+            // Yield so the StateFlow combine collector observes `false` before flipping back to `true`
+            delay(50)
             controller.reset()
             val proxy = controller.outboundNodes.value.first { it.tag == "proxy" }
             assertEquals(LatencyState.Idle, proxy.latency)
